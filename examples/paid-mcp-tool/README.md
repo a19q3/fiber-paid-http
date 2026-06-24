@@ -4,9 +4,9 @@ Expose an HTTP endpoint for a tool call and wrap it with FiberMPP:
 
 ```ts
 const paidTool = fiberMpp.protect({
-  price: { value: "0.001", currency: "USD" },
+  price: { value: "1", currency: "CKB", display: "1 CKB" },
   methods: ["fiber"],
-  fiberAmountShannons: "100",
+  fiberAmountShannons: "100000000",
   handler: async (request) => {
     const args = await request.json();
     return Response.json({

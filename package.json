@@ -13,8 +13,8 @@
     "test:fiber": "vitest run --config vitest.fiber.config.ts",
     "build": "pnpm -r --if-present build",
     "gate": "bash scripts/fiber_mpp_gate.sh",
-    "demo:api": "pnpm --filter @fiber-mpp/demo-api start",
-    "demo:web": "pnpm --filter @fiber-mpp/demo-web start"
+    "evidence:api": "pnpm --filter @fiber-mpp/demo-api start",
+    "evidence:web": "pnpm --filter @fiber-mpp/demo-web start"
   },
   "dependencies": {
     "@fiber-mpp/cli": "workspace:*"

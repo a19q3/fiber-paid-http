@@ -23,7 +23,8 @@ Fiber has strong micropayment primitives, but MPP-style paid HTTP services need 
 - Reverse proxy helper.
 - Client helper.
 - Fiber preflight and live E2E test lane.
-- Demo API and demo web UI.
+- Role-aware `doctor` checks for Fiber RPC, peers, and `ChannelReady` channels.
+- Local evidence API and evidence console.
 - Security tests for replay, wrong resource, wrong method, wrong amount, expiry, no-store, and signatures.
 - F402 conversion.
 
@@ -36,8 +37,8 @@ The adapter supports Fiber JSON-RPC method names from the current Fiber repo. Se
 ```bash
 pnpm install
 pnpm build
-pnpm --filter @fiber-mpp/demo-api start
-pnpm --filter @fiber-mpp/demo-web start
+pnpm evidence:api
+pnpm evidence:web
 ```
 
 ## How to test
@@ -52,9 +53,8 @@ bash scripts/fiber_mpp_gate.sh
 
 - Redis-compatible production store implementation.
 - Stronger paid-but-denied mitigation.
-- More complete `doctor` diagnostics.
 - Separate testnet Fiber E2E evidence.
 
 ## Submission readiness
 
-Ready for a local Fiber evidence demo when the local 3-node network is running. Not ready to claim production readiness until testnet Fiber E2E evidence and operational hardening are complete.
+Ready for local Fiber evidence collection when the local 3-node network is running. Not ready to claim production readiness until testnet Fiber E2E evidence and remaining operational hardening are complete.

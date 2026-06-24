@@ -17,13 +17,13 @@ import { FiberMethodAdapter, parseFiberMode } from "@fiber-mpp/fiber-method";
 import { createFiberMppMiddleware, type FiberMppMiddleware, type FiberMppMiddlewareConfig } from "@fiber-mpp/server-middleware";
 import { SqliteStore } from "@fiber-mpp/storage";
 
-export type DemoApiOptions = Partial<FiberMppMiddlewareConfig> & {
+export type EvidenceApiOptions = Partial<FiberMppMiddlewareConfig> & {
   price?: { value: string; currency: string; display?: string };
   fiberAmountShannons?: string;
   payerFiber?: FiberMethodAdapter;
 };
 
-type DemoResource = {
+type EvidenceResource = {
   path: string;
   label: string;
   price: { value: string; currency: string; display?: string };
@@ -32,7 +32,7 @@ type DemoResource = {
   contentType?: string;
 };
 
-type DemoResourceSummary = Omit<DemoResource, "response">;
+type EvidenceResourceSummary = Omit<EvidenceResource, "response">;
 
 type FiberNodeContext = {
   role: string;
@@ -59,9 +59,9 @@ type FlowEvent = {
   detail?: string;
 };
 
-type DemoFlowState = {
+type EvidenceFlowState = {
   endpoint?: string;
-  resource?: DemoResourceSummary;
+  resource?: EvidenceResourceSummary;
   resourceUrl?: string;
   challengeBody?: unknown;
   challengeId?: string;
@@ -77,7 +77,7 @@ type DemoFlowState = {
 };
 
 const repoRoot = fileURLToPath(new URL("../../..", import.meta.url));
-const demoDbPath = resolve(repoRoot, ".tmp/fiber-mpp-demo-api.sqlite");
+const evidenceDbPath = resolve(repoRoot, ".tmp/fiber-mpp-evidence-api.sqlite");
 const reportFiles = {
   canonical: "reports/canonical-core-parity.json",
   fiberLocal: "reports/fiber-local-e2e-evidence.json",
@@ -88,7 +88,7 @@ const reportFiles = {
   security: "reports/security-matrix.json"
 } as const;
 
-const defaultResources: DemoResource[] = [
+const defaultResources: EvidenceResource[] = [
   {
     path: "/paid/protocol-service",
     label: "GET /paid/protocol-service",
@@ -132,7 +132,7 @@ const defaultResources: DemoResource[] = [
   }
 ];
 
-export function createDemoApi(options: DemoApiOptions = {}): Hono {
+export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
   const app = new Hono();
   const runtime = createFiberRuntime(options);
 
@@ -141,7 +141,7 @@ export function createDemoApi(options: DemoApiOptions = {}): Hono {
     price: options.price ?? resource.price,
     fiberAmountShannons: options.fiberAmountShannons ?? resource.fiberAmountShannons
   }));
-  const flow: DemoFlowState = { events: [] };
+  const flow: EvidenceFlowState = { events: [] };
 
   app.use("*", async (c, next) => {
     await next();
@@ -164,7 +164,7 @@ export function createDemoApi(options: DemoApiOptions = {}): Hono {
   app.get("/free", (c) =>
     c.json({
       ok: true,
-      message: "free FiberMPP demo route"
+      message: "free FiberMPP evidence route"
     })
   );
 
@@ -181,7 +181,7 @@ export function createDemoApi(options: DemoApiOptions = {}): Hono {
       readReport("rustGate"),
       readReport("tsGate")
     ]);
-    const mode = getDemoMode();
+    const mode = getEvidenceMode();
     const localEvidence = Boolean((gateLocal.data as { live_fiber_local_e2e?: boolean } | undefined)?.live_fiber_local_e2e);
     const networkStatus = mode.liveReady ? "connected" : localEvidence ? "evidence" : "unconfigured";
     const routeContext = buildRouteContext(mode.liveReady, localEvidence, networkStatus);
@@ -224,7 +224,7 @@ export function createDemoApi(options: DemoApiOptions = {}): Hono {
     });
   });
 
-  app.post("/api/demo/unpaid", async (c) => {
+  app.post("/api/evidence/unpaid", async (c) => {
     resetFlow(flow);
     const resource = findResource(resources, await readEndpoint(c.req.raw));
     const resourceUrl = new URL(resource.path, c.req.url).toString();
@@ -266,7 +266,7 @@ export function createDemoApi(options: DemoApiOptions = {}): Hono {
     })(c.req.raw)
   );
 
-  app.post("/api/demo/pay", async (c) => {
+  app.post("/api/evidence/pay", async (c) => {
     if (!runtime) {
       appendEvent(flow, "ERROR", "server", "live Fiber not configured", "payment step unavailable");
       return c.json({ error: "live-fiber-not-configured", flow }, 503);
@@ -294,7 +294,7 @@ export function createDemoApi(options: DemoApiOptions = {}): Hono {
     });
   });
 
-  app.post("/api/demo/retry", async (c) => {
+  app.post("/api/evidence/retry", async (c) => {
     assertAuthorizationReady(flow);
     const resource = findResource(resources, flow.endpoint);
     appendEvent(flow, "INFO", "client", "retry with Authorization: Payment", preview(flow.authorization!));
@@ -319,7 +319,7 @@ export function createDemoApi(options: DemoApiOptions = {}): Hono {
     });
   });
 
-  app.post("/api/demo/replay", async (c) => {
+  app.post("/api/evidence/replay", async (c) => {
     assertAuthorizationReady(flow);
     const resource = findResource(resources, flow.endpoint);
     appendEvent(flow, "WARN", "client", "replay same credential", preview(flow.authorization!));
@@ -340,7 +340,7 @@ export function createDemoApi(options: DemoApiOptions = {}): Hono {
     });
   });
 
-  app.post("/api/demo/reset", (c) => {
+  app.post("/api/evidence/reset", (c) => {
     resetFlow(flow);
     c.header("cache-control", "no-store");
     return c.json({
@@ -362,7 +362,7 @@ export function createDemoApi(options: DemoApiOptions = {}): Hono {
 
   return app;
 
-  function protectResource(resource: DemoResource): (request: Request) => Promise<Response> {
+  function protectResource(resource: EvidenceResource): (request: Request) => Promise<Response> {
     return protectWithRuntime({
       price: resource.price,
       methods: ["fiber"],
@@ -380,39 +380,39 @@ export function createDemoApi(options: DemoApiOptions = {}): Hono {
 
   function protectWithRuntime(route: Parameters<FiberMppMiddleware["protect"]>[0]): (request: Request) => Promise<Response> {
     if (!runtime) {
-      return async () => liveFiberNotConfiguredResponse(getDemoMode().blockers);
+      return async () => liveFiberNotConfiguredResponse(getEvidenceMode().blockers);
     }
     return runtime.middleware.protect(route);
   }
 }
 
-export function startDemoApi(port = Number(process.env.PORT ?? "8787")): void {
-  const app = createDemoApi();
+export function startEvidenceApi(port = Number(process.env.PORT ?? "8787")): void {
+  const app = createEvidenceApi();
   serve({ fetch: app.fetch, port });
   console.log(`FiberMPP evidence API listening on http://localhost:${port}`);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  startDemoApi();
+  startEvidenceApi();
 }
 
-function createFiberRuntime(options: DemoApiOptions): { middleware: FiberMppMiddleware; payerFiber: FiberMethodAdapter } | null {
-  const readiness = getDemoMode();
+function createFiberRuntime(options: EvidenceApiOptions): { middleware: FiberMppMiddleware; payerFiber: FiberMethodAdapter } | null {
+  const readiness = getEvidenceMode();
   const hasInjectedAdapters = Boolean(options.fiber && options.payerFiber);
   if (!readiness.liveReady && !hasInjectedAdapters) {
     return null;
   }
-  mkdirSync(dirname(demoDbPath), { recursive: true });
+  mkdirSync(dirname(evidenceDbPath), { recursive: true });
   const fiber = options.fiber ?? FiberMethodAdapter.fromEnv(process.env, "payee");
   const payerFiber = options.payerFiber ?? FiberMethodAdapter.fromEnv(process.env, "payer");
   const secret = options.secret ?? process.env.FIBER_MPP_SECRET;
   if (!secret) {
-    throw new Error("FiberMPP demo runtime requires FIBER_MPP_SECRET or options.secret");
+    throw new Error("FiberMPP evidence runtime requires FIBER_MPP_SECRET or options.secret");
   }
   const middleware = createFiberMppMiddleware({
     secret,
-    serverId: options.serverId ?? "fiber-mpp-demo-api",
-    store: options.store ?? new SqliteStore(demoDbPath),
+    serverId: options.serverId ?? "fiber-mpp-evidence-api",
+    store: options.store ?? new SqliteStore(evidenceDbPath),
     fiber,
     defaultFiberAmountShannons: options.fiberAmountShannons ?? "1000",
     challengeTtlSeconds: options.challengeTtlSeconds ?? 120,
@@ -421,7 +421,7 @@ function createFiberRuntime(options: DemoApiOptions): { middleware: FiberMppMidd
   return { middleware, payerFiber };
 }
 
-function getDemoMode(): { mode: "local" | "testnet" | "unconfigured"; liveReady: boolean; blockers: string[] } {
+function getEvidenceMode(): { mode: "local" | "testnet" | "unconfigured"; liveReady: boolean; blockers: string[] } {
   const blockers: string[] = [];
   const runRequested = process.env.RUN_FIBER_E2E === "1";
   let mode: "local" | "testnet" | "unconfigured" = "unconfigured";
@@ -473,11 +473,11 @@ async function readEndpoint(request: Request): Promise<string | undefined> {
   return body?.endpoint;
 }
 
-function findResource(resources: DemoResource[], endpoint?: string): DemoResource {
+function findResource(resources: EvidenceResource[], endpoint?: string): EvidenceResource {
   return resources.find((resource) => resource.path === endpoint) ?? resources[0]!;
 }
 
-function summarizeResource(resource: DemoResource): DemoResourceSummary {
+function summarizeResource(resource: EvidenceResource): EvidenceResourceSummary {
   return {
     path: resource.path,
     label: resource.label,
@@ -487,8 +487,8 @@ function summarizeResource(resource: DemoResource): DemoResourceSummary {
   };
 }
 
-function resetFlow(flow: DemoFlowState): void {
-  for (const key of Object.keys(flow) as Array<keyof DemoFlowState>) {
+function resetFlow(flow: EvidenceFlowState): void {
+  for (const key of Object.keys(flow) as Array<keyof EvidenceFlowState>) {
     if (key !== "events") {
       delete flow[key];
     }
@@ -496,7 +496,7 @@ function resetFlow(flow: DemoFlowState): void {
   flow.events = [];
 }
 
-function appendEvent(flow: DemoFlowState, level: FlowEvent["level"], actor: string, message: string, detail?: string): void {
+function appendEvent(flow: EvidenceFlowState, level: FlowEvent["level"], actor: string, message: string, detail?: string): void {
   flow.events.push({
     time: new Date().toISOString(),
     level,
@@ -518,13 +518,13 @@ function getChallengeId(body: unknown): string | undefined {
   return candidate.challengeId ?? candidate.challenge?.challengeId;
 }
 
-function assertChallengeReady(flow: DemoFlowState): void {
+function assertChallengeReady(flow: EvidenceFlowState): void {
   if (!flow.fiberChallenge || !flow.challengeId || !flow.resourceUrl) {
     throw new Error("Send unpaid request before paying with Fiber");
   }
 }
 
-function assertAuthorizationReady(flow: DemoFlowState): void {
+function assertAuthorizationReady(flow: EvidenceFlowState): void {
   if (!flow.authorization || !flow.resource || !flow.resourceUrl) {
     throw new Error("Pay with Fiber before retrying or replaying the credential");
   }

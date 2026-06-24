@@ -417,7 +417,7 @@ pub fn compare_reports(ts: &ConformanceReport, rust: &ConformanceReport) -> Valu
         "f402_parity": vector_names_passed(ts, rust, &["f402.challenge.valid.json", "f402.credential.valid.json"]),
         "fiber_rpc_semantics_parity": true,
         "canonical_engine": "rust",
-        "typescript_role": "sdk-demo-f402-compat-vector-harness",
+        "typescript_role": "sdk-evidence-f402-compat-vector-harness",
         "production_ready_for_fiber_method": false,
         "mismatches": mismatches
     })

@@ -20,9 +20,14 @@ pnpm build
 pnpm exec fiber-mpp init --role gateway --out fiber-mpp.gateway.json
 export FIBER_MPP_SECRET="$(openssl rand -hex 32)"
 pnpm exec fiber-mpp doctor --role gateway --config fiber-mpp.gateway.json
+pnpm exec fiber-mpp serve --config fiber-mpp.gateway.json
 ```
 
-The doctor command prints exact blockers until `FIBER_MODE`, a payee Fiber RPC URL, storage, upstream, and the signing secret are configured.
+The doctor command prints exact blockers until `FIBER_MODE`, payee Fiber RPC, storage, upstream, signing secret, Fiber peers, and `ChannelReady` channels are configured.
+
+The configured gateway exposes `GET /healthz`, `GET /readyz`, and `GET /metrics`, rejects disallowed browser origins before challenge issuance, enforces protected-route rate limits and a request body limit, writes structured JSON request logs, and shuts down gracefully on `SIGINT`/`SIGTERM`.
+
+## Evidence paths
 
 For the reproducible local Fiber network used by the evidence suite:
 
@@ -38,10 +43,25 @@ export FIBER_MODE=local
 export FIBER_PAYEE_RPC_URL=http://127.0.0.1:21716
 export FIBER_PAYER_RPC_URL=http://127.0.0.1:21714
 export FIBER_CURRENCY=Fibd
+export FIBER_MPP_SECRET="$(openssl rand -hex 32)"
 pnpm test:fiber
 ```
 
-See [docs/bootstrap.md](docs/bootstrap.md) for gateway, payer, and payee bootstrap steps.
+For testnet evidence, start or point at two funded Fiber testnet nodes, connect peers, wait for `ChannelReady` channels, and then run the same live Fiber lane with:
+
+```bash
+export RUN_FIBER_E2E=1
+export FIBER_MODE=testnet
+export FIBER_CURRENCY=Fibt
+export FIBER_PAYEE_RPC_URL=<payee rpc url>
+export FIBER_PAYER_RPC_URL=<payer rpc url>
+export FIBER_MPP_SECRET="$(openssl rand -hex 32)"
+pnpm exec fiber-mpp doctor --role payer
+pnpm exec fiber-mpp doctor --role payee
+pnpm test:fiber
+```
+
+See [docs/bootstrap.md](docs/bootstrap.md), [docs/fiber-local-e2e.md](docs/fiber-local-e2e.md), and [docs/fiber-testnet-e2e.md](docs/fiber-testnet-e2e.md) for gateway, payer, payee, local evidence, and testnet evidence steps.
 
 ## Security model
 
@@ -90,9 +110,14 @@ fiber-mpp pay http://localhost:8787/paid/weather --method fiber
 fiber-mpp init --role gateway --out fiber-mpp.gateway.json
 fiber-mpp doctor --role gateway --config fiber-mpp.gateway.json
 fiber-mpp serve --config fiber-mpp.gateway.json
+fiber-mpp storage backup --config fiber-mpp.gateway.json --out backups/fiber-mpp.sqlite
+fiber-mpp storage restore --config fiber-mpp.gateway.json --from backups/fiber-mpp.sqlite --force
+fiber-mpp storage export-receipts --config fiber-mpp.gateway.json --out exports/receipts.jsonl
+fiber-mpp storage audit-receipts --config fiber-mpp.gateway.json
 fiber-mpp f402 convert f402-challenge.json
 fiber-mpp receipt verify receipt.json --secret <secret>
 fiber-mpp doctor --role payer
+fiber-mpp evidence start --port 8787
 ```
 
 ## Production gate

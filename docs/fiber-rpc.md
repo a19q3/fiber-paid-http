@@ -18,7 +18,9 @@ FIBER_CURRENCY=Fibd | Fibt | Fibb
 - `send_payment`: payer attempts real Fiber payment when RPC mode is configured.
 - `get_payment`: payer polls payment by `payment_hash`; settled payment status is `Success`.
 - `get_invoice`: payee verifies invoice status by `payment_hash`; settled invoice status is `Paid`.
-- `list_channels` and `node_info`: available through the RPC client for diagnostics.
+- `node_info`: doctor confirms node identity, version, peer count, and channel count.
+- `list_peers`: doctor confirms the node is connected to local/testnet peers.
+- `list_channels`: doctor confirms the node has at least one `ChannelReady` channel before live payments.
 
 Numeric fields are hex JSON quantities, for example `100` is sent as `0x64`.
 
@@ -27,6 +29,18 @@ Numeric fields are hex JSON quantities, for example `100` is sent as `0x64`.
 - Local/testnet mode: `get_payment` must reach `Success` and `get_invoice` must reach `Paid` before FiberMPP emits a settled receipt.
 
 The Rust parity surface is documented in [rust-fiber-rpc.md](rust-fiber-rpc.md).
+
+## Doctor readiness
+
+`fiber-mpp doctor --role payer|payee|gateway` probes the configured Fiber RPC endpoint with:
+
+```text
+node_info
+list_peers
+list_channels
+```
+
+`node_info` failure blocks immediately. `list_peers` and `list_channels` failures also block, because a reachable node without peers or `ChannelReady` channels cannot complete the official Fiber onboarding payment flow.
 
 ## Security
 

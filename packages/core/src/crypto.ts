@@ -50,6 +50,14 @@ export function verifyChallengeSignature(
   return timingSafeEqualString(expected, signature);
 }
 
+export function verifyChallengeSignatureWithAnySecret(
+  challenge: PaymentChallenge,
+  signature: string,
+  secrets: string[]
+): boolean {
+  return secrets.some((secret) => verifyChallengeSignature(challenge, signature, secret));
+}
+
 export function unsignedReceipt(receipt: PaymentReceipt): PaymentReceiptUnsigned {
   const { signature: _signature, ...unsigned } = receipt;
   return PaymentReceiptUnsignedSchema.parse(unsigned);
@@ -74,6 +82,10 @@ export function verifyReceiptSignature(receipt: PaymentReceipt, secret: string):
   const parsed = PaymentReceiptSchema.parse(receipt);
   const signature = signReceipt(unsignedReceipt(parsed), secret);
   return timingSafeEqualString(signature, parsed.signature);
+}
+
+export function verifyReceiptSignatureWithAnySecret(receipt: PaymentReceipt, secrets: string[]): boolean {
+  return secrets.some((secret) => verifyReceiptSignature(receipt, secret));
 }
 
 export function resourceHash(resource: ResourceDescriptor): string {

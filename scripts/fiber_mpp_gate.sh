@@ -114,6 +114,8 @@ const previousReport = fs.existsSync(previousReportPath)
   ? JSON.parse(fs.readFileSync(previousReportPath, "utf8"))
   : {};
 const rustGatewayBlocker = "Rust HTTP gateway production implementation still pending";
+const remainingOperationalBlocker = "remaining operational hardening still pending: production alerting/runbooks";
+const longRunningBlocker = "long-running deployment hardening still pending: Fiber node backup/restore, trusted network binding, and paid-but-denied compensation policy";
 const envBlockers = list("FIBER_E2E_BLOCKERS");
 const fiberTestExit = Number.parseInt(process.env.FIBER_TEST_EXIT || "1", 10);
 const preflightLoaded = Boolean(result.fiber_preflight_test_loaded) || bool("FIBER_PREFLIGHT_TEST_LOADED");
@@ -163,13 +165,13 @@ let productionBlockers;
 if (localFiberE2eEvidence) {
   productionBlockers = withProductionBlockers([
     "testnet Fiber E2E evidence still pending",
-    "operational hardening still pending",
-    "long-running deployment hardening still pending"
+    remainingOperationalBlocker,
+    longRunningBlocker
   ]);
 } else if (fiberStatus === "passed") {
   productionBlockers = withProductionBlockers([
-    "operational hardening still pending",
-    "long-running deployment hardening still pending"
+    remainingOperationalBlocker,
+    longRunningBlocker
   ]);
 } else {
   productionBlockers = withProductionBlockers(fiberBlockers);
@@ -250,7 +252,7 @@ if (evidenceReceiptId) {
 fs.writeFileSync("reports/fiber-mpp-gate.json", `${JSON.stringify(report, null, 2)}\n`);
 fs.writeFileSync("reports/fiber-mpp-ts-gate.json", `${JSON.stringify({
   engine: "typescript",
-  typescript_role: "sdk-demo-f402-compat-vector-harness",
+  typescript_role: "sdk-evidence-f402-compat-vector-harness",
   typescript_trusted_boundary: false,
   ...report
 }, null, 2)}\n`);
@@ -272,8 +274,8 @@ if (liveFiberLocalE2e) {
   success.production_ready_for_fiber_method = false;
   success.production_blockers = [
     "testnet Fiber E2E evidence still pending",
-    "operational hardening still pending",
-    "long-running deployment hardening still pending",
+    remainingOperationalBlocker,
+    longRunningBlocker,
     rustGatewayBlocker
   ];
   fs.writeFileSync("reports/fiber-local-e2e-success.json", `${JSON.stringify(success, null, 2)}\n`);

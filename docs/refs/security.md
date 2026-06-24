@@ -21,4 +21,4 @@ FiberMPP implemented mitigations:
 
 Known limit:
 
-- A simple pay-then-serve HTTP flow cannot fully eliminate paid-but-denied if the protected handler crashes after payment redemption. The current middleware marks credentials used before serving to prevent unpaid-service replay. Stronger atomic delivery/payment coupling is future work.
+- A simple pay-then-serve HTTP flow cannot fully eliminate paid-but-denied if the protected handler crashes after payment redemption. The current middleware marks credentials used before serving to prevent unpaid-service replay and records failed delivery outcomes for operator reconciliation. Stronger atomic delivery/payment coupling and business compensation policy are future work.

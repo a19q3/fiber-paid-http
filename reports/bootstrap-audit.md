@@ -23,17 +23,19 @@ This pass closes the most dangerous bootstrap gaps without adding product featur
 - Made `fiber-mpp server --config ...` apply gateway config instead of silently starting the demo API.
 - Added Fiber RPC `node_info` probing before gateway startup and in doctor reports.
 - Removed default live-capable signing secrets from TypeScript gateway/demo runtime and Rust receipt verification.
+- Added gateway CORS allow-list enforcement, request body limiting, protected-route rate limiting, health/readiness/metrics endpoints, structured JSON request logs, and graceful shutdown.
+- Added SQLite WAL/busy-timeout initialization plus `fiber-mpp storage backup`, `fiber-mpp storage restore`, `fiber-mpp storage export-receipts`, and `fiber-mpp storage audit-receipts`.
 - Added [docs/bootstrap.md](../docs/bootstrap.md).
 
-Remaining gaps are operational hardening, testnet evidence, route/balance diagnostics beyond `node_info`, secret rotation, storage backup/restore, admin auth, metrics, and the Rust production gateway.
+Remaining gaps are testnet evidence, route/balance diagnostics beyond peer/channel readiness, production alerting/runbooks, paid-but-denied compensation policy, Fiber node backup/restore, trusted network binding, and the Rust production gateway.
 
 ## Role Matrix
 
 | Role | Expected bootstrap | Current state | Status |
 | --- | --- | --- | --- |
 | End user / payer | Install client, configure payer Fiber node, pay a 402 URL, diagnose missing route/funds | `fiber-mpp doctor --role payer` now reports env/RPC blockers before `fiber-mpp pay` | Partial |
-| Merchant / resource owner | Initialize app config, set price/resource/upstream, bind payee node, start gateway, rotate secret | `fiber-mpp init --role gateway`, `doctor --role gateway`, and `serve --config` now exist; resource registry/rotation remain pending | Partial |
-| Admin / operator | Provision storage, secret, Fiber RPC auth, CORS, logs, backups, metrics, health checks | Secret/storage/RPC bootstrap exists; operational lifecycle remains pending | Partial |
+| Merchant / resource owner | Initialize app config, set price/resource/upstream, bind payee node, start gateway, rotate secret | `fiber-mpp init --role gateway`, `doctor --role gateway`, `serve --config`, and `previous_secret_envs` rotation windows now exist | Partial |
+| Admin / operator | Provision storage, secret, Fiber RPC auth, CORS, logs, backups, metrics, health checks | Secret/storage/RPC bootstrap, env-based RPC auth, redacted logs, metrics, health checks, rate limiting, SQLite schema checks, backup/restore, receipt export/audit, and delivery outcome audit now exist; alerting/runbooks remain pending | Partial |
 | Fiber node operator | Start/fund/connect local/testnet payer/payee nodes and prove channels | Local maintainer script exists; testnet bootstrap is manual and underspecified | Partial |
 | Maintainer | Reproduce local E2E, vectors, reports, gates | Good local path and gates exist | Mostly usable |
 
@@ -246,7 +248,7 @@ Observed:
 3. Add `fiber-mpp init --role gateway` that writes a config template containing storage, server id, upstream, resource routes, Fiber RPC URLs, auth, and secret file reference.
 4. Make `fiber-mpp server --config` either apply the config or rename it to `server inspect-config`.
 5. Add explicit payer bootstrap docs and commands: RPC reachability, node info, channel route, balance/funds, invoice-payment dry run if Fiber supports it.
-6. Add merchant/admin docs: resource creation, price updates, receipt verification/export, secret rotation, storage backup/restore, CORS, logs, metrics.
+6. Add remaining merchant/admin docs: Fiber node backup/restore, alerting, trusted network binding, and paid-but-denied compensation policy.
 7. Keep local network scripts under maintainer/dev evidence docs only; do not present them as user/admin onboarding.
 
 ## Bottom Line

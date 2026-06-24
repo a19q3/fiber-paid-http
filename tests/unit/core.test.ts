@@ -26,7 +26,7 @@ describe("core protocol primitives", () => {
     expect(verifyChallengeSignature(challenge, signature, secret)).toBe(true);
     expect(
       verifyChallengeSignature(
-        { ...challenge, amount: { value: "0.02", currency: "USD" } },
+        { ...challenge, amount: { value: "2", currency: "CKB" } },
         signature,
         secret
       )
@@ -41,7 +41,7 @@ describe("core protocol primitives", () => {
         challengeId: "chal_1234567890abcdef",
         method: "fiber",
         resourceHash: resourceHash({ method: "GET", url: "https://example.test/paid" }),
-        amount: { value: "0.01", currency: "USD" },
+        amount: { value: "1", currency: "CKB" },
         settlement: {
           status: "settled",
           paymentHash: "0xabc",
@@ -65,7 +65,7 @@ function makeChallenge(): PaymentChallenge {
     domain: "fiber-mpp-challenge-v1",
     challengeId: "chal_1234567890abcdef",
     resource: { method: "GET", url: "https://example.test/paid" },
-    amount: { value: "0.01", currency: "USD" },
+    amount: { value: "1", currency: "CKB" },
     methods: [
       {
         method: "fiber",

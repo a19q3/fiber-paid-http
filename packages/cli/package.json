@@ -2,7 +2,7 @@
   "name": "@fiber-mpp/cli",
   "version": "0.1.0",
   "type": "module",
-  "description": "FiberMPP command line test and demo tool.",
+  "description": "FiberMPP gateway, bootstrap, payment, and evidence tooling.",
   "bin": {
     "fiber-mpp": "./dist/index.js"
   },

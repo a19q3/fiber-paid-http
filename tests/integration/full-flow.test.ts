@@ -9,7 +9,7 @@ import {
 import { paidFetch } from "@fiber-mpp/client";
 import { f402ChallengeToMpp, f402ProofToCredential } from "@fiber-mpp/f402-compat";
 import { createFiberMppMiddleware, createReverseProxyHandler } from "@fiber-mpp/server-middleware";
-import { createDemoApi } from "@fiber-mpp/demo-api";
+import { createEvidenceApi } from "@fiber-mpp/demo-api";
 import {
   createFiberFixtureAdapters,
   createSqliteTestStore,
@@ -17,18 +17,18 @@ import {
 } from "../helpers/fiber-fixture.js";
 
 describe("FiberMPP integration flows", () => {
-  const demoSecret = "demo-integration-secret-at-least-32-chars";
+  const evidenceSecret = "evidence-integration-secret-at-least-32-chars";
 
-  it("demo paid endpoint completes full flow", async () => {
+  it("evidence paid endpoint completes full flow", async () => {
     const { payeeFiber, payerFiber } = createFiberFixtureAdapters();
-    const app = createDemoApi({ fiber: payeeFiber, payerFiber, store: createSqliteTestStore(), secret: demoSecret });
+    const app = createEvidenceApi({ fiber: payeeFiber, payerFiber, store: createSqliteTestStore(), secret: evidenceSecret });
     const result = await paidFetch("http://localhost/paid/weather", {}, { fetchImpl: appFetch(app), fiber: payerFiber });
     expect(result.response.status).toBe(200);
     expect(result.receipt?.settlement.status).toBe("settled");
   });
 
   it("evidence console API blocks payment execution when live Fiber is not configured", async () => {
-    const app = createDemoApi();
+    const app = createEvidenceApi();
     const status = await app.request("http://localhost/api/status");
     expect(status.status).toBe(200);
     const statusBody = await status.json() as {
@@ -54,7 +54,7 @@ describe("FiberMPP integration flows", () => {
     expect(statusBody.localFiberNetwork.channelCountSource).not.toBe("live");
     expect(statusBody.localFiberNetwork.routeSource).not.toBe("live");
 
-    const unpaid = await app.request("http://localhost/api/demo/unpaid", {
+    const unpaid = await app.request("http://localhost/api/evidence/unpaid", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ endpoint: "/paid/protocol-service" })
@@ -65,7 +65,7 @@ describe("FiberMPP integration flows", () => {
     expect(JSON.stringify(unpaidBody.flow.events)).toContain("amount=100 CKB");
     expect(JSON.stringify(unpaidBody.flow.events)).not.toContain("Fibd");
 
-    const pay = await app.request("http://localhost/api/demo/pay", { method: "POST" });
+    const pay = await app.request("http://localhost/api/evidence/pay", { method: "POST" });
     expect(pay.status).toBe(503);
     const payBody = await pay.json() as { flow: { events: Array<{ actor: string; message: string; detail?: string }> } };
     const payEvents = JSON.stringify(payBody.flow.events);
@@ -73,7 +73,7 @@ describe("FiberMPP integration flows", () => {
     expect(payEvents).not.toContain("node2 (router)");
     expect(payEvents).not.toContain("node3 (payee)");
 
-    const reset = await app.request("http://localhost/api/demo/reset", { method: "POST" });
+    const reset = await app.request("http://localhost/api/evidence/reset", { method: "POST" });
     expect(reset.status).toBe(200);
     expect(await reset.json()).toMatchObject({ ok: true, flow: { events: [] } });
   });
@@ -88,7 +88,7 @@ describe("FiberMPP integration flows", () => {
     });
     const proxy = createReverseProxyHandler(middleware, {
       upstream: "http://upstream.local",
-      price: { value: "0.01", currency: "USD" },
+      price: { value: "1", currency: "CKB" },
       methods: ["fiber"],
       fetchImpl: async (input, init) => {
         const request = input instanceof Request ? input : new Request(input, init);
@@ -162,11 +162,11 @@ describe("FiberMPP integration flows", () => {
 
   it("replay, wrong-resource, and expired challenge attacks are rejected", async () => {
     const { payeeFiber, payerFiber } = createFiberFixtureAdapters();
-    const app = createDemoApi({
+    const app = createEvidenceApi({
       fiber: payeeFiber,
       payerFiber,
       store: createSqliteTestStore(),
-      secret: demoSecret,
+      secret: evidenceSecret,
       challengeTtlSeconds: 120
     });
     const first = await app.request("http://localhost/paid/weather");
@@ -190,11 +190,11 @@ describe("FiberMPP integration flows", () => {
     expect((await app.request("http://localhost/paid/weather", { headers: { authorization: auth } })).status).toBe(402);
 
     const expiredAdapters = createFiberFixtureAdapters();
-    const expired = createDemoApi({
+    const expired = createEvidenceApi({
       fiber: expiredAdapters.payeeFiber,
       payerFiber: expiredAdapters.payerFiber,
       store: createSqliteTestStore(),
-      secret: demoSecret,
+      secret: evidenceSecret,
       challengeTtlSeconds: -5,
       clockSkewSeconds: 0
     });
@@ -212,7 +212,7 @@ describe("FiberMPP integration flows", () => {
   });
 });
 
-function appFetch(app: ReturnType<typeof createDemoApi>): typeof fetch {
+function appFetch(app: ReturnType<typeof createEvidenceApi>): typeof fetch {
   return ((input: RequestInfo | URL, init?: RequestInit) => {
     const request = input instanceof Request ? input : new Request(input, init);
     return app.request(request);

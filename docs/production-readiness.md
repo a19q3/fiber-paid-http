@@ -11,7 +11,15 @@ It is still not production-ready for live Fiber settlement. The Rust `fiber-mpp-
 - Typed MPP protocol model.
 - Canonical HMAC challenge and receipt signing.
 - TypeScript route middleware and reverse proxy mode.
-- Gateway bootstrap config template and role-aware doctor checks.
+- Gateway bootstrap config template and role-aware doctor checks for Fiber RPC, peers, and `ChannelReady` channels.
+- TypeScript gateway requires explicit config; it no longer falls back to the local evidence API.
+- TypeScript gateway operator endpoints for `healthz`, `readyz`, and Prometheus-style `metrics`.
+- TypeScript gateway CORS allow-list enforcement before challenge issuance, protected-route rate limiting, request body limiting, redacted structured JSON lifecycle/request logs, graceful shutdown, and SQLite WAL/busy-timeout initialization.
+- Gateway Fiber RPC auth is supplied through process env or `*_rpc_auth_env` config pointers; literal RPC auth values in gateway config are blocked.
+- SQLite storage schema versioning, health checks, backup, and restore commands; backup uses SQLite `VACUUM INTO`, and restore requires explicit `--force`.
+- SQLite receipt export and receipt-signature audit commands.
+- Paid-but-denied delivery outcome audit records for redeemed credentials whose upstream handler fails or returns a server error.
+- Gateway signing secret rotation window: new challenges/receipts are signed with the current `secret_env`, while stored challenges and receipt audits can verify configured `previous_secret_envs`.
 - Replay protection.
 - Resource/method/amount binding tests.
 - Explicit local/testnet Fiber settlement status.
@@ -25,13 +33,9 @@ It is still not production-ready for live Fiber settlement. The Rust `fiber-mpp-
 
 - Add separate testnet Fiber E2E evidence.
 - Complete Rust HTTP gateway challenge issuance, storage, method adapter wiring, and receipt issuance before treating Rust server paths as production.
-- Complete operational hardening.
-- Complete long-running deployment hardening.
-- Configure Fiber RPC auth and trusted network binding.
-- Add route/balance diagnostics beyond basic Fiber RPC reachability checks.
-- Add secret rotation and storage backup/restore commands.
-- Decide operational handling for paid-but-denied cases such as handler crashes after redemption.
-- Add structured redaction for production logs when integrating with a real logger.
+- Complete production alerting/runbooks.
+- Complete Fiber node backup/restore procedure and trusted network binding.
+- Decide the business compensation policy for paid-but-denied cases after the gateway records failed delivery outcomes.
 
 ## Gate
 

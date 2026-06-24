@@ -4,7 +4,8 @@ import {
   buildAuthorizationPaymentHeader,
   decodeReceipt,
   parseAuthorizationPaymentHeader,
-  resourceHashFromRequest
+  resourceHashFromRequest,
+  verifyReceiptSignature
 } from "@fiber-mpp/core";
 import { createFiberMppMiddleware } from "@fiber-mpp/server-middleware";
 import { createFiberFixtureAdapters, createSqliteTestStore } from "../helpers/fiber-fixture.js";
@@ -24,13 +25,21 @@ describe("FiberMPP middleware security", () => {
   });
 
   it("paid retry returns resource and Payment-Receipt", async () => {
-    const { handler } = makeHandler();
+    const { handler, middleware } = makeHandler();
     const auth = await issueAuth(handler, url);
     const paid = await handler(new Request(url, { headers: { authorization: auth } }));
     expect(paid.status).toBe(200);
     expect(await paid.json()).toEqual({ ok: true });
     const receipt = decodeReceipt(paid.headers.get(PAYMENT_RECEIPT_HEADER)!);
     expect(receipt.settlement.status).toBe("settled");
+    await expect(middleware.store.listDeliveryOutcomes()).resolves.toMatchObject([
+      {
+        receiptId: receipt.receiptId,
+        challengeId: receipt.challengeId,
+        status: "delivered",
+        responseStatus: 200
+      }
+    ]);
   });
 
   it("replayed credential is rejected", async () => {
@@ -89,6 +98,48 @@ describe("FiberMPP middleware security", () => {
     expect(await response.text()).toContain("bad-challenge-signature");
   });
 
+  it("accepts a previous challenge secret while signing receipts with the current secret", async () => {
+    const store = createSqliteTestStore();
+    const oldSecret = "previous-middleware-secret-at-least-16";
+    const newSecret = "current-middleware-secret-at-least-16";
+    const { handler: oldHandler } = makeHandler({ store, secret: oldSecret });
+    const first = await oldHandler(new Request(url));
+    const body = (await first.clone().json()) as { challengeId: string };
+    const auth = await authFromBody(body.challengeId, first, url);
+    const { handler: newHandler } = makeHandler({
+      store,
+      secret: newSecret,
+      previousSecrets: [oldSecret]
+    });
+
+    const paid = await newHandler(new Request(url, { headers: { authorization: auth } }));
+    expect(paid.status).toBe(200);
+    const receipt = decodeReceipt(paid.headers.get(PAYMENT_RECEIPT_HEADER)!);
+    expect(verifyReceiptSignature(receipt, newSecret)).toBe(true);
+    expect(verifyReceiptSignature(receipt, oldSecret)).toBe(false);
+  });
+
+  it("records paid-but-denied delivery failures with the payment receipt", async () => {
+    const { handler, middleware } = makeHandler({}, () => {
+      throw new Error("handler failed after payment");
+    });
+    const auth = await issueAuth(handler, url);
+    const response = await handler(new Request(url, { headers: { authorization: auth } }));
+
+    expect(response.status).toBe(500);
+    const receipt = decodeReceipt(response.headers.get(PAYMENT_RECEIPT_HEADER)!);
+    await expect(middleware.store.listDeliveryOutcomes()).resolves.toMatchObject([
+      {
+        receiptId: receipt.receiptId,
+        challengeId: receipt.challengeId,
+        status: "failed",
+        responseStatus: 500,
+        errorCode: "internal-error",
+        errorMessage: "handler failed after payment"
+      }
+    ]);
+  });
+
   it("durable storage is required", () => {
     expect(() =>
       makeHandler({
@@ -98,7 +149,10 @@ describe("FiberMPP middleware security", () => {
   });
 });
 
-function makeHandler(overrides: Partial<Parameters<typeof createFiberMppMiddleware>[0]> = {}) {
+function makeHandler(
+  overrides: Partial<Parameters<typeof createFiberMppMiddleware>[0]> = {},
+  routeHandler: () => Response = () => Response.json({ ok: true })
+) {
   const { payeeFiber } = createFiberFixtureAdapters();
   const middleware = createFiberMppMiddleware({
     secret,
@@ -111,10 +165,10 @@ function makeHandler(overrides: Partial<Parameters<typeof createFiberMppMiddlewa
     ...overrides
   });
   const handler = middleware.protect({
-    price: { value: "0.01", currency: "USD" },
+    price: { value: "1", currency: "CKB" },
     methods: ["fiber"],
     fiberAmountShannons: "1000",
-    handler: () => Response.json({ ok: true })
+    handler: routeHandler
   });
   return { middleware, handler };
 }

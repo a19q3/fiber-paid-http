@@ -1696,7 +1696,7 @@
           state.busy = true;
           state.activeAction = "reset";
           try {
-            const result = await postJson("/api/demo/reset", {});
+            const result = await postJson("/api/evidence/reset", {});
             state.flow = result.flow || { events: [] };
             state.phase = "idle";
             state.localLogs = [];
@@ -1749,7 +1749,7 @@
         } catch (error) {
           state.status = {
             mode: "api-unreachable",
-            blockers: [`Demo API unreachable at ${apiBase}`],
+            blockers: [`Evidence API unreachable at ${apiBase}`],
             endpoints: fallbackEndpoints,
             badges: {
               rustCanonicalEngine: null,
@@ -1796,7 +1796,7 @@
         render();
         try {
           const body = action === "unpaid" ? { endpoint: state.selected } : {};
-          const result = await postJson(`/api/demo/${action}`, body);
+          const result = await postJson(`/api/evidence/${action}`, body);
           state.flow = result.flow || state.flow;
           if (action === "unpaid") state.phase = "challenge_received";
           if (action === "pay") state.phase = "payment_settled";
@@ -2309,7 +2309,7 @@
           return [
             logEvent("ERROR", "web", "evidence API unreachable", apiBase),
             logEvent("WARN", "reports", "status unavailable", "badges require /api/status"),
-            logEvent("WARN", "client", "demo actions disabled", "no API session")
+            logEvent("WARN", "client", "evidence actions disabled", "no API session")
           ];
         }
         const canonicalLoaded = Boolean(state.reports.canonical?.exists);

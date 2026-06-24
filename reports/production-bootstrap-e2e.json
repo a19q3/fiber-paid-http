@@ -1,0 +1,53 @@
+{
+  "generated_at": "2026-06-24T20:02:05.241Z",
+  "status": "passed",
+  "mode": "local-production-gateway",
+  "production_ready_for_fiber_method": false,
+  "config_path": ".tmp/production-bootstrap-e2e/gateway.json",
+  "storage_path": ".tmp/production-bootstrap-e2e/gateway.sqlite",
+  "payer_bootstrap": {
+    "status": "ready",
+    "node_pubkey": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0",
+    "ready_channels": 1
+  },
+  "payee_bootstrap": {
+    "status": "ready",
+    "node_pubkey": "03032b99943822e721a651c5a5b9621043017daa9dc3ec81d83215fd2e25121187",
+    "ready_channels": 1
+  },
+  "gateway_bootstrap": {
+    "status": "ready",
+    "server_id": "fiber-mpp-production-bootstrap-e2e",
+    "rpc_auth_from_env": true,
+    "log_redaction_enabled": true,
+    "rate_limit_enabled": true
+  },
+  "unpaid_request_status": 402,
+  "paid_request": {
+    "status": 200,
+    "receipt_id": "rcpt_95902895f1d3a3ea58d21e64303d0d69",
+    "payment_hash": "0xc1fd3399013dc0f1885bf0e82f7771d3ab1ca551d5f061d17708554cb2a18a03",
+    "receipt_signature_valid": true,
+    "settlement_status": "settled",
+    "delivery_status": "delivered",
+    "delivery_response_status": 200
+  },
+  "storage": {
+    "schema_version": 1,
+    "journal_mode": "wal",
+    "foreign_keys": true,
+    "integrity_check": "ok",
+    "receipts": 1,
+    "valid_receipts": 1,
+    "invalid_receipts": 0,
+    "deliveries": 1,
+    "failed_deliveries": 0
+  },
+  "blockers_remaining_for_production_ready": [
+    "testnet Fiber E2E evidence still pending",
+    "production alerting/runbooks still pending",
+    "Fiber node backup/restore and trusted network binding still pending",
+    "paid-but-denied compensation policy still pending",
+    "Rust HTTP gateway production implementation still pending"
+  ]
+}

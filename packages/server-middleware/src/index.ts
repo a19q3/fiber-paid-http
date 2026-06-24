@@ -14,7 +14,7 @@ import {
   resourceHash,
   signChallenge,
   toProblemJson,
-  verifyChallengeSignature,
+  verifyChallengeSignatureWithAnySecret,
   encodeReceipt,
   sha256Hex,
   canonicalJson,
@@ -44,6 +44,7 @@ export type PaidRouteConfig = {
 
 export type FiberMppMiddlewareConfig = {
   secret: string;
+  previousSecrets?: string[];
   serverId: string;
   store: FiberMppStore;
   fiber?: FiberMethodAdapter;
@@ -69,12 +70,16 @@ export function createFiberMppMiddleware(config: FiberMppMiddlewareConfig): Fibe
   if (!config.secret || config.secret.length < 16) {
     throw new Error("FiberMPP middleware requires a secret of at least 16 characters");
   }
+  if (config.previousSecrets?.some((secret) => !secret || secret.length < 16)) {
+    throw new Error("FiberMPP middleware previous secrets must be at least 16 characters");
+  }
   if (!config.store) {
     throw new Error("FiberMPP middleware requires a durable store");
   }
   const store = config.store;
   assertProductionStore(store);
   const fiber = config.fiber ?? FiberMethodAdapter.fromEnv();
+  const verificationSecrets = [config.secret, ...(config.previousSecrets ?? [])];
   const challengeTtlSeconds = config.challengeTtlSeconds ?? 120;
   const clockSkewSeconds = config.clockSkewSeconds ?? 5;
 
@@ -147,7 +152,7 @@ export function createFiberMppMiddleware(config: FiberMppMiddlewareConfig): Fibe
       throw new FiberMppError("unknown-challenge", "Payment challenge is unknown or expired", 402);
     }
     const challenge = PaymentChallengeSchema.parse(record.challenge);
-    if (!verifyChallengeSignature(challenge, record.signature, config.secret)) {
+    if (!verifyChallengeSignatureWithAnySecret(challenge, record.signature, verificationSecrets)) {
       throw new FiberMppError("bad-challenge-signature", "Payment challenge signature is invalid", 402);
     }
     assertNotExpired(challenge, clockSkewSeconds);
@@ -228,14 +233,45 @@ export function createFiberMppMiddleware(config: FiberMppMiddlewareConfig): Fibe
           return await issueChallenge(request, route);
         }
         const receipt = await verifyCredential(request, credential);
-        const upstream = await route.handler(request);
-        const headers = new Headers(upstream.headers);
-        headers.set(PAYMENT_RECEIPT_HEADER, encodeReceipt(receipt));
-        return new Response(upstream.body, {
-          status: upstream.status,
-          statusText: upstream.statusText,
-          headers
-        });
+        const credentialUseHash = credentialHash(credential);
+        try {
+          const upstream = await route.handler(request);
+          await store.saveDeliveryOutcome({
+            receiptId: receipt.receiptId,
+            challengeId: receipt.challengeId,
+            credentialHash: credentialUseHash,
+            status: upstream.status >= 500 ? "failed" : "delivered",
+            responseStatus: upstream.status,
+            recordedAt: new Date().toISOString()
+          });
+          const headers = new Headers(upstream.headers);
+          headers.set(PAYMENT_RECEIPT_HEADER, encodeReceipt(receipt));
+          return new Response(upstream.body, {
+            status: upstream.status,
+            statusText: upstream.statusText,
+            headers
+          });
+        } catch (handlerError) {
+          const problem = toProblemJson(handlerError);
+          await store.saveDeliveryOutcome({
+            receiptId: receipt.receiptId,
+            challengeId: receipt.challengeId,
+            credentialHash: credentialUseHash,
+            status: "failed",
+            responseStatus: problem.status,
+            errorCode: typeof problem.body.title === "string" ? problem.body.title : undefined,
+            errorMessage: errorMessage(handlerError),
+            recordedAt: new Date().toISOString()
+          });
+          return new Response(JSON.stringify(problem.body, null, 2), {
+            status: problem.status,
+            headers: {
+              "content-type": "application/problem+json",
+              "cache-control": "no-store",
+              [PAYMENT_RECEIPT_HEADER]: encodeReceipt(receipt)
+            }
+          });
+        }
       } catch (error) {
         const problem = toProblemJson(error);
         return new Response(JSON.stringify(problem.body, null, 2), {
@@ -256,6 +292,19 @@ export function createFiberMppMiddleware(config: FiberMppMiddlewareConfig): Fibe
     verifyCredential,
     store
   };
+}
+
+function errorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (error && typeof error === "object" && "message" in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === "string") {
+      return message;
+    }
+  }
+  return String(error);
 }
 
 export function createReverseProxyHandler(

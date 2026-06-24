@@ -33,7 +33,7 @@ const requiredHtmlFragments = [
   'data-lucide-icon="ClearLog"',
   'data-lucide-icon="Terminal"',
   'data-lucide-icon="Activity"',
-  'postJson("/api/demo/reset", {})',
+  'postJson("/api/evidence/reset", {})',
   "function copyTextToClipboard(value)",
   "timeline-row-enter",
   "flow-scan",
@@ -60,7 +60,7 @@ const requiredHtmlFragments = [
   'function vectorSummary(canonical)',
   'function unavailableEvidence(reason)',
   'function renderServiceActuatorStatus()',
-  'demo actions disabled',
+  'evidence actions disabled',
   'SERVICE / ACTUATOR STATUS',
   'function serviceActuatorStatus()',
   'const actuatorStates = new Set(["idle", "active", "executing", "blocked", "error"])',
@@ -184,7 +184,7 @@ for (const match of htmlWithoutSprite.matchAll(/<button\b([^>]*)>([\s\S]*?)<\/bu
 
 assert(!/src=["']https?:\/\//.test(html), "Remote visual assets are not allowed in the static console");
 assert(!/href=["']https?:\/\//.test(html), "Remote visual assets are not allowed in the static console");
-assert(count(html, "const result = await postJson(`/api/demo/${action}`, body);") === 1, "Demo action must call its backend endpoint exactly once");
+assert(count(html, "const result = await postJson(`/api/evidence/${action}`, body);") === 1, "Evidence action must call its backend endpoint exactly once");
 assert(htmlWithoutSprite.includes("100 CKB"), "Static fallback pricing must use CKB");
 assert(!htmlWithoutSprite.includes("Fibd"), "Frontend pricing must not display Fibd");
 assert(!htmlWithoutSprite.includes("USD"), "Frontend pricing must not display USD");

@@ -13,8 +13,8 @@
   "production_ready_for_fiber_method": false,
   "production_blockers": [
     "testnet Fiber E2E evidence still pending",
-    "operational hardening still pending",
-    "long-running deployment hardening still pending",
+    "remaining operational hardening still pending: production alerting/runbooks",
+    "long-running deployment hardening still pending: Fiber node backup/restore, trusted network binding, and paid-but-denied compensation policy",
     "Rust HTTP gateway production implementation still pending"
   ],
   "fiber_e2e_payment_hash": "0xec3a08f9b298db82f2dc27861aed5a3110b5d36a56bd43d13b60c5a4bcf69222",

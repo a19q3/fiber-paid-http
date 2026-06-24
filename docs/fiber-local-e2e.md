@@ -142,7 +142,7 @@ pnpm test:fiber
 
 ## Testnet Setup
 
-For testnet, start or point at two already funded Fiber nodes with a route from payer to payee. Then set:
+The full testnet procedure is in [fiber-testnet-e2e.md](fiber-testnet-e2e.md). In short, start or point at two already funded Fiber nodes with connected peers and at least one `ChannelReady` route from payer to payee. Then set:
 
 ```bash
 export RUN_FIBER_E2E=1

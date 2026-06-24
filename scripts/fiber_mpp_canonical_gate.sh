@@ -64,12 +64,12 @@ const report = {
   f402_parity: f402Vectors.every((file) => vectorPassed(ts, file) && vectorPassed(rust, file)),
   fiber_rpc_semantics_parity: fiberRpcSemanticsParity,
   canonical_engine: "rust",
-  typescript_role: "sdk-demo-f402-compat-vector-harness",
+  typescript_role: "sdk-evidence-f402-compat-vector-harness",
   production_ready_for_fiber_method: false,
   production_blockers: [
     "testnet Fiber E2E evidence still pending",
-    "operational hardening still pending",
-    "long-running deployment hardening still pending",
+    "remaining operational hardening still pending: production alerting/runbooks",
+    "long-running deployment hardening still pending: Fiber node backup/restore, trusted network binding, and paid-but-denied compensation policy",
     "Rust HTTP gateway production implementation still pending"
   ],
   mismatches

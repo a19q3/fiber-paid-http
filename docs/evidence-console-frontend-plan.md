@@ -344,7 +344,7 @@ test-vectors/*.json
 
 If live local Fiber env vars are absent, the UI must show `unconfigured` status or skipped blockers clearly and must not execute payment.
 
-If live local Fiber env vars are present, the UI may call the local demo API to run the flow:
+If live local Fiber env vars are present, the UI may call the local evidence API to run the flow:
 
 ```text
 RUN_FIBER_E2E=1
@@ -361,15 +361,15 @@ Do not hide the mode. The console should display `mode: unconfigured`, `mode: lo
 
 ## API Plan
 
-The frontend should stay thin. A local demo API can expose only evidence and scenario endpoints:
+The frontend should stay thin. A local evidence API can expose only evidence and scenario endpoints:
 
 ```text
 GET  /api/status
-POST /api/demo/unpaid
-POST /api/demo/pay
-POST /api/demo/retry
-POST /api/demo/replay
-POST /api/demo/reset
+POST /api/evidence/unpaid
+POST /api/evidence/pay
+POST /api/evidence/retry
+POST /api/evidence/replay
+POST /api/evidence/reset
 GET  /api/reports/canonical
 GET  /api/reports/fiber-local
 GET  /api/reports/gate-local
@@ -382,14 +382,14 @@ GET  /api/reports/security
 Endpoint responsibilities:
 
 - `/api/status`: expose mode, engine, report availability, blockers, and production-ready status.
-- `/api/demo/unpaid`: request protected resource and return the 402 challenge evidence.
-- `/api/demo/pay`: perform the Fiber payment step only when local/testnet Fiber RPC is configured; otherwise return a blocker.
-- `/api/demo/retry`: retry with `Authorization: Payment` and return receipt evidence.
-- `/api/demo/replay`: replay the last credential and return rejection evidence.
-- `/api/demo/reset`: clear the current server-side demo flow so UI reset controls are not local-only theatre.
+- `/api/evidence/unpaid`: request protected resource and return the 402 challenge evidence.
+- `/api/evidence/pay`: perform the Fiber payment step only when local/testnet Fiber RPC is configured; otherwise return a blocker.
+- `/api/evidence/retry`: retry with `Authorization: Payment` and return receipt evidence.
+- `/api/evidence/replay`: replay the last credential and return rejection evidence.
+- `/api/evidence/reset`: clear the current server-side evidence flow so UI reset controls are not local-only theatre.
 - `/api/reports/*`: serve sanitized report summaries plus optional raw JSON.
 
-The API should call FiberMPP directly. Do not route the primary demo path through `fiber-pay`.
+The API should call FiberMPP directly. Do not route the primary evidence path through `fiber-pay`.
 
 Preferred payment path:
 
@@ -528,19 +528,19 @@ Goal: make existing reports look impressive and audit-friendly.
 
 Tasks:
 
-- Replace the current simple demo page with the three-column evidence console.
-- Load local report JSON from demo API or bundled fixture endpoint.
+- Replace the current simple page with the three-column evidence console.
+- Load local report JSON from the evidence API or bundled fixture endpoint.
 - Animate the timeline from existing evidence.
 - Render status badges, evidence drawer, report list, security matrix, and replay panel.
 - Keep all claims report-backed.
 
-### Phase 2: Local Demo API State Machine
+### Phase 2: Local Evidence API State Machine
 
 Goal: make buttons drive the existing local proof flow semantics.
 
 Tasks:
 
-- Add the minimal `/api/demo/*` endpoints.
+- Add the minimal `/api/evidence/*` endpoints.
 - Return structured flow events.
 - Keep payment execution blocked when live Fiber env vars are absent.
 - Gate local live payment mode behind explicit env vars.
