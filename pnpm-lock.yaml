@@ -27,6 +27,9 @@ importers:
 
   apps/demo-api:
     dependencies:
+      '@fiber-mpp/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       '@fiber-mpp/fiber-method':
         specifier: workspace:*
         version: link:../../packages/fiber-method

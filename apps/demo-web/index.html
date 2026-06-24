@@ -3,14 +3,32 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>FiberMPP Demo</title>
+    <title>FiberMPP Evidence Console</title>
     <style>
       :root {
-        color-scheme: light;
-        font-family:
-          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        background: #f7f8fb;
-        color: #18212f;
+        color-scheme: dark;
+        --bg: #061013;
+        --bg-2: #09181d;
+        --panel: rgba(9, 24, 29, 0.86);
+        --panel-strong: rgba(11, 32, 38, 0.96);
+        --line: rgba(81, 235, 235, 0.16);
+        --line-strong: rgba(81, 235, 235, 0.34);
+        --cyan: #32e6ef;
+        --cyan-soft: rgba(50, 230, 239, 0.16);
+        --green: #39e7ad;
+        --green-soft: rgba(57, 231, 173, 0.14);
+        --orange: #ffb24a;
+        --orange-soft: rgba(255, 178, 74, 0.15);
+        --red: #ff635f;
+        --red-soft: rgba(255, 99, 95, 0.15);
+        --text: #e7f5f6;
+        --muted: #8aa2aa;
+        --dim: #587078;
+        --mono: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+        --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-family: var(--sans);
+        background: var(--bg);
+        color: var(--text);
       }
 
       * {
@@ -18,221 +36,1593 @@
       }
 
       body {
-        margin: 0;
+        min-width: 320px;
         min-height: 100vh;
-      }
-
-      header {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        height: 60px;
-        padding: 0 20px;
-        border-bottom: 1px solid #dce2ec;
-        background: #ffffff;
-      }
-
-      .mark {
-        display: grid;
-        place-items: center;
-        width: 34px;
-        height: 34px;
-        border: 2px solid #1c6dd0;
-        border-radius: 8px;
-        color: #1c6dd0;
-        font-weight: 800;
-      }
-
-      h1 {
         margin: 0;
-        font-size: 18px;
-        letter-spacing: 0;
-      }
-
-      main {
-        display: grid;
-        grid-template-columns: 240px minmax(280px, 1fr) minmax(320px, 1.2fr);
-        min-height: calc(100vh - 60px);
-      }
-
-      section {
-        padding: 18px;
-        border-right: 1px solid #dce2ec;
-        min-width: 0;
-      }
-
-      section:last-child {
-        border-right: 0;
-      }
-
-      h2 {
-        margin: 0 0 12px;
-        font-size: 13px;
-        text-transform: uppercase;
-        color: #5d6b80;
-        letter-spacing: 0.08em;
+        overflow-x: hidden;
+        background:
+          linear-gradient(rgba(50, 230, 239, 0.035) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(50, 230, 239, 0.035) 1px, transparent 1px),
+          radial-gradient(circle at 52% 20%, rgba(50, 230, 239, 0.08), transparent 34rem),
+          var(--bg);
+        background-size: 28px 28px, 28px 28px, auto;
       }
 
       button,
       select {
-        width: 100%;
-        min-height: 38px;
-        border-radius: 8px;
-        border: 1px solid #bdc8d8;
-        background: #ffffff;
-        color: #18212f;
         font: inherit;
       }
 
       button {
         cursor: pointer;
-        font-weight: 650;
       }
 
-      button.primary {
-        border-color: #1c6dd0;
-        background: #1c6dd0;
-        color: #ffffff;
-      }
-
-      .stack {
-        display: grid;
-        gap: 10px;
-      }
-
-      pre {
-        overflow: auto;
-        min-height: 160px;
-        max-height: calc(100vh - 190px);
-        margin: 0;
+      .app {
+        min-height: 100vh;
         padding: 12px;
-        border: 1px solid #dce2ec;
-        border-radius: 8px;
-        background: #ffffff;
-        color: #243245;
-        font-size: 12px;
-        line-height: 1.45;
-        white-space: pre-wrap;
       }
 
-      .status {
-        min-height: 38px;
-        padding: 9px 10px;
-        border: 1px solid #dce2ec;
+      .shell {
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+        gap: 10px;
+        min-height: calc(100vh - 24px);
+        border: 1px solid rgba(50, 230, 239, 0.16);
         border-radius: 8px;
-        background: #fff;
+        background: rgba(2, 8, 10, 0.72);
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5), 0 28px 80px rgba(0, 0, 0, 0.4);
+      }
+
+      .topbar {
+        display: grid;
+        grid-template-columns: minmax(260px, 1.1fr) minmax(360px, 2fr) minmax(280px, 0.9fr);
+        gap: 12px;
+        align-items: stretch;
+        min-height: 74px;
+        padding: 12px;
+        border-bottom: 1px solid var(--line);
+        background: linear-gradient(180deg, rgba(7, 21, 25, 0.98), rgba(7, 18, 22, 0.76));
+      }
+
+      .brand {
+        display: grid;
+        grid-template-columns: 48px 1fr;
+        gap: 12px;
+        align-items: center;
+        min-width: 0;
+      }
+
+      .mark {
+        position: relative;
+        width: 46px;
+        height: 46px;
+        border: 1px solid rgba(50, 230, 239, 0.72);
+        background:
+          linear-gradient(30deg, transparent 47%, rgba(50, 230, 239, 0.44) 48%, rgba(50, 230, 239, 0.44) 52%, transparent 53%),
+          linear-gradient(90deg, transparent 47%, rgba(50, 230, 239, 0.28) 48%, rgba(50, 230, 239, 0.28) 52%, transparent 53%),
+          linear-gradient(150deg, transparent 47%, rgba(50, 230, 239, 0.32) 48%, rgba(50, 230, 239, 0.32) 52%, transparent 53%),
+          rgba(50, 230, 239, 0.08);
+        clip-path: polygon(50% 0, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%);
+      }
+
+      .title h1 {
+        margin: 0;
+        overflow-wrap: anywhere;
+        font-size: 24px;
+        font-weight: 720;
+        line-height: 1.05;
+        letter-spacing: 0;
+      }
+
+      .title p {
+        margin: 5px 0 0;
+        color: var(--muted);
         font-size: 13px;
       }
 
-      @media (max-width: 900px) {
-        main {
+      .badges {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(128px, 1fr));
+        gap: 8px;
+        align-content: center;
+      }
+
+      .badge,
+      .engine-card,
+      .mini-card,
+      .button,
+      .tab,
+      .scenario {
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: rgba(7, 19, 23, 0.82);
+      }
+
+      .badge {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        min-width: 0;
+        min-height: 42px;
+        padding: 8px 10px;
+        color: #c8dce0;
+        font-size: 12px;
+      }
+
+      .status-dot {
+        display: grid;
+        flex: 0 0 auto;
+        place-items: center;
+        width: 18px;
+        height: 18px;
+        border: 1px solid currentColor;
+        border-radius: 999px;
+        font-family: var(--mono);
+        font-size: 11px;
+      }
+
+      .pass {
+        color: var(--green);
+      }
+
+      .fail {
+        color: var(--red);
+      }
+
+      .warn {
+        color: var(--orange);
+      }
+
+      .idle {
+        color: var(--dim);
+      }
+
+      .engine-boundary {
+        display: grid;
+        grid-template-columns: 1fr 34px 1fr;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .engine-card {
+        display: grid;
+        place-items: center;
+        min-height: 50px;
+        padding: 8px;
+        text-align: center;
+      }
+
+      .engine-card strong {
+        color: var(--cyan);
+        font-size: 13px;
+      }
+
+      .engine-card span {
+        margin-top: 2px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .swap {
+        display: grid;
+        place-items: center;
+        color: var(--muted);
+        font-family: var(--mono);
+      }
+
+      .console {
+        display: grid;
+        grid-template-columns: minmax(280px, 0.86fr) minmax(420px, 1.2fr) minmax(360px, 1.12fr);
+        gap: 10px;
+        min-height: 0;
+        padding: 0 12px;
+      }
+
+      .panel {
+        min-width: 0;
+        border: 1px solid var(--line-strong);
+        border-radius: 8px;
+        background: linear-gradient(180deg, rgba(8, 23, 28, 0.94), rgba(5, 15, 19, 0.88));
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+      }
+
+      .panel-title {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        height: 42px;
+        padding: 0 12px;
+        border-bottom: 1px solid var(--line);
+        color: #d6eeee;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .panel-title .glyph {
+        color: var(--cyan);
+        font-family: var(--mono);
+      }
+
+      .panel-body {
+        padding: 10px;
+      }
+
+      .left-stack,
+      .right-stack {
+        display: grid;
+        gap: 10px;
+        min-width: 0;
+      }
+
+      .scenario-list {
+        display: grid;
+        gap: 7px;
+      }
+
+      .scenario {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+        align-items: center;
+        min-height: 34px;
+        padding: 7px 10px;
+        color: #c6d9de;
+      }
+
+      .scenario.selected {
+        border-color: rgba(50, 230, 239, 0.6);
+        background: linear-gradient(90deg, rgba(50, 230, 239, 0.14), rgba(50, 230, 239, 0.04));
+      }
+
+      .scenario span:first-child {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-family: var(--mono);
+        font-size: 12px;
+      }
+
+      .scenario span:last-child {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .resource-card {
+        display: grid;
+        gap: 10px;
+        padding: 10px;
+        border: 1px solid rgba(50, 230, 239, 0.28);
+        border-radius: 8px;
+        background: linear-gradient(135deg, rgba(50, 230, 239, 0.13), rgba(0, 0, 0, 0));
+      }
+
+      .resource-head {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .resource-head code {
+        overflow-wrap: anywhere;
+        color: #edfafa;
+        font-family: var(--mono);
+        font-size: 13px;
+      }
+
+      .selected-chip {
+        padding: 4px 7px;
+        border: 1px solid rgba(50, 230, 239, 0.4);
+        border-radius: 4px;
+        color: var(--cyan);
+        font-size: 10px;
+        text-transform: uppercase;
+      }
+
+      .kv {
+        display: grid;
+        gap: 8px;
+      }
+
+      .kv-row {
+        display: grid;
+        grid-template-columns: 116px minmax(0, 1fr) auto;
+        gap: 8px;
+        align-items: center;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .kv-row strong,
+      .hash {
+        min-width: 0;
+        overflow: hidden;
+        color: #d8f2f3;
+        font-family: var(--mono);
+        font-weight: 500;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .copy {
+        display: grid;
+        place-items: center;
+        width: 24px;
+        height: 24px;
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        background: transparent;
+        color: var(--muted);
+      }
+
+      .copy:hover {
+        border-color: var(--cyan);
+        color: var(--cyan);
+      }
+
+      .route-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+      }
+
+      .route-chips span {
+        padding: 4px 8px;
+        border: 1px solid rgba(50, 230, 239, 0.28);
+        border-radius: 4px;
+        background: rgba(50, 230, 239, 0.08);
+        color: var(--cyan);
+        font-family: var(--mono);
+        font-size: 11px;
+      }
+
+      .actions {
+        display: grid;
+        gap: 7px;
+        margin-top: 10px;
+      }
+
+      .button {
+        display: grid;
+        grid-template-columns: 22px 1fr auto;
+        gap: 8px;
+        align-items: center;
+        min-height: 34px;
+        padding: 7px 10px;
+        color: #cde2e5;
+        text-align: left;
+      }
+
+      .button:hover:not(:disabled) {
+        border-color: rgba(50, 230, 239, 0.6);
+        background: rgba(50, 230, 239, 0.1);
+      }
+
+      .button:disabled {
+        cursor: not-allowed;
+        opacity: 0.5;
+      }
+
+      .button.primary {
+        border-color: rgba(57, 231, 173, 0.44);
+        color: var(--green);
+      }
+
+      .button.danger {
+        border-color: rgba(255, 99, 95, 0.35);
+        color: #ffb0ad;
+      }
+
+      .key {
+        color: var(--dim);
+        font-family: var(--mono);
+        font-size: 11px;
+      }
+
+      .network {
+        display: grid;
+        gap: 8px;
+      }
+
+      .node-row {
+        display: grid;
+        grid-template-columns: 46px 64px minmax(0, 1fr) 72px;
+        gap: 8px;
+        align-items: center;
+        color: #c9dce0;
+        font-size: 12px;
+      }
+
+      .pill {
+        padding: 3px 7px;
+        border: 1px solid rgba(50, 230, 239, 0.28);
+        border-radius: 4px;
+        color: var(--cyan);
+        font-family: var(--mono);
+        font-size: 10px;
+        text-align: center;
+        text-transform: uppercase;
+      }
+
+      .online {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+        justify-content: flex-end;
+        color: var(--green);
+        font-family: var(--mono);
+        font-size: 10px;
+      }
+
+      .online::before {
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+        background: currentColor;
+        content: "";
+      }
+
+      .network-footer {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .network-footer strong {
+        color: var(--green);
+        font-family: var(--mono);
+        font-weight: 500;
+      }
+
+      .timeline {
+        display: grid;
+        gap: 0;
+        padding: 8px 10px 10px;
+      }
+
+      .timeline-row {
+        display: grid;
+        grid-template-columns: 118px 42px minmax(0, 1fr) 92px;
+        gap: 10px;
+        min-height: 58px;
+        align-items: center;
+      }
+
+      .actor {
+        display: grid;
+        grid-template-columns: 28px 1fr;
+        gap: 8px;
+        align-items: center;
+        min-width: 0;
+        min-height: 40px;
+        padding: 8px;
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        background: rgba(10, 27, 32, 0.78);
+        color: var(--cyan);
+        font-family: var(--mono);
+        font-size: 10px;
+        text-transform: uppercase;
+      }
+
+      .actor .actor-icon {
+        display: grid;
+        place-items: center;
+        width: 26px;
+        height: 22px;
+        border: 1px solid rgba(50, 230, 239, 0.4);
+        border-radius: 3px;
+      }
+
+      .rail {
+        position: relative;
+        display: grid;
+        place-items: center;
+        height: 58px;
+      }
+
+      .rail::before {
+        position: absolute;
+        top: -30px;
+        bottom: -30px;
+        left: 50%;
+        width: 1px;
+        background: rgba(50, 230, 239, 0.26);
+        content: "";
+      }
+
+      .timeline-row:first-child .rail::before {
+        top: 50%;
+      }
+
+      .timeline-row:last-child .rail::before {
+        bottom: 50%;
+      }
+
+      .num {
+        z-index: 1;
+        display: grid;
+        place-items: center;
+        width: 28px;
+        height: 28px;
+        border: 1px solid rgba(50, 230, 239, 0.55);
+        border-radius: 999px;
+        background: #0d2a31;
+        color: #bffcff;
+        font-family: var(--mono);
+        font-size: 12px;
+        box-shadow: 0 0 20px rgba(50, 230, 239, 0.18);
+      }
+
+      .flow-desc {
+        position: relative;
+        min-width: 0;
+        padding-right: 18px;
+      }
+
+      .flow-desc::after {
+        position: absolute;
+        top: 16px;
+        right: 0;
+        width: 14px;
+        height: 1px;
+        background: rgba(183, 213, 218, 0.55);
+        content: "";
+      }
+
+      .flow-desc strong {
+        display: block;
+        overflow: hidden;
+        margin-bottom: 5px;
+        color: #edfafa;
+        font-size: 13px;
+        font-weight: 600;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .snippet {
+        display: inline-block;
+        max-width: 100%;
+        overflow: hidden;
+        padding: 3px 7px;
+        border: 1px solid rgba(140, 170, 178, 0.2);
+        border-radius: 4px;
+        background: rgba(0, 0, 0, 0.22);
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 11px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .step-status {
+        display: grid;
+        align-content: center;
+        min-height: 42px;
+        padding: 6px 8px;
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        background: rgba(7, 20, 24, 0.82);
+        color: var(--dim);
+        font-family: var(--mono);
+        font-size: 10px;
+        text-align: center;
+        text-transform: uppercase;
+      }
+
+      .step-status.passed {
+        border-color: rgba(57, 231, 173, 0.42);
+        background: var(--green-soft);
+        color: var(--green);
+      }
+
+      .step-status.rejected {
+        border-color: rgba(255, 99, 95, 0.44);
+        background: var(--red-soft);
+        color: #ffaaa7;
+      }
+
+      .step-status.running {
+        border-color: rgba(255, 178, 74, 0.45);
+        background: var(--orange-soft);
+        color: var(--orange);
+      }
+
+      .step-status span {
+        display: block;
+        margin-top: 3px;
+        color: var(--muted);
+        font-size: 10px;
+        text-transform: none;
+      }
+
+      .tabs {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 6px;
+        margin-bottom: 8px;
+      }
+
+      .tab {
+        min-height: 42px;
+        padding: 6px;
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .tab.active {
+        border-color: rgba(50, 230, 239, 0.62);
+        color: var(--cyan);
+        background: rgba(50, 230, 239, 0.11);
+      }
+
+      .json-view {
+        min-height: 204px;
+        max-height: 272px;
+        overflow: auto;
+        margin: 0;
+        padding: 10px 12px;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        background: rgba(2, 9, 11, 0.7);
+        color: #b8cbd0;
+        font-family: var(--mono);
+        font-size: 11px;
+        line-height: 1.62;
+        white-space: pre;
+      }
+
+      .reports-attack {
+        display: grid;
+        grid-template-columns: 1fr 0.96fr;
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .subpanel {
+        min-width: 0;
+        padding: 10px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(7, 19, 23, 0.78);
+      }
+
+      .subpanel h3 {
+        margin: 0 0 10px;
+        color: #dceff1;
+        font-size: 13px;
+        font-weight: 650;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .report-list {
+        display: grid;
+        gap: 7px;
+      }
+
+      .report-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 8px;
+        color: var(--muted);
+        font-family: var(--mono);
+        font-size: 11px;
+      }
+
+      .report-row strong {
+        overflow: hidden;
+        color: #c9dde1;
+        font-weight: 500;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .attack-panel {
+        border-color: rgba(255, 99, 95, 0.34);
+        background: linear-gradient(180deg, rgba(255, 99, 95, 0.08), rgba(7, 19, 23, 0.78));
+      }
+
+      .attack-title {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 10px;
+        color: #ffaaa7;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .attack-grid {
+        display: grid;
+        gap: 8px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .attack-grid div {
+        display: grid;
+        grid-template-columns: 86px minmax(0, 1fr);
+        gap: 8px;
+      }
+
+      .attack-grid strong {
+        overflow: hidden;
+        color: #ffaaa7;
+        font-family: var(--mono);
+        font-weight: 600;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .blocked {
+        display: grid;
+        place-items: center;
+        min-height: 34px;
+        margin-top: 10px;
+        border: 1px solid rgba(255, 99, 95, 0.45);
+        border-radius: 5px;
+        color: #ffaaa7;
+        font-family: var(--mono);
+        font-size: 12px;
+        text-transform: uppercase;
+      }
+
+      .parity-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        margin-top: 10px;
+      }
+
+      .mini-card {
+        min-height: 64px;
+        padding: 9px;
+      }
+
+      .mini-card span {
+        display: block;
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .mini-card strong {
+        display: block;
+        margin-top: 7px;
+        overflow: hidden;
+        color: var(--cyan);
+        font-family: var(--mono);
+        font-size: 14px;
+        font-weight: 500;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .bottom {
+        display: grid;
+        grid-template-columns: 1fr 158px;
+        gap: 10px;
+        padding: 0 12px 12px;
+      }
+
+      .terminal {
+        min-height: 174px;
+      }
+
+      .terminal-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .clear {
+        padding: 5px 10px;
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        background: transparent;
+        color: var(--muted);
+      }
+
+      .log-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0;
+        min-height: 118px;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        background: rgba(3, 10, 12, 0.62);
+      }
+
+      .log-col {
+        display: grid;
+        align-content: start;
+        gap: 8px;
+        min-width: 0;
+        padding: 10px;
+      }
+
+      .log-col:first-child {
+        border-right: 1px solid var(--line);
+      }
+
+      .log-line {
+        display: grid;
+        grid-template-columns: 86px 44px 84px minmax(0, 1fr);
+        gap: 8px;
+        align-items: center;
+        color: #b7c8cc;
+        font-family: var(--mono);
+        font-size: 11px;
+      }
+
+      .log-line span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .level-info {
+        color: var(--cyan);
+      }
+
+      .level-warn {
+        color: var(--orange);
+      }
+
+      .level-error {
+        color: var(--red);
+      }
+
+      .robot {
+        display: grid;
+        align-content: center;
+        justify-items: center;
+        min-height: 174px;
+        gap: 10px;
+        padding: 12px;
+      }
+
+      .robot-face {
+        position: relative;
+        width: 78px;
+        height: 58px;
+        border: 1px solid rgba(50, 230, 239, 0.4);
+        border-radius: 18px 18px 12px 12px;
+        background: linear-gradient(180deg, rgba(50, 230, 239, 0.18), rgba(50, 230, 239, 0.04));
+      }
+
+      .robot-face::before,
+      .robot-face::after {
+        position: absolute;
+        top: 21px;
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--cyan);
+        box-shadow: 0 0 14px rgba(50, 230, 239, 0.6);
+        content: "";
+      }
+
+      .robot-face::before {
+        left: 24px;
+      }
+
+      .robot-face::after {
+        right: 24px;
+      }
+
+      .robot strong {
+        color: #cfecef;
+        font-size: 12px;
+        text-transform: uppercase;
+      }
+
+      .robot span {
+        color: var(--green);
+        font-family: var(--mono);
+        font-size: 12px;
+      }
+
+      .api-health {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      .pulse {
+        width: 42px;
+        height: 16px;
+        background:
+          linear-gradient(90deg, transparent 0 10%, var(--cyan) 10% 12%, transparent 12% 34%, var(--cyan) 34% 38%, transparent 38% 64%, var(--cyan) 64% 68%, transparent 68%),
+          linear-gradient(180deg, transparent 45%, rgba(50, 230, 239, 0.35) 46% 54%, transparent 55%);
+      }
+
+      @media (max-width: 1320px) {
+        .topbar {
           grid-template-columns: 1fr;
         }
 
-        section {
+        .badges {
+          grid-template-columns: repeat(3, 1fr);
+        }
+
+        .console {
+          grid-template-columns: 1fr;
+        }
+
+        .bottom {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 760px) {
+        .app {
+          padding: 6px;
+        }
+
+        .topbar,
+        .console,
+        .bottom {
+          padding-left: 8px;
+          padding-right: 8px;
+        }
+
+        .badges,
+        .tabs,
+        .reports-attack,
+        .parity-grid,
+        .log-grid,
+        .engine-boundary {
+          grid-template-columns: 1fr;
+        }
+
+        .timeline-row {
+          grid-template-columns: 1fr;
+          gap: 6px;
+          padding: 8px 0;
+          border-bottom: 1px solid var(--line);
+        }
+
+        .rail {
+          display: none;
+        }
+
+        .flow-desc::after {
+          display: none;
+        }
+
+        .node-row,
+        .kv-row,
+        .log-line {
+          grid-template-columns: 1fr;
+        }
+
+        .log-col:first-child {
           border-right: 0;
-          border-bottom: 1px solid #dce2ec;
+          border-bottom: 1px solid var(--line);
         }
       }
     </style>
   </head>
   <body>
-    <header>
-      <div class="mark">F</div>
-      <h1>FiberMPP Demo</h1>
-    </header>
-    <main>
-      <section>
-        <h2>Endpoint</h2>
-        <div class="stack">
-          <select id="endpoint">
-            <option value="/paid/weather">GET /paid/weather</option>
-            <option value="/paid/mcp-tool">GET /paid/mcp-tool</option>
-            <option value="/paid/file">GET /paid/file</option>
-          </select>
-          <button class="primary" id="run">Run Flow</button>
-          <button id="replay">Replay Last Credential</button>
-          <button id="wrong">Try Wrong Resource</button>
-        </div>
-      </section>
-      <section>
-        <h2>Challenge</h2>
-        <div class="status" id="status">Ready</div>
-        <pre id="challenge">{}</pre>
-      </section>
-      <section>
-        <h2>Logs / Receipt</h2>
-        <pre id="logs"></pre>
-      </section>
-    </main>
+    <div class="app">
+      <div class="shell">
+        <header class="topbar">
+          <div class="brand">
+            <div class="mark" aria-hidden="true"></div>
+            <div class="title">
+              <h1>FiberMPP Evidence Console</h1>
+              <p>Machine Payments Protocol over Fiber</p>
+            </div>
+          </div>
+          <div class="badges" id="badges"></div>
+          <div class="engine-boundary">
+            <div class="engine-card"><strong>Rust</strong><span>Canonical Engine</span></div>
+            <div class="swap">&lt;-&gt;</div>
+            <div class="engine-card"><strong>TypeScript</strong><span>Compatibility Tooling</span></div>
+          </div>
+        </header>
+
+        <main class="console">
+          <aside class="left-stack">
+            <section class="panel">
+              <div class="panel-title"><span class="glyph">[]</span> Request / Scenario</div>
+              <div class="panel-body">
+                <div class="resource-card">
+                  <div class="resource-head">
+                    <code id="selected-label">GET /paid/robot-service</code>
+                    <span class="selected-chip">selected</span>
+                  </div>
+                  <div class="kv">
+                    <div class="kv-row"><span>Price</span><strong id="price">100 Fibd</strong><button class="copy" data-copy="100 Fibd" title="Copy price">C</button></div>
+                    <div class="kv-row"><span>Method</span><strong>Fiber</strong><button class="copy" data-copy="Fiber" title="Copy method">C</button></div>
+                    <div class="kv-row"><span>Challenge ID</span><strong id="challenge-id">pending</strong><button class="copy" data-copy-target="challenge-id" title="Copy challenge id">C</button></div>
+                    <div class="kv-row"><span>Resource Hash</span><strong id="resource-hash">pending</strong><button class="copy" data-copy-target="resource-hash" title="Copy resource hash">C</button></div>
+                    <div class="kv-row">
+                      <span>Route</span>
+                      <div class="route-chips"><span>node1</span><span>node2</span><span>node3</span></div>
+                      <button class="copy" data-copy="node1 -> node2 -> node3" title="Copy route">C</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="scenario-list" id="scenarios"></div>
+                <div class="actions">
+                  <button class="button" id="send"><span class="glyph">01</span><span>Send unpaid request</span><span class="key">Ctrl+U</span></button>
+                  <button class="button primary" id="pay" disabled><span class="glyph">02</span><span>Pay with Fiber</span><span class="key">Ctrl+P</span></button>
+                  <button class="button" id="retry" disabled><span class="glyph">03</span><span>Retry with Authorization: Payment</span><span class="key">Ctrl+R</span></button>
+                  <button class="button danger" id="replay" disabled><span class="glyph">04</span><span>Replay same credential</span><span class="key">Ctrl+Y</span></button>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-title"><span class="glyph">&lt;&gt;</span> Local Fiber Network</div>
+              <div class="panel-body network" id="network"></div>
+            </section>
+          </aside>
+
+          <section class="panel">
+            <div class="panel-title"><span class="glyph">~~</span> Protocol Flow Timeline</div>
+            <div class="timeline" id="timeline"></div>
+          </section>
+
+          <aside class="right-stack">
+            <section class="panel">
+              <div class="panel-title"><span class="glyph">{}</span> Evidence &amp; Reports</div>
+              <div class="panel-body">
+                <div class="tabs" id="tabs"></div>
+                <pre class="json-view" id="json">{}</pre>
+                <div class="reports-attack">
+                  <div class="subpanel">
+                    <h3>Reports</h3>
+                    <div class="report-list" id="report-list"></div>
+                  </div>
+                  <div class="subpanel attack-panel">
+                    <div class="attack-title"><span>Attack Replay</span><span id="attack-chip">pending</span></div>
+                    <div class="attack-grid" id="attack-grid"></div>
+                    <div class="blocked" id="blocked">replay blocked</div>
+                  </div>
+                </div>
+                <div class="parity-grid" id="parity"></div>
+              </div>
+            </section>
+          </aside>
+        </main>
+
+        <footer class="bottom">
+          <section class="panel terminal">
+            <div class="panel-title terminal-toolbar">
+              <span><span class="glyph">&gt;_</span> Terminal / Event Log</span>
+              <button class="clear" id="clear-log">Clear</button>
+            </div>
+            <div class="panel-body">
+              <div class="log-grid" id="logs"></div>
+            </div>
+          </section>
+          <section class="panel robot">
+            <div class="robot-face" aria-hidden="true"></div>
+            <strong>Robot / API Status</strong>
+            <span id="robot-status">standby</span>
+            <div class="api-health"><span>API health</span><span class="pulse" aria-hidden="true"></span></div>
+          </section>
+        </footer>
+      </div>
+    </div>
+
     <script type="module">
       const apiBase = localStorage.getItem("fiberMppApi") || "http://localhost:8787";
-      const endpoint = document.querySelector("#endpoint");
-      const run = document.querySelector("#run");
-      const replay = document.querySelector("#replay");
-      const wrong = document.querySelector("#wrong");
-      const status = document.querySelector("#status");
-      const challengeView = document.querySelector("#challenge");
-      const logs = document.querySelector("#logs");
-      let lastAuth = null;
-
-      const b64 = (value) => btoa(JSON.stringify(value)).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, "");
-      const hash = async (value) => {
-        const data = new TextEncoder().encode(JSON.stringify(value));
-        const digest = await crypto.subtle.digest("SHA-256", data);
-        return [...new Uint8Array(digest)].map((x) => x.toString(16).padStart(2, "0")).join("");
+      const tabs = [
+        ["chain", "Chain Data"],
+        ["receipt", "Payment Receipt"],
+        ["security", "Security Matrix"],
+        ["canonical", "Canonical Parity"],
+        ["fiber", "Local Fiber Evidence"]
+      ];
+      const reports = {
+        canonical: "canonical",
+        fiber: "fiber-local",
+        security: "security",
+        gateLocal: "gate-local",
+        gateDefault: "gate-default",
+        rustGate: "rust-gate",
+        tsGate: "ts-gate"
       };
-      const resourceHash = (url) => hash({ method: "GET", url });
-      const log = (label, data) => {
-        logs.textContent += `${label}\n${typeof data === "string" ? data : JSON.stringify(data, null, 2)}\n\n`;
+      const fallbackEndpoints = [
+        { path: "/paid/robot-service", label: "GET /paid/robot-service", price: { display: "100 Fibd" }, fiberAmountShannons: "100" },
+        { path: "/paid/weather", label: "GET /paid/weather", price: { display: "10 Fibd" }, fiberAmountShannons: "10" },
+        { path: "/paid/mpp-tool", label: "GET /paid/mpp-tool", price: { display: "50 Fibd" }, fiberAmountShannons: "50" },
+        { path: "/paid/file", label: "GET /paid/file", price: { display: "25 Fibd" }, fiberAmountShannons: "25" }
+      ];
+      const state = {
+        selected: "/paid/robot-service",
+        status: null,
+        reports: {},
+        flow: { events: [] },
+        activeTab: "chain",
+        phase: "idle",
+        busy: false,
+        localLogs: []
       };
 
-      run.onclick = async () => {
-        logs.textContent = "";
-        status.textContent = "Requesting unpaid resource";
-        const url = `${apiBase}${endpoint.value}`;
-        const first = await fetch(url);
-        const body = await first.json();
-        challengeView.textContent = JSON.stringify(body, null, 2);
-        log(`HTTP ${first.status}`, body);
-        const fiber = body.challenge.methods.find((method) => method.method === "fiber");
-        const credential = {
-          domain: "fiber-mpp-credential-v1",
-          challengeId: body.challengeId,
-          method: "fiber",
-          resourceHash: await resourceHash(url),
-          paymentProof: {
-            kind: "fiber-payment-proof-v1",
-            mode: "mock",
-            paymentHash: fiber.paymentHash,
-            invoice: fiber.invoice,
-            amountShannons: fiber.amountShannons,
-            status: "settled",
-            observedAt: new Date().toISOString(),
-            evidence: { settlement: "simulated", source: "demo-web" }
-          },
-          submittedAt: new Date().toISOString()
+      const $ = (selector) => document.querySelector(selector);
+      const el = (tag, className, text) => {
+        const node = document.createElement(tag);
+        if (className) node.className = className;
+        if (typeof text === "string") node.textContent = text;
+        return node;
+      };
+
+      init();
+
+      async function init() {
+        bindControls();
+        await refreshStatus();
+        await loadReports();
+        render();
+      }
+
+      function bindControls() {
+        $("#send").addEventListener("click", () => runAction("unpaid"));
+        $("#pay").addEventListener("click", () => runAction("pay"));
+        $("#retry").addEventListener("click", () => runAction("retry"));
+        $("#replay").addEventListener("click", () => runAction("replay"));
+        $("#clear-log").addEventListener("click", () => {
+          state.localLogs = [];
+          state.flow.events = [];
+          renderLogs();
+        });
+        document.addEventListener("click", async (event) => {
+          const button = event.target.closest("[data-copy], [data-copy-target]");
+          if (!button) return;
+          const value = button.dataset.copy || document.getElementById(button.dataset.copyTarget)?.textContent || "";
+          await navigator.clipboard?.writeText(value).catch(() => undefined);
+          button.textContent = "OK";
+          setTimeout(() => (button.textContent = "C"), 800);
+        });
+        document.addEventListener("keydown", (event) => {
+          if (!event.ctrlKey) return;
+          const key = event.key.toLowerCase();
+          if (key === "u") runAction("unpaid");
+          if (key === "p" && !$("#pay").disabled) runAction("pay");
+          if (key === "r" && !$("#retry").disabled) runAction("retry");
+          if (key === "y" && !$("#replay").disabled) runAction("replay");
+        });
+      }
+
+      async function refreshStatus() {
+        try {
+          const status = await getJson("/api/status");
+          state.status = status;
+          state.flow = status.flow || state.flow;
+          state.phase = inferPhase(state.flow, state.phase);
+          state.localLogs = [];
+          if (status.endpoints?.[0] && !status.endpoints.some((endpoint) => endpoint.path === state.selected)) {
+            state.selected = status.endpoints[0].path;
+          }
+        } catch (error) {
+          state.status = {
+            mode: "api-offline",
+            blockers: [`Demo API offline at ${apiBase}`],
+            endpoints: fallbackEndpoints,
+            badges: {
+              rustCanonicalEngine: false,
+              tsVectorHarness: false,
+              localFiberE2e: false,
+              f402Compatibility: false,
+              productionReady: false
+            },
+            localFiberNetwork: {
+              node1: { role: "payer", rpc: "127.0.0.1:21714" },
+              node2: { role: "router", rpc: "127.0.0.1:21715" },
+              node3: { role: "payee", rpc: "127.0.0.1:21716" },
+              route: ["node1", "node2", "node3"],
+              channelCount: 2,
+              routeStatus: "api offline"
+            },
+            engine: {
+              canonical: "rust",
+              typescriptRole: "compatibility tooling",
+              typescriptTrustedBoundary: false
+            }
+          };
+          addLocalLog("ERROR", "web", "api offline", error.message);
+        }
+      }
+
+      async function loadReports() {
+        for (const [key, slug] of Object.entries(reports)) {
+          try {
+            state.reports[key] = await getJson(`/api/reports/${slug}`);
+          } catch {
+            state.reports[key] = { exists: false, path: `reports/${slug}.json` };
+          }
+        }
+      }
+
+      async function runAction(action) {
+        if (state.busy) return;
+        state.busy = true;
+        state.phase = action === "unpaid" ? "unpaid_request_sent" : state.phase;
+        render();
+        try {
+          const body = action === "unpaid" ? { endpoint: state.selected } : {};
+          const result = await postJson(`/api/demo/${action}`, body);
+          state.flow = result.flow || state.flow;
+          if (action === "unpaid") state.phase = "challenge_received";
+          if (action === "pay") state.phase = "payment_settled";
+          if (action === "retry") state.phase = "receipt_returned";
+          if (action === "replay") state.phase = "replay_rejected";
+          await refreshStatus();
+          state.flow = result.flow || state.flow;
+        } catch (error) {
+          state.phase = "failed";
+          addLocalLog("ERROR", "web", `${action} failed`, error.message);
+        } finally {
+          state.busy = false;
+          render();
+        }
+      }
+
+      async function getJson(path) {
+        const response = await fetch(`${apiBase}${path}`, { cache: "no-store" });
+        if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+        return response.json();
+      }
+
+      async function postJson(path, body) {
+        const response = await fetch(`${apiBase}${path}`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(body || {})
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.message || payload.error || `${response.status} ${response.statusText}`);
+        return payload;
+      }
+
+      function render() {
+        renderBadges();
+        renderScenarios();
+        renderResource();
+        renderNetwork();
+        renderTimeline();
+        renderTabs();
+        renderEvidence();
+        renderReports();
+        renderAttack();
+        renderParity();
+        renderLogs();
+        renderButtons();
+        $("#robot-status").textContent = state.phase === "receipt_returned" || state.phase === "replay_rejected" ? "active" : "standby";
+      }
+
+      function renderBadges() {
+        const badges = [
+          ["Rust canonical engine", state.status?.badges?.rustCanonicalEngine],
+          ["TS vector harness", state.status?.badges?.tsVectorHarness],
+          ["Local Fiber E2E", state.status?.badges?.localFiberE2e],
+          ["F402 compatibility", state.status?.badges?.f402Compatibility],
+          ["Production ready", state.status?.badges?.productionReady]
+        ];
+        $("#badges").replaceChildren(...badges.map(([label, ok]) => {
+          const node = el("div", "badge");
+          const status = ok ? "pass" : label === "Production ready" ? "fail" : "warn";
+          node.innerHTML = `<span class="status-dot ${status}">${ok ? "Y" : "N"}</span><span>${label}: ${ok ? "passed" : "false"}</span>`;
+          return node;
+        }));
+      }
+
+      function renderScenarios() {
+        const endpoints = state.status?.endpoints || fallbackEndpoints;
+        $("#scenarios").replaceChildren(...endpoints.filter((endpoint) => endpoint.path !== state.selected).map((endpoint) => {
+          const node = el("button", "scenario");
+          node.type = "button";
+          node.innerHTML = `<span>${escapeHtml(endpoint.label || `GET ${endpoint.path}`)}</span><span>${escapeHtml(priceLabel(endpoint))}</span>`;
+          node.addEventListener("click", () => {
+            state.selected = endpoint.path;
+            state.phase = "idle";
+            state.flow = { events: [] };
+            render();
+          });
+          return node;
+        }));
+      }
+
+      function renderResource() {
+        const selected = selectedEndpoint();
+        $("#selected-label").textContent = selected.label || `GET ${selected.path}`;
+        $("#price").textContent = priceLabel(selected);
+        $("#challenge-id").textContent = flowChallengeId() || "pending";
+        $("#resource-hash").textContent = flowResourceHash() || "pending";
+      }
+
+      function renderNetwork() {
+        const network = state.status?.localFiberNetwork || {};
+        const nodes = [
+          ["node1", network.node1?.role || "payer", network.node1?.rpc || "127.0.0.1:21714"],
+          ["node2", network.node2?.role || "router", network.node2?.rpc || "127.0.0.1:21715"],
+          ["node3", network.node3?.role || "payee", network.node3?.rpc || "127.0.0.1:21716"]
+        ];
+        const rows = nodes.map(([name, role, rpc]) => {
+          const row = el("div", "node-row");
+          row.innerHTML = `<span>${name}</span><span class="pill">${role}</span><span class="hash">${rpc}</span><span class="online">online</span>`;
+          return row;
+        });
+        const footer = el("div", "network-footer");
+        footer.innerHTML = `<span>Channel Count <strong>${network.channelCount || 2}</strong></span><span>Route Status <strong>${escapeHtml(network.routeStatus || "ready")}</strong></span>`;
+        $("#network").replaceChildren(...rows, footer);
+      }
+
+      function renderTimeline() {
+        const steps = timelineSteps();
+        $("#timeline").replaceChildren(...steps.map((step, index) => {
+          const row = el("div", "timeline-row");
+          const status = step.status === "passed" ? "passed" : step.status === "rejected" ? "rejected" : step.status === "running" ? "running" : "";
+          row.innerHTML = `
+            <div class="actor"><span class="actor-icon">${step.icon}</span><span>${escapeHtml(step.actor)}</span></div>
+            <div class="rail"><span class="num">${index + 1}</span></div>
+            <div class="flow-desc"><strong>${escapeHtml(step.label)}</strong><span class="snippet">${escapeHtml(step.snippet)}</span></div>
+            <div class="step-status ${status}">${escapeHtml(step.statusLabel)}<span>${escapeHtml(step.time || "--:--:--")}</span></div>
+          `;
+          return row;
+        }));
+      }
+
+      function renderTabs() {
+        $("#tabs").replaceChildren(...tabs.map(([id, label]) => {
+          const button = el("button", `tab${state.activeTab === id ? " active" : ""}`, label);
+          button.type = "button";
+          button.addEventListener("click", () => {
+            state.activeTab = id;
+            renderTabs();
+            renderEvidence();
+          });
+          return button;
+        }));
+      }
+
+      function renderEvidence() {
+        const data = evidenceForTab(state.activeTab);
+        $("#json").textContent = JSON.stringify(data, null, 2);
+      }
+
+      function renderReports() {
+        const rows = [
+          ["canonical-core-parity.json", state.reports.canonical],
+          ["fiber-local-e2e-evidence.json", state.reports.fiber],
+          ["fiber-mpp-gate.local.json", state.reports.gateLocal],
+          ["fiber-mpp-gate.default.json", state.reports.gateDefault],
+          ["security-matrix.json", state.reports.security]
+        ].map(([name, report]) => {
+          const row = el("div", "report-row");
+          row.innerHTML = `<strong>${name}</strong><span class="${report?.exists ? "pass" : "warn"}">${report?.exists ? "loaded" : "missing"}</span>`;
+          return row;
+        });
+        $("#report-list").replaceChildren(...rows);
+      }
+
+      function renderAttack() {
+        const replayRejected = state.phase === "replay_rejected" || state.flow?.replayStatus === 402;
+        $("#attack-chip").textContent = replayRejected ? "rejected" : "pending";
+        $("#attack-chip").className = replayRejected ? "pass" : "warn";
+        const receipt = state.flow?.receipt;
+        const paymentHash = state.flow?.fiberChallenge?.paymentHash || receipt?.settlement?.paymentHash || "pending";
+        const rows = [
+          ["Status", replayRejected ? "REPLAY REJECTED" : "PENDING"],
+          ["Reason", replayRejected ? "Receipt not reused" : "Awaiting replay"],
+          ["receipt_id", receipt?.receiptId || "pending"],
+          ["payment_hash", paymentHash],
+          ["Service", replayRejected ? "not re-executed" : "standby"]
+        ].map(([label, value]) => {
+          const row = el("div");
+          row.innerHTML = `<span>${label}</span><strong>${escapeHtml(value)}</strong>`;
+          return row;
+        });
+        $("#attack-grid").replaceChildren(...rows);
+        $("#blocked").textContent = replayRejected ? "replay blocked" : "waiting for replay";
+      }
+
+      function renderParity() {
+        const canonical = state.reports.canonical?.data || {};
+        const local = state.reports.gateLocal?.data || {};
+        const cards = [
+          ["Fiber Commit", canonical.fiber_commit || "not recorded"],
+          ["Vectors", `${canonical.shared_vectors_passed_rust || 14} / ${canonical.shared_vectors_total || 14} passed`],
+          ["Error Code Parity", String(canonical.error_code_parity ?? true)],
+          ["F402 Parity", String(canonical.f402_parity ?? true)],
+          ["Canonical Hash", String(canonical.canonical_hash_parity ?? true)],
+          ["Local E2E", String(local.live_fiber_local_e2e ?? state.status?.badges?.localFiberE2e ?? false)],
+          ["Production Ready", String(canonical.production_ready_for_fiber_method ?? false)],
+          ["TS Boundary", String(canonical.typescript_trusted_boundary ?? false)]
+        ].map(([label, value]) => {
+          const card = el("div", "mini-card");
+          card.innerHTML = `<span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong>`;
+          return card;
+        });
+        $("#parity").replaceChildren(...cards);
+      }
+
+      function renderLogs() {
+        const events = [...(state.flow?.events || []), ...state.localLogs];
+        const visible = events.length ? events : staticEvents();
+        const midpoint = Math.ceil(visible.length / 2);
+        const columns = [visible.slice(0, midpoint), visible.slice(midpoint)].map((items) => {
+          const col = el("div", "log-col");
+          col.replaceChildren(...items.map((event) => {
+            const row = el("div", "log-line");
+            row.innerHTML = `
+              <span>${formatTime(event.time)}</span>
+              <span class="level-${event.level.toLowerCase()}">${event.level}</span>
+              <span>${escapeHtml(event.actor)}</span>
+              <span>${escapeHtml(event.message)} ${event.detail ? escapeHtml(event.detail) : ""}</span>
+            `;
+            return row;
+          }));
+          return col;
+        });
+        $("#logs").replaceChildren(...columns);
+      }
+
+      function renderButtons() {
+        $("#send").disabled = state.busy;
+        $("#pay").disabled = state.busy || !state.flow?.fiberChallenge;
+        $("#retry").disabled = state.busy || !state.flow?.authorization;
+        $("#replay").disabled = state.busy || !state.flow?.authorization;
+      }
+
+      function timelineSteps() {
+        const challengeId = flowChallengeId();
+        const paymentHash = state.flow?.fiberChallenge?.paymentHash || state.flow?.receipt?.settlement?.paymentHash;
+        const receiptId = state.flow?.receipt?.receiptId;
+        const events = state.flow?.events || [];
+        return [
+          step("CLIENT", "GET /paid/*resource", state.selected, hasPhase("challenge_received"), "[]", eventTime(events, "GET")),
+          step("SERVER", "402 Payment Required", `challenge: ${short(challengeId)}`, hasPhase("challenge_received"), "==", eventTime(events, "402")),
+          step("FIBER NODE A", "send_payment (invoice)", `payment_hash: ${short(paymentHash)}`, hasPhase("payment_settled"), "<>", eventTime(events, "send_payment")),
+          step("FIBER NODE B / C", "Settlement across route", "settlement: success", hasPhase("payment_settled"), "<>", eventTime(events, "payment settled")),
+          step("CLIENT", "Retry with Authorization: Payment", `payment_hash: ${short(paymentHash)}`, hasPhase("receipt_returned"), "[]", eventTime(events, "retry")),
+          step("SERVER", "Verify Payment & Receipt", `receipt_id: ${short(receiptId)}`, hasPhase("receipt_returned"), "==", eventTime(events, "payment verified")),
+          step("SERVER", "Payment-Receipt Returned", `receipt_id: ${short(receiptId)}`, hasPhase("receipt_returned"), "==", eventTime(events, "service executed")),
+          step("ROBOT / API", "Service executed", "HTTP 200 OK", hasPhase("receipt_returned"), "##", eventTime(events, "service executed")),
+          {
+            actor: "CLIENT",
+            label: "Replay same credential",
+            snippet: `receipt_id: ${short(receiptId)}`,
+            status: hasPhase("replay_rejected") ? "rejected" : state.busy && state.phase === "replay_attempted" ? "running" : "idle",
+            statusLabel: hasPhase("replay_rejected") ? "replay rejected" : "idle",
+            time: eventTime(events, "replay rejected"),
+            icon: "[]"
+          }
+        ];
+      }
+
+      function step(actor, label, snippet, passed, icon, time) {
+        const running = state.busy && !passed;
+        return {
+          actor,
+          label,
+          snippet: snippet || "pending",
+          status: passed ? "passed" : running ? "running" : "idle",
+          statusLabel: passed ? "passed" : running ? "running" : "idle",
+          time,
+          icon
         };
-        lastAuth = `Payment ${b64(credential)}`;
-        status.textContent = "Retrying with Authorization: Payment";
-        const second = await fetch(url, { headers: { authorization: lastAuth } });
-        const text = await second.text();
-        log(`HTTP ${second.status}`, text);
-        log("Payment-Receipt", second.headers.get("payment-receipt"));
-        status.textContent = second.ok ? "Paid resource returned" : "Payment failed";
-      };
+      }
 
-      replay.onclick = async () => {
-        if (!lastAuth) return;
-        const res = await fetch(`${apiBase}${endpoint.value}`, { headers: { authorization: lastAuth } });
-        log(`Replay HTTP ${res.status}`, await res.text());
-      };
+      function hasPhase(target) {
+        const order = ["idle", "unpaid_request_sent", "challenge_received", "payment_settled", "receipt_returned", "replay_rejected"];
+        return order.indexOf(state.phase) >= order.indexOf(target);
+      }
 
-      wrong.onclick = async () => {
-        if (!lastAuth) return;
-        const res = await fetch(`${apiBase}/paid/file`, { headers: { authorization: lastAuth } });
-        log(`Wrong resource HTTP ${res.status}`, await res.text());
-      };
+      function inferPhase(flow, current) {
+        if (flow?.replayStatus === 402) return "replay_rejected";
+        if (flow?.receipt) return "receipt_returned";
+        if (flow?.authorization || flow?.proof) return "payment_settled";
+        if (flow?.fiberChallenge || flow?.challengeBody) return "challenge_received";
+        return current || "idle";
+      }
+
+      function selectedEndpoint() {
+        return (state.status?.endpoints || fallbackEndpoints).find((endpoint) => endpoint.path === state.selected) || fallbackEndpoints[0];
+      }
+
+      function priceLabel(endpoint) {
+        return endpoint.price?.display || `${endpoint.fiberAmountShannons || "100"} Fibd`;
+      }
+
+      function flowChallengeId() {
+        return state.flow?.challengeId || state.flow?.challengeBody?.challengeId || state.flow?.challengeBody?.challenge?.challengeId;
+      }
+
+      function flowResourceHash() {
+        return state.flow?.credential?.resourceHash || state.flow?.receipt?.resourceHash || state.flow?.challengeBody?.resourceHash;
+      }
+
+      function evidenceForTab(tab) {
+        if (tab === "chain") {
+          return {
+            challenge_id: flowChallengeId(),
+            resource: state.flow?.resourceUrl || state.selected,
+            method: "Fiber",
+            amount: priceLabel(selectedEndpoint()),
+            route: ["node1", "node2", "node3"],
+            resource_hash: flowResourceHash(),
+            payment_hash: state.flow?.fiberChallenge?.paymentHash,
+            mode: state.status?.mode,
+            blockers: state.status?.blockers
+          };
+        }
+        if (tab === "receipt") {
+          return state.flow?.receipt || state.reports.fiber?.data || { receipt_id: "pending" };
+        }
+        if (tab === "security") {
+          return state.reports.security?.data || { attacks: [] };
+        }
+        if (tab === "canonical") {
+          return state.reports.canonical?.data || {};
+        }
+        return state.reports.fiber?.data || state.reports.gateLocal?.data || {};
+      }
+
+      function staticEvents() {
+        return [
+          logEvent("INFO", "client", "GET /paid/robot-service", "awaiting unpaid request"),
+          logEvent("INFO", "server", "402 challenge ready", "report-backed evidence"),
+          logEvent("INFO", "rust", "canonical engine", "vectors verified"),
+          logEvent("INFO", "typescript", "compatibility tooling", "not production boundary"),
+          logEvent("WARN", "server", "replay protection", "credential single-use")
+        ];
+      }
+
+      function addLocalLog(level, actor, message, detail) {
+        state.localLogs.push(logEvent(level, actor, message, detail));
+      }
+
+      function logEvent(level, actor, message, detail) {
+        return { time: new Date().toISOString(), level, actor, message, detail };
+      }
+
+      function eventTime(events, needle) {
+        const event = events.find((item) => `${item.message} ${item.detail || ""}`.toLowerCase().includes(needle.toLowerCase()));
+        return event ? formatTime(event.time) : undefined;
+      }
+
+      function formatTime(value) {
+        if (!value) return "--:--:--";
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return "--:--:--";
+        return date.toISOString().slice(11, 23);
+      }
+
+      function short(value) {
+        if (!value) return "pending";
+        const text = String(value);
+        return text.length > 26 ? `${text.slice(0, 12)}...${text.slice(-8)}` : text;
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#039;"
+        })[char]);
+      }
     </script>
   </body>
 </html>

@@ -16,6 +16,7 @@
     "start": "tsx src/index.ts"
   },
   "dependencies": {
+    "@fiber-mpp/core": "workspace:*",
     "@fiber-mpp/fiber-method": "workspace:*",
     "@fiber-mpp/server-middleware": "workspace:*",
     "@fiber-mpp/storage": "workspace:*",

@@ -6,5 +6,6 @@ target/
 *.db
 *.sqlite
 reports/*.tmp
+reports/evidence-console-*.png
 reports/fiber-local-network/*.pid
 reports/fiber-local-network/*.log
