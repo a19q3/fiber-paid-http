@@ -17,7 +17,10 @@ const requiredFragments = [
   'route_source:',
   'channel_count_source:',
   'Production Ready',
-  'Compatibility Tooling'
+  'Compatibility Tooling',
+  'function badgeState(label, value)',
+  'function vectorSummary(canonical)',
+  'function unavailableEvidence(reason)'
 ];
 
 const forbiddenFragments = [
@@ -26,7 +29,12 @@ const forbiddenFragments = [
   'step("FIBER NODE B / C", "Settlement across route"',
   'evidence console static build ok',
   'evidence console static lint ok',
-  'evidence console static typecheck ok'
+  'evidence console static typecheck ok',
+  'rustCanonicalEngine: false',
+  'canonical.shared_vectors_passed_rust || 14',
+  'canonical.error_code_parity ?? true',
+  'canonical.f402_parity ?? true',
+  'canonical.canonical_hash_parity ?? true'
 ];
 
 for (const fragment of requiredFragments) {

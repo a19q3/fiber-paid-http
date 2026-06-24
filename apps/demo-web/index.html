@@ -1229,10 +1229,10 @@
             blockers: [`Demo API unreachable at ${apiBase}`],
             endpoints: fallbackEndpoints,
             badges: {
-              rustCanonicalEngine: false,
-              tsVectorHarness: false,
-              localFiberE2e: false,
-              f402Compatibility: false,
+              rustCanonicalEngine: null,
+              tsVectorHarness: null,
+              localFiberE2e: null,
+              f402Compatibility: null,
               productionReady: false
             },
             localFiberNetwork: {
@@ -1332,10 +1332,23 @@
         ];
         $("#badges").replaceChildren(...badges.map(([label, ok]) => {
           const node = el("div", "badge");
-          const status = ok ? "pass" : label === "Production ready" ? "fail" : "warn";
-          node.innerHTML = `<span class="status-dot ${status}">${ok ? "Y" : "N"}</span><span>${label}: ${ok ? "passed" : "false"}</span>`;
+          const badge = badgeState(label, ok);
+          node.innerHTML = `<span class="status-dot ${badge.status}">${badge.icon}</span><span>${label}: ${badge.text}</span>`;
           return node;
         }));
+      }
+
+      function badgeState(label, value) {
+        if (value === true) {
+          return { status: "pass", icon: "Y", text: "passed" };
+        }
+        if (value === false && label === "Production ready") {
+          return { status: "fail", icon: "N", text: "not claimed" };
+        }
+        if (value === false) {
+          return { status: "fail", icon: "N", text: "false" };
+        }
+        return { status: "warn", icon: "?", text: "unavailable" };
       }
 
       function renderScenarios() {
@@ -1424,7 +1437,8 @@
           ["security-matrix.json", state.reports.security]
         ].map(([name, report]) => {
           const row = el("div", "report-row");
-          row.innerHTML = `<strong>${name}</strong><span class="${report?.exists ? "pass" : "warn"}">${report?.exists ? "loaded" : "missing"}</span>`;
+          const unavailable = state.status?.mode === "api-unreachable";
+          row.innerHTML = `<strong>${name}</strong><span class="${report?.exists ? "pass" : "warn"}">${report?.exists ? "loaded" : unavailable ? "unavailable" : "missing"}</span>`;
           return row;
         });
         $("#report-list").replaceChildren(...rows);
@@ -1457,19 +1471,38 @@
         const tsGate = state.reports.tsGate?.data || {};
         const cards = [
           ["Fiber Commit", tsGate.fiber_commit || "unavailable"],
-          ["Vectors", `${canonical.shared_vectors_passed_rust || 14} / ${canonical.shared_vectors_total || 14} passed`],
-          ["Error Code Parity", String(canonical.error_code_parity ?? true)],
-          ["F402 Parity", String(canonical.f402_parity ?? true)],
-          ["Canonical Hash", String(canonical.canonical_hash_parity ?? true)],
-          ["Local E2E", String(local.live_fiber_local_e2e ?? state.status?.badges?.localFiberE2e ?? false)],
-          ["Production Ready", String(canonical.production_ready_for_fiber_method ?? false)],
-          ["TS Boundary", String(canonical.typescript_trusted_boundary ?? false)]
+          ["Vectors", vectorSummary(canonical)],
+          ["Error Code Parity", booleanSummary(canonical.error_code_parity)],
+          ["F402 Parity", booleanSummary(canonical.f402_parity)],
+          ["Canonical Hash", booleanSummary(canonical.canonical_hash_parity)],
+          ["Local E2E", booleanSummary(local.live_fiber_local_e2e ?? state.status?.badges?.localFiberE2e)],
+          ["Production Ready", readinessSummary(canonical.production_ready_for_fiber_method ?? state.status?.badges?.productionReady)],
+          ["TS Boundary", booleanSummary(canonical.typescript_trusted_boundary)]
         ].map(([label, value]) => {
           const card = el("div", "mini-card");
           card.innerHTML = `<span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong>`;
           return card;
         });
         $("#parity").replaceChildren(...cards);
+      }
+
+      function vectorSummary(canonical) {
+        if (typeof canonical.shared_vectors_passed_rust === "number" && typeof canonical.shared_vectors_total === "number") {
+          return `${canonical.shared_vectors_passed_rust} / ${canonical.shared_vectors_total} passed`;
+        }
+        return "unavailable";
+      }
+
+      function booleanSummary(value) {
+        if (value === true) return "true";
+        if (value === false) return "false";
+        return "unavailable";
+      }
+
+      function readinessSummary(value) {
+        if (value === true) return "true";
+        if (value === false) return "not claimed";
+        return "unavailable";
       }
 
       function renderLogs() {
@@ -1637,15 +1670,24 @@
           };
         }
         if (tab === "receipt") {
-          return state.flow?.receipt || state.reports.fiber?.data || { receipt_id: "pending" };
+          return state.flow?.receipt || state.reports.fiber?.data || unavailableEvidence("receipt pending");
         }
         if (tab === "security") {
-          return state.reports.security?.data || { attacks: [] };
+          return state.reports.security?.data || unavailableEvidence("security matrix unavailable");
         }
         if (tab === "canonical") {
-          return state.reports.canonical?.data || {};
+          return state.reports.canonical?.data || unavailableEvidence("canonical report unavailable");
         }
-        return state.reports.fiber?.data || state.reports.gateLocal?.data || {};
+        return state.reports.fiber?.data || state.reports.gateLocal?.data || unavailableEvidence("local Fiber evidence unavailable");
+      }
+
+      function unavailableEvidence(reason) {
+        return {
+          status: "unavailable",
+          reason,
+          api: state.status?.mode === "api-unreachable" ? "unreachable" : "not loaded",
+          blockers: state.status?.blockers || []
+        };
       }
 
       function staticEvents() {
