@@ -27,7 +27,9 @@ const requiredFragments = [
   'function serviceActuatorStatus()',
   'const actuatorStates = new Set(["idle", "active", "executing", "blocked", "error"])',
   'receipt reissued',
-  'actuator/API health'
+  'actuator/API health',
+  'height: calc(100vh - 24px);',
+  'overflow-y: auto;'
 ];
 
 const forbiddenFragments = [
