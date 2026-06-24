@@ -2,7 +2,7 @@
   "name": "@fiber-mpp/demo-api",
   "version": "0.1.0",
   "type": "module",
-  "description": "FiberMPP demo paid API.",
+  "description": "FiberMPP evidence console paid API.",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

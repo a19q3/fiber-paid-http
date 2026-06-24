@@ -447,7 +447,7 @@
         text-transform: uppercase;
       }
 
-      .online {
+      .node-state {
         display: flex;
         gap: 6px;
         align-items: center;
@@ -457,12 +457,20 @@
         font-size: 10px;
       }
 
-      .online::before {
+      .node-state::before {
         width: 6px;
         height: 6px;
         border-radius: 999px;
         background: currentColor;
         content: "";
+      }
+
+      .node-state.evidence {
+        color: var(--orange);
+      }
+
+      .node-state.unconfigured {
+        color: var(--dim);
       }
 
       .network-footer {
@@ -781,12 +789,13 @@
 
       .parity-grid {
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 8px;
         margin-top: 10px;
       }
 
       .mini-card {
+        min-width: 0;
         min-height: 64px;
         padding: 9px;
       }
@@ -799,6 +808,7 @@
 
       .mini-card strong {
         display: block;
+        min-width: 0;
         margin-top: 7px;
         overflow: hidden;
         color: var(--cyan);
@@ -885,7 +895,7 @@
         color: var(--red);
       }
 
-      .robot {
+      .service-card {
         display: grid;
         align-content: center;
         justify-items: center;
@@ -894,42 +904,42 @@
         padding: 12px;
       }
 
-      .robot-face {
+      .service-mark {
         position: relative;
         width: 78px;
         height: 58px;
         border: 1px solid rgba(50, 230, 239, 0.4);
-        border-radius: 18px 18px 12px 12px;
+        border-radius: 10px;
         background: linear-gradient(180deg, rgba(50, 230, 239, 0.18), rgba(50, 230, 239, 0.04));
       }
 
-      .robot-face::before,
-      .robot-face::after {
+      .service-mark::before,
+      .service-mark::after {
         position: absolute;
-        top: 21px;
-        width: 8px;
-        height: 8px;
-        border-radius: 999px;
-        background: var(--cyan);
-        box-shadow: 0 0 14px rgba(50, 230, 239, 0.6);
         content: "";
       }
 
-      .robot-face::before {
-        left: 24px;
+      .service-mark::before {
+        inset: 12px;
+        border: 1px solid rgba(50, 230, 239, 0.28);
+        border-radius: 6px;
       }
 
-      .robot-face::after {
-        right: 24px;
+      .service-mark::after {
+        top: 27px;
+        right: 18px;
+        left: 18px;
+        height: 1px;
+        background: rgba(50, 230, 239, 0.55);
       }
 
-      .robot strong {
+      .service-card strong {
         color: #cfecef;
         font-size: 12px;
         text-transform: uppercase;
       }
 
-      .robot span {
+      .service-card span {
         color: var(--green);
         font-family: var(--mono);
         font-size: 12px;
@@ -1044,7 +1054,7 @@
               <div class="panel-body">
                 <div class="resource-card">
                   <div class="resource-head">
-                    <code id="selected-label">GET /paid/robot-service</code>
+                    <code id="selected-label">GET /paid/protocol-service</code>
                     <span class="selected-chip">selected</span>
                   </div>
                   <div class="kv">
@@ -1113,10 +1123,10 @@
               <div class="log-grid" id="logs"></div>
             </div>
           </section>
-          <section class="panel robot">
-            <div class="robot-face" aria-hidden="true"></div>
-            <strong>Robot / API Status</strong>
-            <span id="robot-status">standby</span>
+          <section class="panel service-card">
+            <div class="service-mark" aria-hidden="true"></div>
+            <strong>Protected Service</strong>
+            <span id="service-status">awaiting receipt</span>
             <div class="api-health"><span>API health</span><span class="pulse" aria-hidden="true"></span></div>
           </section>
         </footer>
@@ -1142,13 +1152,13 @@
         tsGate: "ts-gate"
       };
       const fallbackEndpoints = [
-        { path: "/paid/robot-service", label: "GET /paid/robot-service", price: { display: "100 Fibd" }, fiberAmountShannons: "100" },
+        { path: "/paid/protocol-service", label: "GET /paid/protocol-service", price: { display: "100 Fibd" }, fiberAmountShannons: "100" },
         { path: "/paid/weather", label: "GET /paid/weather", price: { display: "10 Fibd" }, fiberAmountShannons: "10" },
         { path: "/paid/mpp-tool", label: "GET /paid/mpp-tool", price: { display: "50 Fibd" }, fiberAmountShannons: "50" },
         { path: "/paid/file", label: "GET /paid/file", price: { display: "25 Fibd" }, fiberAmountShannons: "25" }
       ];
       const state = {
-        selected: "/paid/robot-service",
+        selected: "/paid/protocol-service",
         status: null,
         reports: {},
         flow: { events: [] },
@@ -1226,9 +1236,9 @@
               productionReady: false
             },
             localFiberNetwork: {
-              node1: { role: "payer", rpc: "127.0.0.1:21714" },
-              node2: { role: "router", rpc: "127.0.0.1:21715" },
-              node3: { role: "payee", rpc: "127.0.0.1:21716" },
+              node1: { role: "payer", rpc: "127.0.0.1:21714", status: "unconfigured" },
+              node2: { role: "router", rpc: "127.0.0.1:21715", status: "unconfigured" },
+              node3: { role: "payee", rpc: "127.0.0.1:21716", status: "unconfigured" },
               route: ["node1", "node2", "node3"],
               channelCount: 2,
               routeStatus: "api offline"
@@ -1239,7 +1249,7 @@
               typescriptTrustedBoundary: false
             }
           };
-          addLocalLog("ERROR", "web", "api offline", error.message);
+          addLocalLog("ERROR", "web", "evidence API offline", error.message);
         }
       }
 
@@ -1307,7 +1317,7 @@
         renderParity();
         renderLogs();
         renderButtons();
-        $("#robot-status").textContent = state.phase === "receipt_returned" || state.phase === "replay_rejected" ? "active" : "standby";
+        $("#service-status").textContent = serviceStatusText();
       }
 
       function renderBadges() {
@@ -1353,13 +1363,13 @@
       function renderNetwork() {
         const network = state.status?.localFiberNetwork || {};
         const nodes = [
-          ["node1", network.node1?.role || "payer", network.node1?.rpc || "127.0.0.1:21714"],
-          ["node2", network.node2?.role || "router", network.node2?.rpc || "127.0.0.1:21715"],
-          ["node3", network.node3?.role || "payee", network.node3?.rpc || "127.0.0.1:21716"]
+          ["node1", network.node1?.role || "payer", network.node1?.rpc || "127.0.0.1:21714", network.node1?.status || "unconfigured"],
+          ["node2", network.node2?.role || "router", network.node2?.rpc || "127.0.0.1:21715", network.node2?.status || "unconfigured"],
+          ["node3", network.node3?.role || "payee", network.node3?.rpc || "127.0.0.1:21716", network.node3?.status || "unconfigured"]
         ];
-        const rows = nodes.map(([name, role, rpc]) => {
+        const rows = nodes.map(([name, role, rpc, status]) => {
           const row = el("div", "node-row");
-          row.innerHTML = `<span>${name}</span><span class="pill">${role}</span><span class="hash">${rpc}</span><span class="online">online</span>`;
+          row.innerHTML = `<span>${name}</span><span class="pill">${role}</span><span class="hash">${rpc}</span><span class="node-state ${status}">${status}</span>`;
           return row;
         });
         const footer = el("div", "network-footer");
@@ -1426,7 +1436,7 @@
           ["Reason", replayRejected ? "Receipt not reused" : "Awaiting replay"],
           ["receipt_id", receipt?.receiptId || "pending"],
           ["payment_hash", paymentHash],
-          ["Service", replayRejected ? "not re-executed" : "standby"]
+          ["Service", replayRejected ? "not re-executed" : "awaiting replay"]
         ].map(([label, value]) => {
           const row = el("div");
           row.innerHTML = `<span>${label}</span><strong>${escapeHtml(value)}</strong>`;
@@ -1439,8 +1449,9 @@
       function renderParity() {
         const canonical = state.reports.canonical?.data || {};
         const local = state.reports.gateLocal?.data || {};
+        const tsGate = state.reports.tsGate?.data || {};
         const cards = [
-          ["Fiber Commit", canonical.fiber_commit || "not recorded"],
+          ["Fiber Commit", tsGate.fiber_commit || "unavailable"],
           ["Vectors", `${canonical.shared_vectors_passed_rust || 14} / ${canonical.shared_vectors_total || 14} passed`],
           ["Error Code Parity", String(canonical.error_code_parity ?? true)],
           ["F402 Parity", String(canonical.f402_parity ?? true)],
@@ -1484,6 +1495,22 @@
         $("#replay").disabled = state.busy || !state.flow?.authorization;
       }
 
+      function serviceStatusText() {
+        if (state.flow?.replayStatus === 402 || state.phase === "replay_rejected") {
+          return "replay rejected, not re-executed";
+        }
+        if (state.flow?.receipt || state.phase === "receipt_returned") {
+          return "executed with receipt";
+        }
+        if (state.flow?.authorization || state.phase === "payment_settled") {
+          return "payment proof ready";
+        }
+        if (state.flow?.fiberChallenge || state.phase === "challenge_received") {
+          return "402 challenge issued";
+        }
+        return "awaiting receipt";
+      }
+
       function timelineSteps() {
         const challengeId = flowChallengeId();
         const paymentHash = state.flow?.fiberChallenge?.paymentHash || state.flow?.receipt?.settlement?.paymentHash;
@@ -1497,7 +1524,7 @@
           step("CLIENT", "Retry with Authorization: Payment", `payment_hash: ${short(paymentHash)}`, hasPhase("receipt_returned"), "[]", eventTime(events, "retry")),
           step("SERVER", "Verify Payment & Receipt", `receipt_id: ${short(receiptId)}`, hasPhase("receipt_returned"), "==", eventTime(events, "payment verified")),
           step("SERVER", "Payment-Receipt Returned", `receipt_id: ${short(receiptId)}`, hasPhase("receipt_returned"), "==", eventTime(events, "service executed")),
-          step("ROBOT / API", "Service executed", "HTTP 200 OK", hasPhase("receipt_returned"), "##", eventTime(events, "service executed")),
+          step("PROTECTED API", "Service executed", "HTTP 200 OK", hasPhase("receipt_returned"), "##", eventTime(events, "service executed")),
           {
             actor: "CLIENT",
             label: "Replay same credential",
@@ -1580,7 +1607,7 @@
 
       function staticEvents() {
         return [
-          logEvent("INFO", "client", "GET /paid/robot-service", "awaiting unpaid request"),
+          logEvent("INFO", "client", "GET /paid/protocol-service", "awaiting unpaid request"),
           logEvent("INFO", "server", "402 challenge ready", "report-backed evidence"),
           logEvent("INFO", "rust", "canonical engine", "vectors verified"),
           logEvent("INFO", "typescript", "compatibility tooling", "not production boundary"),

@@ -2,7 +2,7 @@
   "name": "@fiber-mpp/tempo-method",
   "version": "0.1.0",
   "type": "module",
-  "description": "Explicit mock/sandbox Tempo rail placeholder for FiberMPP.",
+  "description": "Explicit mock/sandbox Tempo rail adapter for FiberMPP.",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

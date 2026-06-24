@@ -22,5 +22,5 @@ createServer(async (req, res) => {
     res.end("not found");
   }
 }).listen(port, () => {
-  console.log(`FiberMPP demo web listening on http://localhost:${port}`);
+  console.log(`FiberMPP evidence console listening on http://localhost:${port}`);
 });

@@ -20,6 +20,52 @@ describe("FiberMPP integration flows", () => {
     expect(result.receipt?.settlement.status).toBe("simulated");
   });
 
+  it("evidence console API exposes a non-theatrical proof flow", async () => {
+    const app = createDemoApi();
+    const status = await app.request("http://localhost/api/status");
+    expect(status.status).toBe(200);
+    const statusBody = await status.json() as {
+      endpoints: Array<{ path: string }>;
+      localFiberNetwork: { node1: { status: string }; node2: { status: string }; node3: { status: string } };
+    };
+    expect(statusBody.endpoints[0]?.path).toBe("/paid/protocol-service");
+    expect(JSON.stringify(statusBody)).not.toContain("robot");
+    expect(new Set([
+      statusBody.localFiberNetwork.node1.status,
+      statusBody.localFiberNetwork.node2.status,
+      statusBody.localFiberNetwork.node3.status
+    ])).not.toContain("online");
+
+    const unpaid = await app.request("http://localhost/api/demo/unpaid", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ endpoint: "/paid/protocol-service" })
+    });
+    expect(unpaid.status).toBe(200);
+    expect((await unpaid.clone().json()) as { status: number }).toMatchObject({ status: 402 });
+
+    const pay = await app.request("http://localhost/api/demo/pay", { method: "POST" });
+    expect(pay.status).toBe(200);
+    expect((await pay.clone().json()) as { proof: { paymentHash: string } }).toMatchObject({
+      proof: { paymentHash: expect.stringMatching(/^0x[0-9a-f]{64}$/) }
+    });
+
+    const retry = await app.request("http://localhost/api/demo/retry", { method: "POST" });
+    expect(retry.status).toBe(200);
+    const retryBody = await retry.clone().json() as { status: number; receipt?: { receiptId: string }; body?: unknown };
+    expect(retryBody.status).toBe(200);
+    expect(retryBody.receipt?.receiptId).toMatch(/^rcpt_/);
+    expect(JSON.stringify(retryBody.body)).toContain("protected-api");
+
+    const replay = await app.request("http://localhost/api/demo/replay", { method: "POST" });
+    expect(replay.status).toBe(200);
+    expect(await replay.json()).toMatchObject({
+      status: 402,
+      rejected: true,
+      receiptReissued: false
+    });
+  });
+
   it("reverse proxy completes full flow", async () => {
     const middleware = createFiberMppMiddleware({
       secret: "reverse-proxy-secret-at-least-16",

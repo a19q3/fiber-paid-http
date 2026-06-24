@@ -2,11 +2,11 @@
   "name": "@fiber-mpp/demo-web",
   "version": "0.1.0",
   "type": "module",
-  "description": "Static FiberMPP demo UI.",
+  "description": "Static FiberMPP evidence console UI.",
   "scripts": {
-    "build": "node -e \"console.log('demo-web static build ok')\"",
-    "lint": "node -e \"console.log('demo-web static lint ok')\"",
-    "typecheck": "node -e \"console.log('demo-web static typecheck ok')\"",
+    "build": "node -e \"console.log('evidence console static build ok')\"",
+    "lint": "node -e \"console.log('evidence console static lint ok')\"",
+    "typecheck": "node -e \"console.log('evidence console static typecheck ok')\"",
     "start": "node server.mjs"
   }
 }

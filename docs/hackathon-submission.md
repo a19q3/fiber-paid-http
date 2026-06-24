@@ -30,7 +30,7 @@ Fiber has strong micropayment primitives, but MPP-style paid HTTP services need 
 ## Mocked or simulated
 
 - Default Fiber mode is mock and receipts say `simulated`.
-- Stripe and Tempo are mock/sandbox placeholders.
+- Stripe and Tempo remain explicit mock/sandbox adapters; live Stripe/Tempo support is outside the FiberMPP evidence path.
 
 ## Real Fiber status
 

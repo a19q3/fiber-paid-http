@@ -126,7 +126,7 @@ The TypeScript label must not imply a production trusted boundary.
 Show the selected machine request and the payment context:
 
 ```text
-GET /paid/robot-service
+GET /paid/protocol-service
 price: 100 Fibd
 method: Fiber
 challenge id: chal_...
@@ -143,7 +143,7 @@ Required controls:
 
 Controls should drive protocol state, not expose raw Fiber wallet/node operations.
 
-Secondary scenario rows may exist for demo variety:
+Secondary scenario rows may exist for protocol examples:
 
 - `GET /paid/weather`
 - `GET /paid/mpp-tool`
@@ -183,7 +183,7 @@ Client
   -> Authorization: Payment
 Server
   -> Payment-Receipt
-Robot / API
+Protected API
   -> service executed
 Client
   -> replay same credential
@@ -276,7 +276,7 @@ status: replay rejected
 reason: receipt not reused
 receipt_id: ...
 payment_hash: ...
-robot/api service: not re-executed
+protected service: not re-executed
 receipt reissued: false
 ```
 
@@ -287,7 +287,7 @@ The panel should make it obvious that replay rejection is a pass condition.
 The bottom terminal band should show a compact chronological trace:
 
 ```text
-[10:21:30.123] INFO client GET /paid/robot-service
+[10:21:30.123] INFO client GET /paid/protocol-service
 [10:21:30.151] INFO server 402 issued challenge=...
 [10:21:30.481] INFO payer invoice created payment_hash=...
 [10:21:31.102] INFO router forwarded payment route=node1->node2->node3
@@ -575,7 +575,7 @@ The frontend is ready when:
 - No Fiber node dashboard, wallet, checkout, or `fiber-pay` GUI behavior is present.
 - The console can run in static evidence mode with no live Fiber nodes.
 - The console can run live local mode when env vars are configured.
-- The UI is fancy enough to demo from a screenshot without needing narration.
+- The UI is polished enough to communicate the evidence chain from a screenshot without needing narration.
 
 ## Non-Blocking Future Ideas
 
@@ -591,4 +591,3 @@ None of these should change the canonical path:
 ```text
 Rust canonical engine -> Fiber JSON-RPC -> evidence reports -> console visualization
 ```
-

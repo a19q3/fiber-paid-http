@@ -31,6 +31,12 @@ type DemoResource = {
   contentType?: string;
 };
 
+type FiberNodeContext = {
+  role: string;
+  rpc: string;
+  status: "connected" | "evidence" | "unconfigured";
+};
+
 type FlowEvent = {
   time: string;
   level: "INFO" | "WARN" | "ERROR";
@@ -69,15 +75,15 @@ const reportFiles = {
 
 const defaultResources: DemoResource[] = [
   {
-    path: "/paid/robot-service",
-    label: "GET /paid/robot-service",
+    path: "/paid/protocol-service",
+    label: "GET /paid/protocol-service",
     price: { value: "100", currency: "Fibd", display: "100 Fibd" },
     fiberAmountShannons: "100",
     response: {
-      service: "robot-api",
+      service: "protected-api",
       executed: true,
       paid: true,
-      message: "paid robot service result"
+      message: "paid protocol service result"
     }
   },
   {
@@ -173,10 +179,13 @@ export function createDemoApi(options: DemoApiOptions = {}): Hono {
       readReport("tsGate")
     ]);
     const mode = getDemoMode();
+    const localEvidence = Boolean((gateLocal.data as { live_fiber_local_e2e?: boolean } | undefined)?.live_fiber_local_e2e);
+    const networkStatus = mode.liveReady ? "connected" : localEvidence ? "evidence" : "unconfigured";
     c.header("cache-control", "no-store");
     return c.json({
       name: "FiberMPP Evidence Console",
       mode: mode.liveReady ? mode.mode : "static-evidence",
+      livePaymentEnabled: mode.liveReady,
       blockers: mode.blockers,
       endpoints: resources.map(({ path, label, price, fiberAmountShannons }) => ({
         path,
@@ -185,14 +194,16 @@ export function createDemoApi(options: DemoApiOptions = {}): Hono {
         fiberAmountShannons
       })),
       localFiberNetwork: {
-        node1: { role: "payer", rpc: process.env.FIBER_PAYER_RPC_URL ?? "127.0.0.1:21714" },
-        node2: { role: "router", rpc: "127.0.0.1:21715" },
-        node3: { role: "payee", rpc: process.env.FIBER_PAYEE_RPC_URL ?? process.env.FIBER_RPC_URL ?? "127.0.0.1:21716" },
+        node1: fiberNodeContext("payer", process.env.FIBER_PAYER_RPC_URL ?? "127.0.0.1:21714", networkStatus),
+        node2: fiberNodeContext("router", process.env.FIBER_ROUTER_RPC_URL ?? "127.0.0.1:21715", networkStatus),
+        node3: fiberNodeContext(
+          "payee",
+          process.env.FIBER_PAYEE_RPC_URL ?? process.env.FIBER_RPC_URL ?? "127.0.0.1:21716",
+          networkStatus
+        ),
         route: ["node1", "node2", "node3"],
         channelCount: 2,
-        routeStatus: mode.liveReady || Boolean((gateLocal.data as { live_fiber_local_e2e?: boolean } | undefined)?.live_fiber_local_e2e)
-          ? "ready"
-          : "static evidence"
+        routeStatus: mode.liveReady ? "live connected" : localEvidence ? "evidence recorded" : "not configured"
       },
       badges: {
         rustCanonicalEngine: Boolean((canonical.data as { rust_canonical_verifier?: boolean } | undefined)?.rust_canonical_verifier),
@@ -293,7 +304,7 @@ export function createDemoApi(options: DemoApiOptions = {}): Hono {
     flow.paidBody = body;
     if (receipt) {
       appendEvent(flow, "INFO", "server", "payment verified", `receipt_id=${receipt.receiptId}`);
-      appendEvent(flow, "INFO", "server-side", "service executed", `HTTP ${response.status}`);
+      appendEvent(flow, "INFO", "protected-service", "service executed", `HTTP ${response.status}`);
     }
     return c.json({
       status: response.status,
@@ -357,7 +368,7 @@ export function createDemoApi(options: DemoApiOptions = {}): Hono {
 export function startDemoApi(port = Number(process.env.PORT ?? "8787")): void {
   const app = createDemoApi();
   serve({ fetch: app.fetch, port });
-  console.log(`FiberMPP demo API listening on http://localhost:${port}`);
+  console.log(`FiberMPP evidence API listening on http://localhost:${port}`);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
@@ -398,6 +409,10 @@ function getDemoMode(): { mode: "mock" | "local" | "testnet"; liveReady: boolean
   }
   const liveReady = blockers.length === 0;
   return { mode, liveReady, blockers };
+}
+
+function fiberNodeContext(role: string, rpc: string, status: FiberNodeContext["status"]): FiberNodeContext {
+  return { role, rpc, status };
 }
 
 async function readEndpoint(request: Request): Promise<string | undefined> {
@@ -513,6 +528,9 @@ function summarizeReport(data: unknown): Record<string, unknown> | null {
     f402_parity: report.f402_parity,
     canonical_hash_parity: report.canonical_hash_parity,
     error_code_parity: report.error_code_parity,
+    fiber_commit: report.fiber_commit,
+    fiber_e2e_payment_hash: report.fiber_e2e_payment_hash ?? report.payment_hash,
+    fiber_e2e_receipt_id: report.fiber_e2e_receipt_id ?? report.receipt_id,
     production_blockers: report.production_blockers
   };
 }

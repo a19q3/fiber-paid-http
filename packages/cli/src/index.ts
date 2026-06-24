@@ -78,7 +78,7 @@ program
     if (action !== "init") {
       throw new Error("Only `fiber-mpp refs init` is supported");
     }
-    await writeReferencePlaceholders(process.cwd());
+    await writeReferenceStarterNotes(process.cwd());
     console.log("Reference notes initialized under docs/refs");
   });
 
@@ -298,14 +298,14 @@ async function readJson(path: string): Promise<Record<string, unknown>> {
   return JSON.parse(await readFile(resolve(path), "utf8")) as Record<string, unknown>;
 }
 
-async function writeReferencePlaceholders(cwd: string): Promise<void> {
+async function writeReferenceStarterNotes(cwd: string): Promise<void> {
   const files = new Map<string, string>([
-    ["docs/refs/README.md", "# FiberMPP Reference Index\n\nRun the project bootstrap or update these notes after reviewing required references.\n"],
-    ["docs/refs/fiber.md", "# Fiber References\n\nTODO: summarize Fiber RPC and invoice/payment status behavior.\n"],
-    ["docs/refs/mpp.md", "# MPP References\n\nTODO: summarize MPP HTTP 402 challenge/credential/receipt lifecycle.\n"],
-    ["docs/refs/infern.md", "# Infern / F402 References\n\nTODO: summarize F402 compatibility boundaries.\n"],
-    ["docs/refs/l402.md", "# L402 References\n\nTODO: summarize macaroon/preimage precedent.\n"],
-    ["docs/refs/security.md", "# Security References\n\nTODO: summarize x402 binding, replay, authorization, paid-but-denied, and unpaid-service attacks.\n"]
+    ["docs/refs/README.md", "# FiberMPP Reference Index\n\nReference notes for FiberMPP protocol, Fiber RPC, F402/L402 compatibility, and security boundaries.\n"],
+    ["docs/refs/fiber.md", "# Fiber References\n\nTrack Fiber JSON-RPC invoice creation, payment sending, invoice status, payment status, and settlement semantics used by FiberMPP.\n"],
+    ["docs/refs/mpp.md", "# MPP References\n\nTrack the HTTP 402 challenge, credential, receipt, replay, and resource-binding lifecycle used by FiberMPP.\n"],
+    ["docs/refs/infern.md", "# Infern / F402 References\n\nTrack F402 compatibility boundaries and integration assumptions for Fiber-backed paid access flows.\n"],
+    ["docs/refs/l402.md", "# L402 References\n\nTrack macaroon, preimage, and paid-access precedent relevant to Authorization-bound receipts.\n"],
+    ["docs/refs/security.md", "# Security References\n\nTrack replay, wrong-resource, wrong-method, wrong-amount, expired-challenge, paid-but-denied, and unpaid-service attack coverage.\n"]
   ]);
   for (const [file, contents] of files) {
     const path = resolve(cwd, file);

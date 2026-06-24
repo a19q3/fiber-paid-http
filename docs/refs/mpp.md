@@ -10,7 +10,7 @@ Lifecycle implemented in FiberMPP:
 4. Client retries with `Authorization: Payment <base64url credential>`.
 5. Server verifies payment, serves the resource, and returns `Payment-Receipt`.
 
-FiberMPP keeps the core MPP model payment-method agnostic. Fiber is the primary method, while Stripe and Tempo are represented only as honest mock/sandbox placeholders.
+FiberMPP keeps the core MPP model payment-method agnostic. Fiber is the primary method, while Stripe and Tempo are represented only as explicit mock/sandbox adapters.
 
 Important interface choices:
 
