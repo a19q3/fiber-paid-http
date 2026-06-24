@@ -148,6 +148,7 @@
         padding: 8px 10px;
         color: #c8dce0;
         font-size: 12px;
+        transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
       }
 
       .status-dot {
@@ -158,6 +159,12 @@
         height: 18px;
         border: 1px solid currentColor;
         border-radius: 999px;
+      }
+
+      .status-dot.pass,
+      .status-dot.fail,
+      .status-dot.warn {
+        animation: status-ring 260ms ease-out both;
       }
 
       .status-dot .ui-icon {
@@ -391,6 +398,7 @@
         border-radius: 4px;
         background: transparent;
         color: var(--muted);
+        transition: border-color 140ms ease, color 140ms ease, background 140ms ease, transform 140ms ease;
       }
 
       .copy .ui-icon {
@@ -401,6 +409,7 @@
       .copy:hover {
         border-color: var(--cyan);
         color: var(--cyan);
+        transform: translateY(-1px);
       }
 
       .route-chips {
@@ -427,6 +436,8 @@
       }
 
       .button {
+        position: relative;
+        overflow: hidden;
         display: grid;
         grid-template-columns: 22px minmax(0, 1fr) auto;
         gap: 8px;
@@ -435,11 +446,13 @@
         padding: 7px 10px;
         color: #cde2e5;
         text-align: left;
+        transition: border-color 160ms ease, background 160ms ease, color 160ms ease, opacity 160ms ease, transform 160ms ease;
       }
 
       .button:hover:not(:disabled) {
         border-color: rgba(50, 230, 239, 0.6);
         background: rgba(50, 230, 239, 0.1);
+        transform: translateY(-1px);
       }
 
       .button:disabled {
@@ -459,6 +472,18 @@
 
       .button .ui-icon {
         color: currentColor;
+      }
+
+      .button.is-busy,
+      .clear.is-busy {
+        border-color: rgba(50, 230, 239, 0.7);
+        background: linear-gradient(90deg, rgba(50, 230, 239, 0.14), rgba(50, 230, 239, 0.04));
+        box-shadow: inset 0 0 0 1px rgba(50, 230, 239, 0.08), 0 0 18px rgba(50, 230, 239, 0.08);
+      }
+
+      .button.is-busy .ui-icon,
+      .clear.is-busy .ui-icon {
+        animation: action-icon-tick 460ms ease-out both;
       }
 
       .key {
@@ -547,6 +572,12 @@
         gap: 10px;
         min-height: 58px;
         align-items: center;
+        animation: timeline-row-enter 120ms ease-out both;
+      }
+
+      .timeline-row.running .actor,
+      .timeline-row.running .step-status {
+        box-shadow: 0 0 0 1px rgba(255, 178, 74, 0.08), 0 0 18px rgba(255, 178, 74, 0.06);
       }
 
       .actor {
@@ -636,6 +667,19 @@
         content: "";
       }
 
+      .timeline-row.running .flow-desc::after {
+        background: linear-gradient(90deg, transparent, var(--orange), transparent);
+        animation: flow-scan 720ms ease-in-out infinite;
+      }
+
+      .timeline-row.passed .num {
+        animation: pass-confirm 360ms ease-out both;
+      }
+
+      .timeline-row.rejected .step-status {
+        animation: reject-confirm 420ms ease-out both;
+      }
+
       .flow-desc strong {
         display: block;
         overflow: hidden;
@@ -711,6 +755,8 @@
       }
 
       .tab {
+        position: relative;
+        overflow: hidden;
         display: inline-flex;
         gap: 8px;
         align-items: center;
@@ -719,6 +765,7 @@
         padding: 6px;
         color: var(--muted);
         font-size: 11px;
+        transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
       }
 
       .tab.active {
@@ -727,7 +774,19 @@
         background: rgba(50, 230, 239, 0.11);
       }
 
+      .tab.active::after {
+        position: absolute;
+        right: 8px;
+        bottom: 0;
+        left: 8px;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(50, 230, 239, 0.85), transparent);
+        content: "";
+        animation: tab-scan 640ms ease-out both;
+      }
+
       .json-view {
+        position: relative;
         min-height: 204px;
         max-height: 272px;
         overflow: auto;
@@ -741,6 +800,10 @@
         font-size: 11px;
         line-height: 1.62;
         white-space: pre;
+      }
+
+      .json-view.evidence-refresh {
+        animation: evidence-refresh 120ms ease-out both;
       }
 
       .reports-attack {
@@ -941,6 +1004,19 @@
         color: #b7c8cc;
         font-family: var(--mono);
         font-size: 11px;
+        animation: log-enter 120ms ease-out both;
+      }
+
+      .log-line:has(.level-warn) {
+        animation-name: log-enter, warn-log-pulse;
+        animation-duration: 120ms, 360ms;
+        animation-timing-function: ease-out, ease-out;
+      }
+
+      .log-line:has(.level-error) {
+        animation-name: log-enter, error-log-pulse;
+        animation-duration: 120ms, 360ms;
+        animation-timing-function: ease-out, ease-out;
       }
 
       .log-line span {
@@ -1083,6 +1159,189 @@
         animation: actuator-pulse 1.2s ease-in-out infinite;
       }
 
+      .service-actuator-card.state-active .actuator-signal {
+        animation: actuator-signal-ready 1.8s ease-in-out infinite;
+      }
+
+      .service-actuator-card.state-blocked .actuator-frame {
+        animation: actuator-blocked-flash 520ms ease-out both;
+      }
+
+      .service-actuator-card.state-error .actuator-frame {
+        animation: actuator-error-flash 520ms ease-out both;
+      }
+
+      @keyframes status-ring {
+        0% {
+          box-shadow: 0 0 0 0 currentColor;
+          opacity: 0.74;
+        }
+
+        100% {
+          box-shadow: 0 0 0 5px transparent;
+          opacity: 1;
+        }
+      }
+
+      @keyframes action-icon-tick {
+        0% {
+          opacity: 0.55;
+          transform: scale(0.92);
+        }
+
+        52% {
+          opacity: 1;
+          transform: scale(1.08);
+        }
+
+        100% {
+          transform: scale(1);
+        }
+      }
+
+      @keyframes timeline-row-enter {
+        0% {
+          opacity: 0.94;
+          transform: translateY(2px);
+        }
+
+        100% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes flow-scan {
+        0%,
+        100% {
+          opacity: 0.35;
+          transform: scaleX(0.72);
+        }
+
+        50% {
+          opacity: 1;
+          transform: scaleX(1);
+        }
+      }
+
+      @keyframes pass-confirm {
+        0% {
+          box-shadow: 0 0 0 rgba(57, 231, 173, 0);
+        }
+
+        45% {
+          box-shadow: 0 0 22px rgba(57, 231, 173, 0.28);
+        }
+
+        100% {
+          box-shadow: 0 0 20px rgba(50, 230, 239, 0.18);
+        }
+      }
+
+      @keyframes reject-confirm {
+        0%,
+        100% {
+          box-shadow: none;
+        }
+
+        45% {
+          box-shadow: 0 0 18px rgba(255, 99, 95, 0.18);
+        }
+      }
+
+      @keyframes tab-scan {
+        0% {
+          opacity: 0;
+          transform: scaleX(0.2);
+        }
+
+        100% {
+          opacity: 1;
+          transform: scaleX(1);
+        }
+      }
+
+      @keyframes evidence-refresh {
+        0% {
+          border-color: rgba(50, 230, 239, 0.38);
+          box-shadow: inset 0 0 24px rgba(50, 230, 239, 0.05);
+          opacity: 0.98;
+        }
+
+        100% {
+          border-color: var(--line);
+          box-shadow: none;
+          opacity: 1;
+        }
+      }
+
+      @keyframes log-enter {
+        0% {
+          opacity: 0.92;
+          transform: translateY(2px);
+        }
+
+        100% {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes warn-log-pulse {
+        0%,
+        100% {
+          background: transparent;
+        }
+
+        45% {
+          background: rgba(255, 178, 74, 0.045);
+        }
+      }
+
+      @keyframes error-log-pulse {
+        0%,
+        100% {
+          background: transparent;
+        }
+
+        45% {
+          background: rgba(255, 99, 95, 0.05);
+        }
+      }
+
+      @keyframes actuator-signal-ready {
+        0%,
+        100% {
+          opacity: 0.45;
+        }
+
+        50% {
+          opacity: 1;
+        }
+      }
+
+      @keyframes actuator-blocked-flash {
+        0%,
+        100% {
+          opacity: 1;
+        }
+
+        45% {
+          opacity: 0.62;
+        }
+      }
+
+      @keyframes actuator-error-flash {
+        0%,
+        100% {
+          filter: drop-shadow(0 0 0 rgba(255, 99, 95, 0));
+        }
+
+        45% {
+          filter: drop-shadow(0 0 10px rgba(255, 99, 95, 0.22));
+        }
+      }
+
       @keyframes actuator-pulse {
         0%,
         100% {
@@ -1095,8 +1354,13 @@
       }
 
       @media (prefers-reduced-motion: reduce) {
-        .service-actuator-card.state-executing .actuator-core {
-          animation: none;
+        *,
+        *::before,
+        *::after {
+          animation-duration: 0.001ms !important;
+          animation-iteration-count: 1 !important;
+          scroll-behavior: auto !important;
+          transition-duration: 0.001ms !important;
         }
       }
 
@@ -1381,6 +1645,7 @@
         activeTab: "chain",
         phase: "idle",
         busy: false,
+        activeAction: null,
         localLogs: []
       };
       const actuatorStates = new Set(["idle", "active", "executing", "blocked", "error"]);
@@ -1429,6 +1694,7 @@
         $("#clear-log").addEventListener("click", async () => {
           if (state.busy) return;
           state.busy = true;
+          state.activeAction = "reset";
           try {
             const result = await postJson("/api/demo/reset", {});
             state.flow = result.flow || { events: [] };
@@ -1440,6 +1706,7 @@
             addLocalLog("WARN", "web", "server reset unavailable", error.message);
           } finally {
             state.busy = false;
+            state.activeAction = null;
             render();
           }
         });
@@ -1524,6 +1791,7 @@
       async function runAction(action) {
         if (state.busy) return;
         state.busy = true;
+        state.activeAction = action;
         state.phase = action === "unpaid" ? "unpaid_request_sent" : state.phase;
         render();
         try {
@@ -1541,6 +1809,7 @@
           addLocalLog("ERROR", "web", `${action} failed`, error.message);
         } finally {
           state.busy = false;
+          state.activeAction = null;
           render();
         }
       }
@@ -1677,6 +1946,7 @@
         $("#timeline").replaceChildren(...steps.map((step, index) => {
           const row = el("div", "timeline-row");
           const status = step.status === "passed" ? "passed" : step.status === "rejected" ? "rejected" : step.status === "running" ? "running" : "";
+          if (status) row.classList.add(status);
           row.innerHTML = `
             <div class="actor"><span class="actor-icon">${iconHtml(step.icon)}</span><span>${escapeHtml(step.actor)}</span></div>
             <div class="rail"><span class="num">${index + 1}</span></div>
@@ -1703,7 +1973,9 @@
 
       function renderEvidence() {
         const data = evidenceForTab(state.activeTab);
-        $("#json").textContent = JSON.stringify(data, null, 2);
+        const json = $("#json");
+        json.textContent = JSON.stringify(data, null, 2);
+        pulseElement(json, "evidence-refresh");
       }
 
       function renderReports() {
@@ -1811,6 +2083,11 @@
         $("#pay").disabled = state.busy || apiUnavailable || !state.flow?.fiberChallenge;
         $("#retry").disabled = state.busy || apiUnavailable || !state.flow?.authorization;
         $("#replay").disabled = state.busy || apiUnavailable || !state.flow?.authorization;
+        $("#send").classList.toggle("is-busy", state.activeAction === "unpaid");
+        $("#pay").classList.toggle("is-busy", state.activeAction === "pay");
+        $("#retry").classList.toggle("is-busy", state.activeAction === "retry");
+        $("#replay").classList.toggle("is-busy", state.activeAction === "replay");
+        $("#clear-log").classList.toggle("is-busy", state.activeAction === "reset");
       }
 
       function renderServiceActuatorStatus() {
@@ -2063,6 +2340,12 @@
       function eventTime(events, needle) {
         const event = events.find((item) => `${item.message} ${item.detail || ""}`.toLowerCase().includes(needle.toLowerCase()));
         return event ? formatTime(event.time) : undefined;
+      }
+
+      function pulseElement(node, className) {
+        node.classList.remove(className);
+        void node.offsetWidth;
+        node.classList.add(className);
       }
 
       function formatTime(value) {
