@@ -21,8 +21,13 @@ const requiredFragments = [
   'function badgeState(label, value)',
   'function vectorSummary(canonical)',
   'function unavailableEvidence(reason)',
-  'function renderApiHealth()',
-  'demo actions disabled'
+  'function renderServiceActuatorStatus()',
+  'demo actions disabled',
+  'SERVICE / ACTUATOR STATUS',
+  'function serviceActuatorStatus()',
+  'const actuatorStates = new Set(["idle", "active", "executing", "blocked", "error"])',
+  'receipt reissued',
+  'actuator/API health'
 ];
 
 const forbiddenFragments = [
@@ -38,7 +43,15 @@ const forbiddenFragments = [
   'canonical.f402_parity ?? true',
   'canonical.canonical_hash_parity ?? true',
   'vectors verified',
-  '402 challenge ready'
+  '402 challenge ready',
+  'Protected Service',
+  'service-mark',
+  'service-card',
+  'ROBOT STATUS',
+  'RobotApiStatus',
+  'lottie',
+  'https://lottie',
+  'http://lottie'
 ];
 
 for (const fragment of requiredFragments) {

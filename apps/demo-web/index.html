@@ -821,7 +821,7 @@
 
       .bottom {
         display: grid;
-        grid-template-columns: 1fr 158px;
+        grid-template-columns: minmax(0, 1fr) 230px;
         gap: 10px;
         padding: 0 12px 12px;
       }
@@ -895,80 +895,137 @@
         color: var(--red);
       }
 
-      .service-card {
+      .service-actuator-card {
         display: grid;
-        align-content: center;
-        justify-items: center;
+        grid-template-rows: auto 1fr;
         min-height: 174px;
-        gap: 10px;
-        padding: 12px;
+        overflow: hidden;
       }
 
-      .service-mark {
-        position: relative;
-        width: 78px;
-        height: 58px;
-        border: 1px solid rgba(50, 230, 239, 0.4);
-        border-radius: 10px;
-        background: linear-gradient(180deg, rgba(50, 230, 239, 0.18), rgba(50, 230, 239, 0.04));
+      .actuator-title {
+        height: 34px;
+        padding: 0 10px;
+        font-size: 10px;
+        letter-spacing: 0.06em;
       }
 
-      .service-mark::before,
-      .service-mark::after {
-        position: absolute;
-        content: "";
+      .actuator-body {
+        display: grid;
+        align-content: start;
+        gap: 9px;
+        padding: 10px;
       }
 
-      .service-mark::before {
-        inset: 12px;
-        border: 1px solid rgba(50, 230, 239, 0.28);
-        border-radius: 6px;
+      .actuator-head {
+        display: grid;
+        grid-template-columns: 46px minmax(0, 1fr);
+        gap: 9px;
+        align-items: center;
       }
 
-      .service-mark::after {
-        top: 27px;
-        right: 18px;
-        left: 18px;
-        height: 1px;
-        background: rgba(50, 230, 239, 0.55);
+      .actuator-glyph {
+        width: 46px;
+        height: 42px;
+        color: var(--cyan);
+        filter: drop-shadow(0 0 12px rgba(50, 230, 239, 0.14));
       }
 
-      .service-card strong {
+      .actuator-frame,
+      .actuator-core,
+      .actuator-link,
+      .actuator-signal {
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.4;
+      }
+
+      .actuator-core {
+        fill: rgba(50, 230, 239, 0.12);
+      }
+
+      .actuator-copy {
+        min-width: 0;
+      }
+
+      .actuator-copy strong {
+        display: block;
+        font-family: var(--mono);
         color: #cfecef;
-        font-size: 12px;
+        font-size: 13px;
+        font-weight: 600;
+        line-height: 1.1;
         text-transform: uppercase;
       }
 
-      .service-card span {
-        color: var(--green);
+      .actuator-copy span {
+        display: block;
+        margin-top: 4px;
+        overflow: hidden;
+        color: var(--muted);
         font-family: var(--mono);
-        font-size: 12px;
+        font-size: 10px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
-      .api-health {
-        display: flex;
-        gap: 10px;
-        align-items: center;
+      .actuator-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 7px 8px;
+        padding-top: 8px;
+        border-top: 1px solid var(--line);
         color: var(--muted);
-        font-size: 11px;
+        font-family: var(--mono);
+        font-size: 10px;
       }
 
-      .api-health span {
+      .actuator-grid span,
+      .actuator-grid strong {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .actuator-grid strong {
+        color: #cfecef;
+        font-weight: 500;
+      }
+
+      .service-actuator-card.state-idle .actuator-glyph,
+      .service-actuator-card.state-idle .actuator-copy strong {
         color: var(--muted);
       }
 
-      .pulse {
-        width: 42px;
-        height: 16px;
-        background:
-          linear-gradient(90deg, transparent 0 10%, var(--cyan) 10% 12%, transparent 12% 34%, var(--cyan) 34% 38%, transparent 38% 64%, var(--cyan) 64% 68%, transparent 68%),
-          linear-gradient(180deg, transparent 45%, rgba(50, 230, 239, 0.35) 46% 54%, transparent 55%);
+      .service-actuator-card.state-active .actuator-glyph,
+      .service-actuator-card.state-active .actuator-copy strong,
+      .service-actuator-card.state-executing .actuator-glyph,
+      .service-actuator-card.state-executing .actuator-copy strong {
+        color: var(--cyan);
       }
 
-      .api-health.offline .pulse {
-        background:
-          linear-gradient(90deg, transparent 0 18%, var(--red) 18% 24%, transparent 24% 58%, var(--red) 58% 64%, transparent 64%),
-          linear-gradient(180deg, transparent 45%, rgba(255, 99, 95, 0.35) 46% 54%, transparent 55%);
+      .service-actuator-card.state-blocked .actuator-glyph,
+      .service-actuator-card.state-blocked .actuator-copy strong {
+        color: var(--orange);
+      }
+
+      .service-actuator-card.state-error .actuator-glyph,
+      .service-actuator-card.state-error .actuator-copy strong {
+        color: var(--red);
+      }
+
+      .service-actuator-card.state-executing .actuator-core {
+        animation: actuator-pulse 1.2s ease-in-out infinite;
+      }
+
+      @keyframes actuator-pulse {
+        0%,
+        100% {
+          opacity: 0.55;
+        }
+
+        50% {
+          opacity: 1;
+        }
       }
 
       @media (max-width: 1320px) {
@@ -1133,11 +1190,28 @@
               <div class="log-grid" id="logs"></div>
             </div>
           </section>
-          <section class="panel service-card">
-            <div class="service-mark" aria-hidden="true"></div>
-            <strong>Protected Service</strong>
-            <span id="service-status">awaiting receipt</span>
-            <div class="api-health" id="api-health"><span id="api-health-label">API unknown</span><span class="pulse" aria-hidden="true"></span></div>
+          <section class="panel service-actuator-card state-idle" id="service-actuator">
+            <div class="panel-title actuator-title"><span class="glyph">::</span> SERVICE / ACTUATOR STATUS</div>
+            <div class="actuator-body">
+              <div class="actuator-head">
+                <svg class="actuator-glyph" viewBox="0 0 64 56" aria-hidden="true">
+                  <rect class="actuator-frame" x="10" y="10" width="44" height="28" rx="3"></rect>
+                  <circle class="actuator-core" cx="32" cy="24" r="6"></circle>
+                  <path class="actuator-link" d="M32 38v8M20 46h24M16 16h-8M56 16h-8M16 32h-8M56 32h-8"></path>
+                  <path class="actuator-signal" d="M24 24h-8M48 24h-8"></path>
+                </svg>
+                <div class="actuator-copy">
+                  <strong id="actuator-state">idle</strong>
+                  <span id="actuator-detail">awaiting receipt</span>
+                </div>
+              </div>
+              <div class="actuator-grid">
+                <span>service</span><strong id="actuator-service">not executed</strong>
+                <span>replay</span><strong id="actuator-replay">not attempted</strong>
+                <span>receipt reissued</span><strong id="actuator-reissued">false</strong>
+                <span>actuator/API health</span><strong id="actuator-health">unknown</strong>
+              </div>
+            </div>
           </section>
         </footer>
       </div>
@@ -1177,6 +1251,7 @@
         busy: false,
         localLogs: []
       };
+      const actuatorStates = new Set(["idle", "active", "executing", "blocked", "error"]);
 
       const $ = (selector) => document.querySelector(selector);
       const el = (tag, className, text) => {
@@ -1329,8 +1404,7 @@
         renderParity();
         renderLogs();
         renderButtons();
-        renderApiHealth();
-        $("#service-status").textContent = serviceStatusText();
+        renderServiceActuatorStatus();
       }
 
       function renderBadges() {
@@ -1545,29 +1619,77 @@
         $("#replay").disabled = state.busy || apiUnavailable || !state.flow?.authorization;
       }
 
-      function renderApiHealth() {
-        const apiUnavailable = state.status?.mode === "api-unreachable";
-        $("#api-health").className = `api-health${apiUnavailable ? " offline" : ""}`;
-        $("#api-health-label").textContent = apiUnavailable ? "API unreachable" : "API connected";
+      function renderServiceActuatorStatus() {
+        const status = serviceActuatorStatus();
+        const safeState = actuatorStates.has(status.state) ? status.state : "error";
+        $("#service-actuator").className = `panel service-actuator-card state-${safeState}`;
+        $("#actuator-state").textContent = safeState;
+        $("#actuator-detail").textContent = status.detail;
+        $("#actuator-service").textContent = status.service;
+        $("#actuator-replay").textContent = status.replay;
+        $("#actuator-reissued").textContent = status.receiptReissued;
+        $("#actuator-health").textContent = status.health;
       }
 
-      function serviceStatusText() {
+      function serviceActuatorStatus() {
         if (state.status?.mode === "api-unreachable") {
-          return "API unreachable";
+          return {
+            state: "error",
+            detail: "API unreachable",
+            service: "not executed",
+            replay: "not attempted",
+            receiptReissued: "false",
+            health: "offline"
+          };
         }
         if (state.flow?.replayStatus === 402 || state.phase === "replay_rejected") {
-          return "replay rejected, not re-executed";
+          return {
+            state: "blocked",
+            detail: "replay blocked",
+            service: state.flow?.receipt ? "executed after receipt" : "not executed",
+            replay: "blocked",
+            receiptReissued: "false",
+            health: "guard active"
+          };
+        }
+        if (state.busy && state.phase !== "idle") {
+          return {
+            state: "executing",
+            detail: "protocol step running",
+            service: state.flow?.receipt ? "executed after receipt" : "pending receipt",
+            replay: "not attempted",
+            receiptReissued: "false",
+            health: "API connected"
+          };
         }
         if (state.flow?.receipt || state.phase === "receipt_returned") {
-          return "executed with receipt";
+          return {
+            state: "active",
+            detail: "receipt accepted",
+            service: "executed after receipt",
+            replay: "not attempted",
+            receiptReissued: "false",
+            health: "API connected"
+          };
         }
-        if (state.flow?.authorization || state.phase === "payment_settled") {
-          return "payment proof ready";
+        if (state.flow?.authorization || state.flow?.fiberChallenge || state.phase === "payment_settled" || state.phase === "challenge_received") {
+          return {
+            state: "active",
+            detail: state.flow?.authorization ? "payment proof ready" : "402 challenge issued",
+            service: "awaiting receipt",
+            replay: "not attempted",
+            receiptReissued: "false",
+            health: "API connected"
+          };
         }
-        if (state.flow?.fiberChallenge || state.phase === "challenge_received") {
-          return "402 challenge issued";
-        }
-        return "awaiting receipt";
+        return {
+          state: "idle",
+          detail: "awaiting receipt",
+          service: "not executed",
+          replay: "not attempted",
+          receiptReissued: "false",
+          health: state.status?.livePaymentEnabled ? "live Fiber ready" : "API connected"
+        };
       }
 
       function timelineSteps() {
