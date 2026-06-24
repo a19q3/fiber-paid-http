@@ -110,6 +110,7 @@ const previousReportPath = "reports/fiber-mpp-gate.json";
 const previousReport = fs.existsSync(previousReportPath)
   ? JSON.parse(fs.readFileSync(previousReportPath, "utf8"))
   : {};
+const rustGatewayBlocker = "Rust HTTP gateway production implementation still pending";
 const envBlockers = list("FIBER_E2E_BLOCKERS");
 const fiberTestExit = Number.parseInt(process.env.FIBER_TEST_EXIT || "1", 10);
 const preflightLoaded = Boolean(result.fiber_preflight_test_loaded) || bool("FIBER_PREFLIGHT_TEST_LOADED");
@@ -157,18 +158,18 @@ const evidencePaymentHash = result.fiber_e2e_payment_hash || previousReport.fibe
 const evidenceReceiptId = result.fiber_e2e_receipt_id || previousReport.fiber_e2e_receipt_id;
 let productionBlockers;
 if (localFiberE2eEvidence) {
-  productionBlockers = [
+  productionBlockers = withProductionBlockers([
     "testnet Fiber E2E evidence still pending",
     "operational hardening still pending",
     "long-running deployment hardening still pending"
-  ];
+  ]);
 } else if (fiberStatus === "passed") {
-  productionBlockers = [
+  productionBlockers = withProductionBlockers([
     "operational hardening still pending",
     "long-running deployment hardening still pending"
-  ];
+  ]);
 } else {
-  productionBlockers = fiberBlockers;
+  productionBlockers = withProductionBlockers(fiberBlockers);
 }
 
 function readIfExists(path) {
@@ -198,6 +199,10 @@ function detectToolchainShimsUsed() {
     });
   }
   return shims;
+}
+
+function withProductionBlockers(blockers) {
+  return Array.from(new Set([...blockers, rustGatewayBlocker]));
 }
 
 function readFiberCommit() {
@@ -265,7 +270,8 @@ if (liveFiberLocalE2e) {
   success.production_blockers = [
     "testnet Fiber E2E evidence still pending",
     "operational hardening still pending",
-    "long-running deployment hardening still pending"
+    "long-running deployment hardening still pending",
+    rustGatewayBlocker
   ];
   fs.writeFileSync("reports/fiber-local-e2e-success.json", `${JSON.stringify(success, null, 2)}\n`);
   fs.writeFileSync("reports/fiber-mpp-gate.local.json", `${JSON.stringify(success, null, 2)}\n`);

@@ -26,7 +26,14 @@ describe("FiberMPP integration flows", () => {
     expect(status.status).toBe(200);
     const statusBody = await status.json() as {
       endpoints: Array<{ path: string }>;
-      localFiberNetwork: { node1: { status: string }; node2: { status: string }; node3: { status: string } };
+      localFiberNetwork: {
+        node1: { status: string };
+        node2: { status: string };
+        node3: { status: string };
+        channelCount: number | null;
+        channelCountSource: string;
+        routeSource: string;
+      };
     };
     expect(statusBody.endpoints[0]?.path).toBe("/paid/protocol-service");
     expect(JSON.stringify(statusBody)).not.toContain("robot");
@@ -35,6 +42,8 @@ describe("FiberMPP integration flows", () => {
       statusBody.localFiberNetwork.node2.status,
       statusBody.localFiberNetwork.node3.status
     ])).not.toContain("online");
+    expect(statusBody.localFiberNetwork.channelCountSource).not.toBe("live");
+    expect(statusBody.localFiberNetwork.routeSource).not.toBe("live");
 
     const unpaid = await app.request("http://localhost/api/demo/unpaid", {
       method: "POST",
@@ -49,6 +58,11 @@ describe("FiberMPP integration flows", () => {
     expect((await pay.clone().json()) as { proof: { paymentHash: string } }).toMatchObject({
       proof: { paymentHash: expect.stringMatching(/^0x[0-9a-f]{64}$/) }
     });
+    const payBody = await pay.json() as { flow: { events: Array<{ actor: string; message: string; detail?: string }> } };
+    const payEvents = JSON.stringify(payBody.flow.events);
+    expect(payEvents).toContain("fiber-method");
+    expect(payEvents).not.toContain("node2 (router)");
+    expect(payEvents).not.toContain("node3 (payee)");
 
     const retry = await app.request("http://localhost/api/demo/retry", { method: "POST" });
     expect(retry.status).toBe(200);

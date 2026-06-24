@@ -131,7 +131,7 @@ price: 100 Fibd
 method: Fiber
 challenge id: chal_...
 resource hash: ...
-route: node1 -> node2 -> node3
+route: node1 -> node2 -> node3 (only when live local/testnet is configured or local evidence exists)
 ```
 
 Required controls:
@@ -160,11 +160,13 @@ node1 payer  : 127.0.0.1:21714
 node2 router : 127.0.0.1:21715
 node3 payee  : 127.0.0.1:21716
 route        : node1 -> node2 -> node3
-channel count: 2
-route status : ready
+channel count: 2 (from local E2E evidence report) or not polled
+route status : live configured / evidence recorded / not configured
 ```
 
 Do not add channel open/close controls, balance charts, liquidity graphs, mempool panels, or network-wide observability.
+
+The widget must show the source of route and channel fields. Static evidence mode may show the saved local E2E route as historical evidence, but it must not label it as live network state. If live Fiber env vars are missing, the console should display `unconfigured` or `evidence recorded`, not `connected`.
 
 ### Center Column: Protocol Flow Timeline
 
@@ -218,6 +220,8 @@ failed
 ```
 
 The success path turns green/teal. Replay rejection should be red/orange but treated as a successful security outcome.
+
+In mock or static-evidence mode, the payment steps should say `Fiber method` / `mock payment proof` / `mock proof accepted`. `Fiber Node B / C` and routed-settlement language is reserved for live local/testnet proofs whose payment proof mode is `local` or `testnet`.
 
 ### Right Column: Evidence & Reports
 
@@ -290,8 +294,7 @@ The bottom terminal band should show a compact chronological trace:
 [10:21:30.123] INFO client GET /paid/protocol-service
 [10:21:30.151] INFO server 402 issued challenge=...
 [10:21:30.481] INFO payer invoice created payment_hash=...
-[10:21:31.102] INFO router forwarded payment route=node1->node2->node3
-[10:21:31.231] INFO payee payment settled
+[10:21:31.102] INFO fiber-method mock proof settled no live Fiber route was exercised
 [10:21:31.347] INFO server payment verified receipt_id=...
 [10:21:31.789] WARN server replay rejected reason=not_reused
 ```
@@ -387,7 +390,7 @@ The API should call FiberMPP directly. Do not route the primary demo path throug
 Preferred payment path:
 
 ```text
-FiberMPP Rust engine -> Fiber JSON-RPC
+FiberMPP canonical engine -> Fiber JSON-RPC
 ```
 
 Future optional client adapter:
@@ -446,7 +449,8 @@ Button sequence:
 
 2. Pay with Fiber
    -> invoice/payment hash appears
-   -> route graph animates node1 -> node2 -> node3
+   -> route graph animates node1 -> node2 -> node3 only in live local/testnet mode
+   -> static/mock mode shows proof verification without route-node animation
    -> settlement status becomes passed
 
 3. Retry with Authorization: Payment
@@ -589,5 +593,5 @@ These are optional and should not be part of the hackathon-critical path:
 None of these should change the canonical path:
 
 ```text
-Rust canonical engine -> Fiber JSON-RPC -> evidence reports -> console visualization
+Rust canonical core -> Fiber JSON-RPC adapter -> evidence reports -> console visualization
 ```

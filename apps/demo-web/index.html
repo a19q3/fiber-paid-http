@@ -1064,8 +1064,8 @@
                     <div class="kv-row"><span>Resource Hash</span><strong id="resource-hash">pending</strong><button class="copy" data-copy-target="resource-hash" title="Copy resource hash">C</button></div>
                     <div class="kv-row">
                       <span>Route</span>
-                      <div class="route-chips"><span>node1</span><span>node2</span><span>node3</span></div>
-                      <button class="copy" data-copy="node1 -> node2 -> node3" title="Copy route">C</button>
+                      <div class="route-chips" id="route-chips"><span>pending</span></div>
+                      <button class="copy" id="route-copy" data-copy="route pending" title="Copy route">C</button>
                     </div>
                   </div>
                 </div>
@@ -1239,8 +1239,10 @@
               node1: { role: "payer", rpc: "127.0.0.1:21714", status: "unconfigured" },
               node2: { role: "router", rpc: "127.0.0.1:21715", status: "unconfigured" },
               node3: { role: "payee", rpc: "127.0.0.1:21716", status: "unconfigured" },
-              route: ["node1", "node2", "node3"],
-              channelCount: 2,
+              route: [],
+              routeSource: "unavailable",
+              channelCount: null,
+              channelCountSource: "unavailable",
               routeStatus: "api offline"
             },
             engine: {
@@ -1358,6 +1360,9 @@
         $("#price").textContent = priceLabel(selected);
         $("#challenge-id").textContent = flowChallengeId() || "pending";
         $("#resource-hash").textContent = flowResourceHash() || "pending";
+        const route = currentRoute();
+        $("#route-chips").replaceChildren(...(route.length ? route : ["no live route"]).map((name) => el("span", "", name)));
+        $("#route-copy").dataset.copy = route.length ? route.join(" -> ") : "no live route configured";
       }
 
       function renderNetwork() {
@@ -1373,7 +1378,7 @@
           return row;
         });
         const footer = el("div", "network-footer");
-        footer.innerHTML = `<span>Channel Count <strong>${network.channelCount || 2}</strong></span><span>Route Status <strong>${escapeHtml(network.routeStatus || "ready")}</strong></span>`;
+        footer.innerHTML = `<span>Channel Evidence <strong>${escapeHtml(channelEvidenceText(network))}</strong></span><span>Route Status <strong>${escapeHtml(network.routeStatus || "not configured")}</strong></span>`;
         $("#network").replaceChildren(...rows, footer);
       }
 
@@ -1516,11 +1521,27 @@
         const paymentHash = state.flow?.fiberChallenge?.paymentHash || state.flow?.receipt?.settlement?.paymentHash;
         const receiptId = state.flow?.receipt?.receiptId;
         const events = state.flow?.events || [];
+        const liveFiberFlow = isLiveFiberFlow();
+        const proofMode = state.flow?.proof?.mode || state.status?.mode || "mock";
         return [
           step("CLIENT", "GET /paid/*resource", state.selected, hasPhase("challenge_received"), "[]", eventTime(events, "GET")),
           step("SERVER", "402 Payment Required", `challenge: ${short(challengeId)}`, hasPhase("challenge_received"), "==", eventTime(events, "402")),
-          step("FIBER NODE A", "send_payment (invoice)", `payment_hash: ${short(paymentHash)}`, hasPhase("payment_settled"), "<>", eventTime(events, "send_payment")),
-          step("FIBER NODE B / C", "Settlement across route", "settlement: success", hasPhase("payment_settled"), "<>", eventTime(events, "payment settled")),
+          step(
+            liveFiberFlow ? "FIBER NODE A" : "FIBER METHOD",
+            liveFiberFlow ? "send_payment (invoice)" : "Mock payment proof",
+            `payment_hash: ${short(paymentHash)}`,
+            hasPhase("payment_settled"),
+            "<>",
+            eventTime(events, liveFiberFlow ? "send_payment" : "payment proof")
+          ),
+          step(
+            liveFiberFlow ? "FIBER NODE B / C" : "METHOD VERIFIER",
+            liveFiberFlow ? "Settlement across route" : "Mock proof accepted",
+            liveFiberFlow ? "settlement: success" : `mode: ${proofMode}`,
+            hasPhase("payment_settled"),
+            "<>",
+            eventTime(events, liveFiberFlow ? "payment settled" : "mock proof")
+          ),
           step("CLIENT", "Retry with Authorization: Payment", `payment_hash: ${short(paymentHash)}`, hasPhase("receipt_returned"), "[]", eventTime(events, "retry")),
           step("SERVER", "Verify Payment & Receipt", `receipt_id: ${short(receiptId)}`, hasPhase("receipt_returned"), "==", eventTime(events, "payment verified")),
           step("SERVER", "Payment-Receipt Returned", `receipt_id: ${short(receiptId)}`, hasPhase("receipt_returned"), "==", eventTime(events, "service executed")),
@@ -1571,6 +1592,24 @@
         return endpoint.price?.display || `${endpoint.fiberAmountShannons || "100"} Fibd`;
       }
 
+      function currentRoute() {
+        return state.status?.localFiberNetwork?.route || [];
+      }
+
+      function isLiveFiberFlow() {
+        const mode = state.flow?.proof?.mode || (state.status?.livePaymentEnabled ? state.status?.mode : undefined);
+        return mode === "local" || mode === "testnet";
+      }
+
+      function channelEvidenceText(network) {
+        if (typeof network.channelCount === "number") {
+          const suffix = network.channelCountSource === "fiber-local-e2e-report" ? " from report" : " configured";
+          return `${network.channelCount}${suffix}`;
+        }
+        if (network.channelCountSource === "not-polled") return "not polled";
+        return "unavailable";
+      }
+
       function flowChallengeId() {
         return state.flow?.challengeId || state.flow?.challengeBody?.challengeId || state.flow?.challengeBody?.challenge?.challengeId;
       }
@@ -1586,9 +1625,13 @@
             resource: state.flow?.resourceUrl || state.selected,
             method: "Fiber",
             amount: priceLabel(selectedEndpoint()),
-            route: ["node1", "node2", "node3"],
+            route: currentRoute(),
+            route_source: state.status?.localFiberNetwork?.routeSource,
+            channel_count: state.status?.localFiberNetwork?.channelCount,
+            channel_count_source: state.status?.localFiberNetwork?.channelCountSource,
             resource_hash: flowResourceHash(),
             payment_hash: state.flow?.fiberChallenge?.paymentHash,
+            payment_proof_mode: state.flow?.proof?.mode || state.status?.mode,
             mode: state.status?.mode,
             blockers: state.status?.blockers
           };

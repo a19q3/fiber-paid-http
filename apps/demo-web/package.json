@@ -4,9 +4,9 @@
   "type": "module",
   "description": "Static FiberMPP evidence console UI.",
   "scripts": {
-    "build": "node -e \"console.log('evidence console static build ok')\"",
-    "lint": "node -e \"console.log('evidence console static lint ok')\"",
-    "typecheck": "node -e \"console.log('evidence console static typecheck ok')\"",
+    "build": "node scripts/check-static.mjs",
+    "lint": "node scripts/check-static.mjs",
+    "typecheck": "node scripts/check-static.mjs",
     "start": "node server.mjs"
   }
 }

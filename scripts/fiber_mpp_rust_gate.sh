@@ -33,7 +33,8 @@ const report = {
   production_blockers: [
     "testnet Fiber E2E evidence still pending",
     "operational hardening still pending",
-    "long-running deployment hardening still pending"
+    "long-running deployment hardening still pending",
+    "Rust HTTP gateway production implementation still pending"
   ]
 };
 fs.writeFileSync("reports/fiber-mpp-rust-gate.json", `${JSON.stringify(report, null, 2)}\n`);

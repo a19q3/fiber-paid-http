@@ -14,7 +14,8 @@
   "production_blockers": [
     "testnet Fiber E2E evidence still pending",
     "operational hardening still pending",
-    "long-running deployment hardening still pending"
+    "long-running deployment hardening still pending",
+    "Rust HTTP gateway production implementation still pending"
   ],
   "fiber_e2e_payment_hash": "0xec3a08f9b298db82f2dc27861aed5a3110b5d36a56bd43d13b60c5a4bcf69222",
   "fiber_e2e_receipt_id": "rcpt_ca010a79973755656bdff4b1684570da"

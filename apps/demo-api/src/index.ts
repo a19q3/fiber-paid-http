@@ -37,6 +37,17 @@ type FiberNodeContext = {
   status: "connected" | "evidence" | "unconfigured";
 };
 
+type FiberRouteContext = {
+  node1: FiberNodeContext;
+  node2: FiberNodeContext;
+  node3: FiberNodeContext;
+  route: string[];
+  routeSource: "live-config" | "fiber-local-e2e-report" | "unavailable";
+  channelCount: number | null;
+  channelCountSource: "fiber-local-e2e-report" | "not-polled" | "unavailable";
+  routeStatus: string;
+};
+
 type FlowEvent = {
   time: string;
   level: "INFO" | "WARN" | "ERROR";
@@ -181,6 +192,7 @@ export function createDemoApi(options: DemoApiOptions = {}): Hono {
     const mode = getDemoMode();
     const localEvidence = Boolean((gateLocal.data as { live_fiber_local_e2e?: boolean } | undefined)?.live_fiber_local_e2e);
     const networkStatus = mode.liveReady ? "connected" : localEvidence ? "evidence" : "unconfigured";
+    const routeContext = buildRouteContext(mode.liveReady, localEvidence, networkStatus);
     c.header("cache-control", "no-store");
     return c.json({
       name: "FiberMPP Evidence Console",
@@ -193,18 +205,7 @@ export function createDemoApi(options: DemoApiOptions = {}): Hono {
         price,
         fiberAmountShannons
       })),
-      localFiberNetwork: {
-        node1: fiberNodeContext("payer", process.env.FIBER_PAYER_RPC_URL ?? "127.0.0.1:21714", networkStatus),
-        node2: fiberNodeContext("router", process.env.FIBER_ROUTER_RPC_URL ?? "127.0.0.1:21715", networkStatus),
-        node3: fiberNodeContext(
-          "payee",
-          process.env.FIBER_PAYEE_RPC_URL ?? process.env.FIBER_RPC_URL ?? "127.0.0.1:21716",
-          networkStatus
-        ),
-        route: ["node1", "node2", "node3"],
-        channelCount: 2,
-        routeStatus: mode.liveReady ? "live connected" : localEvidence ? "evidence recorded" : "not configured"
-      },
+      localFiberNetwork: routeContext,
       badges: {
         rustCanonicalEngine: Boolean((canonical.data as { rust_canonical_verifier?: boolean } | undefined)?.rust_canonical_verifier),
         tsVectorHarness: Boolean((canonical.data as { typescript_vector_harness?: boolean } | undefined)?.typescript_vector_harness),
@@ -269,7 +270,14 @@ export function createDemoApi(options: DemoApiOptions = {}): Hono {
 
   app.post("/api/demo/pay", async (c) => {
     assertChallengeReady(flow);
-    appendEvent(flow, "INFO", "node1 (payer)", "send_payment", `payment_hash=${flow.fiberChallenge!.paymentHash}`);
+    const livePaymentExpected = isLiveFiberMode(payerFiber.mode);
+    appendEvent(
+      flow,
+      "INFO",
+      livePaymentExpected ? "node1 (payer)" : "fiber-method",
+      livePaymentExpected ? "send_payment" : "create mock payment proof",
+      `payment_hash=${flow.fiberChallenge!.paymentHash}`
+    );
     const proof = await payerFiber.payChallenge(flow.fiberChallenge!);
     flow.proof = proof;
     flow.credential = {
@@ -281,8 +289,12 @@ export function createDemoApi(options: DemoApiOptions = {}): Hono {
       submittedAt: new Date().toISOString()
     };
     flow.authorization = buildAuthorizationPaymentHeader(flow.credential);
-    appendEvent(flow, "INFO", "node2 (router)", "forward payment", "route=node1->node2->node3");
-    appendEvent(flow, "INFO", "node3 (payee)", "payment settled", `status=${String((proof as { status?: unknown }).status ?? "settled")}`);
+    if (isLiveFiberMode(readProofMode(proof))) {
+      appendEvent(flow, "INFO", "node2 (router)", "forward payment", "route=node1->node2->node3");
+      appendEvent(flow, "INFO", "node3 (payee)", "payment settled", `status=${String((proof as { status?: unknown }).status ?? "settled")}`);
+    } else {
+      appendEvent(flow, "INFO", "fiber-method", "mock proof settled", "no live Fiber route was exercised");
+    }
     return c.json({
       proof,
       credential: flow.credential,
@@ -413,6 +425,32 @@ function getDemoMode(): { mode: "mock" | "local" | "testnet"; liveReady: boolean
 
 function fiberNodeContext(role: string, rpc: string, status: FiberNodeContext["status"]): FiberNodeContext {
   return { role, rpc, status };
+}
+
+function buildRouteContext(liveReady: boolean, localEvidence: boolean, networkStatus: FiberNodeContext["status"]): FiberRouteContext {
+  const routeAvailable = liveReady || localEvidence;
+  return {
+    node1: fiberNodeContext("payer", process.env.FIBER_PAYER_RPC_URL ?? "127.0.0.1:21714", networkStatus),
+    node2: fiberNodeContext("router", process.env.FIBER_ROUTER_RPC_URL ?? "127.0.0.1:21715", networkStatus),
+    node3: fiberNodeContext("payee", process.env.FIBER_PAYEE_RPC_URL ?? process.env.FIBER_RPC_URL ?? "127.0.0.1:21716", networkStatus),
+    route: routeAvailable ? ["node1", "node2", "node3"] : [],
+    routeSource: liveReady ? "live-config" : localEvidence ? "fiber-local-e2e-report" : "unavailable",
+    channelCount: localEvidence ? 2 : null,
+    channelCountSource: localEvidence ? "fiber-local-e2e-report" : liveReady ? "not-polled" : "unavailable",
+    routeStatus: liveReady
+      ? "live RPC configured; channel count not polled"
+      : localEvidence
+        ? "local E2E evidence recorded; not live polled"
+        : "not configured"
+  };
+}
+
+function isLiveFiberMode(mode: unknown): mode is "local" | "testnet" {
+  return mode === "local" || mode === "testnet";
+}
+
+function readProofMode(proof: unknown): unknown {
+  return proof && typeof proof === "object" ? (proof as { mode?: unknown }).mode : undefined;
 }
 
 async function readEndpoint(request: Request): Promise<string | undefined> {

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { access, readFile, writeFile, mkdir } from "node:fs/promises";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { dirname, resolve } from "node:path";
 import { Command } from "commander";
@@ -59,9 +59,14 @@ program
     });
     createServer(async (req, res) => {
       try {
+        if ((req.method ?? "GET").toUpperCase() === "OPTIONS") {
+          res.writeHead(204, corsHeaders());
+          res.end();
+          return;
+        }
         await sendWebResponse(res, await handler(await nodeRequestToWeb(req)));
       } catch (error) {
-        res.writeHead(500, { "content-type": "text/plain" });
+        res.writeHead(500, { ...corsHeaders(), "content-type": "text/plain" });
         res.end(error instanceof Error ? error.message : String(error));
       }
     }).listen(Number(opts.port), () => {
@@ -78,8 +83,18 @@ program
     if (action !== "init") {
       throw new Error("Only `fiber-mpp refs init` is supported");
     }
-    await writeReferenceStarterNotes(process.cwd());
-    console.log("Reference notes initialized under docs/refs");
+    const result = await writeReferenceStarterNotes(process.cwd());
+    console.log(
+      JSON.stringify(
+        {
+          docs_refs: "initialized",
+          written: result.written,
+          skipped_existing: result.skipped
+        },
+        null,
+        2
+      )
+    );
   });
 
 program
@@ -298,7 +313,7 @@ async function readJson(path: string): Promise<Record<string, unknown>> {
   return JSON.parse(await readFile(resolve(path), "utf8")) as Record<string, unknown>;
 }
 
-async function writeReferenceStarterNotes(cwd: string): Promise<void> {
+async function writeReferenceStarterNotes(cwd: string): Promise<{ written: string[]; skipped: string[] }> {
   const files = new Map<string, string>([
     ["docs/refs/README.md", "# FiberMPP Reference Index\n\nReference notes for FiberMPP protocol, Fiber RPC, F402/L402 compatibility, and security boundaries.\n"],
     ["docs/refs/fiber.md", "# Fiber References\n\nTrack Fiber JSON-RPC invoice creation, payment sending, invoice status, payment status, and settlement semantics used by FiberMPP.\n"],
@@ -307,10 +322,27 @@ async function writeReferenceStarterNotes(cwd: string): Promise<void> {
     ["docs/refs/l402.md", "# L402 References\n\nTrack macaroon, preimage, and paid-access precedent relevant to Authorization-bound receipts.\n"],
     ["docs/refs/security.md", "# Security References\n\nTrack replay, wrong-resource, wrong-method, wrong-amount, expired-challenge, paid-but-denied, and unpaid-service attack coverage.\n"]
   ]);
+  const written: string[] = [];
+  const skipped: string[] = [];
   for (const [file, contents] of files) {
     const path = resolve(cwd, file);
     await mkdir(dirname(path), { recursive: true });
+    if (await pathExists(path)) {
+      skipped.push(file);
+      continue;
+    }
     await writeFile(path, contents);
+    written.push(file);
+  }
+  return { written, skipped };
+}
+
+async function pathExists(path: string): Promise<boolean> {
+  try {
+    await access(path);
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -340,10 +372,19 @@ async function nodeRequestToWeb(req: IncomingMessage): Promise<Request> {
 }
 
 async function sendWebResponse(res: ServerResponse, response: Response): Promise<void> {
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = corsHeaders();
   response.headers.forEach((value, key) => {
     headers[key] = value;
   });
   res.writeHead(response.status, headers);
   res.end(Buffer.from(await response.arrayBuffer()));
+}
+
+function corsHeaders(): Record<string, string> {
+  return {
+    "access-control-allow-origin": "*",
+    "access-control-allow-headers": "authorization, content-type",
+    "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+    "access-control-expose-headers": "payment-receipt, www-authenticate"
+  };
 }

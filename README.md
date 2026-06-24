@@ -1,6 +1,6 @@
 # FiberMPP
 
-FiberMPP is a production-oriented Fiber payment method for Machine Payments Protocol, with F402 compatibility for Fiber-native HTTP 402 applications.
+FiberMPP is a production-targeted Fiber payment method for Machine Payments Protocol, with F402 compatibility for Fiber-native HTTP 402 applications. It is not production-ready yet: local Fiber E2E evidence exists, while separate testnet evidence, operational hardening, and the Rust HTTP gateway remain pending.
 
 FiberMPP lets services accept Fiber beside MPP rails such as Tempo and Stripe through one HTTP 402 challenge, credential, and receipt flow.
 
@@ -54,13 +54,15 @@ Mock mode is the default:
 FIBER_MODE=mock
 ```
 
-Real local/testnet attempts require:
+Real local/testnet attempts require separate payer and payee Fiber RPC endpoints:
 
 ```bash
 FIBER_MODE=local
-FIBER_RPC_URL=http://127.0.0.1:8227
-FIBER_RPC_AUTH=<optional Authorization header value>
-FIBER_NODE_ID=<optional node id/pubkey>
+FIBER_PAYEE_RPC_URL=http://127.0.0.1:21716
+FIBER_PAYER_RPC_URL=http://127.0.0.1:21714
+FIBER_RPC_AUTH=<optional shared Authorization header value>
+FIBER_PAYEE_NODE_ID=<optional payee node id/pubkey>
+FIBER_PAYER_NODE_ID=<optional payer node id/pubkey>
 ```
 
 Use `FIBER_MODE=testnet` for testnet. Receipts are marked `settled` only after Fiber RPC reports a settled invoice/payment status.
@@ -102,4 +104,4 @@ fiber-mpp demo smoke
 bash scripts/fiber_mpp_gate.sh
 ```
 
-The gate writes `reports/fiber-mpp-gate.json` and stays honest about mock, local, and testnet modes.
+The gate writes `reports/fiber-mpp-gate.json` and stays honest about mock, local, and testnet modes. Production readiness must remain false until a real testnet Fiber E2E pass and operational hardening are recorded.

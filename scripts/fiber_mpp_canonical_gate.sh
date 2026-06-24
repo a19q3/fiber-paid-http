@@ -69,7 +69,8 @@ const report = {
   production_blockers: [
     "testnet Fiber E2E evidence still pending",
     "operational hardening still pending",
-    "long-running deployment hardening still pending"
+    "long-running deployment hardening still pending",
+    "Rust HTTP gateway production implementation still pending"
   ],
   mismatches
 };
@@ -95,4 +96,3 @@ if (
   process.exit(1);
 }
 JSON
-

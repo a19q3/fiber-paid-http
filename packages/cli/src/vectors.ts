@@ -145,7 +145,8 @@ export async function generateVectors(cwd = process.cwd()): Promise<void> {
     blockers: [
       "testnet Fiber E2E evidence still pending",
       "operational hardening still pending",
-      "long-running deployment hardening still pending"
+      "long-running deployment hardening still pending",
+      "Rust HTTP gateway production implementation still pending"
     ]
   });
 

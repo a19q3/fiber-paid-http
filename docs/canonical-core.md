@@ -1,6 +1,6 @@
 # Rust Canonical Core
 
-FiberMPP uses a single production trusted boundary:
+FiberMPP is migrating toward a single production trusted boundary:
 
 ```text
 Rust = canonical protocol engine and verifier
@@ -12,7 +12,7 @@ TypeScript is not a production verifier. It remains maintained because it is use
 
 ## Runtime Policy
 
-Production verification flows go through Rust:
+Trusted verification flows go through Rust where the Rust surface exists today:
 
 ```bash
 cargo run -p fiber-mpp-cli -- vectors verify
@@ -27,6 +27,8 @@ pnpm exec fiber-mpp --engine typescript vectors verify
 ```
 
 A future Node wrapper should call the Rust engine for trusted verification rather than silently falling back to a TypeScript verifier. If an engine selector is added, it must report `FIBER_MPP_ENGINE=rust|typescript` and log any fallback clearly.
+
+The Rust HTTP server crate is not yet the production gateway. It currently proves the visible `402 Payment Required` boundary only; signed challenge issuance, durable replay storage, Fiber method adapter calls, and receipt issuance still need to be implemented in Rust before server traffic is part of the production trusted path.
 
 ## Gates
 
