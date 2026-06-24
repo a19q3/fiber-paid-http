@@ -158,8 +158,11 @@
         height: 18px;
         border: 1px solid currentColor;
         border-radius: 999px;
-        font-family: var(--mono);
-        font-size: 11px;
+      }
+
+      .status-dot .ui-icon {
+        width: 12px;
+        height: 12px;
       }
 
       .pass {
@@ -242,9 +245,23 @@
         text-transform: uppercase;
       }
 
-      .panel-title .glyph {
+      .panel-title .ui-icon {
         color: var(--cyan);
-        font-family: var(--mono);
+      }
+
+      .ui-icon {
+        display: inline-grid;
+        flex: 0 0 auto;
+        place-items: center;
+        width: 16px;
+        height: 16px;
+        color: currentColor;
+      }
+
+      .ui-icon svg {
+        display: block;
+        width: 100%;
+        height: 100%;
       }
 
       .panel-body {
@@ -265,7 +282,7 @@
 
       .scenario {
         display: grid;
-        grid-template-columns: 1fr auto;
+        grid-template-columns: 18px 1fr auto;
         gap: 8px;
         align-items: center;
         min-height: 34px;
@@ -278,7 +295,11 @@
         background: linear-gradient(90deg, rgba(50, 230, 239, 0.14), rgba(50, 230, 239, 0.04));
       }
 
-      .scenario span:first-child {
+      .scenario .ui-icon {
+        color: var(--cyan);
+      }
+
+      .scenario span:nth-child(2) {
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
@@ -286,7 +307,7 @@
         font-size: 12px;
       }
 
-      .scenario span:last-child {
+      .scenario span:nth-child(3) {
         color: var(--muted);
         font-size: 12px;
       }
@@ -337,6 +358,19 @@
         font-size: 12px;
       }
 
+      .kv-label {
+        display: inline-flex;
+        gap: 7px;
+        align-items: center;
+        min-width: 0;
+      }
+
+      .kv-label .ui-icon {
+        width: 13px;
+        height: 13px;
+        color: var(--cyan);
+      }
+
       .kv-row strong,
       .hash {
         min-width: 0;
@@ -357,6 +391,11 @@
         border-radius: 4px;
         background: transparent;
         color: var(--muted);
+      }
+
+      .copy .ui-icon {
+        width: 13px;
+        height: 13px;
       }
 
       .copy:hover {
@@ -389,7 +428,7 @@
 
       .button {
         display: grid;
-        grid-template-columns: 22px 1fr auto;
+        grid-template-columns: 22px minmax(0, 1fr) auto;
         gap: 8px;
         align-items: center;
         min-height: 34px;
@@ -416,6 +455,10 @@
       .button.danger {
         border-color: rgba(255, 99, 95, 0.35);
         color: #ffb0ad;
+      }
+
+      .button .ui-icon {
+        color: currentColor;
       }
 
       .key {
@@ -530,6 +573,11 @@
         height: 22px;
         border: 1px solid rgba(50, 230, 239, 0.4);
         border-radius: 3px;
+      }
+
+      .actor .ui-icon {
+        width: 14px;
+        height: 14px;
       }
 
       .rail {
@@ -663,6 +711,10 @@
       }
 
       .tab {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        justify-content: center;
         min-height: 42px;
         padding: 6px;
         color: var(--muted);
@@ -722,11 +774,16 @@
 
       .report-row {
         display: grid;
-        grid-template-columns: 1fr auto;
+        grid-template-columns: 16px 1fr auto;
         gap: 8px;
+        align-items: center;
         color: var(--muted);
         font-family: var(--mono);
         font-size: 11px;
+      }
+
+      .report-row .ui-icon {
+        color: var(--cyan);
       }
 
       .report-row strong {
@@ -744,6 +801,7 @@
 
       .attack-title {
         display: flex;
+        align-items: center;
         justify-content: space-between;
         gap: 8px;
         margin-bottom: 10px;
@@ -752,6 +810,12 @@
         font-weight: 700;
         letter-spacing: 0.04em;
         text-transform: uppercase;
+      }
+
+      .attack-heading {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
       }
 
       .attack-grid {
@@ -871,7 +935,7 @@
 
       .log-line {
         display: grid;
-        grid-template-columns: 86px 44px 84px minmax(0, 1fr);
+        grid-template-columns: 86px 16px 44px 84px minmax(0, 1fr);
         gap: 8px;
         align-items: center;
         color: #b7c8cc;
@@ -1030,6 +1094,12 @@
         }
       }
 
+      @media (prefers-reduced-motion: reduce) {
+        .service-actuator-card.state-executing .actuator-core {
+          animation: none;
+        }
+      }
+
       @media (max-width: 1320px) {
         .topbar {
           grid-template-columns: 1fr;
@@ -1053,11 +1123,21 @@
           padding: 6px;
         }
 
+        .shell {
+          height: auto;
+          min-height: calc(100vh - 12px);
+        }
+
         .topbar,
         .console,
         .bottom {
           padding-left: 8px;
           padding-right: 8px;
+        }
+
+        .topbar {
+          gap: 10px;
+          min-height: 0;
         }
 
         .badges,
@@ -1067,6 +1147,18 @@
         .log-grid,
         .engine-boundary {
           grid-template-columns: 1fr;
+        }
+
+        .engine-boundary {
+          gap: 6px;
+        }
+
+        .swap {
+          min-height: 14px;
+        }
+
+        .console {
+          overflow: visible;
         }
 
         .timeline-row {
@@ -1085,9 +1177,12 @@
         }
 
         .node-row,
-        .kv-row,
         .log-line {
           grid-template-columns: 1fr;
+        }
+
+        .kv-row {
+          grid-template-columns: minmax(104px, auto) minmax(0, 1fr) 30px;
         }
 
         .log-col:first-child {
@@ -1119,7 +1214,7 @@
         <main class="console">
           <aside class="left-stack">
             <section class="panel">
-              <div class="panel-title"><span class="glyph">[]</span> Request / Scenario</div>
+              <div class="panel-title"><span class="ui-icon" data-lucide-icon="RequestScenario"></span> Request / Scenario</div>
               <div class="panel-body">
                 <div class="resource-card">
                   <div class="resource-head">
@@ -1127,41 +1222,41 @@
                     <span class="selected-chip">selected</span>
                   </div>
                   <div class="kv">
-                    <div class="kv-row"><span>Price</span><strong id="price">100 Fibd</strong><button class="copy" data-copy="100 Fibd" title="Copy price">C</button></div>
-                    <div class="kv-row"><span>Method</span><strong>Fiber</strong><button class="copy" data-copy="Fiber" title="Copy method">C</button></div>
-                    <div class="kv-row"><span>Challenge ID</span><strong id="challenge-id">pending</strong><button class="copy" data-copy-target="challenge-id" title="Copy challenge id">C</button></div>
-                    <div class="kv-row"><span>Resource Hash</span><strong id="resource-hash">pending</strong><button class="copy" data-copy-target="resource-hash" title="Copy resource hash">C</button></div>
+                    <div class="kv-row"><span class="kv-label"><span class="ui-icon" data-lucide-icon="Price"></span>Price</span><strong id="price">100 Fibd</strong><button class="copy" data-copy="100 Fibd" aria-label="Copy price" title="Copy price"><span class="ui-icon" data-lucide-icon="Copy"></span></button></div>
+                    <div class="kv-row"><span class="kv-label"><span class="ui-icon" data-lucide-icon="Method"></span>Method</span><strong>Fiber</strong><button class="copy" data-copy="Fiber" aria-label="Copy method" title="Copy method"><span class="ui-icon" data-lucide-icon="Copy"></span></button></div>
+                    <div class="kv-row"><span class="kv-label"><span class="ui-icon" data-lucide-icon="ResourceHash"></span>Challenge ID</span><strong id="challenge-id">pending</strong><button class="copy" data-copy-target="challenge-id" aria-label="Copy challenge id" title="Copy challenge id"><span class="ui-icon" data-lucide-icon="Copy"></span></button></div>
+                    <div class="kv-row"><span class="kv-label"><span class="ui-icon" data-lucide-icon="ResourceHash"></span>Resource Hash</span><strong id="resource-hash">pending</strong><button class="copy" data-copy-target="resource-hash" aria-label="Copy resource hash" title="Copy resource hash"><span class="ui-icon" data-lucide-icon="Copy"></span></button></div>
                     <div class="kv-row">
-                      <span>Route</span>
+                      <span class="kv-label"><span class="ui-icon" data-lucide-icon="Route"></span>Route</span>
                       <div class="route-chips" id="route-chips"><span>pending</span></div>
-                      <button class="copy" id="route-copy" data-copy="route pending" title="Copy route">C</button>
+                      <button class="copy" id="route-copy" data-copy="route pending" aria-label="Copy route" title="Copy route"><span class="ui-icon" data-lucide-icon="Copy"></span></button>
                     </div>
                   </div>
                 </div>
                 <div class="scenario-list" id="scenarios"></div>
                 <div class="actions">
-                  <button class="button" id="send"><span class="glyph">01</span><span>Send unpaid request</span><span class="key">Ctrl+U</span></button>
-                  <button class="button primary" id="pay" disabled><span class="glyph">02</span><span>Pay with Fiber</span><span class="key">Ctrl+P</span></button>
-                  <button class="button" id="retry" disabled><span class="glyph">03</span><span>Retry with Authorization: Payment</span><span class="key">Ctrl+R</span></button>
-                  <button class="button danger" id="replay" disabled><span class="glyph">04</span><span>Replay same credential</span><span class="key">Ctrl+Y</span></button>
+                  <button class="button" id="send"><span class="ui-icon" data-lucide-icon="ActionSend"></span><span>Send unpaid request</span><span class="key">Ctrl+U</span></button>
+                  <button class="button primary" id="pay" disabled><span class="ui-icon" data-lucide-icon="ActionPay"></span><span>Pay with Fiber</span><span class="key">Ctrl+P</span></button>
+                  <button class="button" id="retry" disabled><span class="ui-icon" data-lucide-icon="ActionRetry"></span><span>Retry with Authorization: Payment</span><span class="key">Ctrl+R</span></button>
+                  <button class="button danger" id="replay" disabled><span class="ui-icon" data-lucide-icon="ActionReplay"></span><span>Replay same credential</span><span class="key">Ctrl+Y</span></button>
                 </div>
               </div>
             </section>
 
             <section class="panel">
-              <div class="panel-title"><span class="glyph">&lt;&gt;</span> Local Fiber Network</div>
+              <div class="panel-title"><span class="ui-icon" data-lucide-icon="FiberNetwork"></span> Local Fiber Network</div>
               <div class="panel-body network" id="network"></div>
             </section>
           </aside>
 
           <section class="panel">
-            <div class="panel-title"><span class="glyph">~~</span> Protocol Flow Timeline</div>
+            <div class="panel-title"><span class="ui-icon" data-lucide-icon="Timeline"></span> Protocol Flow Timeline</div>
             <div class="timeline" id="timeline"></div>
           </section>
 
           <aside class="right-stack">
             <section class="panel">
-              <div class="panel-title"><span class="glyph">{}</span> Evidence &amp; Reports</div>
+              <div class="panel-title"><span class="ui-icon" data-lucide-icon="Evidence"></span> Evidence &amp; Reports</div>
               <div class="panel-body">
                 <div class="tabs" id="tabs"></div>
                 <pre class="json-view" id="json">{}</pre>
@@ -1171,7 +1266,7 @@
                     <div class="report-list" id="report-list"></div>
                   </div>
                   <div class="subpanel attack-panel">
-                    <div class="attack-title"><span>Attack Replay</span><span id="attack-chip">pending</span></div>
+                    <div class="attack-title"><span class="attack-heading"><span class="ui-icon" data-lucide-icon="AttackReplay"></span>Attack Replay</span><span id="attack-chip">pending</span></div>
                     <div class="attack-grid" id="attack-grid"></div>
                     <div class="blocked" id="blocked">replay blocked</div>
                   </div>
@@ -1185,15 +1280,15 @@
         <footer class="bottom">
           <section class="panel terminal">
             <div class="panel-title terminal-toolbar">
-              <span><span class="glyph">&gt;_</span> Terminal / Event Log</span>
-              <button class="clear" id="clear-log">Clear</button>
+              <span><span class="ui-icon" data-lucide-icon="Terminal"></span> Terminal / Event Log</span>
+              <button class="clear" id="clear-log"><span class="ui-icon" data-lucide-icon="ClearLog"></span>Clear</button>
             </div>
             <div class="panel-body">
               <div class="log-grid" id="logs"></div>
             </div>
           </section>
           <section class="panel service-actuator-card state-idle" id="service-actuator">
-            <div class="panel-title actuator-title"><span class="glyph">::</span> SERVICE / ACTUATOR STATUS</div>
+            <div class="panel-title actuator-title"><span class="ui-icon" data-lucide-icon="Activity"></span> SERVICE / ACTUATOR STATUS</div>
             <div class="actuator-body">
               <div class="actuator-head">
                 <svg class="actuator-glyph" viewBox="0 0 64 56" aria-hidden="true">
@@ -1219,14 +1314,49 @@
       </div>
     </div>
 
+    <script id="lucide-icon-sprite" type="application/json">
+{
+  "ActionPay": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-zap lucide-ui-icon\" aria-hidden=\"true\" focusable=\"false\" data-console-icon=\"ActionPay\"><path d=\"M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z\"></path></svg>",
+  "ActionReplay": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-shield-x lucide-ui-icon\" aria-hidden=\"true\" focusable=\"false\" data-console-icon=\"ActionReplay\"><path d=\"M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z\"></path><path d=\"m14.5 9.5-5 5\"></path><path d=\"m9.5 9.5 5 5\"></path></svg>",
+  "ActionRetry": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-rotate-cw lucide-ui-icon\" aria-hidden=\"true\" focusable=\"false\" data-console-icon=\"ActionRetry\"><path d=\"M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8\"></path><path d=\"M21 3v5h-5\"></path></svg>",
+  "ActionSend": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-send lucide-ui-icon\" aria-hidden=\"true\" focusable=\"false\" data-console-icon=\"ActionSend\"><path d=\"M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z\"></path><path d=\"m21.854 2.147-10.94 10.939\"></path></svg>",
+  "Activity": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-activity lucide-ui-icon\" aria-hidden=\"true\" focusable=\"false\" data-console-icon=\"Activity\"><path d=\"M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2\"></path></svg>",
+  "ActorClient": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-monitor lucide-ui-icon\" aria-hidden=\"true\" focusable=\"false\" data-console-icon=\"ActorClient\"><rect width=\"20\" height=\"14\" x=\"2\" y=\"3\" rx=\"2\"></rect><line x1=\"8\" x2=\"16\" y1=\"21\" y2=\"21\"></line><line x1=\"12\" x2=\"12\" y1=\"17\" y2=\"21\"></line></svg>",
+  "ActorFiber": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-network lucide-ui-icon\" aria-hidden=\"true\" focusable=\"false\" data-console-icon=\"ActorFiber\"><rect x=\"16\" y=\"16\" width=\"6\" height=\"6\" rx=\"1\"></rect><rect x=\"2\" y=\"16\" width=\"6\" height=\"6\" rx=\"1\"></rect><rect x=\"9\" y=\"2\" width=\"6\" height=\"6\" rx=\"1\"></rect><path d=\"M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3\"></path><path d=\"M12 12V8\"></path></svg>",
+  "ActorProtectedApi": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-shield-check lucide-ui-icon\" aria-hidden=\"true\" focusable=\"false\" data-console-icon=\"ActorProtectedApi\"><path d=\"M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z\"></path><path d=\"m9 12 2 2 4-4\"></path></svg>",
+  "ActorServer": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-server lucide-ui-icon\" aria-hidden=\"true\" focusable=\"false\" data-console-icon=\"ActorServer\"><rect width=\"20\" height=\"8\" x=\"2\" y=\"2\" rx=\"2\" ry=\"2\"></rect><rect width=\"20\" height=\"8\" x=\"2\" y=\"14\" rx=\"2\" ry=\"2\"></rect><line x1=\"6\" x2=\"6.01\" y1=\"6\" y2=\"6\"></line><line x1=\"6\" x2=\"6.01\" y1=\"18\" y2=\"18\"></line></svg>",
+  "AttackReplay": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-shield-alert lucide-ui-icon\" aria-hidden=\"true\" focusable=\"false\" data-console-icon=\"AttackReplay\"><path d=\"M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z\"></path><path d=\"M12 8v4\"></path><path d=\"M12 16h.01\"></path></svg>",
+  "CanonicalParity": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-panel-right lucide-ui-icon\" aria-hidden=\"true\" focusable=\"false\" data-console-icon=\"CanonicalParity\"><rect width=\"18\" height=\"18\" x=\"3\" y=\"3\" rx=\"2\"></rect><path d=\"M15 3v18\"></path></svg>",
+  "ClearLog": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-trash2 lucide-trash-2 lucide-ui-icon\" aria-hidden=\"true\" focusable=\"false\" data-console-icon=\"ClearLog\"><path d=\"M10 11v6\"></path><path d=\"M14 11v6\"></path><path d=\"M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6\"></path><path d=\"M3 6h18\"></path><path d=\"M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2\"></path></svg>",
+  "Copied": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-check lucide-ui-icon\" aria-hidden=\"true\" focusable=\"false\" data-console-icon=\"Copied\"><path d=\"M20 6 9 17l-5-5\"></path></svg>",
+  "Copy": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-copy lucide-ui-icon\" aria-hidden=\"true\" focusable=\"false\" data-console-icon=\"Copy\"><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"></rect><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"></path></svg>",
+  "Evidence": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-braces lucide-ui-icon\" aria-hidden=\"true\" focusable=\"false\" data-console-icon=\"Evidence\"><path d=\"M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5c0 1.1.9 2 2 2h1\"></path><path d=\"M16 21h1a2 2 0 0 0 2-2v-5c0-1.1.9-2 2-2a2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1\"></path></svg>",
+  "F402": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-radio lucide-ui-icon\" aria-hidden=\"true\" focusable=\"false\" data-console-icon=\"F402\"><path d=\"M16.247 7.761a6 6 0 0 1 0 8.478\"></path><path d=\"M19.075 4.933a10 10 0 0 1 0 14.134\"></path><path d=\"M4.925 19.067a10 10 0 0 1 0-14.134\"></path><path d=\"M7.753 16.239a6 6 0 0 1 0-8.478\"></path><circle cx=\"12\" cy=\"12\" r=\"2\"></circle></svg>",
+  "FiberNetwork": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-network lucide-ui-icon\" aria-hidden=\"true\" focusable=\"false\" data-console-icon=\"FiberNetwork\"><rect x=\"16\" y=\"16\" width=\"6\" height=\"6\" rx=\"1\"></rect><rect x=\"2\" y=\"16\" width=\"6\" height=\"6\" rx=\"1\"></rect><rect x=\"9\" y=\"2\" width=\"6\" height=\"6\" rx=\"1\"></rect><path d=\"M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3\"></path><path d=\"M12 12V8\"></path></svg>",
+  "Method": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-circle-dollar-sign lucide-ui-icon\" aria-hidden=\"true\" focusable=\"false\" data-console-icon=\"Method\"><circle cx=\"12\" cy=\"12\" r=\"10\"></circle><path d=\"M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8\"></path><path d=\"M12 18V6\"></path></svg>",
+  "PaymentReceipt": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-receipt-text lucide-ui-icon\" aria-hidden=\"true\" focusable=\"false\" data-console-icon=\"PaymentReceipt\"><path d=\"M13 16H8\"></path><path d=\"M14 8H8\"></path><path d=\"M16 12H8\"></path><path d=\"M4 3a1 1 0 0 1 1-1 1.3 1.3 0 0 1 .7.2l.933.6a1.3 1.3 0 0 0 1.4 0l.934-.6a1.3 1.3 0 0 1 1.4 0l.933.6a1.3 1.3 0 0 0 1.4 0l.933-.6a1.3 1.3 0 0 1 1.4 0l.934.6a1.3 1.3 0 0 0 1.4 0l.933-.6A1.3 1.3 0 0 1 19 2a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1 1.3 1.3 0 0 1-.7-.2l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.934.6a1.3 1.3 0 0 1-1.4 0l-.933-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-1.4 0l-.934-.6a1.3 1.3 0 0 0-1.4 0l-.933.6a1.3 1.3 0 0 1-.7.2 1 1 0 0 1-1-1z\"></path></svg>",
+  "Price": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-coins lucide-ui-icon\" aria-hidden=\"true\" focusable=\"false\" data-console-icon=\"Price\"><path d=\"M13.744 17.736a6 6 0 1 1-7.48-7.48\"></path><path d=\"M15 6h1v4\"></path><path d=\"m6.134 14.768.866-.5 2 3.464\"></path><circle cx=\"16\" cy=\"8\" r=\"6\"></circle></svg>",
+  "ReportArtifact": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-file-braces lucide-ui-icon\" aria-hidden=\"true\" focusable=\"false\" data-console-icon=\"ReportArtifact\"><path d=\"M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z\"></path><path d=\"M14 2v5a1 1 0 0 0 1 1h5\"></path><path d=\"M10 12a1 1 0 0 0-1 1v1a1 1 0 0 1-1 1 1 1 0 0 1 1 1v1a1 1 0 0 0 1 1\"></path><path d=\"M14 18a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1 1 1 0 0 1-1-1v-1a1 1 0 0 0-1-1\"></path></svg>",
+  "RequestScenario": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-clipboard-list lucide-ui-icon\" aria-hidden=\"true\" focusable=\"false\" data-console-icon=\"RequestScenario\"><rect width=\"8\" height=\"4\" x=\"8\" y=\"2\" rx=\"1\" ry=\"1\"></rect><path d=\"M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2\"></path><path d=\"M12 11h4\"></path><path d=\"M12 16h4\"></path><path d=\"M8 11h.01\"></path><path d=\"M8 16h.01\"></path></svg>",
+  "ResourceHash": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-hash lucide-ui-icon\" aria-hidden=\"true\" focusable=\"false\" data-console-icon=\"ResourceHash\"><line x1=\"4\" x2=\"20\" y1=\"9\" y2=\"9\"></line><line x1=\"4\" x2=\"20\" y1=\"15\" y2=\"15\"></line><line x1=\"10\" x2=\"8\" y1=\"3\" y2=\"21\"></line><line x1=\"16\" x2=\"14\" y1=\"3\" y2=\"21\"></line></svg>",
+  "Route": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-route lucide-ui-icon\" aria-hidden=\"true\" focusable=\"false\" data-console-icon=\"Route\"><circle cx=\"6\" cy=\"19\" r=\"3\"></circle><path d=\"M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15\"></path><circle cx=\"18\" cy=\"5\" r=\"3\"></circle></svg>",
+  "SecurityMatrix": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-shield-alert lucide-ui-icon\" aria-hidden=\"true\" focusable=\"false\" data-console-icon=\"SecurityMatrix\"><path d=\"M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z\"></path><path d=\"M12 8v4\"></path><path d=\"M12 16h.01\"></path></svg>",
+  "StatusFailed": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-circle-x lucide-ui-icon\" aria-hidden=\"true\" focusable=\"false\" data-console-icon=\"StatusFailed\"><circle cx=\"12\" cy=\"12\" r=\"10\"></circle><path d=\"m15 9-6 6\"></path><path d=\"m9 9 6 6\"></path></svg>",
+  "StatusPassed": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-circle-check lucide-ui-icon\" aria-hidden=\"true\" focusable=\"false\" data-console-icon=\"StatusPassed\"><circle cx=\"12\" cy=\"12\" r=\"10\"></circle><path d=\"m9 12 2 2 4-4\"></path></svg>",
+  "StatusUnavailable": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-circle-question-mark lucide-ui-icon\" aria-hidden=\"true\" focusable=\"false\" data-console-icon=\"StatusUnavailable\"><circle cx=\"12\" cy=\"12\" r=\"10\"></circle><path d=\"M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3\"></path><path d=\"M12 17h.01\"></path></svg>",
+  "Terminal": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-terminal lucide-ui-icon\" aria-hidden=\"true\" focusable=\"false\" data-console-icon=\"Terminal\"><path d=\"M12 19h8\"></path><path d=\"m4 17 6-6-6-6\"></path></svg>",
+  "Timeline": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-workflow lucide-ui-icon\" aria-hidden=\"true\" focusable=\"false\" data-console-icon=\"Timeline\"><rect width=\"8\" height=\"8\" x=\"3\" y=\"3\" rx=\"2\"></rect><path d=\"M7 11v4a2 2 0 0 0 2 2h4\"></path><rect width=\"8\" height=\"8\" x=\"13\" y=\"13\" rx=\"2\"></rect></svg>",
+  "VectorHarness": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-database lucide-ui-icon\" aria-hidden=\"true\" focusable=\"false\" data-console-icon=\"VectorHarness\"><ellipse cx=\"12\" cy=\"5\" rx=\"9\" ry=\"3\"></ellipse><path d=\"M3 5V19A9 3 0 0 0 21 19V5\"></path><path d=\"M3 12A9 3 0 0 0 21 12\"></path></svg>"
+}
+</script>
     <script type="module">
       const apiBase = localStorage.getItem("fiberMppApi") || "http://localhost:8787";
       const tabs = [
-        ["chain", "Chain Data"],
-        ["receipt", "Payment Receipt"],
-        ["security", "Security Matrix"],
-        ["canonical", "Canonical Parity"],
-        ["fiber", "Local Fiber Evidence"]
+        ["chain", "Chain Data", "Evidence"],
+        ["receipt", "Payment Receipt", "PaymentReceipt"],
+        ["security", "Security Matrix", "SecurityMatrix"],
+        ["canonical", "Canonical Parity", "CanonicalParity"],
+        ["fiber", "Local Fiber Evidence", "FiberNetwork"]
       ];
       const reports = {
         canonical: "canonical",
@@ -1262,7 +1392,26 @@
         if (typeof text === "string") node.textContent = text;
         return node;
       };
+      const lucideIconSprite = JSON.parse(document.getElementById("lucide-icon-sprite")?.textContent || "{}");
 
+      function iconSvg(name) {
+        return lucideIconSprite[name] || lucideIconSprite.StatusUnavailable || "";
+      }
+
+      function iconHtml(name, label) {
+        const labelAttrs = label ? ` role="img" aria-label="${escapeHtml(label)}"` : ' aria-hidden="true"';
+        return `<span class="ui-icon" data-lucide-icon="${escapeHtml(name)}"${labelAttrs}>${iconSvg(name)}</span>`;
+      }
+
+      function hydrateLucideIcons(root = document) {
+        root.querySelectorAll("[data-lucide-icon]").forEach((node) => {
+          if (node.dataset.iconHydrated === "true") return;
+          node.innerHTML = iconSvg(node.dataset.lucideIcon);
+          node.dataset.iconHydrated = "true";
+        });
+      }
+
+      hydrateLucideIcons();
       init();
 
       async function init() {
@@ -1287,8 +1436,12 @@
           if (!button) return;
           const value = button.dataset.copy || document.getElementById(button.dataset.copyTarget)?.textContent || "";
           await navigator.clipboard?.writeText(value).catch(() => undefined);
-          button.textContent = "OK";
-          setTimeout(() => (button.textContent = "C"), 800);
+          button.innerHTML = iconHtml("Copied");
+          button.setAttribute("aria-label", "Copied");
+          setTimeout(() => {
+            button.innerHTML = iconHtml("Copy");
+            button.setAttribute("aria-label", button.title || "Copy");
+          }, 800);
         });
         document.addEventListener("keydown", (event) => {
           if (!event.ctrlKey) return;
@@ -1420,22 +1573,22 @@
         $("#badges").replaceChildren(...badges.map(([label, ok]) => {
           const node = el("div", "badge");
           const badge = badgeState(label, ok);
-          node.innerHTML = `<span class="status-dot ${badge.status}">${badge.icon}</span><span>${label}: ${badge.text}</span>`;
+          node.innerHTML = `<span class="status-dot ${badge.status}">${iconHtml(badge.icon)}</span><span>${label}: ${badge.text}</span>`;
           return node;
         }));
       }
 
       function badgeState(label, value) {
         if (value === true) {
-          return { status: "pass", icon: "Y", text: "passed" };
+          return { status: "pass", icon: "StatusPassed", text: "passed" };
         }
         if (value === false && label === "Production ready") {
-          return { status: "fail", icon: "N", text: "not claimed" };
+          return { status: "fail", icon: "StatusFailed", text: "not claimed" };
         }
         if (value === false) {
-          return { status: "fail", icon: "N", text: "false" };
+          return { status: "fail", icon: "StatusFailed", text: "false" };
         }
-        return { status: "warn", icon: "?", text: "unavailable" };
+        return { status: "warn", icon: "StatusUnavailable", text: "unavailable" };
       }
 
       function renderScenarios() {
@@ -1443,7 +1596,7 @@
         $("#scenarios").replaceChildren(...endpoints.filter((endpoint) => endpoint.path !== state.selected).map((endpoint) => {
           const node = el("button", "scenario");
           node.type = "button";
-          node.innerHTML = `<span>${escapeHtml(endpoint.label || `GET ${endpoint.path}`)}</span><span>${escapeHtml(priceLabel(endpoint))}</span>`;
+          node.innerHTML = `${iconHtml("RequestScenario")}<span>${escapeHtml(endpoint.label || `GET ${endpoint.path}`)}</span><span>${escapeHtml(priceLabel(endpoint))}</span>`;
           node.addEventListener("click", () => {
             state.selected = endpoint.path;
             state.phase = "idle";
@@ -1488,7 +1641,7 @@
           const row = el("div", "timeline-row");
           const status = step.status === "passed" ? "passed" : step.status === "rejected" ? "rejected" : step.status === "running" ? "running" : "";
           row.innerHTML = `
-            <div class="actor"><span class="actor-icon">${step.icon}</span><span>${escapeHtml(step.actor)}</span></div>
+            <div class="actor"><span class="actor-icon">${iconHtml(step.icon)}</span><span>${escapeHtml(step.actor)}</span></div>
             <div class="rail"><span class="num">${index + 1}</span></div>
             <div class="flow-desc"><strong>${escapeHtml(step.label)}</strong><span class="snippet">${escapeHtml(step.snippet)}</span></div>
             <div class="step-status ${status}">${escapeHtml(step.statusLabel)}<span>${escapeHtml(step.time || "--:--:--")}</span></div>
@@ -1498,8 +1651,9 @@
       }
 
       function renderTabs() {
-        $("#tabs").replaceChildren(...tabs.map(([id, label]) => {
-          const button = el("button", `tab${state.activeTab === id ? " active" : ""}`, label);
+        $("#tabs").replaceChildren(...tabs.map(([id, label, icon]) => {
+          const button = el("button", `tab${state.activeTab === id ? " active" : ""}`);
+          button.innerHTML = `${iconHtml(icon)}<span>${escapeHtml(label)}</span>`;
           button.type = "button";
           button.addEventListener("click", () => {
             state.activeTab = id;
@@ -1525,7 +1679,7 @@
         ].map(([name, report]) => {
           const row = el("div", "report-row");
           const unavailable = state.status?.mode === "api-unreachable";
-          row.innerHTML = `<strong>${name}</strong><span class="${report?.exists ? "pass" : "warn"}">${report?.exists ? "loaded" : unavailable ? "unavailable" : "missing"}</span>`;
+          row.innerHTML = `${iconHtml("ReportArtifact")}<strong>${name}</strong><span class="${report?.exists ? "pass" : "warn"}">${report?.exists ? "loaded" : unavailable ? "unavailable" : "missing"}</span>`;
           return row;
         });
         $("#report-list").replaceChildren(...rows);
@@ -1602,6 +1756,7 @@
             const row = el("div", "log-line");
             row.innerHTML = `
               <span>${formatTime(event.time)}</span>
+              <span>${iconHtml(eventIcon(event.level))}</span>
               <span class="level-${event.level.toLowerCase()}">${event.level}</span>
               <span>${escapeHtml(event.actor)}</span>
               <span>${escapeHtml(event.message)} ${event.detail ? escapeHtml(event.detail) : ""}</span>
@@ -1702,14 +1857,14 @@
         const liveFiberFlow = isLiveFiberFlow();
         const proofMode = state.flow?.proof?.mode || state.status?.mode || "unconfigured";
         return [
-          step("CLIENT", "GET /paid/*resource", state.selected, hasPhase("challenge_received"), "[]", eventTime(events, "GET")),
-          step("SERVER", "402 Payment Required", `challenge: ${short(challengeId)}`, hasPhase("challenge_received"), "==", eventTime(events, "402")),
+          step("CLIENT", "GET /paid/*resource", state.selected, hasPhase("challenge_received"), "ActorClient", eventTime(events, "GET")),
+          step("SERVER", "402 Payment Required", `challenge: ${short(challengeId)}`, hasPhase("challenge_received"), "ActorServer", eventTime(events, "402")),
           step(
             liveFiberFlow ? "FIBER NODE A" : "FIBER METHOD",
             liveFiberFlow ? "send_payment (invoice)" : "Live Fiber required",
             `payment_hash: ${short(paymentHash)}`,
             hasPhase("payment_settled"),
-            "<>",
+            "ActorFiber",
             eventTime(events, liveFiberFlow ? "send_payment" : "payment proof")
           ),
           step(
@@ -1717,13 +1872,13 @@
             liveFiberFlow ? "Settlement across route" : "No payment executed",
             liveFiberFlow ? "settlement: success" : `mode: ${proofMode}`,
             hasPhase("payment_settled"),
-            "<>",
+            "ActorFiber",
             eventTime(events, liveFiberFlow ? "payment settled" : "live Fiber")
           ),
-          step("CLIENT", "Retry with Authorization: Payment", `payment_hash: ${short(paymentHash)}`, hasPhase("receipt_returned"), "[]", eventTime(events, "retry")),
-          step("SERVER", "Verify Payment & Receipt", `receipt_id: ${short(receiptId)}`, hasPhase("receipt_returned"), "==", eventTime(events, "payment verified")),
-          step("SERVER", "Payment-Receipt Returned", `receipt_id: ${short(receiptId)}`, hasPhase("receipt_returned"), "==", eventTime(events, "service executed")),
-          step("PROTECTED API", "Service executed", "HTTP 200 OK", hasPhase("receipt_returned"), "##", eventTime(events, "service executed")),
+          step("CLIENT", "Retry with Authorization: Payment", `payment_hash: ${short(paymentHash)}`, hasPhase("receipt_returned"), "ActorClient", eventTime(events, "retry")),
+          step("SERVER", "Verify Payment & Receipt", `receipt_id: ${short(receiptId)}`, hasPhase("receipt_returned"), "ActorServer", eventTime(events, "payment verified")),
+          step("SERVER", "Payment-Receipt Returned", `receipt_id: ${short(receiptId)}`, hasPhase("receipt_returned"), "ActorServer", eventTime(events, "service executed")),
+          step("PROTECTED API", "Service executed", "HTTP 200 OK", hasPhase("receipt_returned"), "ActorProtectedApi", eventTime(events, "service executed")),
           {
             actor: "CLIENT",
             label: "Replay same credential",
@@ -1731,7 +1886,7 @@
             status: hasPhase("replay_rejected") ? "rejected" : state.busy && state.phase === "replay_attempted" ? "running" : "idle",
             statusLabel: hasPhase("replay_rejected") ? "replay rejected" : "idle",
             time: eventTime(events, "replay rejected"),
-            icon: "[]"
+            icon: "ActorClient"
           }
         ];
       }
@@ -1860,6 +2015,12 @@
 
       function logEvent(level, actor, message, detail) {
         return { time: new Date().toISOString(), level, actor, message, detail };
+      }
+
+      function eventIcon(level) {
+        if (level === "ERROR") return "StatusFailed";
+        if (level === "WARN") return "StatusUnavailable";
+        return "StatusPassed";
       }
 
       function eventTime(events, needle) {

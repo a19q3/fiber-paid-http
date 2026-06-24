@@ -4,9 +4,15 @@
   "type": "module",
   "description": "Static FiberMPP evidence console UI.",
   "scripts": {
-    "build": "node scripts/check-static.mjs",
-    "lint": "node scripts/check-static.mjs",
-    "typecheck": "node scripts/check-static.mjs",
+    "build": "tsx scripts/sync-icons.tsx --check && node scripts/check-static.mjs",
+    "lint": "tsx scripts/sync-icons.tsx --check && node scripts/check-static.mjs",
+    "sync-icons": "tsx scripts/sync-icons.tsx --write",
+    "typecheck": "tsx scripts/sync-icons.tsx --check && node scripts/check-static.mjs",
     "start": "node server.mjs"
+  },
+  "dependencies": {
+    "lucide-react": "^1.21.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
   }
 }

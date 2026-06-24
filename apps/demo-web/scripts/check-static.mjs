@@ -1,15 +1,40 @@
 import { readFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const htmlPath = resolve(here, "..", "index.html");
-const html = await readFile(htmlPath, "utf8");
+const iconsPath = resolve(here, "..", "src", "components", "icons.tsx");
+const [html, iconsTsx] = await Promise.all([
+  readFile(htmlPath, "utf8"),
+  readFile(iconsPath, "utf8")
+]);
 
-const requiredFragments = [
+const spriteStart = '<script id="lucide-icon-sprite" type="application/json">';
+const spriteEnd = "</script>";
+const spriteStartIndex = html.indexOf(spriteStart);
+const spriteEndIndex = html.indexOf(spriteEnd, spriteStartIndex);
+
+assert(spriteStartIndex >= 0 && spriteEndIndex > spriteStartIndex, "Missing lucide-react icon sprite");
+
+const spriteJson = html.slice(spriteStartIndex + spriteStart.length, spriteEndIndex).trim();
+const sprite = JSON.parse(spriteJson);
+const htmlWithoutSprite = html.slice(0, spriteStartIndex) + html.slice(spriteEndIndex + spriteEnd.length);
+
+const requiredHtmlFragments = [
   '<div class="badges" id="badges">',
   '<div class="timeline" id="timeline">',
   '<div class="route-chips" id="route-chips">',
+  'data-lucide-icon="RequestScenario"',
+  'data-lucide-icon="ActionSend"',
+  'data-lucide-icon="ActionPay"',
+  'data-lucide-icon="ActionRetry"',
+  'data-lucide-icon="ActionReplay"',
+  'data-lucide-icon="ClearLog"',
+  'data-lucide-icon="Terminal"',
+  'data-lucide-icon="Activity"',
+  'function iconHtml(name, label)',
+  'function hydrateLucideIcons(root = document)',
   'function isLiveFiberFlow()',
   'function channelEvidenceText(network)',
   'Live Fiber required',
@@ -32,43 +57,135 @@ const requiredFragments = [
   'overflow-y: auto;'
 ];
 
-const forbiddenFragments = [
-  '<div class="route-chips"><span>node1</span><span>node2</span><span>node3</span></div>',
-  'network.channelCount || 2',
-  'step("FIBER NODE B / C", "Settlement across route"',
-  'evidence console static build ok',
-  'evidence console static lint ok',
-  'evidence console static typecheck ok',
-  'rustCanonicalEngine: false',
-  'canonical.shared_vectors_passed_rust || 14',
-  'canonical.error_code_parity ?? true',
-  'canonical.f402_parity ?? true',
-  'canonical.canonical_hash_parity ?? true',
-  'vectors verified',
-  '402 challenge ready',
-  'Protected Service',
-  'service-mark',
-  'service-card',
-  'ROBOT STATUS',
-  'RobotApiStatus',
-  'lottie',
-  'https://lottie',
-  'http://lottie'
+const requiredIconNames = [
+  "ActionPay",
+  "ActionReplay",
+  "ActionRetry",
+  "ActionSend",
+  "Activity",
+  "ActorClient",
+  "ActorFiber",
+  "ActorProtectedApi",
+  "ActorServer",
+  "AttackReplay",
+  "CanonicalParity",
+  "ClearLog",
+  "Copy",
+  "Copied",
+  "Evidence",
+  "F402",
+  "FiberNetwork",
+  "Method",
+  "PaymentReceipt",
+  "Price",
+  "ReportArtifact",
+  "RequestScenario",
+  "ResourceHash",
+  "Route",
+  "SecurityMatrix",
+  "StatusFailed",
+  "StatusPassed",
+  "StatusUnavailable",
+  "Terminal",
+  "Timeline",
+  "VectorHarness"
 ];
 
-for (const fragment of requiredFragments) {
+const requiredIconSourceFragments = [
+  'from "lucide-react"',
+  "export const ICON_SIZE = 16;",
+  "export const ICON_STROKE_WIDTH = 1.75;",
+  "function wrapIcon(name: ConsoleIconName, Icon: LucideIcon)",
+  'color="currentColor"',
+  "consoleIconComponents",
+  "ClearLogIcon"
+];
+
+const forbiddenFragments = [
+  '<div class="route-chips"><span>node1</span><span>node2</span><span>node3</span></div>',
+  "network.channelCount || 2",
+  'step("FIBER NODE B / C", "Settlement across route"',
+  "evidence console static build ok",
+  "evidence console static lint ok",
+  "evidence console static typecheck ok",
+  "rustCanonicalEngine: false",
+  "canonical.shared_vectors_passed_rust || 14",
+  "canonical.error_code_parity ?? true",
+  "canonical.f402_parity ?? true",
+  "canonical.canonical_hash_parity ?? true",
+  "vectors verified",
+  "402 challenge ready",
+  'class="glyph"',
+  ".glyph",
+  'actor-icon">${step.icon}',
+  ">C</button>",
+  ">OK<",
+  "Protected Service",
+  "service-mark",
+  "service-card",
+  "ROBOT STATUS",
+  "RobotApiStatus",
+  "lottie",
+  "https://lottie",
+  "http://lottie"
+];
+
+for (const fragment of requiredHtmlFragments) {
   assert(html.includes(fragment), `Missing required static console fragment: ${fragment}`);
+}
+
+for (const fragment of requiredIconSourceFragments) {
+  assert(iconsTsx.includes(fragment), `Missing Lucide icon wrapper source fragment: ${fragment}`);
+}
+
+for (const iconName of requiredIconNames) {
+  assert(Object.hasOwn(sprite, iconName), `Lucide sprite missing ${iconName}`);
+  assert(iconsTsx.includes(`"${iconName}"`), `icons.tsx missing ${iconName}`);
+  assert(sprite[iconName].includes('stroke="currentColor"'), `${iconName} does not inherit currentColor`);
+  assert(sprite[iconName].includes('stroke-width="1.75"'), `${iconName} does not use the console stroke width`);
+  assert(sprite[iconName].includes('data-console-icon="' + iconName + '"'), `${iconName} sprite is not tagged`);
 }
 
 for (const fragment of forbiddenFragments) {
   assert(!html.includes(fragment), `Found legacy static console fragment: ${fragment}`);
 }
 
+for (const iconName of collectIconReferences(html)) {
+  assert(Object.hasOwn(sprite, iconName), `HTML references unknown Lucide icon: ${iconName}`);
+}
+
+for (const tag of htmlWithoutSprite.match(/<svg\b[^>]*>/g) || []) {
+  assert(tag.includes('class="actuator-glyph"'), `Only the service actuator custom SVG is allowed outside the Lucide sprite: ${tag}`);
+}
+
+for (const match of htmlWithoutSprite.matchAll(/<button\b([^>]*)>([\s\S]*?)<\/button>/g)) {
+  const [, attrs, body] = match;
+  const visibleText = body.replace(/<[^>]+>/g, "").trim();
+  if (visibleText.length === 0) {
+    assert(/\baria-label=/.test(attrs), `Icon-only button is missing aria-label: ${match[0].slice(0, 120)}`);
+  }
+}
+
+assert(!/src=["']https?:\/\//.test(html), "Remote visual assets are not allowed in the static console");
+assert(!/href=["']https?:\/\//.test(html), "Remote visual assets are not allowed in the static console");
 assert(count(html, "<script") === count(html, "</script>"), "Unbalanced script tags");
 assert(count(html, "<style") === count(html, "</style>"), "Unbalanced style tags");
 assert(count(html, "<section") === count(html, "</section>"), "Unbalanced section tags");
 
-console.log(`evidence console static checks passed: ${requiredFragments.length} fragments, ${forbiddenFragments.length} regressions`);
+console.log(`evidence console static checks passed: ${requiredHtmlFragments.length} fragments, ${requiredIconNames.length} lucide icons, ${forbiddenFragments.length} regressions`);
+
+function collectIconReferences(source) {
+  const names = new Set();
+  for (const match of source.matchAll(/data-lucide-icon="([^"]+)"/g)) {
+    if (!match[1].includes("${")) {
+      names.add(match[1]);
+    }
+  }
+  for (const match of source.matchAll(/iconHtml\("([^"]+)"/g)) {
+    names.add(match[1]);
+  }
+  return names;
+}
 
 function assert(condition, message) {
   if (!condition) {
