@@ -20,7 +20,9 @@ const requiredFragments = [
   'Compatibility Tooling',
   'function badgeState(label, value)',
   'function vectorSummary(canonical)',
-  'function unavailableEvidence(reason)'
+  'function unavailableEvidence(reason)',
+  'function renderApiHealth()',
+  'demo actions disabled'
 ];
 
 const forbiddenFragments = [
@@ -34,7 +36,9 @@ const forbiddenFragments = [
   'canonical.shared_vectors_passed_rust || 14',
   'canonical.error_code_parity ?? true',
   'canonical.f402_parity ?? true',
-  'canonical.canonical_hash_parity ?? true'
+  'canonical.canonical_hash_parity ?? true',
+  'vectors verified',
+  '402 challenge ready'
 ];
 
 for (const fragment of requiredFragments) {

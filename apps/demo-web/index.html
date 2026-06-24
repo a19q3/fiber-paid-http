@@ -953,12 +953,22 @@
         font-size: 11px;
       }
 
+      .api-health span {
+        color: var(--muted);
+      }
+
       .pulse {
         width: 42px;
         height: 16px;
         background:
           linear-gradient(90deg, transparent 0 10%, var(--cyan) 10% 12%, transparent 12% 34%, var(--cyan) 34% 38%, transparent 38% 64%, var(--cyan) 64% 68%, transparent 68%),
           linear-gradient(180deg, transparent 45%, rgba(50, 230, 239, 0.35) 46% 54%, transparent 55%);
+      }
+
+      .api-health.offline .pulse {
+        background:
+          linear-gradient(90deg, transparent 0 18%, var(--red) 18% 24%, transparent 24% 58%, var(--red) 58% 64%, transparent 64%),
+          linear-gradient(180deg, transparent 45%, rgba(255, 99, 95, 0.35) 46% 54%, transparent 55%);
       }
 
       @media (max-width: 1320px) {
@@ -1127,7 +1137,7 @@
             <div class="service-mark" aria-hidden="true"></div>
             <strong>Protected Service</strong>
             <span id="service-status">awaiting receipt</span>
-            <div class="api-health"><span>API health</span><span class="pulse" aria-hidden="true"></span></div>
+            <div class="api-health" id="api-health"><span id="api-health-label">API unknown</span><span class="pulse" aria-hidden="true"></span></div>
           </section>
         </footer>
       </div>
@@ -1319,6 +1329,7 @@
         renderParity();
         renderLogs();
         renderButtons();
+        renderApiHealth();
         $("#service-status").textContent = serviceStatusText();
       }
 
@@ -1527,13 +1538,23 @@
       }
 
       function renderButtons() {
-        $("#send").disabled = state.busy;
-        $("#pay").disabled = state.busy || !state.flow?.fiberChallenge;
-        $("#retry").disabled = state.busy || !state.flow?.authorization;
-        $("#replay").disabled = state.busy || !state.flow?.authorization;
+        const apiUnavailable = state.status?.mode === "api-unreachable";
+        $("#send").disabled = state.busy || apiUnavailable;
+        $("#pay").disabled = state.busy || apiUnavailable || !state.flow?.fiberChallenge;
+        $("#retry").disabled = state.busy || apiUnavailable || !state.flow?.authorization;
+        $("#replay").disabled = state.busy || apiUnavailable || !state.flow?.authorization;
+      }
+
+      function renderApiHealth() {
+        const apiUnavailable = state.status?.mode === "api-unreachable";
+        $("#api-health").className = `api-health${apiUnavailable ? " offline" : ""}`;
+        $("#api-health-label").textContent = apiUnavailable ? "API unreachable" : "API connected";
       }
 
       function serviceStatusText() {
+        if (state.status?.mode === "api-unreachable") {
+          return "API unreachable";
+        }
         if (state.flow?.replayStatus === 402 || state.phase === "replay_rejected") {
           return "replay rejected, not re-executed";
         }
@@ -1691,12 +1712,21 @@
       }
 
       function staticEvents() {
+        if (state.status?.mode === "api-unreachable") {
+          return [
+            logEvent("ERROR", "web", "evidence API unreachable", apiBase),
+            logEvent("WARN", "reports", "status unavailable", "badges require /api/status"),
+            logEvent("WARN", "client", "demo actions disabled", "no API session")
+          ];
+        }
+        const canonicalLoaded = Boolean(state.reports.canonical?.exists);
+        const fiberLoaded = Boolean(state.reports.gateLocal?.exists || state.reports.fiber?.exists);
         return [
           logEvent("INFO", "client", "GET /paid/protocol-service", "awaiting unpaid request"),
-          logEvent("INFO", "server", "402 challenge ready", "report-backed evidence"),
-          logEvent("INFO", "rust", "canonical engine", "vectors verified"),
+          logEvent("INFO", "server", "402 challenge", "awaiting live request"),
+          logEvent(canonicalLoaded ? "INFO" : "WARN", "rust", "canonical report", canonicalLoaded ? "loaded" : "unavailable"),
           logEvent("INFO", "typescript", "compatibility tooling", "not production boundary"),
-          logEvent("WARN", "server", "replay protection", "credential single-use")
+          logEvent(fiberLoaded ? "INFO" : "WARN", "fiber", "local evidence", fiberLoaded ? "loaded" : "unavailable")
         ];
       }
 
