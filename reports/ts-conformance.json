@@ -92,7 +92,7 @@
       "passed": true,
       "expected": "accepted",
       "actual": "accepted",
-      "canonical_hash": "4a84cd7be4e519a48635f2f02cc4d7fc94579870dfe1e94357774f6f184d4678"
+      "canonical_hash": "1d53d983209fcd917fb77e00071d0af32580e0bd441802c4e594285e5e2b887e"
     },
     {
       "file": "fiber.local-e2e.report.json",

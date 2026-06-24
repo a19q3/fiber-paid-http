@@ -11,6 +11,7 @@ It is still not production-ready for live Fiber settlement. The Rust `fiber-mpp-
 - Typed MPP protocol model.
 - Canonical HMAC challenge and receipt signing.
 - TypeScript route middleware and reverse proxy mode.
+- Gateway bootstrap config template and role-aware doctor checks.
 - Replay protection.
 - Resource/method/amount binding tests.
 - Explicit local/testnet Fiber settlement status.
@@ -27,6 +28,8 @@ It is still not production-ready for live Fiber settlement. The Rust `fiber-mpp-
 - Complete operational hardening.
 - Complete long-running deployment hardening.
 - Configure Fiber RPC auth and trusted network binding.
+- Add route/balance diagnostics beyond basic Fiber RPC reachability checks.
+- Add secret rotation and storage backup/restore commands.
 - Decide operational handling for paid-but-denied cases such as handler crashes after redemption.
 - Add structured redaction for production logs when integrating with a real logger.
 

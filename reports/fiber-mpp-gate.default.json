@@ -13,7 +13,8 @@
     "Fiber live E2E skipped: set RUN_FIBER_E2E=1",
     "Fiber live E2E skipped: set FIBER_MODE=local or FIBER_MODE=testnet",
     "Fiber live E2E skipped: set FIBER_RPC_URL or FIBER_PAYEE_RPC_URL for the invoice/payee node",
-    "Fiber live E2E skipped: set FIBER_PAYER_RPC_URL for the paying node"
+    "Fiber live E2E skipped: set FIBER_PAYER_RPC_URL for the paying node",
+    "Fiber live E2E skipped: set FIBER_MPP_SECRET to a random secret of at least 32 characters"
   ],
   "f402_compatibility": true,
   "live_fiber_local_e2e": false,

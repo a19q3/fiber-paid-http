@@ -44,6 +44,7 @@ export FIBER_MODE=local              # or testnet
 export FIBER_RPC_URL=http://127.0.0.1:21716
 export FIBER_PAYEE_RPC_URL=http://127.0.0.1:21716
 export FIBER_PAYER_RPC_URL=http://127.0.0.1:21714
+export FIBER_MPP_SECRET="$(openssl rand -hex 32)"
 ```
 
 Optional:
@@ -54,7 +55,6 @@ export FIBER_E2E_AMOUNT_SHANNONS=100
 export FIBER_SETTLEMENT_TIMEOUT_MS=60000
 export FIBER_SETTLEMENT_POLL_MS=500
 export FIBER_E2E_STORAGE_PATH=.tmp/fiber-live-e2e.sqlite
-export FIBER_MPP_SECRET=fiber-mpp-live-e2e-secret-at-least-16
 export FIBER_PAYEE_RPC_AUTH='Bearer ...'
 export FIBER_PAYER_RPC_AUTH='Bearer ...'
 ```
@@ -135,6 +135,7 @@ export FIBER_RPC_URL=http://127.0.0.1:21716
 export FIBER_PAYEE_RPC_URL=http://127.0.0.1:21716
 export FIBER_PAYER_RPC_URL=http://127.0.0.1:21714
 export FIBER_CURRENCY=Fibd
+export FIBER_MPP_SECRET="$(openssl rand -hex 32)"
 export FIBER_E2E_AMOUNT_SHANNONS=100
 pnpm test:fiber
 ```
@@ -150,6 +151,7 @@ export FIBER_CURRENCY=Fibt
 export FIBER_RPC_URL=<payee rpc url>
 export FIBER_PAYEE_RPC_URL=<payee rpc url>
 export FIBER_PAYER_RPC_URL=<payer rpc url>
+export FIBER_MPP_SECRET="$(openssl rand -hex 32)"
 export FIBER_PAYEE_RPC_AUTH='<payee auth if required>'
 export FIBER_PAYER_RPC_AUTH='<payer auth if required>'
 pnpm test:fiber

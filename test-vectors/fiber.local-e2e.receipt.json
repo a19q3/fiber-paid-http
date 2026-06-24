@@ -6,7 +6,7 @@
     "receipt_source": ".tmp/fiber-live-e2e.sqlite",
     "receipt_id": "rcpt_ca010a79973755656bdff4b1684570da",
     "payment_hash": "0xec3a08f9b298db82f2dc27861aed5a3110b5d36a56bd43d13b60c5a4bcf69222",
-    "secret": "fiber-mpp-live-e2e-secret-at-least-16",
+    "receipt_signature_verification": "verified during the live Fiber E2E run; fixture omits HMAC secret",
     "receipt": {
       "domain": "fiber-mpp-receipt-v1",
       "receiptId": "rcpt_ca010a79973755656bdff4b1684570da",
@@ -29,7 +29,7 @@
       "signature": "d2af8a3de6206e5140c81881b8aae409c86e8e485183c07206b716d17471483d"
     }
   },
-  "expected_canonical_hash": "4a84cd7be4e519a48635f2f02cc4d7fc94579870dfe1e94357774f6f184d4678",
+  "expected_canonical_hash": "1d53d983209fcd917fb77e00071d0af32580e0bd441802c4e594285e5e2b887e",
   "expected_verification_result": "accepted",
   "notes": "Evidence copied from the latest successful local Fiber E2E run; this is not a deterministic fixture."
 }

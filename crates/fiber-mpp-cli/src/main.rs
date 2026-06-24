@@ -113,9 +113,7 @@ fn receipt_verify(file: &Path, secret: Option<String>) -> Result<()> {
     } else {
         value
     };
-    let secret = secret
-        .or_else(|| std::env::var("FIBER_MPP_SECRET").ok())
-        .unwrap_or_else(|| "fiber-mpp-live-e2e-secret-at-least-16".to_string());
+    let secret = secret.or_else(|| std::env::var("FIBER_MPP_SECRET").ok()).context("provide --secret or FIBER_MPP_SECRET")?;
     let valid = verify_receipt(&receipt, &secret)?;
     println!(
         "{}",

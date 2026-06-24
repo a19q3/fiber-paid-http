@@ -31,6 +31,7 @@ integration_tests=true
 fiber_mode="${FIBER_MODE:-}"
 payee_rpc_url="${FIBER_PAYEE_RPC_URL:-${FIBER_RPC_URL:-}}"
 payer_rpc_url="${FIBER_PAYER_RPC_URL:-}"
+fiber_mpp_secret="${FIBER_MPP_SECRET:-}"
 
 if [[ "${RUN_FIBER_E2E:-}" != "1" ]]; then
   fiber_e2e_blockers+=("Fiber live E2E skipped: set RUN_FIBER_E2E=1")
@@ -43,6 +44,9 @@ if [[ -z "${payee_rpc_url}" ]]; then
 fi
 if [[ -z "${payer_rpc_url}" ]]; then
   fiber_e2e_blockers+=("Fiber live E2E skipped: set FIBER_PAYER_RPC_URL for the paying node")
+fi
+if [[ -z "${fiber_mpp_secret}" || "${#fiber_mpp_secret}" -lt 32 ]]; then
+  fiber_e2e_blockers+=("Fiber live E2E skipped: set FIBER_MPP_SECRET to a random secret of at least 32 characters")
 fi
 if [[ "${#fiber_e2e_blockers[@]}" -eq 0 ]]; then
   fiber_e2e_mode="${fiber_mode}"

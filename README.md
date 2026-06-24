@@ -17,22 +17,31 @@ FiberMPP lets services accept Fiber through one HTTP 402 challenge, credential, 
 ```bash
 pnpm install
 pnpm build
-pnpm --filter @fiber-mpp/demo-api start
+pnpm exec fiber-mpp init --role gateway --out fiber-mpp.gateway.json
+export FIBER_MPP_SECRET="$(openssl rand -hex 32)"
+pnpm exec fiber-mpp doctor --role gateway --config fiber-mpp.gateway.json
 ```
 
-In another shell:
+The doctor command prints exact blockers until `FIBER_MODE`, a payee Fiber RPC URL, storage, upstream, and the signing secret are configured.
+
+For the reproducible local Fiber network used by the evidence suite:
 
 ```bash
-fiber-mpp pay http://localhost:8787/paid/weather --method fiber
+scripts/fiber_local_network.sh up
 ```
 
-Run the browser demo:
+After the local network is running, set the local env and run the live Fiber lane:
 
 ```bash
-pnpm --filter @fiber-mpp/demo-web start
+export RUN_FIBER_E2E=1
+export FIBER_MODE=local
+export FIBER_PAYEE_RPC_URL=http://127.0.0.1:21716
+export FIBER_PAYER_RPC_URL=http://127.0.0.1:21714
+export FIBER_CURRENCY=Fibd
+pnpm test:fiber
 ```
 
-Open `http://localhost:8788`.
+See [docs/bootstrap.md](docs/bootstrap.md) for gateway, payer, and payee bootstrap steps.
 
 ## Security model
 
@@ -46,6 +55,7 @@ FiberMPP requires real local or testnet Fiber RPC endpoints. Local/testnet attem
 FIBER_MODE=local
 FIBER_PAYEE_RPC_URL=http://127.0.0.1:21716
 FIBER_PAYER_RPC_URL=http://127.0.0.1:21714
+FIBER_MPP_SECRET=<32+ character random signing secret>
 FIBER_RPC_AUTH=<optional shared Authorization header value>
 FIBER_PAYEE_NODE_ID=<optional payee node id/pubkey>
 FIBER_PAYER_NODE_ID=<optional payer node id/pubkey>
@@ -77,10 +87,12 @@ verified resource -> Payment-Receipt
 fiber-mpp refs init
 fiber-mpp challenge inspect http://localhost:8787/paid/weather
 fiber-mpp pay http://localhost:8787/paid/weather --method fiber
-fiber-mpp serve --upstream http://localhost:8080 --price-usd 0.01 --methods fiber
+fiber-mpp init --role gateway --out fiber-mpp.gateway.json
+fiber-mpp doctor --role gateway --config fiber-mpp.gateway.json
+fiber-mpp serve --config fiber-mpp.gateway.json
 fiber-mpp f402 convert f402-challenge.json
 fiber-mpp receipt verify receipt.json --secret <secret>
-fiber-mpp doctor http://localhost:8787/paid/weather
+fiber-mpp doctor --role payer
 ```
 
 ## Production gate

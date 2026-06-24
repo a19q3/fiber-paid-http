@@ -66,6 +66,9 @@ export function readFiberE2ePreflight(env: NodeJS.ProcessEnv = process.env): Fib
   if (!payerRpcUrl) {
     blockers.push("Fiber live E2E skipped: set FIBER_PAYER_RPC_URL for the paying node");
   }
+  if (!env.FIBER_MPP_SECRET || env.FIBER_MPP_SECRET.length < 32) {
+    blockers.push("Fiber live E2E skipped: set FIBER_MPP_SECRET to a random secret of at least 32 characters");
+  }
 
   const liveReady = blockers.length === 0;
   return {
@@ -97,7 +100,7 @@ export function readLiveFiberEnv(env: NodeJS.ProcessEnv = process.env): LiveFibe
     timeoutMs: parseIntEnv(env.FIBER_SETTLEMENT_TIMEOUT_MS, 60_000),
     pollMs: parseIntEnv(env.FIBER_SETTLEMENT_POLL_MS, 500),
     storagePath: resolve(env.FIBER_E2E_STORAGE_PATH ?? ".tmp/fiber-live-e2e.sqlite"),
-    secret: env.FIBER_MPP_SECRET ?? "fiber-mpp-live-e2e-secret-at-least-16"
+    secret: env.FIBER_MPP_SECRET!
   };
 }
 

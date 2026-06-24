@@ -17,9 +17,11 @@ import {
 } from "../helpers/fiber-fixture.js";
 
 describe("FiberMPP integration flows", () => {
+  const demoSecret = "demo-integration-secret-at-least-32-chars";
+
   it("demo paid endpoint completes full flow", async () => {
     const { payeeFiber, payerFiber } = createFiberFixtureAdapters();
-    const app = createDemoApi({ fiber: payeeFiber, payerFiber, store: createSqliteTestStore() });
+    const app = createDemoApi({ fiber: payeeFiber, payerFiber, store: createSqliteTestStore(), secret: demoSecret });
     const result = await paidFetch("http://localhost/paid/weather", {}, { fetchImpl: appFetch(app), fiber: payerFiber });
     expect(result.response.status).toBe(200);
     expect(result.receipt?.settlement.status).toBe("settled");
@@ -151,7 +153,13 @@ describe("FiberMPP integration flows", () => {
 
   it("replay, wrong-resource, and expired challenge attacks are rejected", async () => {
     const { payeeFiber, payerFiber } = createFiberFixtureAdapters();
-    const app = createDemoApi({ fiber: payeeFiber, payerFiber, store: createSqliteTestStore(), challengeTtlSeconds: 120 });
+    const app = createDemoApi({
+      fiber: payeeFiber,
+      payerFiber,
+      store: createSqliteTestStore(),
+      secret: demoSecret,
+      challengeTtlSeconds: 120
+    });
     const first = await app.request("http://localhost/paid/weather");
     const body = (await first.clone().json()) as {
       challengeId: string;
@@ -177,6 +185,7 @@ describe("FiberMPP integration flows", () => {
       fiber: expiredAdapters.payeeFiber,
       payerFiber: expiredAdapters.payerFiber,
       store: createSqliteTestStore(),
+      secret: demoSecret,
       challengeTtlSeconds: -5,
       clockSkewSeconds: 0
     });

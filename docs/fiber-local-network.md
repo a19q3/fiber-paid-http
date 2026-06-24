@@ -33,6 +33,7 @@ export FIBER_PAYER_RPC_URL=http://127.0.0.1:21714
 export FIBER_PAYEE_RPC_URL=http://127.0.0.1:21716
 export FIBER_CURRENCY=Fibd
 export FIBER_E2E_AMOUNT_SHANNONS=100
+export FIBER_MPP_SECRET="$(openssl rand -hex 32)"
 ```
 
 ## Automated Setup
@@ -150,5 +151,6 @@ FIBER_PAYEE_RPC_URL=http://127.0.0.1:21716 \
 FIBER_PAYER_RPC_URL=http://127.0.0.1:21714 \
 FIBER_CURRENCY=Fibd \
 FIBER_E2E_AMOUNT_SHANNONS=100 \
+FIBER_MPP_SECRET="$(openssl rand -hex 32)" \
 pnpm test:fiber
 ```

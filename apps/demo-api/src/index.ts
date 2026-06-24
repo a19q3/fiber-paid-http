@@ -396,8 +396,12 @@ function createFiberRuntime(options: DemoApiOptions): { middleware: FiberMppMidd
   mkdirSync(dirname(demoDbPath), { recursive: true });
   const fiber = options.fiber ?? FiberMethodAdapter.fromEnv(process.env, "payee");
   const payerFiber = options.payerFiber ?? FiberMethodAdapter.fromEnv(process.env, "payer");
+  const secret = options.secret ?? process.env.FIBER_MPP_SECRET;
+  if (!secret) {
+    throw new Error("FiberMPP demo runtime requires FIBER_MPP_SECRET or options.secret");
+  }
   const middleware = createFiberMppMiddleware({
-    secret: options.secret ?? "fiber-mpp-demo-secret-at-least-16",
+    secret,
     serverId: options.serverId ?? "fiber-mpp-demo-api",
     store: options.store ?? new SqliteStore(demoDbPath),
     fiber,
@@ -425,6 +429,9 @@ function getDemoMode(): { mode: "local" | "testnet" | "unconfigured"; liveReady:
   }
   if (!process.env.FIBER_PAYER_RPC_URL) {
     blockers.push("Live Fiber mode inactive: set FIBER_PAYER_RPC_URL");
+  }
+  if (!process.env.FIBER_MPP_SECRET || process.env.FIBER_MPP_SECRET.length < 32) {
+    blockers.push("Live Fiber mode inactive: set FIBER_MPP_SECRET to a random secret of at least 32 characters");
   }
   const liveReady = blockers.length === 0;
   return { mode, liveReady, blockers };

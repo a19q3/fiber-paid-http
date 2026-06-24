@@ -305,9 +305,10 @@ fn verify_live_report_evidence(input: &Value) -> Result<Outcome, CoreError> {
 
 fn verify_live_receipt_evidence(input: &Value) -> Result<Outcome, CoreError> {
     if let Some(receipt) = input.get("receipt") {
-        let secret = string_field(input, "secret")?;
-        if !verify_receipt(receipt, secret)? {
-            return Ok(Outcome::rejected("bad-receipt-signature"));
+        if let Some(secret) = input.get("secret").and_then(Value::as_str) {
+            if !verify_receipt(receipt, secret)? {
+                return Ok(Outcome::rejected("bad-receipt-signature"));
+            }
         }
         let matches = string_field(receipt, "receiptId")? == string_field(input, "receipt_id")?
             && object_field(receipt, "settlement")?.get("paymentHash").and_then(Value::as_str)
