@@ -6,9 +6,8 @@ import {
   parseAuthorizationPaymentHeader,
   resourceHashFromRequest
 } from "@fiber-mpp/core";
-import { FiberMethodAdapter } from "@fiber-mpp/fiber-method";
 import { createFiberMppMiddleware } from "@fiber-mpp/server-middleware";
-import { InMemoryStore } from "@fiber-mpp/storage";
+import { createFiberFixtureAdapters, createSqliteTestStore } from "../helpers/fiber-fixture.js";
 
 const secret = "middleware-secret-at-least-16";
 const url = "http://localhost/paid/weather";
@@ -31,7 +30,7 @@ describe("FiberMPP middleware security", () => {
     expect(paid.status).toBe(200);
     expect(await paid.json()).toEqual({ ok: true });
     const receipt = decodeReceipt(paid.headers.get(PAYMENT_RECEIPT_HEADER)!);
-    expect(receipt.settlement.status).toBe("simulated");
+    expect(receipt.settlement.status).toBe("settled");
   });
 
   it("replayed credential is rejected", async () => {
@@ -55,7 +54,7 @@ describe("FiberMPP middleware security", () => {
     const { handler } = makeHandler();
     const auth = await issueAuth(handler, url);
     const credential = parseAuthorizationPaymentHeader(auth)!;
-    const wrongAuth = buildAuthorizationPaymentHeader({ ...credential, method: "mock" });
+    const wrongAuth = buildAuthorizationPaymentHeader({ ...credential, method: "unsupported-method" });
     const response = await handler(new Request(url, { headers: { authorization: wrongAuth } }));
     expect(response.status).toBe(402);
     expect(await response.text()).toContain("wrong-method");
@@ -69,14 +68,6 @@ describe("FiberMPP middleware security", () => {
     expect(await response.text()).toContain("wrong-amount");
   });
 
-  it("pending mock Fiber payment is rejected", async () => {
-    const { handler } = makeHandler();
-    const auth = await issueAuth(handler, url, { status: "pending" });
-    const response = await handler(new Request(url, { headers: { authorization: auth } }));
-    expect(response.status).toBe(402);
-    expect(await response.text()).toContain("fiber-payment-not-settled");
-  });
-
   it("expired challenge is rejected", async () => {
     const { handler } = makeHandler({ challengeTtlSeconds: -5, clockSkewSeconds: 0 });
     const auth = await issueAuth(handler, url);
@@ -86,7 +77,7 @@ describe("FiberMPP middleware security", () => {
   });
 
   it("bad challenge signature is rejected", async () => {
-    const store = new InMemoryStore();
+    const store = createSqliteTestStore();
     const { handler } = makeHandler({ store });
     const first = await handler(new Request(url));
     const body = (await first.clone().json()) as { challengeId: string };
@@ -98,23 +89,22 @@ describe("FiberMPP middleware security", () => {
     expect(await response.text()).toContain("bad-challenge-signature");
   });
 
-  it("in-memory store is rejected in production mode", () => {
+  it("durable storage is required", () => {
     expect(() =>
       makeHandler({
-        production: true,
-        allowInMemoryStore: false,
-        store: new InMemoryStore()
+        store: undefined
       })
-    ).toThrow(/In-memory FiberMPP storage/);
+    ).toThrow(/durable store/);
   });
 });
 
 function makeHandler(overrides: Partial<Parameters<typeof createFiberMppMiddleware>[0]> = {}) {
+  const { payeeFiber } = createFiberFixtureAdapters();
   const middleware = createFiberMppMiddleware({
     secret,
     serverId: "unit-server",
-    store: new InMemoryStore(),
-    fiber: new FiberMethodAdapter({ mode: "mock" }),
+    store: createSqliteTestStore(),
+    fiber: payeeFiber,
     defaultFiberAmountShannons: "1000",
     challengeTtlSeconds: 120,
     clockSkewSeconds: 0,
@@ -156,7 +146,7 @@ async function authFromBody(
     resourceHash: await resourceHashFromRequest(new Request(targetUrl)),
     paymentProof: {
       kind: "fiber-payment-proof-v1",
-      mode: "mock",
+      mode: "local",
       paymentHash: fiber.paymentHash,
       invoice: fiber.invoice,
       amountShannons: overrides.amountShannons ?? fiber.amountShannons,

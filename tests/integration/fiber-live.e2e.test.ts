@@ -75,8 +75,7 @@ describe("live Fiber MPP payment flow", () => {
         fiber: payeeFiber,
         defaultFiberAmountShannons: env.amountShannons,
         challengeTtlSeconds: Math.ceil(env.timeoutMs / 1000) + 60,
-        clockSkewSeconds: 2,
-        production: true
+        clockSkewSeconds: 2
       });
       const handler = middleware.protect({
         price: { value: env.amountShannons, currency: "CKB" },

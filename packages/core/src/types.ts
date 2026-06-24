@@ -25,39 +25,7 @@ export const FiberMethodChallengeSchema = z.object({
   expiresAt: z.string().datetime()
 });
 
-export const TempoMethodChallengeSchema = z.object({
-  method: z.literal("tempo"),
-  intent: z.literal("charge"),
-  network: z.enum(["testnet", "mainnet", "mock"]),
-  currency: z.string().min(1),
-  recipient: z.string().optional(),
-  amount: z.string().min(1)
-});
-
-export const StripeMethodChallengeSchema = z.object({
-  method: z.literal("stripe"),
-  intent: z.literal("charge"),
-  networkId: z.string().optional(),
-  amount: z.string().min(1),
-  currency: z.string().min(1),
-  paymentMethodTypes: z.array(z.string()).optional(),
-  sandboxOnly: z.boolean().optional()
-});
-
-export const MockMethodChallengeSchema = z.object({
-  method: z.literal("mock"),
-  intent: z.literal("charge"),
-  amount: z.string().min(1),
-  currency: z.string().min(1),
-  settlement: z.literal("simulated")
-});
-
-export const PaymentMethodChallengeSchema = z.discriminatedUnion("method", [
-  FiberMethodChallengeSchema,
-  TempoMethodChallengeSchema,
-  StripeMethodChallengeSchema,
-  MockMethodChallengeSchema
-]);
+export const PaymentMethodChallengeSchema = FiberMethodChallengeSchema;
 
 export const PaymentChallengeSchema = z.object({
   domain: z.literal("fiber-mpp-challenge-v1"),
@@ -77,14 +45,14 @@ export const PaymentChallengeSchema = z.object({
 export const PaymentCredentialSchema = z.object({
   domain: z.literal("fiber-mpp-credential-v1"),
   challengeId: z.string().min(8),
-  method: z.enum(["fiber", "tempo", "stripe", "mock"]),
+  method: z.string().min(1),
   resourceHash: z.string().min(32),
   paymentProof: z.unknown(),
   submittedAt: z.string().datetime()
 });
 
 export const SettlementSchema = z.object({
-  status: z.enum(["settled", "simulated", "failed"]),
+  status: z.enum(["settled", "failed"]),
   paymentHash: z.string().optional(),
   invoiceId: z.string().optional(),
   txHash: z.string().optional(),
@@ -119,9 +87,6 @@ export const SignedPaymentChallengeSchema = z.object({
 export type Amount = z.infer<typeof AmountSchema>;
 export type ResourceDescriptor = z.infer<typeof ResourceDescriptorSchema>;
 export type FiberMethodChallenge = z.infer<typeof FiberMethodChallengeSchema>;
-export type TempoMethodChallenge = z.infer<typeof TempoMethodChallengeSchema>;
-export type StripeMethodChallenge = z.infer<typeof StripeMethodChallengeSchema>;
-export type MockMethodChallenge = z.infer<typeof MockMethodChallengeSchema>;
 export type PaymentMethodChallenge = z.infer<typeof PaymentMethodChallengeSchema>;
 export type PaymentChallenge = z.infer<typeof PaymentChallengeSchema>;
 export type SignedPaymentChallenge = z.infer<typeof SignedPaymentChallengeSchema>;
@@ -130,4 +95,4 @@ export type Settlement = z.infer<typeof SettlementSchema>;
 export type PaymentReceiptUnsigned = z.infer<typeof PaymentReceiptUnsignedSchema>;
 export type PaymentReceipt = z.infer<typeof PaymentReceiptSchema>;
 
-export type PaymentMethodName = PaymentCredential["method"];
+export type PaymentMethodName = "fiber";

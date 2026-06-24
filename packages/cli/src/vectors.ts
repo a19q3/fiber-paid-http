@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
-import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { mkdir, mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 import {
   FiberMppError,
   PaymentChallengeSchema,
@@ -18,7 +19,7 @@ import {
   type PaymentReceipt,
   type ResourceDescriptor
 } from "@fiber-mpp/core";
-import { FiberMethodAdapter } from "@fiber-mpp/fiber-method";
+import { FiberMethodAdapter, FiberRpcClient } from "@fiber-mpp/fiber-method";
 import {
   F402ChallengeSchema,
   F402ProofSchema,
@@ -26,7 +27,7 @@ import {
   f402ProofToCredential
 } from "@fiber-mpp/f402-compat";
 import { createFiberMppMiddleware } from "@fiber-mpp/server-middleware";
-import { InMemoryStore, SqliteStore } from "@fiber-mpp/storage";
+import { SqliteStore } from "@fiber-mpp/storage";
 
 type VerificationResult = "accepted" | "rejected";
 
@@ -223,7 +224,7 @@ function buildVectorDocuments(
   });
   const wrongMethodCredential = PaymentCredentialSchema.parse({
     ...artifacts.credential,
-    method: "mock",
+    method: "unsupported-method",
     paymentProof: {
       status: "settled",
       observedAt: FIXED_NOW
@@ -253,6 +254,7 @@ function buildVectorDocuments(
     invoice: INVOICE,
     paymentHash: PAYMENT_HASH,
     amountShannons: AMOUNT_SHANNONS,
+    mode: "local" as const,
     status: "settled",
     observedAt: FIXED_NOW,
     evidence: {
@@ -428,7 +430,7 @@ function buildDeterministicArtifacts(options: { expiresAt?: string } = {}): {
         paymentHash: PAYMENT_HASH,
         invoice: INVOICE,
         fiberNodeId: "fiber-node-conformance-payee",
-        fiberRpcLabel: "conformance-mock",
+        fiberRpcLabel: "conformance-local",
         expiresAt
       }
     ],
@@ -447,7 +449,7 @@ function buildDeterministicArtifacts(options: { expiresAt?: string } = {}): {
     resourceHash: hashedResource,
     paymentProof: {
       kind: "fiber-payment-proof-v1",
-      mode: "mock",
+      mode: "local",
       paymentHash: PAYMENT_HASH,
       invoice: INVOICE,
       amountShannons: AMOUNT_SHANNONS,
@@ -474,7 +476,7 @@ function buildDeterministicArtifacts(options: { expiresAt?: string } = {}): {
         status: "settled",
         paymentHash: PAYMENT_HASH,
         invoiceId: INVOICE,
-        provider: "fiber-mock",
+        provider: "fiber-rpc",
         observedAt: FIXED_NOW
       },
       serverId: SERVER_ID,
@@ -571,7 +573,7 @@ async function verifyCredentialVector(input: Record<string, unknown>, replay: bo
   const request = resourceField(input, "request");
   const secret = stringField(input, "secret");
   const signature = stringField(input, "signature");
-  const store = new InMemoryStore();
+  const store = new SqliteStore(join(await mkdtemp(join(tmpdir(), "fiber-mpp-vector-")), "store.sqlite"));
   await store.saveChallenge({
     challenge,
     signature,
@@ -584,13 +586,17 @@ async function verifyCredentialVector(input: Record<string, unknown>, replay: bo
     serverId: challenge.serverId,
     store,
     fiber: new FiberMethodAdapter({
-      mode: "mock",
+      mode: "local",
+      rpc: new FiberRpcClient({
+        url: "http://fiber.local/vector",
+        fetchImpl: vectorFiberFetch,
+        label: "local-vector"
+      }),
       asset: "CKB",
       currency: "Fibd",
-      rpcLabel: "conformance-mock"
+      rpcLabel: "local-vector"
     }),
-    clockSkewSeconds: 0,
-    allowInMemoryStore: true
+    clockSkewSeconds: 0
   });
 
   try {
@@ -609,6 +615,26 @@ async function verifyCredentialVector(input: Record<string, unknown>, replay: bo
     throw error;
   }
 }
+
+const vectorFiberFetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+  const payload = JSON.parse(String(init?.body)) as { id?: number; method?: string };
+  if (payload.method === "get_invoice") {
+    return Response.json({
+      jsonrpc: "2.0",
+      id: payload.id,
+      result: {
+        invoice_address: INVOICE,
+        status: "Paid",
+        invoice: {
+          data: {
+            payment_hash: PAYMENT_HASH
+          }
+        }
+      }
+    });
+  }
+  throw new Error(`Unexpected Fiber RPC method in vector verification: ${payload.method ?? "unknown"}`);
+}) as typeof fetch;
 
 function verifyReceiptVector(input: Record<string, unknown>): VerificationOutcome {
   const receipt = PaymentReceiptSchema.parse(input.receipt);

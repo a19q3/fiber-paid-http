@@ -16,15 +16,15 @@
         "status": "settled",
         "paymentHash": "0xabababababababababababababababababababababababababababababababab",
         "invoiceId": "fibd1qconformancepayment0001",
-        "provider": "fiber-mock",
+        "provider": "fiber-rpc",
         "observedAt": "2026-06-24T00:00:00.000Z"
       },
       "serverId": "fiber-mpp-ts-conformance",
       "issuedAt": "2026-06-24T00:00:00.000Z",
-      "signature": "862a94a095b229cc8ec803442a07a42737b08e2ab23396c56197934732d10435"
+      "signature": "38dead42542f7d08e371f62b42656296835631563e0637bf2d21027a38dd78f8"
     }
   },
-  "expected_canonical_hash": "57194e1811ff9e52de3aea922156e99a477f39c2bb5d56b3f316fd2e19dccc9c",
+  "expected_canonical_hash": "11f7d6d4d9e743b103684e6282edc86fad2f31f8ec633dbeab1db8fdfee8e400",
   "expected_verification_result": "accepted",
   "notes": "Payment-Receipt signed by the TypeScript implementation."
 }

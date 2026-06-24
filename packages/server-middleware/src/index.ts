@@ -27,7 +27,6 @@ import {
 } from "@fiber-mpp/core";
 import { FiberMethodAdapter } from "@fiber-mpp/fiber-method";
 import {
-  InMemoryStore,
   assertProductionStore,
   type ChallengeRecord,
   type FiberMppStore
@@ -46,13 +45,11 @@ export type PaidRouteConfig = {
 export type FiberMppMiddlewareConfig = {
   secret: string;
   serverId: string;
-  store?: FiberMppStore;
+  store: FiberMppStore;
   fiber?: FiberMethodAdapter;
   defaultFiberAmountShannons?: string;
   challengeTtlSeconds?: number;
   clockSkewSeconds?: number;
-  production?: boolean;
-  allowInMemoryStore?: boolean;
 };
 
 export type FiberMppMiddleware = {
@@ -72,10 +69,11 @@ export function createFiberMppMiddleware(config: FiberMppMiddlewareConfig): Fibe
   if (!config.secret || config.secret.length < 16) {
     throw new Error("FiberMPP middleware requires a secret of at least 16 characters");
   }
-  const store = config.store ?? new InMemoryStore();
-  if (config.production) {
-    assertProductionStore(store, config.allowInMemoryStore || process.env.ALLOW_IN_MEMORY_STORE === "1");
+  if (!config.store) {
+    throw new Error("FiberMPP middleware requires a durable store");
   }
+  const store = config.store;
+  assertProductionStore(store);
   const fiber = config.fiber ?? FiberMethodAdapter.fromEnv();
   const challengeTtlSeconds = config.challengeTtlSeconds ?? 120;
   const clockSkewSeconds = config.clockSkewSeconds ?? 5;
@@ -99,14 +97,9 @@ export function createFiberMppMiddleware(config: FiberMppMiddlewareConfig): Fibe
       );
     }
 
-    if (enabledMethods.includes("mock")) {
-      methods.push({
-        method: "mock" as const,
-        intent: "charge" as const,
-        amount: route.price.value,
-        currency: route.price.currency,
-        settlement: "simulated" as const
-      });
+    const unsupported = enabledMethods.filter((method) => method !== "fiber");
+    if (unsupported.length > 0) {
+      throw new FiberMppError("unsupported-method", `Unsupported payment method(s): ${unsupported.join(", ")}`, 500);
     }
 
     if (methods.length === 0) {
@@ -223,19 +216,6 @@ export function createFiberMppMiddleware(config: FiberMppMiddlewareConfig): Fibe
   ): Promise<{ settlement: PaymentReceipt["settlement"]; amountShannons?: string }> {
     if (methodChallenge.method === "fiber") {
       return fiber.verifyProof(methodChallenge as FiberMethodChallenge, credential.paymentProof);
-    }
-    if (methodChallenge.method === "mock") {
-      const proof = credential.paymentProof as { status?: string; observedAt?: string };
-      if (proof?.status !== "settled") {
-        throw new FiberMppError("mock-payment-not-settled", "Mock payment proof is not settled", 402);
-      }
-      return {
-        settlement: {
-          status: "simulated",
-          provider: "mock",
-          observedAt: proof.observedAt ?? new Date().toISOString()
-        }
-      };
     }
     throw new FiberMppError("unsupported-method", `${methodChallenge.method} verification is not implemented`, 402);
   }

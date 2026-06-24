@@ -18,23 +18,18 @@ Fiber has strong micropayment primitives, but MPP-style paid HTTP services need 
 - `WWW-Authenticate: Payment`.
 - `Authorization: Payment` retry.
 - `Payment-Receipt`.
-- Fiber mock payment flow.
+- Local Fiber E2E payment flow.
 - Route middleware.
 - Reverse proxy helper.
 - Client helper.
-- CLI smoke test.
+- Fiber preflight and live E2E test lane.
 - Demo API and demo web UI.
 - Security tests for replay, wrong resource, wrong method, wrong amount, expiry, no-store, and signatures.
 - F402 conversion.
 
-## Mocked or simulated
-
-- Default Fiber mode is mock and receipts say `simulated`.
-- Stripe and Tempo remain explicit mock/sandbox adapters; live Stripe/Tempo support is outside the FiberMPP evidence path.
-
 ## Real Fiber status
 
-The adapter supports Fiber JSON-RPC method names from the current Fiber repo. Real settlement requires `FIBER_MODE=local` or `testnet`, `FIBER_RPC_URL`, and a working Fiber node/channel environment.
+The adapter supports Fiber JSON-RPC method names from the current Fiber repo. Settlement requires `FIBER_MODE=local` or `testnet`, payer/payee Fiber RPC URLs, and a working Fiber node/channel environment. Offline payment mode has been removed.
 
 ## How to run
 
@@ -55,12 +50,11 @@ bash scripts/fiber_mpp_gate.sh
 
 ## Roadmap
 
-- Real Fiber E2E harness.
 - Redis-compatible production store implementation.
 - Stronger paid-but-denied mitigation.
 - More complete `doctor` diagnostics.
-- Optional Stripe/Tempo sandbox integration with credentials.
+- Separate testnet Fiber E2E evidence.
 
 ## Submission readiness
 
-Ready for a hackathon demo with honest mock/live labeling. Not ready to claim live Fiber production settlement until real Fiber E2E tests pass.
+Ready for a local Fiber evidence demo when the local 3-node network is running. Not ready to claim production readiness until testnet Fiber E2E evidence and operational hardening are complete.

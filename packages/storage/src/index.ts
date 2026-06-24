@@ -6,7 +6,7 @@ import type {
 } from "@fiber-mpp/core";
 import { createRequire } from "node:module";
 
-export type StoreKind = "memory" | "sqlite" | "redis-compatible";
+export type StoreKind = "sqlite" | "redis-compatible";
 
 export type ChallengeRecord = {
   challenge: PaymentChallenge;
@@ -37,65 +37,6 @@ export interface FiberMppStore {
   getReceipt(receiptId: string): Promise<PaymentReceipt | null>;
   savePaymentObservation(observation: PaymentObservation): Promise<void>;
   getPaymentObservation(paymentHash: string): Promise<PaymentObservation | null>;
-}
-
-export class InMemoryStore implements FiberMppStore {
-  public readonly kind = "memory" as const;
-  public readonly durable = false;
-
-  private readonly challenges = new Map<string, ChallengeRecord>();
-  private readonly credentialUses = new Map<string, { credential: PaymentCredential; usedAt: string }>();
-  private readonly receipts = new Map<string, PaymentReceipt>();
-  private readonly observations = new Map<string, PaymentObservation>();
-
-  public async saveChallenge(record: ChallengeRecord): Promise<void> {
-    this.challenges.set(record.challenge.challengeId, { ...record });
-  }
-
-  public async getChallenge(challengeId: string): Promise<ChallengeRecord | null> {
-    return this.challenges.get(challengeId) ?? null;
-  }
-
-  public async markChallengeUsed(challengeId: string, usedAt: string): Promise<boolean> {
-    const record = this.challenges.get(challengeId);
-    if (!record || record.usedAt) {
-      return false;
-    }
-    this.challenges.set(challengeId, { ...record, usedAt });
-    return true;
-  }
-
-  public async hasCredentialUse(credentialHash: string): Promise<boolean> {
-    return this.credentialUses.has(credentialHash);
-  }
-
-  public async saveCredentialUse(
-    credentialHash: string,
-    credential: PaymentCredential,
-    usedAt: string
-  ): Promise<boolean> {
-    if (this.credentialUses.has(credentialHash)) {
-      return false;
-    }
-    this.credentialUses.set(credentialHash, { credential, usedAt });
-    return true;
-  }
-
-  public async saveReceipt(receipt: PaymentReceipt): Promise<void> {
-    this.receipts.set(receipt.receiptId, receipt);
-  }
-
-  public async getReceipt(receiptId: string): Promise<PaymentReceipt | null> {
-    return this.receipts.get(receiptId) ?? null;
-  }
-
-  public async savePaymentObservation(observation: PaymentObservation): Promise<void> {
-    this.observations.set(observation.paymentHash, observation);
-  }
-
-  public async getPaymentObservation(paymentHash: string): Promise<PaymentObservation | null> {
-    return this.observations.get(paymentHash) ?? null;
-  }
 }
 
 export class SqliteStore implements FiberMppStore {
@@ -212,10 +153,10 @@ export type RedisCompatibleStore = FiberMppStore & {
   readonly kind: "redis-compatible";
 };
 
-export function assertProductionStore(store: FiberMppStore, allowInMemory = false): void {
-  if (!store.durable && !allowInMemory) {
+export function assertProductionStore(store: FiberMppStore): void {
+  if (!store.durable) {
     throw new Error(
-      "In-memory FiberMPP storage is not allowed in production mode. Use SQLite/Redis or set ALLOW_IN_MEMORY_STORE=1 explicitly."
+      "Durable FiberMPP storage is required. Use SQLite or a Redis-compatible production store."
     );
   }
 }

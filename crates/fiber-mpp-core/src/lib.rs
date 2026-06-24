@@ -223,7 +223,7 @@ fn verify_credential_vector(input: &Value) -> Result<Outcome, CoreError> {
     if string_field(proof, "kind")? != "fiber-payment-proof-v1" {
         return Ok(Outcome::rejected("invalid-fiber-proof"));
     }
-    if string_field(proof, "mode").unwrap_or("mock") != "mock" || !is_settled_status(proof.get("status")) {
+    if !matches!(string_field(proof, "mode").unwrap_or(""), "local" | "testnet") || !is_settled_status(proof.get("status")) {
         return Ok(Outcome::rejected("fiber-payment-not-settled"));
     }
 
@@ -274,7 +274,7 @@ fn verify_f402_credential_vector(input: &Value) -> Result<Outcome, CoreError> {
         "resourceHash": string_field(input, "resource_hash")?,
         "paymentProof": {
             "kind": "fiber-payment-proof-v1",
-            "mode": "mock",
+            "mode": optional_string(proof, "mode").unwrap_or("local"),
             "paymentHash": string_field(proof, "paymentHash")?,
             "invoice": optional_string(proof, "invoice"),
             "amountShannons": optional_string(proof, "amountShannons"),

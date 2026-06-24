@@ -1225,8 +1225,8 @@
           }
         } catch (error) {
           state.status = {
-            mode: "api-offline",
-            blockers: [`Demo API offline at ${apiBase}`],
+            mode: "api-unreachable",
+            blockers: [`Demo API unreachable at ${apiBase}`],
             endpoints: fallbackEndpoints,
             badges: {
               rustCanonicalEngine: false,
@@ -1243,7 +1243,7 @@
               routeSource: "unavailable",
               channelCount: null,
               channelCountSource: "unavailable",
-              routeStatus: "api offline"
+              routeStatus: "api unreachable"
             },
             engine: {
               canonical: "rust",
@@ -1251,7 +1251,7 @@
               typescriptTrustedBoundary: false
             }
           };
-          addLocalLog("ERROR", "web", "evidence API offline", error.message);
+          addLocalLog("ERROR", "web", "evidence API unreachable", error.message);
         }
       }
 
@@ -1522,13 +1522,13 @@
         const receiptId = state.flow?.receipt?.receiptId;
         const events = state.flow?.events || [];
         const liveFiberFlow = isLiveFiberFlow();
-        const proofMode = state.flow?.proof?.mode || state.status?.mode || "mock";
+        const proofMode = state.flow?.proof?.mode || state.status?.mode || "unconfigured";
         return [
           step("CLIENT", "GET /paid/*resource", state.selected, hasPhase("challenge_received"), "[]", eventTime(events, "GET")),
           step("SERVER", "402 Payment Required", `challenge: ${short(challengeId)}`, hasPhase("challenge_received"), "==", eventTime(events, "402")),
           step(
             liveFiberFlow ? "FIBER NODE A" : "FIBER METHOD",
-            liveFiberFlow ? "send_payment (invoice)" : "Mock payment proof",
+            liveFiberFlow ? "send_payment (invoice)" : "Live Fiber required",
             `payment_hash: ${short(paymentHash)}`,
             hasPhase("payment_settled"),
             "<>",
@@ -1536,11 +1536,11 @@
           ),
           step(
             liveFiberFlow ? "FIBER NODE B / C" : "METHOD VERIFIER",
-            liveFiberFlow ? "Settlement across route" : "Mock proof accepted",
+            liveFiberFlow ? "Settlement across route" : "No payment executed",
             liveFiberFlow ? "settlement: success" : `mode: ${proofMode}`,
             hasPhase("payment_settled"),
             "<>",
-            eventTime(events, liveFiberFlow ? "payment settled" : "mock proof")
+            eventTime(events, liveFiberFlow ? "payment settled" : "live Fiber")
           ),
           step("CLIENT", "Retry with Authorization: Payment", `payment_hash: ${short(paymentHash)}`, hasPhase("receipt_returned"), "[]", eventTime(events, "retry")),
           step("SERVER", "Verify Payment & Receipt", `receipt_id: ${short(receiptId)}`, hasPhase("receipt_returned"), "==", eventTime(events, "payment verified")),

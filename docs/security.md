@@ -19,7 +19,7 @@ Implemented checks:
 - wrong amount rejection,
 - `Cache-Control: no-store` on 402 responses,
 - signed receipts,
-- production rejection of in-memory storage.
+- durable storage requirement for replay and receipt state.
 
 Partial mitigations:
 

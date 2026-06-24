@@ -27,6 +27,7 @@ export const F402ProofSchema = z.object({
   invoice: z.string().optional(),
   paymentHash: z.string().min(1),
   amountShannons: z.string().regex(/^\d+$/).optional(),
+  mode: z.enum(["local", "testnet"]).default("local"),
   status: z.string().default("settled"),
   observedAt: z.string().datetime().optional(),
   evidence: z.unknown().optional()
@@ -90,7 +91,7 @@ export function f402ProofToCredential(input: {
     resourceHash: input.resourceHash,
     paymentProof: {
       kind: "fiber-payment-proof-v1",
-      mode: "mock",
+      mode: proof.mode,
       paymentHash: proof.paymentHash,
       invoice: proof.invoice,
       amountShannons: proof.amountShannons,

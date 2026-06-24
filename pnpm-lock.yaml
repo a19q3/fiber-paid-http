@@ -123,18 +123,6 @@ importers:
         specifier: workspace:*
         version: link:../core
 
-  packages/stripe-method:
-    dependencies:
-      '@fiber-mpp/core':
-        specifier: workspace:*
-        version: link:../core
-
-  packages/tempo-method:
-    dependencies:
-      '@fiber-mpp/core':
-        specifier: workspace:*
-        version: link:../core
-
 packages:
 
   '@esbuild/aix-ppc64@0.27.7':

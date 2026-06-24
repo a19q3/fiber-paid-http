@@ -43,9 +43,9 @@ describe("core protocol primitives", () => {
         resourceHash: resourceHash({ method: "GET", url: "https://example.test/paid" }),
         amount: { value: "0.01", currency: "USD" },
         settlement: {
-          status: "simulated",
+          status: "settled",
           paymentHash: "0xabc",
-          provider: "fiber-mock",
+          provider: "fiber-rpc",
           observedAt: new Date().toISOString()
         },
         serverId: "unit",
@@ -54,7 +54,7 @@ describe("core protocol primitives", () => {
       secret
     );
     expect(verifyReceiptSignature(receipt, secret)).toBe(true);
-    expect(verifyReceiptSignature({ ...receipt, method: "mock" }, secret)).toBe(false);
+    expect(verifyReceiptSignature({ ...receipt, method: "unsupported-method" }, secret)).toBe(false);
   });
 });
 
@@ -73,7 +73,7 @@ function makeChallenge(): PaymentChallenge {
         asset: "CKB",
         amountShannons: "1000",
         paymentHash: `0x${"12".repeat(32)}`,
-        invoice: "fibermpp_mock_1212",
+        invoice: "fibd1qfixture1212",
         expiresAt
       }
     ],

@@ -166,7 +166,7 @@ route status : live configured / evidence recorded / not configured
 
 Do not add channel open/close controls, balance charts, liquidity graphs, mempool panels, or network-wide observability.
 
-The widget must show the source of route and channel fields. Static evidence mode may show the saved local E2E route as historical evidence, but it must not label it as live network state. If live Fiber env vars are missing, the console should display `unconfigured` or `evidence recorded`, not `connected`.
+The widget must show the source of route and channel fields. A saved evidence view may show the recorded local E2E route as historical evidence, but it must not label it as live network state. If live Fiber env vars are missing, the console should display `unconfigured` or `evidence recorded`, not `connected`.
 
 ### Center Column: Protocol Flow Timeline
 
@@ -221,7 +221,7 @@ failed
 
 The success path turns green/teal. Replay rejection should be red/orange but treated as a successful security outcome.
 
-In mock or static-evidence mode, the payment steps should say `Fiber method` / `mock payment proof` / `mock proof accepted`. `Fiber Node B / C` and routed-settlement language is reserved for live local/testnet proofs whose payment proof mode is `local` or `testnet`.
+When live Fiber is not configured, payment steps should say `Live Fiber required` and `No payment executed`. `Fiber Node B / C` and routed-settlement language is reserved for live local/testnet proofs whose payment proof mode is `local` or `testnet`.
 
 ### Right Column: Evidence & Reports
 
@@ -294,12 +294,12 @@ The bottom terminal band should show a compact chronological trace:
 [10:21:30.123] INFO client GET /paid/protocol-service
 [10:21:30.151] INFO server 402 issued challenge=...
 [10:21:30.481] INFO payer invoice created payment_hash=...
-[10:21:31.102] INFO fiber-method mock proof settled no live Fiber route was exercised
+[10:21:31.102] ERROR server live Fiber not configured HTTP 503
 [10:21:31.347] INFO server payment verified receipt_id=...
 [10:21:31.789] WARN server replay rejected reason=not_reused
 ```
 
-The log should be generated from flow state and evidence reports. It must not imply live Fiber activity when the console is displaying static evidence.
+The log should be generated from flow state and evidence reports. It must not imply live Fiber activity when the console is displaying report-only evidence.
 
 ## Visual Direction
 
@@ -342,7 +342,7 @@ reports/security-matrix.json
 test-vectors/*.json
 ```
 
-If live local Fiber env vars are absent, the UI must show static evidence mode or skipped blockers clearly.
+If live local Fiber env vars are absent, the UI must show `unconfigured` status or skipped blockers clearly and must not execute payment.
 
 If live local Fiber env vars are present, the UI may call the local demo API to run the flow:
 
@@ -355,7 +355,7 @@ FIBER_CURRENCY=Fibd
 FIBER_E2E_AMOUNT_SHANNONS=100
 ```
 
-Do not hide the mode. The console should display `mode: static evidence`, `mode: local`, or `mode: testnet`.
+Do not hide the mode. The console should display `mode: unconfigured`, `mode: local`, or `mode: testnet`.
 
 ## API Plan
 
@@ -380,7 +380,7 @@ Endpoint responsibilities:
 
 - `/api/status`: expose mode, engine, report availability, blockers, and production-ready status.
 - `/api/demo/unpaid`: request protected resource and return the 402 challenge evidence.
-- `/api/demo/pay`: perform or replay the Fiber payment step, depending on mode.
+- `/api/demo/pay`: perform the Fiber payment step only when local/testnet Fiber RPC is configured; otherwise return a blocker.
 - `/api/demo/retry`: retry with `Authorization: Payment` and return receipt evidence.
 - `/api/demo/replay`: replay the last credential and return rejection evidence.
 - `/api/reports/*`: serve sanitized report summaries plus optional raw JSON.
@@ -450,7 +450,7 @@ Button sequence:
 2. Pay with Fiber
    -> invoice/payment hash appears
    -> route graph animates node1 -> node2 -> node3 only in live local/testnet mode
-   -> static/mock mode shows proof verification without route-node animation
+   -> unconfigured mode blocks payment execution without route-node animation
    -> settlement status becomes passed
 
 3. Retry with Authorization: Payment
@@ -518,7 +518,7 @@ Requirements:
 
 ## Implementation Phases
 
-### Phase 1: Static Evidence Console
+### Phase 1: Report-Only Evidence Console
 
 Goal: make existing reports look impressive and audit-friendly.
 
@@ -538,7 +538,7 @@ Tasks:
 
 - Add the minimal `/api/demo/*` endpoints.
 - Return structured flow events.
-- Keep static evidence mode when live Fiber env vars are absent.
+- Keep payment execution blocked when live Fiber env vars are absent.
 - Gate local live payment mode behind explicit env vars.
 
 ### Phase 3: Live Local Fiber Mode
@@ -577,7 +577,7 @@ The frontend is ready when:
 - TypeScript is shown as compatibility/vector tooling.
 - Production ready remains false with blockers visible.
 - No Fiber node dashboard, wallet, checkout, or `fiber-pay` GUI behavior is present.
-- The console can run in static evidence mode with no live Fiber nodes.
+- The console can show report-only evidence with no live Fiber nodes, while payment execution remains blocked.
 - The console can run live local mode when env vars are configured.
 - The UI is polished enough to communicate the evidence chain from a screenshot without needing narration.
 

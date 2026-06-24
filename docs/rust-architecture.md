@@ -4,7 +4,7 @@ The Rust workspace under `crates/` is the canonical protocol core and verifier t
 
 ```text
 crates/fiber-mpp-core     canonical hashes, signatures, vector verification
-crates/fiber-mpp-storage  replay storage trait, memory store, SQLite durable store
+crates/fiber-mpp-storage  replay storage trait and SQLite durable store
 crates/fiber-mpp-fiber    Fiber JSON-RPC method names, hex quantities, status semantics
 crates/fiber-mpp-f402     F402 proof/credential compatibility helpers
 crates/fiber-mpp-server   Axum/Tower HTTP 402 gateway prototype

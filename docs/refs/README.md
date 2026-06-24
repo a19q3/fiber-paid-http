@@ -2,22 +2,6 @@
 
 This index records the external sources inspected before implementation. Reference notes live under `docs/refs` only. External repositories are cloned read-only under `/home/arthur/a19q3`.
 
-## Stripe: Introducing the Machine Payments Protocol
-
-- URL: https://stripe.com/blog/machine-payments-protocol
-- Local repo path: none
-- Why it matters: introduces MPP as an HTTP-native payment coordination protocol for agents and services, co-authored by Stripe and Tempo.
-- FiberMPP behavior learned: a service can ask for payment, a client can authorize payment, and the service returns the resource after verification. Stripe positioning confirms MPP is rail-agnostic and can sit beside existing payment infrastructure.
-- What not to copy: do not claim Stripe live settlement or Shared Payment Token support unless credentials and API tests are present.
-
-## Stripe MPP documentation
-
-- URL: https://docs.stripe.com/payments/machine/mpp
-- Local repo path: none
-- Why it matters: provider-specific implementation details for Stripe MPP.
-- FiberMPP behavior learned: Stripe should be an optional MPP rail, not the core settlement path for this project.
-- What not to copy: do not hard-code Stripe's account, PaymentIntent, or network token assumptions into the Fiber method.
-
 ## mpp.dev
 
 - URL: https://mpp.dev/
@@ -120,4 +104,3 @@ This index records the external sources inspected before implementation. Referen
 - `/home/arthur/a19q3/fiber-pay`: CLI/payment UX reference.
 - `/home/arthur/a19q3/fiber-l402`: Fiber L402 precedent.
 - `/home/arthur/a19q3/fiber-checkout`: React checkout/payment component reference.
-- `/home/arthur/a19q3/stripe-machine-payments`: Stripe sample reference.

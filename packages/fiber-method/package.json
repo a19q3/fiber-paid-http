@@ -2,7 +2,7 @@
   "name": "@fiber-mpp/fiber-method",
   "version": "0.1.0",
   "type": "module",
-  "description": "Fiber JSON-RPC and mock payment method adapter for FiberMPP.",
+  "description": "Fiber JSON-RPC payment method adapter for FiberMPP.",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

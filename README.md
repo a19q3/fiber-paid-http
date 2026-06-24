@@ -2,14 +2,14 @@
 
 FiberMPP is a production-targeted Fiber payment method for Machine Payments Protocol, with F402 compatibility for Fiber-native HTTP 402 applications. It is not production-ready yet: local Fiber E2E evidence exists, while separate testnet evidence, operational hardening, and the Rust HTTP gateway remain pending.
 
-FiberMPP lets services accept Fiber beside MPP rails such as Tempo and Stripe through one HTTP 402 challenge, credential, and receipt flow.
+FiberMPP lets services accept Fiber through one HTTP 402 challenge, credential, and receipt flow.
 
 ## What it is not
 
 - Not an AI inference marketplace.
 - Not a full checkout product.
 - Not a wallet.
-- Not a Tempo/Stripe stablecoin bridge into Fiber.
+- Not a multi-rail stablecoin bridge into Fiber.
 - Not a replacement for Infern.
 
 ## Quick start
@@ -34,27 +34,13 @@ pnpm --filter @fiber-mpp/demo-web start
 
 Open `http://localhost:8788`.
 
-## Demo smoke
-
-```bash
-fiber-mpp demo smoke
-```
-
-This checks unpaid 402, Fiber mock payment, paid retry, receipt, replay rejection, and wrong-resource rejection.
-
 ## Security model
 
 Challenges and receipts are HMAC-signed canonical JSON. Credentials bind to a resource hash and are single-use. The middleware verifies challenge signature, expiry, method, resource, Fiber payment hash, Fiber amount, and replay state before serving protected resources.
 
 ## Fiber RPC configuration
 
-Mock mode is the default:
-
-```bash
-FIBER_MODE=mock
-```
-
-Real local/testnet attempts require separate payer and payee Fiber RPC endpoints:
+FiberMPP requires real local or testnet Fiber RPC endpoints. Local/testnet attempts require separate payer and payee nodes:
 
 ```bash
 FIBER_MODE=local
@@ -95,7 +81,6 @@ fiber-mpp serve --upstream http://localhost:8080 --price-usd 0.01 --methods fibe
 fiber-mpp f402 convert f402-challenge.json
 fiber-mpp receipt verify receipt.json --secret <secret>
 fiber-mpp doctor http://localhost:8787/paid/weather
-fiber-mpp demo smoke
 ```
 
 ## Production gate
@@ -104,4 +89,4 @@ fiber-mpp demo smoke
 bash scripts/fiber_mpp_gate.sh
 ```
 
-The gate writes `reports/fiber-mpp-gate.json` and stays honest about mock, local, and testnet modes. Production readiness must remain false until a real testnet Fiber E2E pass and operational hardening are recorded.
+The gate writes `reports/fiber-mpp-gate.json` and stays honest about skipped, local, and testnet modes. Production readiness must remain false until a real testnet Fiber E2E pass and operational hardening are recorded.

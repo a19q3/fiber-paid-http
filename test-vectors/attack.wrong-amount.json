@@ -26,7 +26,7 @@
           "paymentHash": "0xabababababababababababababababababababababababababababababababab",
           "invoice": "fibd1qconformancepayment0001",
           "fiberNodeId": "fiber-node-conformance-payee",
-          "fiberRpcLabel": "conformance-mock",
+          "fiberRpcLabel": "conformance-local",
           "expiresAt": "2030-01-01T00:00:00.000Z"
         }
       ],
@@ -36,7 +36,7 @@
       "serverId": "fiber-mpp-ts-conformance",
       "maxUses": 1
     },
-    "signature": "94de15b867b4e0ff3de31412114daa942fc40f33d299fe9af128624b3aaa7fcb",
+    "signature": "d906e92b33e8de55376c9ceb4ea173af4c01ff8fe4ff75414f691f1580918cc5",
     "credential": {
       "domain": "fiber-mpp-credential-v1",
       "challengeId": "chal_conformance_0001",
@@ -44,7 +44,7 @@
       "resourceHash": "e6ae6449bcbf5882012a00c4dcf32043c67355ee779dbaac489fec3b4c2b8546",
       "paymentProof": {
         "kind": "fiber-payment-proof-v1",
-        "mode": "mock",
+        "mode": "local",
         "paymentHash": "0xabababababababababababababababababababababababababababababababab",
         "invoice": "fibd1qconformancepayment0001",
         "amountShannons": "999",
@@ -57,7 +57,7 @@
       "submittedAt": "2026-06-24T00:00:00.000Z"
     }
   },
-  "expected_canonical_hash": "5a5f5579fe42d8ef4cba80145de2d6aac550c4c5910f875bf0164b4510760827",
+  "expected_canonical_hash": "242cc313e2eea4aefb4bc2e286d3650033e8a5be226aa920a9128bd1fc6875ad",
   "expected_verification_result": "rejected",
   "expected_error_code": "wrong-amount",
   "notes": "Fiber payment proof amount does not match the Fiber method challenge amount."

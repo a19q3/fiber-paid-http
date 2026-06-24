@@ -5,7 +5,7 @@ FiberMPP does not link against Fiber internals. It speaks to Fiber Network Node 
 ## Environment
 
 ```text
-FIBER_MODE=mock | local | testnet
+FIBER_MODE=local | testnet
 FIBER_RPC_URL=http://127.0.0.1:8227
 FIBER_RPC_AUTH=<optional Authorization header value>
 FIBER_NODE_ID=<optional node pubkey/id>
@@ -24,7 +24,6 @@ Numeric fields are hex JSON quantities, for example `100` is sent as `0x64`.
 
 ## Settlement statuses
 
-- Mock mode: accepted proof yields `settlement.status = "simulated"`.
 - Local/testnet mode: `get_payment` must reach `Success` and `get_invoice` must reach `Paid` before FiberMPP emits a settled receipt.
 
 The Rust parity surface is documented in [rust-fiber-rpc.md](rust-fiber-rpc.md).

@@ -12,7 +12,7 @@
       "actual": "rejected",
       "expected_error_code": "expired-challenge",
       "actual_error_code": "expired-challenge",
-      "canonical_hash": "3e2b557cc5ef81e173cb0c0b54ef17eeb4cf48227dd8ace9acef88d7d6f9f1d8"
+      "canonical_hash": "0fa39f393bdfd6fbb12a28ca496b0ea1de3a7cac6921da14a256b7856571d289"
     },
     {
       "file": "attack.replay.json",
@@ -21,7 +21,7 @@
       "actual": "rejected",
       "expected_error_code": "replay",
       "actual_error_code": "replay",
-      "canonical_hash": "2571f64548dd6fb9bee18a4e2b91f91d1425894b8f2f5f7fd5dbe33f5cdcea15"
+      "canonical_hash": "cdf218087603d7a6697ad7cda80e67af026488c9127bdbab92f9db87c15ebeae"
     },
     {
       "file": "attack.tampered-receipt.json",
@@ -30,7 +30,7 @@
       "actual": "rejected",
       "expected_error_code": "bad-receipt-signature",
       "actual_error_code": "bad-receipt-signature",
-      "canonical_hash": "9e12958a599f6b276d762c76dd52658573552748b98f564f64c0eef00ec6cebe"
+      "canonical_hash": "4ad3d577a3b830d992d9fb4a1305782cbd6bb8e12d5fa60e9a3cebc94bd60021"
     },
     {
       "file": "attack.wrong-amount.json",
@@ -39,7 +39,7 @@
       "actual": "rejected",
       "expected_error_code": "wrong-amount",
       "actual_error_code": "wrong-amount",
-      "canonical_hash": "5a5f5579fe42d8ef4cba80145de2d6aac550c4c5910f875bf0164b4510760827"
+      "canonical_hash": "242cc313e2eea4aefb4bc2e286d3650033e8a5be226aa920a9128bd1fc6875ad"
     },
     {
       "file": "attack.wrong-method.json",
@@ -48,7 +48,7 @@
       "actual": "rejected",
       "expected_error_code": "wrong-method",
       "actual_error_code": "wrong-method",
-      "canonical_hash": "a6433ceb1577af72b2aa7065be15909d76bc00d3c3e781aa364c9a96ff87604b"
+      "canonical_hash": "009f3fc74acefe40974f0c2236941841db3f2e61ca44342882847f8924eec89d"
     },
     {
       "file": "attack.wrong-resource.json",
@@ -57,35 +57,35 @@
       "actual": "rejected",
       "expected_error_code": "wrong-resource",
       "actual_error_code": "wrong-resource",
-      "canonical_hash": "66efd6e85d15adb875780a16cd7f4e3ba8e3517cbd71e7f743ac92faade8cfee"
+      "canonical_hash": "68872997f8da9e81166455966379c913aad5e91d2fbee6b0c236c0c3d248668b"
     },
     {
       "file": "challenge.valid.json",
       "passed": true,
       "expected": "accepted",
       "actual": "accepted",
-      "canonical_hash": "ece999d51c9412372dd8de3dc7c63f7b32fe7825207340674623aa3f5e5401fc"
+      "canonical_hash": "0ca84035a1fb33123fbca680e26e2b759549ed939874ba8162b4cbdc4fbb2a1b"
     },
     {
       "file": "credential.valid.json",
       "passed": true,
       "expected": "accepted",
       "actual": "accepted",
-      "canonical_hash": "892e767454725a442d51e87a9d94fdc56357740ddbbb0e58577e041dd976b1ef"
+      "canonical_hash": "9b8251aab757054853b0fecd88fa5eeaa8ec13aa87981315baa035a324d34cc3"
     },
     {
       "file": "f402.challenge.valid.json",
       "passed": true,
       "expected": "accepted",
       "actual": "accepted",
-      "canonical_hash": "ff66d648f2fa32380d92b4e6f1691cf339d4d5494d6ea9808d56dd7514e928a2"
+      "canonical_hash": "2344ee66dbb2b3a1c126314758e54035ed8f8710b4e3999d9517768a9c15c90e"
     },
     {
       "file": "f402.credential.valid.json",
       "passed": true,
       "expected": "accepted",
       "actual": "accepted",
-      "canonical_hash": "7bece53cf6fbf0be79404ecfdfb3fa79935e0cb7f19118dd8a39cfbe0d601e6c"
+      "canonical_hash": "82c7592694ee2cf8e654fae2f29e443104153b9bc27e27d479457e776487f1e4"
     },
     {
       "file": "fiber.local-e2e.receipt.json",
@@ -106,7 +106,7 @@
       "passed": true,
       "expected": "accepted",
       "actual": "accepted",
-      "canonical_hash": "57194e1811ff9e52de3aea922156e99a477f39c2bb5d56b3f316fd2e19dccc9c"
+      "canonical_hash": "11f7d6d4d9e743b103684e6282edc86fad2f31f8ec633dbeab1db8fdfee8e400"
     },
     {
       "file": "resource.hash.valid.json",

@@ -12,12 +12,10 @@ Relevant RPC methods from `/home/arthur/a19q3/fiber/crates/fiber-lib/src/rpc/REA
 
 Current implementation status:
 
-- Mock mode creates local simulated Fiber challenges and proofs.
 - Local/testnet mode can create invoices, send payments, and verify invoice/payment status over JSON-RPC when `FIBER_RPC_URL` is set.
 - No live mainnet claim is made.
 
 Safety notes:
 
-- `FIBER_MODE=mock` produces `settlement.status = "simulated"`.
 - `FIBER_MODE=local` or `testnet` only produces `settlement.status = "settled"` after Fiber RPC reports settled status.
 - Fiber RPC credentials must not be logged.

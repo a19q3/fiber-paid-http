@@ -23,8 +23,6 @@
       "@fiber-mpp/f402-compat": ["packages/f402-compat/src/index.ts"],
       "@fiber-mpp/server-middleware": ["packages/server-middleware/src/index.ts"],
       "@fiber-mpp/client": ["packages/client/src/index.ts"],
-      "@fiber-mpp/stripe-method": ["packages/stripe-method/src/index.ts"],
-      "@fiber-mpp/tempo-method": ["packages/tempo-method/src/index.ts"],
       "@fiber-mpp/demo-api": ["apps/demo-api/src/index.ts"]
     }
   }

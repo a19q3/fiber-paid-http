@@ -26,7 +26,7 @@
           "paymentHash": "0xabababababababababababababababababababababababababababababababab",
           "invoice": "fibd1qconformancepayment0001",
           "fiberNodeId": "fiber-node-conformance-payee",
-          "fiberRpcLabel": "conformance-mock",
+          "fiberRpcLabel": "conformance-local",
           "expiresAt": "2030-01-01T00:00:00.000Z"
         }
       ],
@@ -36,11 +36,11 @@
       "serverId": "fiber-mpp-ts-conformance",
       "maxUses": 1
     },
-    "signature": "94de15b867b4e0ff3de31412114daa942fc40f33d299fe9af128624b3aaa7fcb",
+    "signature": "d906e92b33e8de55376c9ceb4ea173af4c01ff8fe4ff75414f691f1580918cc5",
     "credential": {
       "domain": "fiber-mpp-credential-v1",
       "challengeId": "chal_conformance_0001",
-      "method": "mock",
+      "method": "unsupported-method",
       "resourceHash": "e6ae6449bcbf5882012a00c4dcf32043c67355ee779dbaac489fec3b4c2b8546",
       "paymentProof": {
         "status": "settled",
@@ -49,7 +49,7 @@
       "submittedAt": "2026-06-24T00:00:00.000Z"
     }
   },
-  "expected_canonical_hash": "a6433ceb1577af72b2aa7065be15909d76bc00d3c3e781aa364c9a96ff87604b",
+  "expected_canonical_hash": "009f3fc74acefe40974f0c2236941841db3f2e61ca44342882847f8924eec89d",
   "expected_verification_result": "rejected",
   "expected_error_code": "wrong-method",
   "notes": "Credential names a method that was not offered in the signed challenge."

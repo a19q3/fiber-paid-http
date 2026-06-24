@@ -8,7 +8,7 @@ describe("F402 compatibility", () => {
     const challenge = f402ChallengeToMpp({
       f402: {
         token: "v1.aaa.bbb",
-        invoice: "fibd1qmock",
+        invoice: "fibd1qfixture",
         paymentHash: `0x${"ab".repeat(32)}`,
         amount: "1000",
         currency: "CKB",
@@ -28,13 +28,14 @@ describe("F402 compatibility", () => {
       resourceHash: resourceHash(resource),
       proof: {
         token: "v1.aaa.bbb",
-        invoice: "fibd1qmock",
+        invoice: "fibd1qfixture",
         paymentHash: `0x${"cd".repeat(32)}`,
         amountShannons: "1000",
+        mode: "local",
         status: "settled"
       }
     });
     expect(credential.method).toBe("fiber");
-    expect(credential.paymentProof).toMatchObject({ paymentHash: `0x${"cd".repeat(32)}` });
+    expect(credential.paymentProof).toMatchObject({ mode: "local", paymentHash: `0x${"cd".repeat(32)}` });
   });
 });

@@ -74,7 +74,6 @@ if grep -q "fiber-live.e2e.test.ts" "${fiber_output}"; then
 fi
 rm -f "${fiber_output}"
 
-fiber-mpp demo smoke
 pnpm exec fiber-mpp vectors verify
 conformance_vectors=true
 if [[ -f reports/security-matrix.json ]]; then

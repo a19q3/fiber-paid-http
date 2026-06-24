@@ -2,7 +2,7 @@
   "input": {
     "case": "f402.challenge.valid",
     "f402": {
-      "token": "94de15b867b4e0ff3de31412114daa942fc40f33d299fe9af128624b3aaa7fcb",
+      "token": "d906e92b33e8de55376c9ceb4ea173af4c01ff8fe4ff75414f691f1580918cc5",
       "invoice": "fibd1qconformancepayment0001",
       "paymentHash": "0xabababababababababababababababababababababababababababababababab",
       "amount": "1000",
@@ -39,7 +39,7 @@
       "maxUses": 1
     }
   },
-  "expected_canonical_hash": "ff66d648f2fa32380d92b4e6f1691cf339d4d5494d6ea9808d56dd7514e928a2",
+  "expected_canonical_hash": "2344ee66dbb2b3a1c126314758e54035ed8f8710b4e3999d9517768a9c15c90e",
   "expected_verification_result": "accepted",
   "notes": "F402 challenge fields as accepted by the TypeScript F402 compatibility adapter."
 }

@@ -3,11 +3,9 @@ import { access, readFile, writeFile, mkdir } from "node:fs/promises";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { dirname, resolve } from "node:path";
 import { Command } from "commander";
-import { createDemoApi, startDemoApi } from "@fiber-mpp/demo-api";
+import { startDemoApi } from "@fiber-mpp/demo-api";
 import {
-  buildAuthorizationPaymentHeader,
   resourceHash,
-  resourceHashFromRequest,
   verifyReceiptSignature,
   type PaymentReceipt
 } from "@fiber-mpp/core";
@@ -15,7 +13,7 @@ import { paidFetch, inspectChallenge } from "@fiber-mpp/client";
 import { FiberMethodAdapter } from "@fiber-mpp/fiber-method";
 import { F402ChallengeSchema, f402ChallengeToMpp, f402ProofToCredential } from "@fiber-mpp/f402-compat";
 import { createFiberMppMiddleware, createReverseProxyHandler } from "@fiber-mpp/server-middleware";
-import { InMemoryStore, SqliteStore } from "@fiber-mpp/storage";
+import { SqliteStore } from "@fiber-mpp/storage";
 import { generateVectors, verifyVectors } from "./vectors.js";
 
 const program = new Command();
@@ -37,20 +35,19 @@ program
   .requiredOption("--upstream <url>", "upstream server URL")
   .option("--price-usd <amount>", "USD price", "0.01")
   .option("--methods <methods>", "comma-separated methods", "fiber")
-  .option("--storage <uri>", "sqlite://path or memory://", "memory://")
+  .option("--storage <uri>", "sqlite://path", "sqlite://./fiber-mpp.sqlite")
   .option("--port <port>", "port", "8790")
   .description("Run FiberMPP as a reverse proxy in front of an upstream HTTP service")
   .action(async (opts: { upstream: string; priceUsd: string; methods: string; storage: string; port: string }) => {
-    const store = opts.storage.startsWith("sqlite://")
-      ? new SqliteStore(opts.storage.slice("sqlite://".length))
-      : new InMemoryStore();
+    if (!opts.storage.startsWith("sqlite://")) {
+      throw new Error("fiber-mpp serve requires --storage sqlite://path");
+    }
+    const store = new SqliteStore(opts.storage.slice("sqlite://".length));
     const middleware = createFiberMppMiddleware({
       secret: process.env.FIBER_MPP_SECRET ?? "fiber-mpp-proxy-secret-at-least-16",
       serverId: "fiber-mpp-proxy",
       store,
-      fiber: FiberMethodAdapter.fromEnv(),
-      production: opts.storage !== "memory://",
-      allowInMemoryStore: opts.storage === "memory://"
+      fiber: FiberMethodAdapter.fromEnv()
     });
     const handler = createReverseProxyHandler(middleware, {
       upstream: opts.upstream,
@@ -169,6 +166,7 @@ program
         paymentHash: f402.paymentHash,
         invoice: f402.invoice,
         amountShannons: f402.amount,
+        mode: process.env.FIBER_MODE === "testnet" ? "testnet" : "local",
         status: "settled",
         token: f402.token
       },
@@ -234,80 +232,21 @@ program
 
 program
   .command("demo")
-  .argument("<action>", "start|smoke")
+  .argument("<action>", "start")
   .option("--port <port>", "port", "8787")
-  .description("Start or smoke-test the FiberMPP demo")
+  .description("Start the FiberMPP live evidence API")
   .action(async (action: string, opts: { port: string }) => {
     if (action === "start") {
       startDemoApi(Number(opts.port));
       return;
     }
-    if (action === "smoke") {
-      const report = await runDemoSmoke();
-      console.log(JSON.stringify(report, null, 2));
-      return;
-    }
-    throw new Error("Use `fiber-mpp demo start` or `fiber-mpp demo smoke`");
+    throw new Error("Use `fiber-mpp demo start`");
   });
 
 program.parseAsync().catch((error: unknown) => {
   console.error(error instanceof Error ? error.message : String(error));
   process.exitCode = 1;
 });
-
-async function runDemoSmoke(): Promise<Record<string, unknown>> {
-  const app = createDemoApi({
-    secret: "fiber-mpp-demo-secret-at-least-16"
-  });
-  const fetchImpl = (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-    const request = input instanceof Request ? input : new Request(input, init);
-    return Promise.resolve(app.request(request));
-  };
-  const url = "http://localhost/paid/weather";
-  const first = await fetchImpl(url);
-  const firstBody = (await first.clone().json()) as {
-    challengeId: string;
-    challenge: {
-      challengeId: string;
-      methods: Array<{ method: string; paymentHash?: string; invoice?: string; amountShannons?: string }>;
-    };
-  };
-  const fiber = firstBody.challenge.methods.find((method) => method.method === "fiber");
-  if (!fiber?.paymentHash) {
-    throw new Error("Demo challenge did not include Fiber");
-  }
-  const credential = {
-    domain: "fiber-mpp-credential-v1" as const,
-    challengeId: firstBody.challengeId,
-    method: "fiber" as const,
-    resourceHash: await resourceHashFromRequest(new Request(url)),
-    paymentProof: {
-      kind: "fiber-payment-proof-v1",
-      mode: "mock",
-      paymentHash: fiber.paymentHash,
-      invoice: fiber.invoice,
-      amountShannons: fiber.amountShannons,
-      status: "settled",
-      observedAt: new Date().toISOString(),
-      evidence: { smoke: true }
-    },
-    submittedAt: new Date().toISOString()
-  };
-  const auth = buildAuthorizationPaymentHeader(credential);
-  const paid = await fetchImpl(url, { headers: { authorization: auth } });
-  const receiptHeader = paid.headers.get("payment-receipt");
-  const replay = await fetchImpl(url, { headers: { authorization: auth } });
-  const wrong = await fetchImpl("http://localhost/paid/file", { headers: { authorization: auth } });
-
-  return {
-    unpaid_402: first.status === 402,
-    www_authenticate_payment: first.headers.get("www-authenticate")?.startsWith("Payment ") ?? false,
-    paid_status: paid.status,
-    receipt_present: Boolean(receiptHeader),
-    replay_rejected: replay.status === 402,
-    wrong_resource_rejected: wrong.status === 402
-  };
-}
 
 async function readJson(path: string): Promise<Record<string, unknown>> {
   return JSON.parse(await readFile(resolve(path), "utf8")) as Record<string, unknown>;

@@ -26,7 +26,7 @@
           "paymentHash": "0xabababababababababababababababababababababababababababababababab",
           "invoice": "fibd1qconformancepayment0001",
           "fiberNodeId": "fiber-node-conformance-payee",
-          "fiberRpcLabel": "conformance-mock",
+          "fiberRpcLabel": "conformance-local",
           "expiresAt": "2020-01-01T00:00:00.000Z"
         }
       ],
@@ -36,7 +36,7 @@
       "serverId": "fiber-mpp-ts-conformance",
       "maxUses": 1
     },
-    "signature": "b2064ee37a76e1b13bee4a6849b75ca294bea9e00e53d461d9aa34edcdaac79d",
+    "signature": "f9ef37860def7793aafe86b994d26f2fd4d30d184e6228c92dc3cc7a9d831aed",
     "credential": {
       "domain": "fiber-mpp-credential-v1",
       "challengeId": "chal_conformance_0001",
@@ -44,7 +44,7 @@
       "resourceHash": "e6ae6449bcbf5882012a00c4dcf32043c67355ee779dbaac489fec3b4c2b8546",
       "paymentProof": {
         "kind": "fiber-payment-proof-v1",
-        "mode": "mock",
+        "mode": "local",
         "paymentHash": "0xabababababababababababababababababababababababababababababababab",
         "invoice": "fibd1qconformancepayment0001",
         "amountShannons": "1000",
@@ -57,7 +57,7 @@
       "submittedAt": "2026-06-24T00:00:00.000Z"
     }
   },
-  "expected_canonical_hash": "3e2b557cc5ef81e173cb0c0b54ef17eeb4cf48227dd8ace9acef88d7d6f9f1d8",
+  "expected_canonical_hash": "0fa39f393bdfd6fbb12a28ca496b0ea1de3a7cac6921da14a256b7856571d289",
   "expected_verification_result": "rejected",
   "expected_error_code": "expired-challenge",
   "notes": "Signed challenge has an expiry in the past and must be rejected before proof verification."

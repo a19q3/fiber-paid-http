@@ -1,6 +1,6 @@
 # Live Fiber E2E
 
-`pnpm test:fiber` always loads the Fiber E2E preflight test. When `RUN_FIBER_E2E=1` and the required Fiber RPC variables are present, it also loads the live evidence path for FiberMPP. The live path does not use mock settlement. It requires a payer Fiber node with a funded route to a payee Fiber node.
+`pnpm test:fiber` always loads the Fiber E2E preflight test. When `RUN_FIBER_E2E=1` and the required Fiber RPC variables are present, it also loads the live evidence path for FiberMPP. The live path requires a payer Fiber node with a funded route to a payee Fiber node.
 
 Use [fiber-local-network.md](fiber-local-network.md) for the current reproducible local network setup. The short form is:
 

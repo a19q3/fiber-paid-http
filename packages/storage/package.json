@@ -2,7 +2,7 @@
   "name": "@fiber-mpp/storage",
   "version": "0.1.0",
   "type": "module",
-  "description": "FiberMPP storage interfaces and in-memory/SQLite implementations.",
+  "description": "FiberMPP storage interfaces and durable SQLite implementation.",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

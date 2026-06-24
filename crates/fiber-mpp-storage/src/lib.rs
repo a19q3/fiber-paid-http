@@ -1,6 +1,5 @@
 use rusqlite::{params, Connection};
 use serde_json::Value;
-use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use thiserror::Error;
 
@@ -15,27 +14,6 @@ pub enum StorageError {
 pub trait ReplayStore {
     fn mark_used(&mut self, key: &str, value: &Value) -> Result<bool, StorageError>;
     fn was_used(&self, key: &str) -> Result<bool, StorageError>;
-}
-
-#[derive(Debug, Default)]
-pub struct MemoryStore {
-    used: HashSet<String>,
-    values: HashMap<String, Value>,
-}
-
-impl ReplayStore for MemoryStore {
-    fn mark_used(&mut self, key: &str, value: &Value) -> Result<bool, StorageError> {
-        if self.used.contains(key) {
-            return Ok(false);
-        }
-        self.used.insert(key.to_string());
-        self.values.insert(key.to_string(), value.clone());
-        Ok(true)
-    }
-
-    fn was_used(&self, key: &str) -> Result<bool, StorageError> {
-        Ok(self.used.contains(key))
-    }
 }
 
 pub struct SqliteStore {

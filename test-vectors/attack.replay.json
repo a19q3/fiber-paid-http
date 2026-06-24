@@ -26,7 +26,7 @@
           "paymentHash": "0xabababababababababababababababababababababababababababababababab",
           "invoice": "fibd1qconformancepayment0001",
           "fiberNodeId": "fiber-node-conformance-payee",
-          "fiberRpcLabel": "conformance-mock",
+          "fiberRpcLabel": "conformance-local",
           "expiresAt": "2030-01-01T00:00:00.000Z"
         }
       ],
@@ -36,7 +36,7 @@
       "serverId": "fiber-mpp-ts-conformance",
       "maxUses": 1
     },
-    "signature": "94de15b867b4e0ff3de31412114daa942fc40f33d299fe9af128624b3aaa7fcb",
+    "signature": "d906e92b33e8de55376c9ceb4ea173af4c01ff8fe4ff75414f691f1580918cc5",
     "credential": {
       "domain": "fiber-mpp-credential-v1",
       "challengeId": "chal_conformance_0001",
@@ -44,7 +44,7 @@
       "resourceHash": "e6ae6449bcbf5882012a00c4dcf32043c67355ee779dbaac489fec3b4c2b8546",
       "paymentProof": {
         "kind": "fiber-payment-proof-v1",
-        "mode": "mock",
+        "mode": "local",
         "paymentHash": "0xabababababababababababababababababababababababababababababababab",
         "invoice": "fibd1qconformancepayment0001",
         "amountShannons": "1000",
@@ -58,7 +58,7 @@
     },
     "replay": true
   },
-  "expected_canonical_hash": "2571f64548dd6fb9bee18a4e2b91f91d1425894b8f2f5f7fd5dbe33f5cdcea15",
+  "expected_canonical_hash": "cdf218087603d7a6697ad7cda80e67af026488c9127bdbab92f9db87c15ebeae",
   "expected_verification_result": "rejected",
   "expected_error_code": "replay",
   "notes": "The same credential is redeemed twice; the second redemption must be rejected."

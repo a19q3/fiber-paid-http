@@ -26,7 +26,7 @@
           "paymentHash": "0xabababababababababababababababababababababababababababababababab",
           "invoice": "fibd1qconformancepayment0001",
           "fiberNodeId": "fiber-node-conformance-payee",
-          "fiberRpcLabel": "conformance-mock",
+          "fiberRpcLabel": "conformance-local",
           "expiresAt": "2030-01-01T00:00:00.000Z"
         }
       ],
@@ -36,7 +36,7 @@
       "serverId": "fiber-mpp-ts-conformance",
       "maxUses": 1
     },
-    "signature": "94de15b867b4e0ff3de31412114daa942fc40f33d299fe9af128624b3aaa7fcb",
+    "signature": "d906e92b33e8de55376c9ceb4ea173af4c01ff8fe4ff75414f691f1580918cc5",
     "credential": {
       "domain": "fiber-mpp-credential-v1",
       "challengeId": "chal_conformance_0001",
@@ -44,7 +44,7 @@
       "resourceHash": "e6ae6449bcbf5882012a00c4dcf32043c67355ee779dbaac489fec3b4c2b8546",
       "paymentProof": {
         "kind": "fiber-payment-proof-v1",
-        "mode": "mock",
+        "mode": "local",
         "paymentHash": "0xabababababababababababababababababababababababababababababababab",
         "invoice": "fibd1qconformancepayment0001",
         "amountShannons": "1000",
@@ -57,7 +57,7 @@
       "submittedAt": "2026-06-24T00:00:00.000Z"
     }
   },
-  "expected_canonical_hash": "66efd6e85d15adb875780a16cd7f4e3ba8e3517cbd71e7f743ac92faade8cfee",
+  "expected_canonical_hash": "68872997f8da9e81166455966379c913aad5e91d2fbee6b0c236c0c3d248668b",
   "expected_verification_result": "rejected",
   "expected_error_code": "wrong-resource",
   "notes": "Credential is valid for the original resource but submitted to a different resource URL."

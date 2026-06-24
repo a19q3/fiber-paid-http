@@ -8,7 +8,7 @@ TypeScript = SDK, demos, examples, F402/MPP JS integration, vector tooling
 test-vectors = shared protocol truth
 ```
 
-TypeScript is not a production verifier. It remains maintained because it is useful for JS ecosystem integration, browser/demo clients, compatibility examples, mock-mode demos, and historical conformance-vector generation.
+TypeScript is not a production verifier. It remains maintained because it is useful for JS ecosystem integration, browser clients, compatibility examples, and historical conformance-vector generation.
 
 ## Runtime Policy
 

@@ -1,13 +1,11 @@
-import { randomBytes } from "node:crypto";
 import {
   FiberMppError,
   FiberMethodChallengeSchema,
-  randomId,
   type FiberMethodChallenge,
   type Settlement
 } from "@fiber-mpp/core";
 
-export type FiberMode = "mock" | "local" | "testnet";
+export type FiberMode = "local" | "testnet";
 export type FiberEnvRole = "payee" | "payer";
 
 export type FiberCreateChallengeInput = {
@@ -178,7 +176,7 @@ export class FiberMethodAdapter {
     settlementTimeoutMs?: number;
     settlementPollMs?: number;
   }) {
-    if (options.mode !== "mock" && !options.rpc) {
+    if (!options.rpc) {
       throw new Error("Fiber local/testnet mode requires a FiberRpcClient");
     }
     this.mode = options.mode;
@@ -193,15 +191,6 @@ export class FiberMethodAdapter {
 
   public static fromEnv(env: NodeJS.ProcessEnv = process.env, role: FiberEnvRole = "payee"): FiberMethodAdapter {
     const mode = parseFiberMode(env.FIBER_MODE);
-    if (mode === "mock") {
-      return new FiberMethodAdapter({
-        mode,
-        asset: env.FIBER_ASSET ?? "CKB",
-        currency: env.FIBER_CURRENCY ?? "Fibd",
-        nodeId: env.FIBER_NODE_ID,
-        rpcLabel: "mock"
-      });
-    }
     const rolePrefix = role === "payer" ? "PAYER" : "PAYEE";
     const url = role === "payer" ? env.FIBER_PAYER_RPC_URL ?? env.FIBER_RPC_URL : env.FIBER_PAYEE_RPC_URL ?? env.FIBER_RPC_URL;
     if (!url) {
@@ -234,21 +223,6 @@ export class FiberMethodAdapter {
   }
 
   public async createChallenge(input: FiberCreateChallengeInput): Promise<FiberMethodChallenge> {
-    if (this.mode === "mock") {
-      const paymentHash = `0x${randomBytes(32).toString("hex")}`;
-      return FiberMethodChallengeSchema.parse({
-        method: "fiber",
-        intent: "charge",
-        asset: this.asset,
-        amountShannons: input.amountShannons,
-        paymentHash,
-        invoice: `fibermpp_mock_${paymentHash.slice(2, 18)}`,
-        fiberNodeId: this.nodeId ?? "mock-fiber-node",
-        fiberRpcLabel: "mock",
-        expiresAt: input.expiresAt
-      });
-    }
-
     const expirySeconds = Math.max(
       1,
       Math.ceil((new Date(input.expiresAt).getTime() - Date.now()) / 1000)
@@ -274,21 +248,6 @@ export class FiberMethodAdapter {
   }
 
   public async payChallenge(challenge: FiberMethodChallenge): Promise<FiberPaymentProof> {
-    if (this.mode === "mock") {
-      return {
-        kind: "fiber-payment-proof-v1",
-        mode: "mock",
-        paymentHash: challenge.paymentHash,
-        invoice: challenge.invoice,
-        amountShannons: challenge.amountShannons,
-        status: "settled",
-        observedAt: new Date().toISOString(),
-        evidence: {
-          settlement: "simulated",
-          mockPaymentId: randomId("mockpay")
-        }
-      };
-    }
     const result = await this.rpc!.sendPayment({
       invoice: challenge.invoice,
       timeoutSeconds: Math.ceil(this.settlementTimeoutMs / 1000)
@@ -324,27 +283,12 @@ export class FiberMethodAdapter {
     if (challenge.amountShannons && normalized.amountShannons && normalized.amountShannons !== challenge.amountShannons) {
       throw new FiberMppError("wrong-amount", "Fiber payment amount does not match the challenge", 402);
     }
-
-    if (this.mode === "mock") {
-      if (normalized.mode !== "mock" || !isSettledStatus(normalized.status)) {
-        throw new FiberMppError(
-          "fiber-payment-not-settled",
-          "Mock Fiber payment proof must show a settled simulated payment",
-          402
-        );
-      }
-      return {
-        paymentHash: challenge.paymentHash,
-        amountShannons: challenge.amountShannons,
-        settlement: {
-          status: "simulated",
-          paymentHash: challenge.paymentHash,
-          invoiceId: challenge.invoice,
-          provider: "fiber-mock",
-          observedAt: normalized.observedAt
-        },
-        raw: normalized
-      };
+    if (normalized.mode !== this.mode) {
+      throw new FiberMppError(
+        "wrong-fiber-mode",
+        `Fiber payment proof mode ${normalized.mode} does not match configured ${this.mode} mode`,
+        402
+      );
     }
 
     const invoiceRecord = await waitForFiberInvoicePaid(this.rpc!, challenge.paymentHash, {
@@ -376,10 +320,10 @@ export class FiberMethodAdapter {
 }
 
 export function parseFiberMode(value: string | undefined): FiberMode {
-  if (value === "local" || value === "testnet" || value === "mock") {
+  if (value === "local" || value === "testnet") {
     return value;
   }
-  return "mock";
+  throw new Error("FIBER_MODE must be set to local or testnet");
 }
 
 export function isSettledStatus(value: unknown): boolean {
@@ -511,9 +455,12 @@ function normalizeProof(proof: unknown): FiberPaymentProof {
   if (candidate.kind !== "fiber-payment-proof-v1" || !candidate.paymentHash || !candidate.observedAt) {
     throw new FiberMppError("invalid-fiber-proof", "Fiber payment proof is missing required fields", 402);
   }
+  if (candidate.mode !== "local" && candidate.mode !== "testnet") {
+    throw new FiberMppError("invalid-fiber-proof", "Fiber payment proof mode must be local or testnet", 402);
+  }
   return {
     kind: "fiber-payment-proof-v1",
-    mode: candidate.mode ?? "mock",
+    mode: candidate.mode,
     paymentHash: candidate.paymentHash,
     invoice: candidate.invoice,
     amountShannons: candidate.amountShannons,

@@ -14,7 +14,7 @@ pub fn f402_proof_to_credential(
         "resourceHash": resource_hash,
         "paymentProof": {
             "kind": "fiber-payment-proof-v1",
-            "mode": "mock",
+            "mode": proof.get("mode").and_then(Value::as_str).unwrap_or("local"),
             "paymentHash": proof.get("paymentHash").and_then(Value::as_str).unwrap_or_default(),
             "invoice": proof.get("invoice").and_then(Value::as_str),
             "amountShannons": proof.get("amountShannons").and_then(Value::as_str),

@@ -32,7 +32,7 @@ export async function paidFetch(
   options: PaidFetchOptions = {}
 ): Promise<PaidFetchResult> {
   const fetchImpl = options.fetchImpl ?? fetch;
-  const fiber = options.fiber ?? new FiberMethodAdapter({ mode: "mock" });
+  const fiber = options.fiber ?? FiberMethodAdapter.fromEnv(process.env, "payer");
   const firstRequest = new Request(input, init);
   const retryTemplate = firstRequest.clone();
   const first = await fetchImpl(firstRequest);
