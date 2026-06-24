@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+real_cargo="${REAL_CARGO:-/home/arthur/.cargo/bin/cargo}"
+fiber_repo="${FIBER_REPO:-/home/arthur/a19q3/fiber}"
+
+merge_sqlite_feature() {
+  local features="$1"
+  if [[ ",${features}," == *",sqlite,"* ]]; then
+    printf '%s\n' "$features"
+  else
+    printf '%s,sqlite\n' "$features"
+  fi
+}
+
+if [[ "$(pwd -P)" == "$(cd "$fiber_repo" && pwd -P)" && "${1:-}" == "build" ]]; then
+  rewritten=()
+  saw_features=false
+  saw_no_default=false
+  next_is_features=false
+  for arg in "$@"; do
+    if [[ "$next_is_features" == "true" ]]; then
+      rewritten+=("$(merge_sqlite_feature "$arg")")
+      saw_features=true
+      next_is_features=false
+      continue
+    fi
+    case "$arg" in
+      --features)
+        rewritten+=("$arg")
+        next_is_features=true
+        ;;
+      --features=*)
+        rewritten+=("--features=$(merge_sqlite_feature "${arg#--features=}")")
+        saw_features=true
+        ;;
+      --no-default-features)
+        rewritten+=("$arg")
+        saw_no_default=true
+        ;;
+      *)
+        rewritten+=("$arg")
+        ;;
+    esac
+  done
+  if [[ "$saw_features" == "false" ]]; then
+    rewritten+=(--features sqlite)
+  fi
+  if [[ "$saw_no_default" == "false" ]]; then
+    rewritten+=(--no-default-features)
+  fi
+  echo "fiber-mpp cargo shim: ${real_cargo} ${rewritten[*]}" >&2
+  exec "$real_cargo" "${rewritten[@]}"
+fi
+
+echo "fiber-mpp cargo shim: ${real_cargo} $*" >&2
+exec "$real_cargo" "$@"

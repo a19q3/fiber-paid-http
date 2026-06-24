@@ -1,0 +1,64 @@
+{
+  "input": {
+    "case": "attack.expired-challenge",
+    "secret": "fiber-mpp-conformance-secret",
+    "request": {
+      "method": "GET",
+      "url": "http://conformance.local/paid/weather"
+    },
+    "challenge": {
+      "domain": "fiber-mpp-challenge-v1",
+      "challengeId": "chal_conformance_0001",
+      "resource": {
+        "method": "GET",
+        "url": "http://conformance.local/paid/weather"
+      },
+      "amount": {
+        "value": "1000",
+        "currency": "CKB"
+      },
+      "methods": [
+        {
+          "method": "fiber",
+          "intent": "charge",
+          "asset": "CKB",
+          "amountShannons": "1000",
+          "paymentHash": "0xabababababababababababababababababababababababababababababababab",
+          "invoice": "fibd1qconformancepayment0001",
+          "fiberNodeId": "fiber-node-conformance-payee",
+          "fiberRpcLabel": "conformance-mock",
+          "expiresAt": "2020-01-01T00:00:00.000Z"
+        }
+      ],
+      "nonce": "0123456789abcdef0123456789abcdef",
+      "issuedAt": "2026-06-24T00:00:00.000Z",
+      "expiresAt": "2020-01-01T00:00:00.000Z",
+      "serverId": "fiber-mpp-ts-conformance",
+      "maxUses": 1
+    },
+    "signature": "b2064ee37a76e1b13bee4a6849b75ca294bea9e00e53d461d9aa34edcdaac79d",
+    "credential": {
+      "domain": "fiber-mpp-credential-v1",
+      "challengeId": "chal_conformance_0001",
+      "method": "fiber",
+      "resourceHash": "e6ae6449bcbf5882012a00c4dcf32043c67355ee779dbaac489fec3b4c2b8546",
+      "paymentProof": {
+        "kind": "fiber-payment-proof-v1",
+        "mode": "mock",
+        "paymentHash": "0xabababababababababababababababababababababababababababababababab",
+        "invoice": "fibd1qconformancepayment0001",
+        "amountShannons": "1000",
+        "status": "settled",
+        "observedAt": "2026-06-24T00:00:00.000Z",
+        "evidence": {
+          "conformance": true
+        }
+      },
+      "submittedAt": "2026-06-24T00:00:00.000Z"
+    }
+  },
+  "expected_canonical_hash": "3e2b557cc5ef81e173cb0c0b54ef17eeb4cf48227dd8ace9acef88d7d6f9f1d8",
+  "expected_verification_result": "rejected",
+  "expected_error_code": "expired-challenge",
+  "notes": "Signed challenge has an expiry in the past and must be rejected before proof verification."
+}

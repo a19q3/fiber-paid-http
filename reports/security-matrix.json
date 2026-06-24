@@ -1,0 +1,48 @@
+{
+  "generated_by": "pnpm exec fiber-mpp vectors generate",
+  "generated_at": "2026-06-24T00:00:00.000Z",
+  "attacks": [
+    {
+      "attack": "replay",
+      "expected_rejection": "replay",
+      "implemented_test": "tests/integration/full-flow.test.ts and test-vectors/attack.replay.json",
+      "vector_file": "test-vectors/attack.replay.json",
+      "status": "covered"
+    },
+    {
+      "attack": "wrong resource",
+      "expected_rejection": "wrong-resource",
+      "implemented_test": "tests/integration/full-flow.test.ts and test-vectors/attack.wrong-resource.json",
+      "vector_file": "test-vectors/attack.wrong-resource.json",
+      "status": "covered"
+    },
+    {
+      "attack": "wrong amount",
+      "expected_rejection": "wrong-amount",
+      "implemented_test": "tests/unit/middleware.test.ts and test-vectors/attack.wrong-amount.json",
+      "vector_file": "test-vectors/attack.wrong-amount.json",
+      "status": "covered"
+    },
+    {
+      "attack": "wrong method",
+      "expected_rejection": "wrong-method",
+      "implemented_test": "tests/unit/middleware.test.ts and test-vectors/attack.wrong-method.json",
+      "vector_file": "test-vectors/attack.wrong-method.json",
+      "status": "covered"
+    },
+    {
+      "attack": "expired challenge",
+      "expected_rejection": "expired-challenge",
+      "implemented_test": "tests/integration/full-flow.test.ts, tests/unit/middleware.test.ts, and test-vectors/attack.expired-challenge.json",
+      "vector_file": "test-vectors/attack.expired-challenge.json",
+      "status": "covered"
+    },
+    {
+      "attack": "tampered receipt",
+      "expected_rejection": "bad-receipt-signature",
+      "implemented_test": "test-vectors/attack.tampered-receipt.json",
+      "vector_file": "test-vectors/attack.tampered-receipt.json",
+      "status": "covered"
+    }
+  ]
+}

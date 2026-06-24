@@ -1,0 +1,40 @@
+{
+  "input": {
+    "case": "challenge.valid",
+    "secret": "fiber-mpp-conformance-secret",
+    "challenge": {
+      "domain": "fiber-mpp-challenge-v1",
+      "challengeId": "chal_conformance_0001",
+      "resource": {
+        "method": "GET",
+        "url": "http://conformance.local/paid/weather"
+      },
+      "amount": {
+        "value": "1000",
+        "currency": "CKB"
+      },
+      "methods": [
+        {
+          "method": "fiber",
+          "intent": "charge",
+          "asset": "CKB",
+          "amountShannons": "1000",
+          "paymentHash": "0xabababababababababababababababababababababababababababababababab",
+          "invoice": "fibd1qconformancepayment0001",
+          "fiberNodeId": "fiber-node-conformance-payee",
+          "fiberRpcLabel": "conformance-mock",
+          "expiresAt": "2030-01-01T00:00:00.000Z"
+        }
+      ],
+      "nonce": "0123456789abcdef0123456789abcdef",
+      "issuedAt": "2026-06-24T00:00:00.000Z",
+      "expiresAt": "2030-01-01T00:00:00.000Z",
+      "serverId": "fiber-mpp-ts-conformance",
+      "maxUses": 1
+    },
+    "signature": "94de15b867b4e0ff3de31412114daa942fc40f33d299fe9af128624b3aaa7fcb"
+  },
+  "expected_canonical_hash": "ece999d51c9412372dd8de3dc7c63f7b32fe7825207340674623aa3f5e5401fc",
+  "expected_verification_result": "accepted",
+  "notes": "Signed FiberMPP challenge with a deterministic Fiber method and HMAC signature."
+}

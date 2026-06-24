@@ -1,0 +1,28 @@
+{
+  "name": "fiber-mpp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.12.1",
+  "description": "Fiber payment method for Machine Payments Protocol with F402 compatibility.",
+  "scripts": {
+    "lint": "pnpm -r --if-present lint",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --config vitest.unit.config.ts",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:fiber": "vitest run --config vitest.fiber.config.ts",
+    "build": "pnpm -r --if-present build",
+    "gate": "bash scripts/fiber_mpp_gate.sh",
+    "demo:api": "pnpm --filter @fiber-mpp/demo-api start",
+    "demo:web": "pnpm --filter @fiber-mpp/demo-web start"
+  },
+  "dependencies": {
+    "@fiber-mpp/cli": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.8.0",
+    "vitest": "^3.2.0"
+  }
+}

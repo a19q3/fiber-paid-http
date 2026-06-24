@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FiberMPP Demo</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family:
+          Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #f7f8fb;
+        color: #18212f;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+      }
+
+      header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        height: 60px;
+        padding: 0 20px;
+        border-bottom: 1px solid #dce2ec;
+        background: #ffffff;
+      }
+
+      .mark {
+        display: grid;
+        place-items: center;
+        width: 34px;
+        height: 34px;
+        border: 2px solid #1c6dd0;
+        border-radius: 8px;
+        color: #1c6dd0;
+        font-weight: 800;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 18px;
+        letter-spacing: 0;
+      }
+
+      main {
+        display: grid;
+        grid-template-columns: 240px minmax(280px, 1fr) minmax(320px, 1.2fr);
+        min-height: calc(100vh - 60px);
+      }
+
+      section {
+        padding: 18px;
+        border-right: 1px solid #dce2ec;
+        min-width: 0;
+      }
+
+      section:last-child {
+        border-right: 0;
+      }
+
+      h2 {
+        margin: 0 0 12px;
+        font-size: 13px;
+        text-transform: uppercase;
+        color: #5d6b80;
+        letter-spacing: 0.08em;
+      }
+
+      button,
+      select {
+        width: 100%;
+        min-height: 38px;
+        border-radius: 8px;
+        border: 1px solid #bdc8d8;
+        background: #ffffff;
+        color: #18212f;
+        font: inherit;
+      }
+
+      button {
+        cursor: pointer;
+        font-weight: 650;
+      }
+
+      button.primary {
+        border-color: #1c6dd0;
+        background: #1c6dd0;
+        color: #ffffff;
+      }
+
+      .stack {
+        display: grid;
+        gap: 10px;
+      }
+
+      pre {
+        overflow: auto;
+        min-height: 160px;
+        max-height: calc(100vh - 190px);
+        margin: 0;
+        padding: 12px;
+        border: 1px solid #dce2ec;
+        border-radius: 8px;
+        background: #ffffff;
+        color: #243245;
+        font-size: 12px;
+        line-height: 1.45;
+        white-space: pre-wrap;
+      }
+
+      .status {
+        min-height: 38px;
+        padding: 9px 10px;
+        border: 1px solid #dce2ec;
+        border-radius: 8px;
+        background: #fff;
+        font-size: 13px;
+      }
+
+      @media (max-width: 900px) {
+        main {
+          grid-template-columns: 1fr;
+        }
+
+        section {
+          border-right: 0;
+          border-bottom: 1px solid #dce2ec;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="mark">F</div>
+      <h1>FiberMPP Demo</h1>
+    </header>
+    <main>
+      <section>
+        <h2>Endpoint</h2>
+        <div class="stack">
+          <select id="endpoint">
+            <option value="/paid/weather">GET /paid/weather</option>
+            <option value="/paid/mcp-tool">GET /paid/mcp-tool</option>
+            <option value="/paid/file">GET /paid/file</option>
+          </select>
+          <button class="primary" id="run">Run Flow</button>
+          <button id="replay">Replay Last Credential</button>
+          <button id="wrong">Try Wrong Resource</button>
+        </div>
+      </section>
+      <section>
+        <h2>Challenge</h2>
+        <div class="status" id="status">Ready</div>
+        <pre id="challenge">{}</pre>
+      </section>
+      <section>
+        <h2>Logs / Receipt</h2>
+        <pre id="logs"></pre>
+      </section>
+    </main>
+    <script type="module">
+      const apiBase = localStorage.getItem("fiberMppApi") || "http://localhost:8787";
+      const endpoint = document.querySelector("#endpoint");
+      const run = document.querySelector("#run");
+      const replay = document.querySelector("#replay");
+      const wrong = document.querySelector("#wrong");
+      const status = document.querySelector("#status");
+      const challengeView = document.querySelector("#challenge");
+      const logs = document.querySelector("#logs");
+      let lastAuth = null;
+
+      const b64 = (value) => btoa(JSON.stringify(value)).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, "");
+      const hash = async (value) => {
+        const data = new TextEncoder().encode(JSON.stringify(value));
+        const digest = await crypto.subtle.digest("SHA-256", data);
+        return [...new Uint8Array(digest)].map((x) => x.toString(16).padStart(2, "0")).join("");
+      };
+      const resourceHash = (url) => hash({ method: "GET", url });
+      const log = (label, data) => {
+        logs.textContent += `${label}\n${typeof data === "string" ? data : JSON.stringify(data, null, 2)}\n\n`;
+      };
+
+      run.onclick = async () => {
+        logs.textContent = "";
+        status.textContent = "Requesting unpaid resource";
+        const url = `${apiBase}${endpoint.value}`;
+        const first = await fetch(url);
+        const body = await first.json();
+        challengeView.textContent = JSON.stringify(body, null, 2);
+        log(`HTTP ${first.status}`, body);
+        const fiber = body.challenge.methods.find((method) => method.method === "fiber");
+        const credential = {
+          domain: "fiber-mpp-credential-v1",
+          challengeId: body.challengeId,
+          method: "fiber",
+          resourceHash: await resourceHash(url),
+          paymentProof: {
+            kind: "fiber-payment-proof-v1",
+            mode: "mock",
+            paymentHash: fiber.paymentHash,
+            invoice: fiber.invoice,
+            amountShannons: fiber.amountShannons,
+            status: "settled",
+            observedAt: new Date().toISOString(),
+            evidence: { settlement: "simulated", source: "demo-web" }
+          },
+          submittedAt: new Date().toISOString()
+        };
+        lastAuth = `Payment ${b64(credential)}`;
+        status.textContent = "Retrying with Authorization: Payment";
+        const second = await fetch(url, { headers: { authorization: lastAuth } });
+        const text = await second.text();
+        log(`HTTP ${second.status}`, text);
+        log("Payment-Receipt", second.headers.get("payment-receipt"));
+        status.textContent = second.ok ? "Paid resource returned" : "Payment failed";
+      };
+
+      replay.onclick = async () => {
+        if (!lastAuth) return;
+        const res = await fetch(`${apiBase}${endpoint.value}`, { headers: { authorization: lastAuth } });
+        log(`Replay HTTP ${res.status}`, await res.text());
+      };
+
+      wrong.onclick = async () => {
+        if (!lastAuth) return;
+        const res = await fetch(`${apiBase}/paid/file`, { headers: { authorization: lastAuth } });
+        log(`Wrong resource HTTP ${res.status}`, await res.text());
+      };
+    </script>
+  </body>
+</html>

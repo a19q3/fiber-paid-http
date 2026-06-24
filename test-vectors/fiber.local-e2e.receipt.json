@@ -1,0 +1,35 @@
+{
+  "input": {
+    "case": "fiber.local-e2e.receipt",
+    "evidence": true,
+    "source_report": "reports/fiber-local-e2e-success.json",
+    "receipt_source": ".tmp/fiber-live-e2e.sqlite",
+    "receipt_id": "rcpt_ca010a79973755656bdff4b1684570da",
+    "payment_hash": "0xec3a08f9b298db82f2dc27861aed5a3110b5d36a56bd43d13b60c5a4bcf69222",
+    "secret": "fiber-mpp-live-e2e-secret-at-least-16",
+    "receipt": {
+      "domain": "fiber-mpp-receipt-v1",
+      "receiptId": "rcpt_ca010a79973755656bdff4b1684570da",
+      "challengeId": "chal_e90fb2652b5707d47cc0f2f2e3894dd9",
+      "method": "fiber",
+      "resourceHash": "dcd51439386139ad7779c005fa410ba8bda46be4e41f30e28dbd5e9f5729bd52",
+      "amount": {
+        "value": "100",
+        "currency": "CKB"
+      },
+      "settlement": {
+        "status": "settled",
+        "paymentHash": "0xec3a08f9b298db82f2dc27861aed5a3110b5d36a56bd43d13b60c5a4bcf69222",
+        "invoiceId": "fibd1001pcsaug0p0exgfw0pnm6vk352p285j7qj8q2zl0palkx4hfz8qzzjar5gn7g4hkk3u2x96z9cw2nnsh3l7kmsnmpwpr6twrymnzjvu0dfdft0a2mm7nl874yu2lfv3957pkf72q50xck0xj5tfqyhw529yrm89hdy3u8jwhlg97lr67ff5dwf900kxu6mhmsp5mdayjyun94smc770t92uphcufraam46en5vgumsj6ukztle5wzq5kyvjsq3xch755dd0h04lgzf9t29q9wxamecarqr6mhguyds5pmsme8c5c98eukcwvh74xlrd3sxqmd9xh44076y8d3v38nggaqmjj8tq7hzngq5cj0yf",
+        "provider": "local-payee",
+        "observedAt": "2026-06-24T13:31:19.556Z"
+      },
+      "serverId": "fiber-mpp-live-e2e",
+      "issuedAt": "2026-06-24T13:31:19.556Z",
+      "signature": "d2af8a3de6206e5140c81881b8aae409c86e8e485183c07206b716d17471483d"
+    }
+  },
+  "expected_canonical_hash": "4a84cd7be4e519a48635f2f02cc4d7fc94579870dfe1e94357774f6f184d4678",
+  "expected_verification_result": "accepted",
+  "notes": "Evidence copied from the latest successful local Fiber E2E run; this is not a deterministic fixture."
+}

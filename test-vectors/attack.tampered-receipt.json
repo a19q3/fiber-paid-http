@@ -1,0 +1,31 @@
+{
+  "input": {
+    "case": "attack.tampered-receipt",
+    "secret": "fiber-mpp-conformance-secret",
+    "receipt": {
+      "domain": "fiber-mpp-receipt-v1",
+      "receiptId": "rcpt_conformance_0001",
+      "challengeId": "chal_conformance_0001",
+      "method": "fiber",
+      "resourceHash": "e6ae6449bcbf5882012a00c4dcf32043c67355ee779dbaac489fec3b4c2b8546",
+      "amount": {
+        "value": "999",
+        "currency": "CKB"
+      },
+      "settlement": {
+        "status": "settled",
+        "paymentHash": "0xabababababababababababababababababababababababababababababababab",
+        "invoiceId": "fibd1qconformancepayment0001",
+        "provider": "fiber-mock",
+        "observedAt": "2026-06-24T00:00:00.000Z"
+      },
+      "serverId": "fiber-mpp-ts-conformance",
+      "issuedAt": "2026-06-24T00:00:00.000Z",
+      "signature": "862a94a095b229cc8ec803442a07a42737b08e2ab23396c56197934732d10435"
+    }
+  },
+  "expected_canonical_hash": "9e12958a599f6b276d762c76dd52658573552748b98f564f64c0eef00ec6cebe",
+  "expected_verification_result": "rejected",
+  "expected_error_code": "bad-receipt-signature",
+  "notes": "Receipt body is changed without recomputing the receipt signature."
+}

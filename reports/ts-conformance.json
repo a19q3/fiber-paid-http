@@ -1,0 +1,119 @@
+{
+  "engine": "typescript",
+  "verified": 14,
+  "failed": 0,
+  "shared_vectors_total": 14,
+  "shared_vectors_passed": 14,
+  "results": [
+    {
+      "file": "attack.expired-challenge.json",
+      "passed": true,
+      "expected": "rejected",
+      "actual": "rejected",
+      "expected_error_code": "expired-challenge",
+      "actual_error_code": "expired-challenge",
+      "canonical_hash": "3e2b557cc5ef81e173cb0c0b54ef17eeb4cf48227dd8ace9acef88d7d6f9f1d8"
+    },
+    {
+      "file": "attack.replay.json",
+      "passed": true,
+      "expected": "rejected",
+      "actual": "rejected",
+      "expected_error_code": "replay",
+      "actual_error_code": "replay",
+      "canonical_hash": "2571f64548dd6fb9bee18a4e2b91f91d1425894b8f2f5f7fd5dbe33f5cdcea15"
+    },
+    {
+      "file": "attack.tampered-receipt.json",
+      "passed": true,
+      "expected": "rejected",
+      "actual": "rejected",
+      "expected_error_code": "bad-receipt-signature",
+      "actual_error_code": "bad-receipt-signature",
+      "canonical_hash": "9e12958a599f6b276d762c76dd52658573552748b98f564f64c0eef00ec6cebe"
+    },
+    {
+      "file": "attack.wrong-amount.json",
+      "passed": true,
+      "expected": "rejected",
+      "actual": "rejected",
+      "expected_error_code": "wrong-amount",
+      "actual_error_code": "wrong-amount",
+      "canonical_hash": "5a5f5579fe42d8ef4cba80145de2d6aac550c4c5910f875bf0164b4510760827"
+    },
+    {
+      "file": "attack.wrong-method.json",
+      "passed": true,
+      "expected": "rejected",
+      "actual": "rejected",
+      "expected_error_code": "wrong-method",
+      "actual_error_code": "wrong-method",
+      "canonical_hash": "a6433ceb1577af72b2aa7065be15909d76bc00d3c3e781aa364c9a96ff87604b"
+    },
+    {
+      "file": "attack.wrong-resource.json",
+      "passed": true,
+      "expected": "rejected",
+      "actual": "rejected",
+      "expected_error_code": "wrong-resource",
+      "actual_error_code": "wrong-resource",
+      "canonical_hash": "66efd6e85d15adb875780a16cd7f4e3ba8e3517cbd71e7f743ac92faade8cfee"
+    },
+    {
+      "file": "challenge.valid.json",
+      "passed": true,
+      "expected": "accepted",
+      "actual": "accepted",
+      "canonical_hash": "ece999d51c9412372dd8de3dc7c63f7b32fe7825207340674623aa3f5e5401fc"
+    },
+    {
+      "file": "credential.valid.json",
+      "passed": true,
+      "expected": "accepted",
+      "actual": "accepted",
+      "canonical_hash": "892e767454725a442d51e87a9d94fdc56357740ddbbb0e58577e041dd976b1ef"
+    },
+    {
+      "file": "f402.challenge.valid.json",
+      "passed": true,
+      "expected": "accepted",
+      "actual": "accepted",
+      "canonical_hash": "ff66d648f2fa32380d92b4e6f1691cf339d4d5494d6ea9808d56dd7514e928a2"
+    },
+    {
+      "file": "f402.credential.valid.json",
+      "passed": true,
+      "expected": "accepted",
+      "actual": "accepted",
+      "canonical_hash": "7bece53cf6fbf0be79404ecfdfb3fa79935e0cb7f19118dd8a39cfbe0d601e6c"
+    },
+    {
+      "file": "fiber.local-e2e.receipt.json",
+      "passed": true,
+      "expected": "accepted",
+      "actual": "accepted",
+      "canonical_hash": "4a84cd7be4e519a48635f2f02cc4d7fc94579870dfe1e94357774f6f184d4678"
+    },
+    {
+      "file": "fiber.local-e2e.report.json",
+      "passed": true,
+      "expected": "accepted",
+      "actual": "accepted",
+      "canonical_hash": "1ab5911f6c41986a264c869b4d10819d439e0186f7d40dbc3854634a83cbff32"
+    },
+    {
+      "file": "receipt.valid.json",
+      "passed": true,
+      "expected": "accepted",
+      "actual": "accepted",
+      "canonical_hash": "57194e1811ff9e52de3aea922156e99a477f39c2bb5d56b3f316fd2e19dccc9c"
+    },
+    {
+      "file": "resource.hash.valid.json",
+      "passed": true,
+      "expected": "accepted",
+      "actual": "accepted",
+      "canonical_hash": "1a46318cf6aea460733f14322a782a3f84975539ce31844c83b832d428b988b8"
+    }
+  ]
+}

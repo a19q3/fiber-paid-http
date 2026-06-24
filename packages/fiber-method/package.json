@@ -1,0 +1,20 @@
+{
+  "name": "@fiber-mpp/fiber-method",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Fiber JSON-RPC and mock payment method adapter for FiberMPP.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@fiber-mpp/core": "workspace:*"
+  }
+}

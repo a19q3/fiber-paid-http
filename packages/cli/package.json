@@ -1,0 +1,30 @@
+{
+  "name": "@fiber-mpp/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "FiberMPP command line test and demo tool.",
+  "bin": {
+    "fiber-mpp": "./dist/index.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node -e \"require('node:fs').chmodSync('dist/index.js', 0o755)\"",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@fiber-mpp/client": "workspace:*",
+    "@fiber-mpp/core": "workspace:*",
+    "@fiber-mpp/demo-api": "workspace:*",
+    "@fiber-mpp/f402-compat": "workspace:*",
+    "@fiber-mpp/fiber-method": "workspace:*",
+    "@fiber-mpp/server-middleware": "workspace:*",
+    "@fiber-mpp/storage": "workspace:*",
+    "commander": "^12.1.0"
+  }
+}

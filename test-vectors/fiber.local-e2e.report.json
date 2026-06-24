@@ -1,0 +1,31 @@
+{
+  "input": {
+    "case": "fiber.local-e2e.report",
+    "evidence": true,
+    "source_report": "reports/fiber-local-e2e-success.json",
+    "report": {
+      "unit_tests": true,
+      "integration_tests": true,
+      "security_tests": true,
+      "fiber_e2e_mode": "local",
+      "fiber_preflight_test_loaded": true,
+      "fiber_live_test_selected": true,
+      "fiber_live_test_loaded": true,
+      "fiber_e2e_status": "passed",
+      "fiber_e2e_blockers": [],
+      "f402_compatibility": true,
+      "live_fiber_local_e2e": true,
+      "production_ready_for_fiber_method": false,
+      "production_blockers": [
+        "testnet Fiber E2E evidence still pending",
+        "operational hardening still pending",
+        "long-running deployment hardening still pending"
+      ],
+      "fiber_e2e_payment_hash": "0xec3a08f9b298db82f2dc27861aed5a3110b5d36a56bd43d13b60c5a4bcf69222",
+      "fiber_e2e_receipt_id": "rcpt_ca010a79973755656bdff4b1684570da"
+    }
+  },
+  "expected_canonical_hash": "1ab5911f6c41986a264c869b4d10819d439e0186f7d40dbc3854634a83cbff32",
+  "expected_verification_result": "accepted",
+  "notes": "Gate report evidence copied from the latest successful local Fiber E2E run."
+}

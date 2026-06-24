@@ -1,0 +1,45 @@
+{
+  "input": {
+    "case": "f402.challenge.valid",
+    "f402": {
+      "token": "94de15b867b4e0ff3de31412114daa942fc40f33d299fe9af128624b3aaa7fcb",
+      "invoice": "fibd1qconformancepayment0001",
+      "paymentHash": "0xabababababababababababababababababababababababababababababababab",
+      "amount": "1000",
+      "currency": "Fibd",
+      "expiresAt": "2030-01-01T00:00:00.000Z",
+      "resource": "http://conformance.local/paid/weather",
+      "issuer": "fiber-mpp-ts-conformance",
+      "fiberNodeId": "fiber-node-conformance-payee"
+    },
+    "resource": {
+      "method": "GET",
+      "url": "http://conformance.local/paid/weather"
+    },
+    "server_id": "fiber-mpp-ts-conformance",
+    "challenge_id": "chal_conformance_0001",
+    "issued_at": "2026-06-24T00:00:00.000Z",
+    "expected_mpp_fields": {
+      "domain": "fiber-mpp-challenge-v1",
+      "challengeId": "chal_conformance_0001",
+      "resource": {
+        "method": "GET",
+        "url": "http://conformance.local/paid/weather"
+      },
+      "amount": {
+        "value": "1000",
+        "currency": "Fibd"
+      },
+      "method": "fiber",
+      "paymentHash": "0xabababababababababababababababababababababababababababababababab",
+      "invoice": "fibd1qconformancepayment0001",
+      "amountShannons": "1000",
+      "serverId": "fiber-mpp-ts-conformance",
+      "audience": "fiber-mpp-ts-conformance",
+      "maxUses": 1
+    }
+  },
+  "expected_canonical_hash": "ff66d648f2fa32380d92b4e6f1691cf339d4d5494d6ea9808d56dd7514e928a2",
+  "expected_verification_result": "accepted",
+  "notes": "F402 challenge fields as accepted by the TypeScript F402 compatibility adapter."
+}

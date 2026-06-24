@@ -1,0 +1,25 @@
+{
+  "name": "@fiber-mpp/demo-api",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "FiberMPP demo paid API.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "start": "tsx src/index.ts"
+  },
+  "dependencies": {
+    "@fiber-mpp/fiber-method": "workspace:*",
+    "@fiber-mpp/server-middleware": "workspace:*",
+    "@fiber-mpp/storage": "workspace:*",
+    "@hono/node-server": "^1.14.0",
+    "hono": "^4.8.0"
+  }
+}

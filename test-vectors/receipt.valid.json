@@ -1,0 +1,30 @@
+{
+  "input": {
+    "case": "receipt.valid",
+    "secret": "fiber-mpp-conformance-secret",
+    "receipt": {
+      "domain": "fiber-mpp-receipt-v1",
+      "receiptId": "rcpt_conformance_0001",
+      "challengeId": "chal_conformance_0001",
+      "method": "fiber",
+      "resourceHash": "e6ae6449bcbf5882012a00c4dcf32043c67355ee779dbaac489fec3b4c2b8546",
+      "amount": {
+        "value": "1000",
+        "currency": "CKB"
+      },
+      "settlement": {
+        "status": "settled",
+        "paymentHash": "0xabababababababababababababababababababababababababababababababab",
+        "invoiceId": "fibd1qconformancepayment0001",
+        "provider": "fiber-mock",
+        "observedAt": "2026-06-24T00:00:00.000Z"
+      },
+      "serverId": "fiber-mpp-ts-conformance",
+      "issuedAt": "2026-06-24T00:00:00.000Z",
+      "signature": "862a94a095b229cc8ec803442a07a42737b08e2ab23396c56197934732d10435"
+    }
+  },
+  "expected_canonical_hash": "57194e1811ff9e52de3aea922156e99a477f39c2bb5d56b3f316fd2e19dccc9c",
+  "expected_verification_result": "accepted",
+  "notes": "Payment-Receipt signed by the TypeScript implementation."
+}
