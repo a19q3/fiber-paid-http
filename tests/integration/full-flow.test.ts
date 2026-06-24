@@ -32,7 +32,7 @@ describe("FiberMPP integration flows", () => {
     const status = await app.request("http://localhost/api/status");
     expect(status.status).toBe(200);
     const statusBody = await status.json() as {
-      endpoints: Array<{ path: string }>;
+      endpoints: Array<{ path: string; price: { currency: string; display?: string } }>;
       localFiberNetwork: {
         node1: { status: string };
         node2: { status: string };
@@ -43,6 +43,8 @@ describe("FiberMPP integration flows", () => {
       };
     };
     expect(statusBody.endpoints[0]?.path).toBe("/paid/protocol-service");
+    expect(statusBody.endpoints.map((endpoint) => endpoint.price.currency)).toEqual(["CKB", "CKB", "CKB", "CKB"]);
+    expect(statusBody.endpoints.map((endpoint) => endpoint.price.display)).toEqual(["100 CKB", "10 CKB", "50 CKB", "25 CKB"]);
     expect(JSON.stringify(statusBody)).not.toContain("robot");
     expect(new Set([
       statusBody.localFiberNetwork.node1.status,
@@ -58,7 +60,10 @@ describe("FiberMPP integration flows", () => {
       body: JSON.stringify({ endpoint: "/paid/protocol-service" })
     });
     expect(unpaid.status).toBe(503);
-    expect((await unpaid.clone().json()) as { status: number }).toMatchObject({ status: 503 });
+    const unpaidBody = (await unpaid.clone().json()) as { status: number; flow: { events: Array<{ detail?: string }> } };
+    expect(unpaidBody).toMatchObject({ status: 503 });
+    expect(JSON.stringify(unpaidBody.flow.events)).toContain("amount=100 CKB");
+    expect(JSON.stringify(unpaidBody.flow.events)).not.toContain("Fibd");
 
     const pay = await app.request("http://localhost/api/demo/pay", { method: "POST" });
     expect(pay.status).toBe(503);
@@ -67,6 +72,10 @@ describe("FiberMPP integration flows", () => {
     expect(payEvents).toContain("live Fiber not configured");
     expect(payEvents).not.toContain("node2 (router)");
     expect(payEvents).not.toContain("node3 (payee)");
+
+    const reset = await app.request("http://localhost/api/demo/reset", { method: "POST" });
+    expect(reset.status).toBe(200);
+    expect(await reset.json()).toMatchObject({ ok: true, flow: { events: [] } });
   });
 
   it("reverse proxy completes full flow", async () => {

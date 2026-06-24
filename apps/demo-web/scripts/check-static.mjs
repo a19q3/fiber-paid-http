@@ -33,6 +33,8 @@ const requiredHtmlFragments = [
   'data-lucide-icon="ClearLog"',
   'data-lucide-icon="Terminal"',
   'data-lucide-icon="Activity"',
+  'postJson("/api/demo/reset", {})',
+  "function copyTextToClipboard(value)",
   'function iconHtml(name, label)',
   'function hydrateLucideIcons(root = document)',
   'function isLiveFiberFlow()',
@@ -120,6 +122,9 @@ const forbiddenFragments = [
   'actor-icon">${step.icon}',
   ">C</button>",
   ">OK<",
+  " Fibd",
+  " USD",
+  "$0.01",
   "Protected Service",
   "service-mark",
   "service-card",
@@ -168,6 +173,11 @@ for (const match of htmlWithoutSprite.matchAll(/<button\b([^>]*)>([\s\S]*?)<\/bu
 
 assert(!/src=["']https?:\/\//.test(html), "Remote visual assets are not allowed in the static console");
 assert(!/href=["']https?:\/\//.test(html), "Remote visual assets are not allowed in the static console");
+assert(count(html, "const result = await postJson(`/api/demo/${action}`, body);") === 1, "Demo action must call its backend endpoint exactly once");
+assert(htmlWithoutSprite.includes("100 CKB"), "Static fallback pricing must use CKB");
+assert(!htmlWithoutSprite.includes("Fibd"), "Frontend pricing must not display Fibd");
+assert(!htmlWithoutSprite.includes("USD"), "Frontend pricing must not display USD");
+assertModuleScriptParses(htmlWithoutSprite);
 assert(count(html, "<script") === count(html, "</script>"), "Unbalanced script tags");
 assert(count(html, "<style") === count(html, "</style>"), "Unbalanced style tags");
 assert(count(html, "<section") === count(html, "</section>"), "Unbalanced section tags");
@@ -195,4 +205,14 @@ function assert(condition, message) {
 
 function count(haystack, needle) {
   return haystack.split(needle).length - 1;
+}
+
+function assertModuleScriptParses(source) {
+  const moduleScriptMatch = source.match(/<script type="module">([\s\S]*)<\/script>/);
+  assert(moduleScriptMatch, "Missing module script");
+  try {
+    new Function(moduleScriptMatch[1]);
+  } catch (error) {
+    throw new Error(`Module script does not parse: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }

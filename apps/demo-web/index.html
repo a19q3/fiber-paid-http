@@ -1222,7 +1222,7 @@
                     <span class="selected-chip">selected</span>
                   </div>
                   <div class="kv">
-                    <div class="kv-row"><span class="kv-label"><span class="ui-icon" data-lucide-icon="Price"></span>Price</span><strong id="price">100 Fibd</strong><button class="copy" data-copy="100 Fibd" aria-label="Copy price" title="Copy price"><span class="ui-icon" data-lucide-icon="Copy"></span></button></div>
+                    <div class="kv-row"><span class="kv-label"><span class="ui-icon" data-lucide-icon="Price"></span>Price</span><strong id="price">100 CKB</strong><button class="copy" data-copy="100 CKB" aria-label="Copy price" title="Copy price"><span class="ui-icon" data-lucide-icon="Copy"></span></button></div>
                     <div class="kv-row"><span class="kv-label"><span class="ui-icon" data-lucide-icon="Method"></span>Method</span><strong>Fiber</strong><button class="copy" data-copy="Fiber" aria-label="Copy method" title="Copy method"><span class="ui-icon" data-lucide-icon="Copy"></span></button></div>
                     <div class="kv-row"><span class="kv-label"><span class="ui-icon" data-lucide-icon="ResourceHash"></span>Challenge ID</span><strong id="challenge-id">pending</strong><button class="copy" data-copy-target="challenge-id" aria-label="Copy challenge id" title="Copy challenge id"><span class="ui-icon" data-lucide-icon="Copy"></span></button></div>
                     <div class="kv-row"><span class="kv-label"><span class="ui-icon" data-lucide-icon="ResourceHash"></span>Resource Hash</span><strong id="resource-hash">pending</strong><button class="copy" data-copy-target="resource-hash" aria-label="Copy resource hash" title="Copy resource hash"><span class="ui-icon" data-lucide-icon="Copy"></span></button></div>
@@ -1368,10 +1368,10 @@
         tsGate: "ts-gate"
       };
       const fallbackEndpoints = [
-        { path: "/paid/protocol-service", label: "GET /paid/protocol-service", price: { display: "100 Fibd" }, fiberAmountShannons: "100" },
-        { path: "/paid/weather", label: "GET /paid/weather", price: { display: "10 Fibd" }, fiberAmountShannons: "10" },
-        { path: "/paid/mpp-tool", label: "GET /paid/mpp-tool", price: { display: "50 Fibd" }, fiberAmountShannons: "50" },
-        { path: "/paid/file", label: "GET /paid/file", price: { display: "25 Fibd" }, fiberAmountShannons: "25" }
+        { path: "/paid/protocol-service", label: "GET /paid/protocol-service", price: { display: "100 CKB" }, fiberAmountShannons: "100" },
+        { path: "/paid/weather", label: "GET /paid/weather", price: { display: "10 CKB" }, fiberAmountShannons: "10" },
+        { path: "/paid/mpp-tool", label: "GET /paid/mpp-tool", price: { display: "50 CKB" }, fiberAmountShannons: "50" },
+        { path: "/paid/file", label: "GET /paid/file", price: { display: "25 CKB" }, fiberAmountShannons: "25" }
       ];
       const state = {
         selected: "/paid/protocol-service",
@@ -1426,18 +1426,34 @@
         $("#pay").addEventListener("click", () => runAction("pay"));
         $("#retry").addEventListener("click", () => runAction("retry"));
         $("#replay").addEventListener("click", () => runAction("replay"));
-        $("#clear-log").addEventListener("click", () => {
-          state.localLogs = [];
-          state.flow.events = [];
-          renderLogs();
+        $("#clear-log").addEventListener("click", async () => {
+          if (state.busy) return;
+          state.busy = true;
+          try {
+            const result = await postJson("/api/demo/reset", {});
+            state.flow = result.flow || { events: [] };
+            state.phase = "idle";
+            state.localLogs = [];
+          } catch (error) {
+            state.localLogs = [];
+            state.flow = { events: [] };
+            addLocalLog("WARN", "web", "server reset unavailable", error.message);
+          } finally {
+            state.busy = false;
+            render();
+          }
         });
         document.addEventListener("click", async (event) => {
           const button = event.target.closest("[data-copy], [data-copy-target]");
           if (!button) return;
           const value = button.dataset.copy || document.getElementById(button.dataset.copyTarget)?.textContent || "";
-          await navigator.clipboard?.writeText(value).catch(() => undefined);
-          button.innerHTML = iconHtml("Copied");
-          button.setAttribute("aria-label", "Copied");
+          const copied = await copyTextToClipboard(value);
+          button.innerHTML = iconHtml(copied ? "Copied" : "StatusUnavailable");
+          button.setAttribute("aria-label", copied ? "Copied" : "Copy unavailable");
+          if (!copied) {
+            addLocalLog("WARN", "web", "copy unavailable", button.title || "clipboard unavailable");
+            renderLogs();
+          }
           setTimeout(() => {
             button.innerHTML = iconHtml("Copy");
             button.setAttribute("aria-label", button.title || "Copy");
@@ -1544,6 +1560,27 @@
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(payload.message || payload.error || `${response.status} ${response.statusText}`);
         return payload;
+      }
+
+      async function copyTextToClipboard(value) {
+        if (navigator.clipboard?.writeText) {
+          try {
+            await navigator.clipboard.writeText(value);
+            return true;
+          } catch {
+            // Fall back to the local selection path below.
+          }
+        }
+        const textarea = document.createElement("textarea");
+        textarea.value = value;
+        textarea.setAttribute("readonly", "readonly");
+        textarea.style.position = "fixed";
+        textarea.style.left = "-9999px";
+        document.body.appendChild(textarea);
+        textarea.select();
+        const copied = document.execCommand?.("copy") === true;
+        textarea.remove();
+        return copied;
       }
 
       function render() {
@@ -1922,7 +1959,7 @@
       }
 
       function priceLabel(endpoint) {
-        return endpoint.price?.display || `${endpoint.fiberAmountShannons || "100"} Fibd`;
+        return endpoint.price?.display || `${endpoint.fiberAmountShannons || "100"} CKB`;
       }
 
       function currentRoute() {

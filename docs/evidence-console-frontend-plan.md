@@ -127,7 +127,7 @@ Show the selected machine request and the payment context:
 
 ```text
 GET /paid/protocol-service
-price: 100 Fibd
+price: 100 CKB
 method: Fiber
 challenge id: chal_...
 resource hash: ...
@@ -351,9 +351,11 @@ RUN_FIBER_E2E=1
 FIBER_MODE=local
 FIBER_PAYEE_RPC_URL=http://127.0.0.1:21716
 FIBER_PAYER_RPC_URL=http://127.0.0.1:21714
-FIBER_CURRENCY=Fibd
+FIBER_CURRENCY=<target Fiber RPC currency code>
 FIBER_E2E_AMOUNT_SHANNONS=100
 ```
+
+The frontend price unit remains `CKB`; Fiber RPC currency codes are runtime adapter configuration, not UI pricing labels.
 
 Do not hide the mode. The console should display `mode: unconfigured`, `mode: local`, or `mode: testnet`.
 
@@ -367,6 +369,7 @@ POST /api/demo/unpaid
 POST /api/demo/pay
 POST /api/demo/retry
 POST /api/demo/replay
+POST /api/demo/reset
 GET  /api/reports/canonical
 GET  /api/reports/fiber-local
 GET  /api/reports/gate-local
@@ -383,6 +386,7 @@ Endpoint responsibilities:
 - `/api/demo/pay`: perform the Fiber payment step only when local/testnet Fiber RPC is configured; otherwise return a blocker.
 - `/api/demo/retry`: retry with `Authorization: Payment` and return receipt evidence.
 - `/api/demo/replay`: replay the last credential and return rejection evidence.
+- `/api/demo/reset`: clear the current server-side demo flow so UI reset controls are not local-only theatre.
 - `/api/reports/*`: serve sanitized report summaries plus optional raw JSON.
 
 The API should call FiberMPP directly. Do not route the primary demo path through `fiber-pay`.

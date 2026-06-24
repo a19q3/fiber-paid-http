@@ -92,7 +92,7 @@ const defaultResources: DemoResource[] = [
   {
     path: "/paid/protocol-service",
     label: "GET /paid/protocol-service",
-    price: { value: "100", currency: "Fibd", display: "100 Fibd" },
+    price: { value: "100", currency: "CKB", display: "100 CKB" },
     fiberAmountShannons: "100",
     response: {
       service: "protected-api",
@@ -104,7 +104,7 @@ const defaultResources: DemoResource[] = [
   {
     path: "/paid/weather",
     label: "GET /paid/weather",
-    price: { value: "10", currency: "Fibd", display: "10 Fibd" },
+    price: { value: "10", currency: "CKB", display: "10 CKB" },
     fiberAmountShannons: "10",
     response: {
       city: "Shanghai",
@@ -115,7 +115,7 @@ const defaultResources: DemoResource[] = [
   {
     path: "/paid/mpp-tool",
     label: "GET /paid/mpp-tool",
-    price: { value: "50", currency: "Fibd", display: "50 Fibd" },
+    price: { value: "50", currency: "CKB", display: "50 CKB" },
     fiberAmountShannons: "50",
     response: {
       tool: "fiber_mpp.echo",
@@ -125,7 +125,7 @@ const defaultResources: DemoResource[] = [
   {
     path: "/paid/file",
     label: "GET /paid/file",
-    price: { value: "25", currency: "Fibd", display: "25 Fibd" },
+    price: { value: "25", currency: "CKB", display: "25 CKB" },
     fiberAmountShannons: "25",
     response: "paid file contents\n",
     contentType: "text/plain"
@@ -231,7 +231,7 @@ export function createDemoApi(options: DemoApiOptions = {}): Hono {
     flow.endpoint = resource.path;
     flow.resource = summarizeResource(resource);
     flow.resourceUrl = resourceUrl;
-    appendEvent(flow, "INFO", "client", `GET ${resource.path}`, `amount=${resource.fiberAmountShannons} Fibd`);
+    appendEvent(flow, "INFO", "client", `GET ${resource.path}`, `amount=${resource.fiberAmountShannons} CKB`);
     const response = await protectResource(resource)(new Request(resourceUrl));
     const body = await safeJson(response);
     const fiberChallenge = findFiberChallenge(body);
@@ -256,7 +256,7 @@ export function createDemoApi(options: DemoApiOptions = {}): Hono {
 
   app.post("/paid/echo", async (c) =>
     protectWithRuntime({
-      price: options.price ?? { value: "0.01", currency: "USD", display: "$0.01" },
+      price: options.price ?? { value: "1", currency: "CKB", display: "1 CKB" },
       methods: ["fiber"],
       handler: async (request) =>
         Response.json({
@@ -336,6 +336,15 @@ export function createDemoApi(options: DemoApiOptions = {}): Hono {
       body,
       rejected: response.status === 402,
       receiptReissued: response.headers.has(PAYMENT_RECEIPT_HEADER),
+      flow
+    });
+  });
+
+  app.post("/api/demo/reset", (c) => {
+    resetFlow(flow);
+    c.header("cache-control", "no-store");
+    return c.json({
+      ok: true,
       flow
     });
   });
