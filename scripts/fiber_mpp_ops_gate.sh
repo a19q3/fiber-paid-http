@@ -79,18 +79,28 @@ const checks = [
 });
 
 const failed = checks.filter((check) => check.status !== "passed");
+const gate = fs.existsSync("reports/fiber-mpp-gate.json")
+  ? JSON.parse(fs.readFileSync("reports/fiber-mpp-gate.json", "utf8"))
+  : {};
+const testnetEvidence =
+  gate.testnet_fiber_e2e === true ||
+  gate.testnet_fiber_e2e_evidence === true ||
+  fs.existsSync("reports/fiber-testnet-e2e-success.json");
+const remainingBlockers = [
+  ...(testnetEvidence ? [] : ["testnet Fiber E2E evidence still pending"]),
+  ...(failed.length === 0 ? [] : ["production operations hardening evidence incomplete"])
+];
 const report = {
   production_ops_ready: failed.length === 0,
-  production_ready_for_fiber_method: false,
+  testnet_fiber_e2e: testnetEvidence,
+  production_ready_for_fiber_method: remainingBlockers.length === 0,
   artifacts: {
     runbook: "docs/production-operations.md",
     alert_rules: "deploy/prometheus/fiber-mpp-alerts.yml",
     client_wallet_plan: "docs/fiber-client-wallet-integration-plan.md"
   },
   checks,
-  remaining_blockers: [
-    "testnet Fiber E2E evidence still pending"
-  ]
+  remaining_blockers: remainingBlockers
 };
 
 fs.writeFileSync("reports/production-operations-matrix.json", `${JSON.stringify(report, null, 2)}\n`);

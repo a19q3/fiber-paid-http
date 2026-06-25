@@ -1,0 +1,9 @@
+{
+  "evidence": true,
+  "source_report": "reports/fiber-mpp-gate.json",
+  "payment_hash": "0x8adaeeb1c27b698d5a63447588f3de62568f94e23effeda973ff70281a545f9b",
+  "receipt_id": "rcpt_9ff3edb34ee30f56d20c3c6bf01fb453",
+  "fiber_commit": "3c25bcf16200e5d641dcd9b79f086f391e976172",
+  "production_ready_for_fiber_method": true,
+  "blockers": []
+}

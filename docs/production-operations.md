@@ -2,7 +2,7 @@
 
 This runbook covers the production operations pieces that are outside the protocol verifier: alerting, Fiber node backup/restore, trusted RPC/network binding, and paid-but-denied reconciliation.
 
-Production readiness still requires separate testnet Fiber E2E evidence. Local E2E plus this runbook is not enough to set `production_ready_for_fiber_method` to `true`.
+Production readiness requires both this operations evidence and separate testnet Fiber E2E evidence. Local E2E plus this runbook is not enough to set `production_ready_for_fiber_method` to `true`; the current gate may set it to `true` only when the recorded testnet evidence is still present and all operations checks pass.
 
 ## Operating Model
 

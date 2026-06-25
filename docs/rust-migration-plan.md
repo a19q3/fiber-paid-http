@@ -29,8 +29,8 @@ Rust and TypeScript must continue to match for:
 
 1. Keep both conformance reports green.
 2. Run Rust against the same local Fiber network from `docs/fiber-local-network.md`.
-3. Add separate testnet Fiber E2E evidence.
+3. Keep separate testnet Fiber E2E evidence green.
 
 ## Readiness Rule
 
-`production_ready_for_fiber_method` remains `false` after local E2E alone. It can only change after separate testnet Fiber E2E evidence.
+`production_ready_for_fiber_method` remains `false` after local E2E alone. It can be `true` only while separate testnet Fiber E2E evidence and production operations gates are both present.

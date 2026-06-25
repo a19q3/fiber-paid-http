@@ -1,6 +1,7 @@
 {
   "production_ops_ready": true,
-  "production_ready_for_fiber_method": false,
+  "testnet_fiber_e2e": true,
+  "production_ready_for_fiber_method": true,
   "artifacts": {
     "runbook": "docs/production-operations.md",
     "alert_rules": "deploy/prometheus/fiber-mpp-alerts.yml",
@@ -44,7 +45,5 @@
       "missing": []
     }
   ],
-  "remaining_blockers": [
-    "testnet Fiber E2E evidence still pending"
-  ]
+  "remaining_blockers": []
 }

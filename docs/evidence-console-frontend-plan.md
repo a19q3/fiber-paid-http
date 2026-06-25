@@ -56,10 +56,10 @@ Rust canonical engine: passed
 TS vector harness: passed
 Local Fiber E2E: passed
 F402 compatibility: passed
-Production ready: false
+Production ready: true when testnet evidence is present
 ```
 
-`production_ready_for_fiber_method` must remain `false` unless separate testnet Fiber E2E evidence is present.
+`production_ready_for_fiber_method` is read from the gate report. It must remain `false` unless separate testnet Fiber E2E evidence is present; with the recorded testnet evidence and passing operations gates it may display `true`.
 
 ## Information Architecture
 
@@ -252,7 +252,7 @@ vector parity: passed
 error code parity: true
 f402 parity: true
 replay status: rejected
-production_ready_for_fiber_method: false
+production_ready_for_fiber_method: true
 ```
 
 Report artifacts to surface:
@@ -555,7 +555,7 @@ Tasks:
 - Run unpaid request, pay, retry, and replay through existing FiberMPP code.
 - Update timeline as events complete.
 - Persist latest local evidence report.
-- Keep `production_ready_for_fiber_method: false`.
+- Keep `production_ready_for_fiber_method` report-driven; local-only evidence must not set it true.
 
 ### Phase 4: Polish And Judge Mode
 

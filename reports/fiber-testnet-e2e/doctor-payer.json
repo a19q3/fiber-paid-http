@@ -1,0 +1,22 @@
+{
+  "role": "payer",
+  "status": "ready",
+  "blockers": [],
+  "checks": {
+    "fiber_mode": "testnet",
+    "payer_rpc_url": "http://127.0.0.1:18727",
+    "rpc_probe": "node_info ok",
+    "rpc_node_pubkey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
+    "rpc_node_version": "0.9.0-rc4",
+    "rpc_node_commit_hash": "3c25bcf 2026-06-22",
+    "rpc_node_info_peers": 2,
+    "rpc_node_info_channels": 1,
+    "rpc_peer_count": 2,
+    "rpc_channel_count": 1,
+    "rpc_ready_channel_count": 1,
+    "rpc_channel_states": "ChannelReady:1"
+  },
+  "next_steps": [
+    "run a paid request or role-specific RPC check"
+  ]
+}

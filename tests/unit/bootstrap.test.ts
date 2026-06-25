@@ -270,6 +270,27 @@ describe("FiberMPP bootstrap helpers", () => {
     expect(probe.checks.rpc_channel_states).toBe("ChannelReady:1");
   });
 
+  it("accepts v0.9 uppercase channel readiness from Fiber RPC", async () => {
+    const fetchImpl = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+      const payload = JSON.parse(String(init?.body)) as { method: string; id: string };
+      return Response.json({
+        jsonrpc: "2.0",
+        id: payload.id,
+        result: payload.method === "list_channels"
+          ? { channels: [{ channel_id: `0x${"cd".repeat(32)}`, state: { state_name: "CHANNEL_READY" } }] }
+          : fiberProbeResult(payload.method)
+      });
+    }) as typeof fetch;
+    const probe = await probeFiberRpcReadiness({
+      url: "http://127.0.0.1:21714",
+      role: "payer",
+      fetchImpl
+    });
+    expect(probe.ok).toBe(true);
+    expect(probe.checks.rpc_ready_channel_count).toBe(1);
+    expect(probe.checks.rpc_channel_states).toBe("CHANNEL_READY:1");
+  });
+
   it("reports Fiber peer and channel blockers instead of only node_info", async () => {
     const fetchImpl = (async (_input: RequestInfo | URL, init?: RequestInit) => {
       const payload = JSON.parse(String(init?.body)) as { method: string; id: string };

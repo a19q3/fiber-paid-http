@@ -1,0 +1,15 @@
+{
+  "generated_at": "2026-06-25T03:14:32.537Z",
+  "mode": "testnet",
+  "currency": "Fibt",
+  "run_fiber_e2e": "1",
+  "payer_rpc_url": "http://127.0.0.1:18727",
+  "payee_rpc_url": "http://127.0.0.1:18827",
+  "payer_rpc_auth_present": false,
+  "payee_rpc_auth_present": false,
+  "secret_present": true,
+  "secret_generated": false,
+  "amount_shannons": "100",
+  "settlement_timeout_ms": "180000",
+  "settlement_poll_ms": "1000"
+}

@@ -28,7 +28,7 @@ describe("FiberMPP integration flows", () => {
   });
 
   it("evidence console API blocks payment execution when live Fiber is not configured", async () => {
-    const app = createEvidenceApi();
+    const app = withoutFiberLiveEnv(() => createEvidenceApi());
     const status = await app.request("http://localhost/api/status");
     expect(status.status).toBe(200);
     const statusBody = await status.json() as {
@@ -211,6 +211,32 @@ describe("FiberMPP integration flows", () => {
     expect((await expired.request("http://localhost/paid/weather", { headers: { authorization: expiredAuth } })).status).toBe(402);
   });
 });
+
+function withoutFiberLiveEnv<T>(fn: () => T): T {
+  const keys = [
+    "RUN_FIBER_E2E",
+    "FIBER_MODE",
+    "FIBER_RPC_URL",
+    "FIBER_PAYEE_RPC_URL",
+    "FIBER_PAYER_RPC_URL",
+    "FIBER_MPP_SECRET"
+  ];
+  const previous = new Map(keys.map((key) => [key, process.env[key]]));
+  for (const key of keys) {
+    delete process.env[key];
+  }
+  try {
+    return fn();
+  } finally {
+    for (const [key, value] of previous) {
+      if (typeof value === "undefined") {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
+  }
+}
 
 function appFetch(app: ReturnType<typeof createEvidenceApi>): typeof fetch {
   return ((input: RequestInfo | URL, init?: RequestInit) => {

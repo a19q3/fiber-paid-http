@@ -113,10 +113,14 @@ export function writeFiberE2eResult(patch: FiberE2eResult): FiberE2eResult {
   } catch {
     current = {};
   }
-  const next = {
+  const next: FiberE2eResult = {
     ...current,
     ...patch
   };
+  if (next.fiber_e2e_status !== "passed") {
+    delete next.fiber_e2e_payment_hash;
+    delete next.fiber_e2e_receipt_id;
+  }
   writeFileSync(path, `${JSON.stringify(next, null, 2)}\n`);
   return next;
 }

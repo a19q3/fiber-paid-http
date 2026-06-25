@@ -23,7 +23,7 @@
   },
   "production_operations": true,
   "production_operations_report": "reports/production-operations-matrix.json",
-  "testnet_fiber_e2e": false,
+  "testnet_fiber_e2e": true,
   "rust_gateway_production_path": true,
   "rust_gateway_evidence": {
     "server_crate_tests": true,
@@ -38,8 +38,6 @@
       "replay rejection"
     ]
   },
-  "production_ready_for_fiber_method": false,
-  "production_blockers": [
-    "testnet Fiber E2E evidence still pending"
-  ]
+  "production_ready_for_fiber_method": true,
+  "production_blockers": []
 }

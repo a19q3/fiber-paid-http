@@ -1,6 +1,6 @@
 # FiberMPP
 
-FiberMPP is a production-targeted Fiber payment method for Machine Payments Protocol, with F402 compatibility for Fiber-native HTTP 402 applications. It is not production-ready yet: local Fiber E2E evidence, the Rust HTTP gateway path, and production operations runbooks exist, while separate testnet evidence remains pending.
+FiberMPP is a production-targeted Fiber payment method for Machine Payments Protocol, with F402 compatibility for Fiber-native HTTP 402 applications. It has local Fiber E2E evidence, separate testnet Fiber E2E evidence, a Rust HTTP gateway path, production operations runbooks, and canonical Rust/TypeScript conformance gates.
 
 FiberMPP lets services accept Fiber through one HTTP 402 challenge, credential, and receipt flow.
 
@@ -132,4 +132,4 @@ fiber-mpp evidence start --port 8787
 bash scripts/fiber_mpp_gate.sh
 ```
 
-The gate writes `reports/fiber-mpp-gate.json` and stays honest about skipped, local, and testnet modes. Production readiness must remain false until a real testnet Fiber E2E pass is recorded.
+The gate writes `reports/fiber-mpp-gate.json` and stays honest about skipped, local, and testnet modes. `production_ready_for_fiber_method` is true only when real testnet Fiber E2E evidence and production operations evidence are both present.

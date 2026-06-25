@@ -2,9 +2,9 @@
 
 ## Current status
 
-FiberMPP uses Rust as the canonical protocol core and verifier target. TypeScript remains a maintained JS ecosystem integration layer for SDKs, demos, examples, F402/MPP compatibility, and vector tooling. The project has local Fiber E2E evidence, shared conformance vectors, a security matrix, and canonical parity gates.
+FiberMPP uses Rust as the canonical protocol core and verifier target. TypeScript remains a maintained JS ecosystem integration layer for SDKs, demos, examples, F402/MPP compatibility, and vector tooling. The project has local Fiber E2E evidence, separate testnet Fiber E2E evidence, shared conformance vectors, a security matrix, and canonical parity gates.
 
-It is still not production-ready for live Fiber settlement because separate testnet Fiber E2E evidence is pending. The Rust HTTP gateway production path now implements signed 402 challenge issuance, durable SQLite storage, Fiber method adapter wiring, receipt issuance, and replay rejection, but readiness remains false until testnet evidence proves the path outside the local network.
+The Rust HTTP gateway production path implements signed `402 Payment Required` challenge issuance, durable SQLite storage, Fiber method adapter wiring, receipt issuance, and replay rejection. Production readiness is now gated by the recorded testnet Fiber E2E evidence plus production operations evidence.
 
 ## Ready
 
@@ -32,12 +32,13 @@ It is still not production-ready for live Fiber settlement because separate test
 - F402 compatibility adapter.
 - TypeScript CLI and Rust `fiber-mpp-rs` CLI.
 - Local Fiber E2E evidence from the 3-node network.
+- Testnet Fiber E2E evidence through funded `v0.9.0-rc4` FNN payer/payee nodes.
 - Rust canonical vector verification with TypeScript harness parity.
 - Rust HTTP gateway production path issues signed `402 Payment Required` challenges, creates Fiber invoices through FNN JSON-RPC, verifies settlement, records durable challenge/credential/receipt state, emits `Payment-Receipt`, and rejects replay.
 
 ## Blockers before live production
 
-- Add separate testnet Fiber E2E evidence.
+- None currently recorded by the gate. Re-run the gates before release or deployment because production readiness is evidence-based and can regress if testnet evidence, operations checks, or canonical parity fail.
 
 ## Gate
 
@@ -61,8 +62,10 @@ reports/fiber-local-e2e-evidence.json
 reports/production-operations-matrix.json
 ```
 
-All production reports must keep:
+Current production reports may set:
 
 ```json
-"production_ready_for_fiber_method": false
+"production_ready_for_fiber_method": true
 ```
+
+This value is valid only when `testnet_fiber_e2e`, `production_operations`, `rust_gateway_production_path`, conformance vectors, and security matrix checks all pass.

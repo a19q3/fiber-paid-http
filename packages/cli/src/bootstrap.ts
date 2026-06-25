@@ -706,14 +706,12 @@ function isReadyChannel(value: unknown): boolean {
     return false;
   }
   const channel = value as Record<string, unknown>;
-  const state = channel.state;
-  if (typeof state === "string") {
-    return state === "ChannelReady";
-  }
-  if (state && typeof state === "object") {
-    return (state as Record<string, unknown>).state_name === "ChannelReady";
-  }
-  return channel.state_name === "ChannelReady";
+  return isChannelReadyState(channelStateName(channel));
+}
+
+function isChannelReadyState(state: string): boolean {
+  const normalized = state.replace(/[_\s-]/g, "").toLowerCase();
+  return normalized === "channelready";
 }
 
 function summarizeChannelStates(channels: unknown[]): string {

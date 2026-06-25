@@ -1,0 +1,88 @@
+{
+  "generated_at": "2026-06-25T03:14:53.023Z",
+  "status": "passed",
+  "gate_exit": 0,
+  "fiber_e2e_result": {
+    "fiber_preflight_test_loaded": true,
+    "fiber_live_test_selected": true,
+    "fiber_live_test_loaded": true,
+    "fiber_e2e_mode": "testnet",
+    "fiber_e2e_blockers": [],
+    "fiber_e2e_status": "passed",
+    "fiber_e2e_payment_hash": "0x8adaeeb1c27b698d5a63447588f3de62568f94e23effeda973ff70281a545f9b",
+    "fiber_e2e_receipt_id": "rcpt_9ff3edb34ee30f56d20c3c6bf01fb453"
+  },
+  "gate_report": {
+    "unit_tests": true,
+    "integration_tests": true,
+    "security_tests": true,
+    "conformance_vectors": true,
+    "security_matrix": true,
+    "production_operations": true,
+    "production_operations_report": "reports/production-operations-matrix.json",
+    "rust_gateway_production_path": true,
+    "fiber_e2e_mode": "testnet",
+    "fiber_preflight_test_loaded": true,
+    "fiber_live_test_selected": true,
+    "fiber_live_test_loaded": true,
+    "fiber_e2e_status": "passed",
+    "fiber_e2e_blockers": [],
+    "f402_compatibility": true,
+    "live_fiber_local_e2e": false,
+    "live_fiber_testnet_e2e": true,
+    "testnet_fiber_e2e": true,
+    "testnet_fiber_e2e_evidence": true,
+    "local_fiber_e2e_evidence": true,
+    "fiber_commit": "3c25bcf16200e5d641dcd9b79f086f391e976172",
+    "toolchain_shims_used": [
+      {
+        "name": "cargo",
+        "path": "scripts/bin/cargo",
+        "scope": "scripts/fiber_local_network.sh",
+        "evidence": "reports/fiber-local-network/start.log"
+      },
+      {
+        "name": "nc",
+        "path": "scripts/bin/nc",
+        "scope": "scripts/fiber_local_network.sh",
+        "evidence": "reports/fiber-local-network/wait.log present; Fiber wait script uses nc -z"
+      }
+    ],
+    "production_ready_for_fiber_method": true,
+    "production_blockers": [],
+    "fiber_e2e_payment_hash": "0x8adaeeb1c27b698d5a63447588f3de62568f94e23effeda973ff70281a545f9b",
+    "fiber_e2e_receipt_id": "rcpt_9ff3edb34ee30f56d20c3c6bf01fb453"
+  },
+  "canonical_report": {
+    "rust_canonical_verifier": true,
+    "typescript_vector_harness": true,
+    "typescript_trusted_boundary": false,
+    "shared_vectors_total": 14,
+    "shared_vectors_passed_rust": 14,
+    "shared_vectors_passed_typescript_harness": 14,
+    "error_code_parity": true,
+    "canonical_hash_parity": true,
+    "receipt_format_parity": true,
+    "f402_parity": true,
+    "fiber_rpc_semantics_parity": true,
+    "production_operations": true,
+    "production_operations_report": "reports/production-operations-matrix.json",
+    "rust_gateway_production_path": true,
+    "testnet_fiber_e2e": true,
+    "canonical_engine": "rust",
+    "typescript_role": "sdk-evidence-f402-compat-vector-harness",
+    "production_ready_for_fiber_method": true,
+    "production_blockers": [],
+    "mismatches": []
+  },
+  "artifacts": {
+    "preflight": "reports/fiber-testnet-e2e/preflight.json",
+    "payer_doctor": "reports/fiber-testnet-e2e/doctor-payer.json",
+    "payee_doctor": "reports/fiber-testnet-e2e/doctor-payee.json",
+    "canonical_gate_log": "reports/fiber-testnet-e2e/canonical-gate.log",
+    "fiber_mpp_gate": "reports/fiber-mpp-gate.json",
+    "canonical_core_parity": "reports/canonical-core-parity.json",
+    "testnet_success": "reports/fiber-testnet-e2e-success.json",
+    "testnet_evidence": "reports/fiber-testnet-e2e-evidence.json"
+  }
+}
