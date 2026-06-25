@@ -13,6 +13,13 @@ node <<'JSON'
 const fs = require("node:fs");
 const conformance = JSON.parse(fs.readFileSync("reports/rust-conformance.json", "utf8"));
 const ops = JSON.parse(fs.readFileSync("reports/production-operations-matrix.json", "utf8"));
+const gatePath = "reports/fiber-mpp-gate.json";
+const gate = fs.existsSync(gatePath) ? JSON.parse(fs.readFileSync(gatePath, "utf8")) : {};
+const testnetFiberE2e = gate.testnet_fiber_e2e === true;
+const productionBlockers = [
+  ...(testnetFiberE2e ? [] : ["testnet Fiber E2E evidence still pending"]),
+  ...(ops.production_ops_ready === true ? [] : ["production operations hardening evidence incomplete"])
+];
 const report = {
   engine: "rust",
   canonical_engine: true,
@@ -33,6 +40,7 @@ const report = {
   },
   production_operations: ops.production_ops_ready === true,
   production_operations_report: "reports/production-operations-matrix.json",
+  testnet_fiber_e2e: testnetFiberE2e,
   rust_gateway_production_path: true,
   rust_gateway_evidence: {
     server_crate_tests: true,
@@ -47,11 +55,8 @@ const report = {
       "replay rejection"
     ]
   },
-  production_ready_for_fiber_method: false,
-  production_blockers: [
-    "testnet Fiber E2E evidence still pending",
-    ...(ops.production_ops_ready === true ? [] : ["production operations hardening evidence incomplete"])
-  ]
+  production_ready_for_fiber_method: productionBlockers.length === 0,
+  production_blockers: productionBlockers
 };
 fs.writeFileSync("reports/fiber-mpp-rust-gate.json", `${JSON.stringify(report, null, 2)}\n`);
 console.log(JSON.stringify(report, null, 2));

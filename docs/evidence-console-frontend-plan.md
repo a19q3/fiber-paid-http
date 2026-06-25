@@ -59,7 +59,7 @@ F402 compatibility: passed
 Production ready: false
 ```
 
-`production_ready_for_fiber_method` must remain `false` unless separate testnet Fiber E2E evidence and the Rust HTTP gateway production path are present.
+`production_ready_for_fiber_method` must remain `false` unless separate testnet Fiber E2E evidence is present.
 
 ## Information Architecture
 
@@ -590,7 +590,7 @@ The frontend is ready when:
 These are optional and should not be part of the hackathon-critical path:
 
 - Optional adapter that delegates client-side payment execution to `fiber-pay`.
-- Testnet evidence mode after the Rust HTTP gateway production path exists.
+- Testnet evidence mode after separate testnet Fiber E2E evidence exists.
 - Read-only link to an external Fiber Network Dashboard for deeper network inspection.
 - Exportable evidence bundle for auditors.
 

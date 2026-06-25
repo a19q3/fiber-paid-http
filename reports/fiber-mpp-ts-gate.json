@@ -24,7 +24,9 @@
   ],
   "f402_compatibility": true,
   "live_fiber_local_e2e": false,
+  "live_fiber_testnet_e2e": false,
   "testnet_fiber_e2e": false,
+  "testnet_fiber_e2e_evidence": false,
   "local_fiber_e2e_evidence": true,
   "fiber_commit": "3c25bcf16200e5d641dcd9b79f086f391e976172",
   "toolchain_shims_used": [

@@ -57,4 +57,4 @@ bash scripts/fiber_mpp_gate.sh
 
 ## Submission readiness
 
-Ready for local Fiber evidence collection when the local 3-node network is running. Not ready to claim production readiness until testnet Fiber E2E evidence and the Rust HTTP gateway production implementation are complete.
+Ready for local Fiber evidence collection when the local 3-node network is running. Not ready to claim production readiness until separate testnet Fiber E2E evidence is complete.

@@ -164,6 +164,13 @@ if (fiberStatus === "failed" && fiberError && fiberBlockers.length === 0) {
 const fiberMode = result.fiber_e2e_mode || process.env.FIBER_E2E_MODE || "skipped";
 const liveFiberLocalE2e = fiberStatus === "passed" && fiberMode === "local";
 const liveFiberTestnetE2e = fiberStatus === "passed" && fiberMode === "testnet";
+const selectedLiveAttemptFailed = liveSelected && fiberStatus === "failed";
+const testnetFiberE2eEvidence =
+  !selectedLiveAttemptFailed &&
+  (liveFiberTestnetE2e ||
+    previousReport.testnet_fiber_e2e === true ||
+    previousReport.testnet_fiber_e2e_evidence === true ||
+    fs.existsSync("reports/fiber-testnet-e2e-success.json"));
 const localFiberE2eEvidence =
   liveFiberLocalE2e ||
   previousReport.live_fiber_local_e2e === true ||
@@ -171,7 +178,7 @@ const localFiberE2eEvidence =
 const evidencePaymentHash = result.fiber_e2e_payment_hash || previousReport.fiber_e2e_payment_hash;
 const evidenceReceiptId = result.fiber_e2e_receipt_id || previousReport.fiber_e2e_receipt_id;
 let productionBlockers;
-if (liveFiberTestnetE2e) {
+if (testnetFiberE2eEvidence) {
   productionBlockers = withProductionBlockers([
     ...opsBlockers
   ]);
@@ -187,6 +194,7 @@ if (liveFiberTestnetE2e) {
 } else {
   productionBlockers = withProductionBlockers([...fiberBlockers, ...opsBlockers]);
 }
+const productionReady = testnetFiberE2eEvidence && productionBlockers.length === 0 && opsReady;
 
 function readIfExists(path) {
   return fs.existsSync(path) ? fs.readFileSync(path, "utf8") : "";
@@ -248,11 +256,13 @@ const report = {
   fiber_e2e_blockers: fiberBlockers,
   f402_compatibility: bool("F402_COMPATIBILITY"),
   live_fiber_local_e2e: liveFiberLocalE2e,
-  testnet_fiber_e2e: liveFiberTestnetE2e,
+  live_fiber_testnet_e2e: liveFiberTestnetE2e,
+  testnet_fiber_e2e: testnetFiberE2eEvidence,
+  testnet_fiber_e2e_evidence: testnetFiberE2eEvidence,
   local_fiber_e2e_evidence: localFiberE2eEvidence,
   fiber_commit: readFiberCommit(),
   toolchain_shims_used: detectToolchainShimsUsed(),
-  production_ready_for_fiber_method: false,
+  production_ready_for_fiber_method: productionReady,
   production_blockers: productionBlockers
 };
 if (fiberError) {
@@ -282,6 +292,17 @@ if (liveFiberLocalE2e) {
     receipt_id: report.fiber_e2e_receipt_id,
     fiber_commit: report.fiber_commit,
     production_ready_for_fiber_method: false,
+    blockers: productionBlockers
+  }, null, 2)}\n`);
+} else if (liveFiberTestnetE2e) {
+  fs.writeFileSync("reports/fiber-testnet-e2e-success.json", `${JSON.stringify(report, null, 2)}\n`);
+  fs.writeFileSync("reports/fiber-testnet-e2e-evidence.json", `${JSON.stringify({
+    evidence: true,
+    source_report: "reports/fiber-mpp-gate.json",
+    payment_hash: report.fiber_e2e_payment_hash,
+    receipt_id: report.fiber_e2e_receipt_id,
+    fiber_commit: report.fiber_commit,
+    production_ready_for_fiber_method: productionReady,
     blockers: productionBlockers
   }, null, 2)}\n`);
 } else if (fs.existsSync("reports/fiber-local-e2e-success.json")) {

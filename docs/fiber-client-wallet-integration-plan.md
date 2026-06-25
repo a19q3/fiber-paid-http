@@ -4,6 +4,30 @@ Status: decision record for FiberMPP integration boundaries.
 
 Last checked: 2026-06-25.
 
+## Audit Conclusion
+
+Best path for FiberMPP:
+
+```text
+Production server/payee: native FNN JSON-RPC + FNN built-in wallet
+Programmatic payer/agent: native FNN JSON-RPC + FNN built-in wallet
+Optional ops/client helper: fiber-pay, outside the trusted verifier path
+Browser self-custody: fiber-pay/react or fiber-js WASM node, later
+External wallet: CCC/WalletConnect only for CKB channel funding signatures
+```
+
+Do not model WalletConnect as a Fiber payment provider. A wallet connector can
+sign CKB transactions, but it does not maintain Fiber channel state, gossip,
+route discovery, invoice settlement, or `send_payment` execution. The thing that
+pays a Fiber invoice must be a Fiber node: native FNN, browser/Node `fiber-js`,
+or a tool such as `fiber-pay` that controls one of those nodes.
+
+The immediate production baseline should therefore remain direct FNN JSON-RPC
+with the FNN built-in wallet. This is the smallest trusted surface and matches
+FiberMPP's current live local E2E evidence path. Browser wallets and
+WalletConnect-style flows belong to channel funding and payer UX, not to gateway
+verification.
+
 FiberMPP should integrate with Fiber clients without becoming a wallet, checkout product, or node dashboard. The production payment truth remains:
 
 ```text
@@ -17,6 +41,7 @@ Payer UX can be pluggable, but the server-side trusted boundary must not depend 
 - Fiber official quick start: native FNN is recommended for production services, server deployments, persistent storage, and full control. It exposes `fnn-cli` and raw JSON-RPC.
 - Fiber official WASM docs: `@nervosnetwork/fiber-js` can run a browser/Node.js Fiber node with IndexedDB persistence in browser contexts. It requires cross-origin isolation because it uses `SharedArrayBuffer`.
 - Fiber official native-node docs: FNN includes built-in wallet functionality for signing funding transactions. Nodes require `FIBER_SECRET_KEY_PASSWORD` at startup, and the node data directory stores key/channel state.
+- Fiber official backup docs: the entire node directory and `FIBER_SECRET_KEY_PASSWORD` are operationally critical; `ckb/key`, `fiber/sk`, and `fiber/store` must be backed up with the node stopped or under a crash-consistent snapshot.
 - Fiber public-node docs: a private local node can connect to public relay nodes and route payments without exposing a public address.
 - Fiber external funding support: `open_channel_with_external_funding` and `submit_signed_funding_tx` move CKB funding transaction signing to an external wallet, while preserving Fiber channel negotiation and payment execution in the node.
 - `fiber-pay` local checkout and README: current package split is `@fiber-pay/cli`, `@fiber-pay/sdk`, `@fiber-pay/react`, `@fiber-pay/runtime`, `@fiber-pay/node`, and experimental `@fiber-pay/agent`.
@@ -28,9 +53,11 @@ Source links:
 - <https://www.fiber.world/docs/quick-start/run-a-node>
 - <https://www.fiber.world/docs/quick-start/run-a-node/rust>
 - <https://www.fiber.world/docs/quick-start/run-a-node/fiberjs>
+- <https://www.fiber.world/docs/operate/backup>
 - <https://github.com/nervosnetwork/fiber/blob/develop/docs/public-nodes.md>
 - <https://github.com/nervosnetwork/fiber/pull/1120>
 - <https://github.com/RetricSu/fiber-pay>
+- <https://talk.nervos.org/t/fiber-pay-an-ai-friendly-cli-for-fiber-network/9974>
 - <https://docs.nervos.org/docs/integrate-wallets/ccc-wallet>
 
 ## Current Facts
@@ -43,7 +70,7 @@ Source links:
   - `get_payment`
   - `get_invoice`
 - Fiber also supports `fiber-js`, a WASM node that can run in browser or Node.js, with IndexedDB persistence in browser contexts.
-- `fiber-pay` targets Fiber `v0.9.0-rc4` and provides:
+- `fiber-pay` has tracked Fiber `v0.9.0-rc4` and provides:
   - `@fiber-pay/cli`
   - `@fiber-pay/sdk`
   - `@fiber-pay/react`
@@ -67,6 +94,69 @@ Source links:
 | CCC external wallet | No | Yes, for CKB transaction signing | User wallet | Connects JoyID/OKX/UniSat/MetaMask/etc.; signs funding txs | Does not execute Fiber `send_payment` | Best way to fund/open channels for browser/native payer nodes |
 | Raw WalletConnect/Reown | No | Maybe, only if the target wallet/chain adapter can sign the required CKB tx | User wallet | Broad generic wallet transport | Not Fiber-native, not CKB/Fiber semantics by itself, extra integration risk | Avoid as first-class path; use only through CCC or target-wallet adapter |
 | Hosted/custodial payer node | Yes, through hosted FNN | Yes | Third-party/operator custody | Zero-install API-consumer UX | Custody, limits, KYC/risk, abuse controls, balance accounting | Future product option, not current protocol core |
+
+## Recommended Default UX
+
+### Merchant / Payee
+
+Use a managed native FNN with its built-in wallet:
+
+```text
+merchant API -> FiberMPP Rust gateway -> private payee FNN RPC -> FNN built-in wallet
+```
+
+Why this wins:
+
+- It is the only production-shaped path with minimal moving parts.
+- It keeps invoice creation and settlement inspection inside the same private node boundary.
+- It avoids browser wallet availability, remote hosted wallet custody, and WalletConnect chain support ambiguity.
+
+Operational obligations:
+
+- Store `FIBER_SECRET_KEY_PASSWORD` in a secret manager.
+- Back up the full FNN data directory, including `ckb/key`, `fiber/sk`, `fiber/store`, config, and logs.
+- Keep FNN RPC on loopback or a private network with auth/firewalling.
+- Monitor peer count, `ChannelReady` channels, liquidity, invoice settlement, and FiberMPP receipt issuance.
+
+### Programmatic Payer / Agent
+
+Use a payer-owned native FNN first:
+
+```text
+agent / CLI -> payer FNN RPC -> send_payment -> FiberMPP Authorization: Payment
+```
+
+`fiber-pay` can improve bootstrap and automation here, but it should remain a
+client-side or ops-side companion. FiberMPP should still accept the same
+`fiber-payment-proof-v1` shape and verify settlement through Fiber RPC.
+
+### Browser User
+
+Use browser self-custody later, only after explicit E2E evidence:
+
+```text
+browser -> fiber-pay/react or fiber-js -> WASM Fiber node -> send_payment
+```
+
+This is the best long-term wallet-like UX because the browser actually runs a
+Fiber node. It should be lazy-loaded and isolated because it requires
+cross-origin isolation, WASM assets, IndexedDB persistence, browser-reachable
+`/ws/` or `/wss/` peers, and clear backup/recovery language.
+
+### External Wallet / WalletConnect User
+
+Use CCC/WalletConnect only to sign channel funding transactions:
+
+```text
+CCC wallet signer
+  -> sign unsigned_funding_tx
+  -> FNN submit_signed_funding_tx
+  -> ChannelReady
+  -> FNN/WASM node pays Fiber invoices
+```
+
+This should be labeled "external channel funding", not "WalletConnect payment".
+The payment executor remains the Fiber node.
 
 ## Decision Matrix
 
@@ -151,7 +241,7 @@ This is the best path now because it is the only path already proven end-to-end 
 Required work:
 
 - Keep `FIBER_PAYEE_RPC_URL` / `FIBER_PAYER_RPC_URL` direct FNN RPC as the primary config.
-- Add docs for built-in-wallet key import/export, `FIBER_SECRET_KEY_PASSWORD`, node data backups, and channel state backup risk.
+- Keep docs for built-in-wallet key import/export, `FIBER_SECRET_KEY_PASSWORD`, node data backups, and channel state backup risk current with upstream Fiber docs.
 - Add testnet E2E evidence with two funded FNN nodes.
 - Add gateway runbook entries for Fiber node health, channel liquidity, peer readiness, and RPC auth.
 
@@ -182,7 +272,7 @@ Integration shape:
 ```text
 fiber-mpp doctor --role payer
   -> detect FIBER_PAYER_RPC_URL first
-  -> optionally detect fiber-pay profile/node status
+  -> optionally detect fiber-pay profile/node status later
   -> report readiness
 
 fiber-mpp pay

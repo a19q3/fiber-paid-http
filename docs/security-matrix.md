@@ -11,4 +11,4 @@ This matrix is generated as JSON by `pnpm exec fiber-mpp vectors generate` at `r
 | expired challenge | `expired-challenge` | `tests/integration/full-flow.test.ts`, `tests/unit/middleware.test.ts`, and vector verification | `test-vectors/attack.expired-challenge.json` | covered |
 | tampered receipt | `bad-receipt-signature` | vector verification | `test-vectors/attack.tampered-receipt.json` | covered |
 
-Production readiness remains blocked after local-only Fiber evidence. The gate must keep `production_ready_for_fiber_method: false` until testnet Fiber E2E evidence and the Rust HTTP gateway production path are present.
+Production readiness remains blocked after local-only Fiber evidence. The gate must keep `production_ready_for_fiber_method: false` until separate testnet Fiber E2E evidence is present.

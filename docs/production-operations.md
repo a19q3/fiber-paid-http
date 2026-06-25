@@ -2,7 +2,7 @@
 
 This runbook covers the production operations pieces that are outside the protocol verifier: alerting, Fiber node backup/restore, trusted RPC/network binding, and paid-but-denied reconciliation.
 
-Production readiness still requires separate testnet Fiber E2E evidence and the Rust HTTP gateway production implementation. Local E2E plus this runbook is not enough to set `production_ready_for_fiber_method` to `true`.
+Production readiness still requires separate testnet Fiber E2E evidence. Local E2E plus this runbook is not enough to set `production_ready_for_fiber_method` to `true`.
 
 ## Operating Model
 
@@ -190,4 +190,3 @@ Use [fiber-client-wallet-integration-plan.md](fiber-client-wallet-integration-pl
 - Browser WASM plus passkey/password is the long-term self-custody payer path.
 - CCC/WalletConnect is only for CKB transaction signing such as external channel funding.
 - WalletConnect is not a first-class Fiber payment provider because it does not own Fiber channel state or execute `send_payment`.
-

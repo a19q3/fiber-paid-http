@@ -1,6 +1,6 @@
 # FiberMPP
 
-FiberMPP is a production-targeted Fiber payment method for Machine Payments Protocol, with F402 compatibility for Fiber-native HTTP 402 applications. It is not production-ready yet: local Fiber E2E evidence and production operations runbooks exist, while separate testnet evidence and the Rust HTTP gateway production implementation remain pending.
+FiberMPP is a production-targeted Fiber payment method for Machine Payments Protocol, with F402 compatibility for Fiber-native HTTP 402 applications. It is not production-ready yet: local Fiber E2E evidence, the Rust HTTP gateway path, and production operations runbooks exist, while separate testnet evidence remains pending.
 
 FiberMPP lets services accept Fiber through one HTTP 402 challenge, credential, and receipt flow.
 
@@ -59,6 +59,12 @@ export FIBER_MPP_SECRET="$(openssl rand -hex 32)"
 pnpm exec fiber-mpp doctor --role payer
 pnpm exec fiber-mpp doctor --role payee
 pnpm test:fiber
+```
+
+Once the payer/payee testnet nodes are funded, connected, and `ChannelReady`, the same evidence path can be run through:
+
+```bash
+scripts/fiber_testnet_e2e.sh
 ```
 
 See [docs/bootstrap.md](docs/bootstrap.md), [docs/production-operations.md](docs/production-operations.md), [docs/fiber-client-wallet-integration-plan.md](docs/fiber-client-wallet-integration-plan.md), [docs/fiber-local-e2e.md](docs/fiber-local-e2e.md), and [docs/fiber-testnet-e2e.md](docs/fiber-testnet-e2e.md) for gateway, payer, payee, operations, wallet/client boundaries, local evidence, and testnet evidence steps.
@@ -126,4 +132,4 @@ fiber-mpp evidence start --port 8787
 bash scripts/fiber_mpp_gate.sh
 ```
 
-The gate writes `reports/fiber-mpp-gate.json` and stays honest about skipped, local, and testnet modes. Production readiness must remain false until a real testnet Fiber E2E pass and the Rust HTTP gateway production path are recorded.
+The gate writes `reports/fiber-mpp-gate.json` and stays honest about skipped, local, and testnet modes. Production readiness must remain false until a real testnet Fiber E2E pass is recorded.

@@ -54,6 +54,12 @@ const fiberRpcSemanticsParity = fiberMethods.every((method) => tsSource.includes
 const receiptVectors = ["receipt.valid.json", "fiber.local-e2e.receipt.json"];
 const f402Vectors = ["f402.challenge.valid.json", "f402.credential.valid.json"];
 const vectorPassed = (report, file) => report.results.some((result) => result.file === file && result.passed);
+const testnetFiberE2e = gate.testnet_fiber_e2e === true;
+const productionBlockers = [
+  ...(testnetFiberE2e ? [] : ["testnet Fiber E2E evidence still pending"]),
+  ...(ops.production_ops_ready === true ? [] : ["production operations hardening evidence incomplete"])
+];
+const productionReady = productionBlockers.length === 0;
 const report = {
   rust_canonical_verifier: rust.failed === 0,
   typescript_vector_harness: ts.failed === 0,
@@ -69,14 +75,11 @@ const report = {
   production_operations: ops.production_ops_ready === true,
   production_operations_report: "reports/production-operations-matrix.json",
   rust_gateway_production_path: true,
-  testnet_fiber_e2e: gate.testnet_fiber_e2e === true,
+  testnet_fiber_e2e: testnetFiberE2e,
   canonical_engine: "rust",
   typescript_role: "sdk-evidence-f402-compat-vector-harness",
-  production_ready_for_fiber_method: false,
-  production_blockers: [
-    "testnet Fiber E2E evidence still pending",
-    ...(ops.production_ops_ready === true ? [] : ["production operations hardening evidence incomplete"])
-  ],
+  production_ready_for_fiber_method: productionReady,
+  production_blockers: productionBlockers,
   mismatches
 };
 
@@ -97,7 +100,8 @@ if (
   !report.fiber_rpc_semantics_parity ||
   !report.production_operations ||
   report.canonical_engine !== "rust" ||
-  report.production_ready_for_fiber_method !== false
+  report.production_ready_for_fiber_method !== productionReady ||
+  (report.production_ready_for_fiber_method === true && report.production_blockers.length > 0)
 ) {
   process.exit(1);
 }

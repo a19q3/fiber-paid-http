@@ -144,7 +144,29 @@ export FIBER_SETTLEMENT_POLL_MS=500
 pnpm test:fiber
 ```
 
-When this passes, preserve the generated report and copy the evidence into the gate reports before changing any production readiness claim. Local E2E alone is not enough.
+The reproducible evidence runner wraps the same env, role doctors, live Fiber test, and canonical gate:
+
+```bash
+cd /home/arthur/a19q3/fiber-mpp
+
+export FIBER_PAYER_RPC_URL=http://127.0.0.1:8227
+export FIBER_PAYEE_RPC_URL=http://127.0.0.1:8237
+scripts/fiber_testnet_e2e.sh
+```
+
+It writes:
+
+```text
+reports/fiber-testnet-e2e/preflight.json
+reports/fiber-testnet-e2e/doctor-payer.json
+reports/fiber-testnet-e2e/doctor-payee.json
+reports/fiber-testnet-e2e/canonical-gate.log
+reports/fiber-testnet-e2e/testnet-e2e-report.json
+reports/fiber-testnet-e2e-success.json
+reports/fiber-testnet-e2e-evidence.json
+```
+
+When this passes, the gate may set `production_ready_for_fiber_method: true`. Local E2E alone is not enough.
 
 ## Evidence Criteria
 

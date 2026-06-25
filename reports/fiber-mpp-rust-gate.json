@@ -23,6 +23,7 @@
   },
   "production_operations": true,
   "production_operations_report": "reports/production-operations-matrix.json",
+  "testnet_fiber_e2e": false,
   "rust_gateway_production_path": true,
   "rust_gateway_evidence": {
     "server_crate_tests": true,
