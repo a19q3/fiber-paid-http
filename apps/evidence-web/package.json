@@ -1,0 +1,37 @@
+{
+  "name": "@fiber-mpp/evidence-web",
+  "version": "0.2.0",
+  "type": "module",
+  "description": "FiberMPP evidence console UI (React + Vite).",
+  "exports": {
+    ".": {
+      "types": "./server.d.ts",
+      "import": "./server.mjs"
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.json --noEmit && vite build && node scripts/check-static.mjs",
+    "lint": "tsc -p tsconfig.json --noEmit && vite build && node scripts/check-static.mjs",
+    "check-static": "node scripts/check-static.mjs",
+    "check-layout": "node scripts/check-layout.mjs",
+    "check-action-coverage": "node scripts/check-action-coverage.mjs",
+    "check-browser-smoke": "node scripts/check-browser-smoke.mjs",
+    "check-cli-start": "node scripts/check-cli-start.mjs",
+    "check-server": "node scripts/check-server.mjs",
+    "sync-icons": "echo 'icons managed by lucide-react imports'",
+    "start": "node server.mjs"
+  },
+  "dependencies": {
+    "lucide-react": "^1.21.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "vite": "^7.3.5"
+  }
+}
