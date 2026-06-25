@@ -4,7 +4,7 @@
 
 FiberMPP uses Rust as the canonical protocol core and verifier target. TypeScript remains a maintained JS ecosystem integration layer for SDKs, demos, examples, F402/MPP compatibility, and vector tooling. The project has local Fiber E2E evidence, shared conformance vectors, a security matrix, and canonical parity gates.
 
-It is still not production-ready for live Fiber settlement. The Rust `fiber-mpp-server` crate is currently a visible HTTP 402 gateway prototype; challenge issuance, durable storage, method adapter wiring, and production gateway behavior are not feature-complete there.
+It is still not production-ready for live Fiber settlement because separate testnet Fiber E2E evidence is pending. The Rust HTTP gateway production path now implements signed 402 challenge issuance, durable SQLite storage, Fiber method adapter wiring, receipt issuance, and replay rejection, but readiness remains false until testnet evidence proves the path outside the local network.
 
 ## Ready
 
@@ -20,6 +20,12 @@ It is still not production-ready for live Fiber settlement. The Rust `fiber-mpp-
 - SQLite receipt export and receipt-signature audit commands.
 - Paid-but-denied delivery outcome audit records for redeemed credentials whose upstream handler fails or returns a server error.
 - Gateway signing secret rotation window: new challenges/receipts are signed with the current `secret_env`, while stored challenges and receipt audits can verify configured `previous_secret_envs`.
+- Production operations runbook and alert rules are present and gate-checked:
+  - `docs/production-operations.md`
+  - `deploy/prometheus/fiber-mpp-alerts.yml`
+  - `reports/production-operations-matrix.json`
+- Fiber node backup/restore, trusted network binding, and paid-but-denied reconciliation policy are documented in the production operations runbook.
+- Client/wallet integration boundaries are documented so direct FNN JSON-RPC remains the production default, `fiber-pay` remains optional payer/ops tooling, and CCC/WalletConnect is limited to external CKB funding/signing.
 - Replay protection.
 - Resource/method/amount binding tests.
 - Explicit local/testnet Fiber settlement status.
@@ -27,15 +33,11 @@ It is still not production-ready for live Fiber settlement. The Rust `fiber-mpp-
 - TypeScript CLI and Rust `fiber-mpp-rs` CLI.
 - Local Fiber E2E evidence from the 3-node network.
 - Rust canonical vector verification with TypeScript harness parity.
-- Rust HTTP gateway prototype returns visible `402 Payment Required` responses.
+- Rust HTTP gateway production path issues signed `402 Payment Required` challenges, creates Fiber invoices through FNN JSON-RPC, verifies settlement, records durable challenge/credential/receipt state, emits `Payment-Receipt`, and rejects replay.
 
 ## Blockers before live production
 
 - Add separate testnet Fiber E2E evidence.
-- Complete Rust HTTP gateway challenge issuance, storage, method adapter wiring, and receipt issuance before treating Rust server paths as production.
-- Complete production alerting/runbooks.
-- Complete Fiber node backup/restore procedure and trusted network binding.
-- Decide the business compensation policy for paid-but-denied cases after the gateway records failed delivery outcomes.
 
 ## Gate
 
@@ -56,6 +58,7 @@ reports/canonical-core-parity.json
 reports/fiber-mpp-gate.default.json
 reports/fiber-mpp-gate.local.json
 reports/fiber-local-e2e-evidence.json
+reports/production-operations-matrix.json
 ```
 
 All production reports must keep:

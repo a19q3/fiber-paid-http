@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use std::time::Duration;
 use thiserror::Error;
 
 pub const NEW_INVOICE_METHOD: &str = "new_invoice";
@@ -13,6 +14,12 @@ pub enum FiberRpcError {
     InvalidQuantity,
     #[error("missing payment hash")]
     MissingPaymentHash,
+    #[error("http error: {0}")]
+    Http(#[from] reqwest::Error),
+    #[error("fiber rpc {method} failed: {message}")]
+    Rpc { method: String, message: String },
+    #[error("fiber rpc {method} response did not include result")]
+    MissingResult { method: String },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -87,6 +94,59 @@ pub fn extract_invoice_payment_hash(invoice: &Value) -> Result<String, FiberRpcE
         .or_else(|| invoice.get("payment_hash").and_then(Value::as_str))
         .map(ToString::to_string)
         .ok_or(FiberRpcError::MissingPaymentHash)
+}
+
+#[derive(Debug, Clone)]
+pub struct FiberRpcClient {
+    url: String,
+    auth: Option<String>,
+    client: reqwest::Client,
+}
+
+impl FiberRpcClient {
+    pub fn new(url: impl Into<String>, auth: Option<String>) -> Self {
+        Self {
+            url: url.into(),
+            auth,
+            client: reqwest::Client::builder().timeout(Duration::from_secs(30)).build().expect("reqwest client"),
+        }
+    }
+
+    pub async fn request(&self, method: &str, params: Vec<Value>) -> Result<Value, FiberRpcError> {
+        let mut request = self.client.post(&self.url).json(&json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": method,
+            "params": params
+        }));
+        if let Some(auth) = &self.auth {
+            request = request.header(reqwest::header::AUTHORIZATION, auth);
+        }
+        let payload: Value = request.send().await?.error_for_status()?.json().await?;
+        if let Some(error) = payload.get("error") {
+            return Err(FiberRpcError::Rpc {
+                method: method.to_string(),
+                message: error.get("message").and_then(Value::as_str).map(ToString::to_string).unwrap_or_else(|| error.to_string()),
+            });
+        }
+        payload.get("result").cloned().ok_or_else(|| FiberRpcError::MissingResult { method: method.to_string() })
+    }
+
+    pub async fn new_invoice(&self, amount: &str, currency: &str, expiry_seconds: Option<u64>) -> Result<Value, FiberRpcError> {
+        self.request(NEW_INVOICE_METHOD, vec![new_invoice_params(amount, currency, expiry_seconds)?]).await
+    }
+
+    pub async fn get_invoice(&self, payment_hash: &str) -> Result<Value, FiberRpcError> {
+        self.request(GET_INVOICE_METHOD, vec![get_invoice_params(payment_hash)]).await
+    }
+
+    pub async fn send_payment(&self, invoice: &str, timeout_seconds: Option<u64>) -> Result<Value, FiberRpcError> {
+        self.request(SEND_PAYMENT_METHOD, vec![send_payment_params(invoice, timeout_seconds)]).await
+    }
+
+    pub async fn get_payment(&self, payment_hash: &str) -> Result<Value, FiberRpcError> {
+        self.request(GET_PAYMENT_METHOD, vec![get_payment_params(payment_hash)]).await
+    }
 }
 
 #[cfg(test)]

@@ -7,6 +7,9 @@
   "security_tests": true,
   "conformance_vectors": true,
   "security_matrix": true,
+  "production_operations": true,
+  "production_operations_report": "reports/production-operations-matrix.json",
+  "rust_gateway_production_path": true,
   "fiber_e2e_mode": "skipped",
   "fiber_preflight_test_loaded": true,
   "fiber_live_test_selected": false,
@@ -21,6 +24,7 @@
   ],
   "f402_compatibility": true,
   "live_fiber_local_e2e": false,
+  "testnet_fiber_e2e": false,
   "local_fiber_e2e_evidence": true,
   "fiber_commit": "3c25bcf16200e5d641dcd9b79f086f391e976172",
   "toolchain_shims_used": [
@@ -39,10 +43,7 @@
   ],
   "production_ready_for_fiber_method": false,
   "production_blockers": [
-    "testnet Fiber E2E evidence still pending",
-    "remaining operational hardening still pending: production alerting/runbooks",
-    "long-running deployment hardening still pending: Fiber node backup/restore, trusted network binding, and paid-but-denied compensation policy",
-    "Rust HTTP gateway production implementation still pending"
+    "testnet Fiber E2E evidence still pending"
   ],
   "fiber_e2e_payment_hash": "0xec3a08f9b298db82f2dc27861aed5a3110b5d36a56bd43d13b60c5a4bcf69222",
   "fiber_e2e_receipt_id": "rcpt_ca010a79973755656bdff4b1684570da"

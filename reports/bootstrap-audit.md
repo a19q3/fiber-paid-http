@@ -10,7 +10,7 @@ Initial finding: the bootstrap gap was large.
 
 Before this fix pass, FiberMPP had a credible local evidence bootstrap for maintainers, but it did not have a usable production-oriented bootstrap for users, merchants, or administrators. The only real HTTP gateway path was the TypeScript reverse proxy command, and that path required live Fiber RPC environment variables without guidance, readiness validation, config generation, strict secret handling, route/channel checks, or admin lifecycle operations.
 
-The Rust side is correctly labeled as canonical verification work, but its `server` command only inspects config and the Rust gateway only returns a visible 402 placeholder. It is not an admin bootstrap path.
+The Rust side is now the canonical gateway path: `fiber-mpp-rs server --config` starts the Rust HTTP gateway, issues signed 402 challenges, creates Fiber invoices, verifies settlement, records durable SQLite state, emits `Payment-Receipt`, and rejects replay.
 
 ## Fix Status
 
@@ -25,9 +25,11 @@ This pass closes the most dangerous bootstrap gaps without adding product featur
 - Removed default live-capable signing secrets from TypeScript gateway/demo runtime and Rust receipt verification.
 - Added gateway CORS allow-list enforcement, request body limiting, protected-route rate limiting, health/readiness/metrics endpoints, structured JSON request logs, and graceful shutdown.
 - Added SQLite WAL/busy-timeout initialization plus `fiber-mpp storage backup`, `fiber-mpp storage restore`, `fiber-mpp storage export-receipts`, and `fiber-mpp storage audit-receipts`.
+- Added production operations evidence: Prometheus alert rules, operator runbook, Fiber node backup/restore guidance, trusted network binding policy, paid-but-denied reconciliation policy, and a gate-checked operations matrix.
+- Added the Rust HTTP gateway production path and wired `fiber-mpp-rs server --config` to run it.
 - Added [docs/bootstrap.md](../docs/bootstrap.md).
 
-Remaining gaps are testnet evidence, route/balance diagnostics beyond peer/channel readiness, production alerting/runbooks, paid-but-denied compensation policy, Fiber node backup/restore, trusted network binding, and the Rust production gateway.
+The remaining production blocker is separate testnet Fiber E2E evidence. Route/balance diagnostics beyond peer/channel readiness remain useful follow-up hardening, but they are no longer listed as production readiness blockers in the gate.
 
 ## Role Matrix
 
@@ -35,7 +37,7 @@ Remaining gaps are testnet evidence, route/balance diagnostics beyond peer/chann
 | --- | --- | --- | --- |
 | End user / payer | Install client, configure payer Fiber node, pay a 402 URL, diagnose missing route/funds | `fiber-mpp doctor --role payer` now reports env/RPC blockers before `fiber-mpp pay` | Partial |
 | Merchant / resource owner | Initialize app config, set price/resource/upstream, bind payee node, start gateway, rotate secret | `fiber-mpp init --role gateway`, `doctor --role gateway`, `serve --config`, and `previous_secret_envs` rotation windows now exist | Partial |
-| Admin / operator | Provision storage, secret, Fiber RPC auth, CORS, logs, backups, metrics, health checks | Secret/storage/RPC bootstrap, env-based RPC auth, redacted logs, metrics, health checks, rate limiting, SQLite schema checks, backup/restore, receipt export/audit, and delivery outcome audit now exist; alerting/runbooks remain pending | Partial |
+| Admin / operator | Provision storage, secret, Fiber RPC auth, CORS, logs, backups, metrics, health checks | Secret/storage/RPC bootstrap, env-based RPC auth, redacted logs, metrics, health checks, rate limiting, SQLite schema checks, backup/restore, receipt export/audit, delivery outcome audit, alert rules, runbook, and operations matrix now exist | Mostly usable |
 | Fiber node operator | Start/fund/connect local/testnet payer/payee nodes and prove channels | Local maintainer script exists; testnet bootstrap is manual and underspecified | Partial |
 | Maintainer | Reproduce local E2E, vectors, reports, gates | Good local path and gates exist | Mostly usable |
 
@@ -99,11 +101,11 @@ Impact:
 - Admins cannot use config files to bootstrap a real server.
 - Config review/audit gives false confidence because the file is syntactically accepted but semantically unused.
 
-### B4. Rust `server --config` is config inspection only
+### B4. Rust `server --config` was config inspection only
 
 Severity: P1
 
-Rust is the canonical verifier direction, but it is not a production bootstrap path yet.
+At the time of the original audit, Rust was the canonical verifier direction but was not a production bootstrap path yet.
 
 Evidence:
 
@@ -115,6 +117,11 @@ Evidence:
 Impact:
 
 - There is no Rust admin bootstrap despite Rust being the intended trusted boundary.
+
+Current fix:
+
+- `fiber-mpp-rs server --config` now calls `fiber_mpp_server::serve_config`.
+- `crates/fiber-mpp-server` now builds a production gateway router with signed challenges, Fiber invoice creation, payment verification, durable SQLite storage, receipt issuance, and replay rejection.
 
 ### B5. Demo bootstrap requires `RUN_FIBER_E2E=1`
 
@@ -238,7 +245,7 @@ Observed:
 - `serve` without env exits with `FIBER_MODE must be set to local or testnet`.
 - `pay` without env exits with `FIBER_MODE must be set to local or testnet`.
 - TypeScript `server --config` starts the demo API and ignores config fields.
-- Rust `server --config` returns `status: config-ok` only.
+- Rust `server --config` now starts the gateway; pre-fix it returned `status: config-ok` only.
 - `refs init` only skips existing reference files in this repo.
 
 ## Recommended Fix Order
@@ -246,9 +253,9 @@ Observed:
 1. Add `fiber-mpp bootstrap doctor` or `fiber-mpp doctor --role payer|payee|gateway` that reports exact blockers before payment or serving.
 2. Make `fiber-mpp serve` require `FIBER_MPP_SECRET`; remove default secret from live-capable paths.
 3. Add `fiber-mpp init --role gateway` that writes a config template containing storage, server id, upstream, resource routes, Fiber RPC URLs, auth, and secret file reference.
-4. Make `fiber-mpp server --config` either apply the config or rename it to `server inspect-config`.
+4. Fixed: make `fiber-mpp server --config` apply the config instead of silently ignoring it; make `fiber-mpp-rs server --config` start the Rust gateway.
 5. Add explicit payer bootstrap docs and commands: RPC reachability, node info, channel route, balance/funds, invoice-payment dry run if Fiber supports it.
-6. Add remaining merchant/admin docs: Fiber node backup/restore, alerting, trusted network binding, and paid-but-denied compensation policy.
+6. Add remaining merchant/admin docs: Fiber node backup/restore, alerting, trusted network binding, and paid-but-denied compensation policy. Fixed by [docs/production-operations.md](../docs/production-operations.md) and `reports/production-operations-matrix.json`.
 7. Keep local network scripts under maintainer/dev evidence docs only; do not present them as user/admin onboarding.
 
 ## Bottom Line

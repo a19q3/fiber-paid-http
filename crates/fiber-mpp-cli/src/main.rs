@@ -56,16 +56,13 @@ struct ServerArgs {
     config: PathBuf,
 }
 
-fn main() -> Result<()> {
+#[tokio::main]
+async fn main() -> Result<()> {
     match Cli::parse().command {
         Commands::Vectors { command: VectorCommands::Verify } => vectors_verify(),
         Commands::Receipt { command: ReceiptCommands::Verify { file, secret } } => receipt_verify(&file, secret),
         Commands::Challenge { command: ChallengeCommands::Inspect { file } } => challenge_inspect(&file),
-        Commands::Server(args) => {
-            let report = fiber_mpp_server::inspect_config(args.config)?;
-            println!("{}", serde_json::to_string_pretty(&report)?);
-            Ok(())
-        }
+        Commands::Server(args) => fiber_mpp_server::serve_config(args.config).await.map_err(Into::into),
         Commands::Doctor => {
             println!(
                 "{}",

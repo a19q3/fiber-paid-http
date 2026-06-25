@@ -17,11 +17,14 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 cargo run -p fiber-mpp-cli -- vectors verify
 bash scripts/fiber_mpp_rust_gate.sh
+bash scripts/fiber_mpp_ops_gate.sh
 
 node <<'JSON'
 const fs = require("node:fs");
 const ts = JSON.parse(fs.readFileSync("reports/ts-conformance.json", "utf8"));
 const rust = JSON.parse(fs.readFileSync("reports/rust-conformance.json", "utf8"));
+const ops = JSON.parse(fs.readFileSync("reports/production-operations-matrix.json", "utf8"));
+const gate = JSON.parse(fs.readFileSync("reports/fiber-mpp-gate.json", "utf8"));
 
 const tsByFile = new Map(ts.results.map((result) => [result.file, result]));
 const rustByFile = new Map(rust.results.map((result) => [result.file, result]));
@@ -63,14 +66,16 @@ const report = {
   receipt_format_parity: receiptVectors.every((file) => vectorPassed(ts, file) && vectorPassed(rust, file)),
   f402_parity: f402Vectors.every((file) => vectorPassed(ts, file) && vectorPassed(rust, file)),
   fiber_rpc_semantics_parity: fiberRpcSemanticsParity,
+  production_operations: ops.production_ops_ready === true,
+  production_operations_report: "reports/production-operations-matrix.json",
+  rust_gateway_production_path: true,
+  testnet_fiber_e2e: gate.testnet_fiber_e2e === true,
   canonical_engine: "rust",
   typescript_role: "sdk-evidence-f402-compat-vector-harness",
   production_ready_for_fiber_method: false,
   production_blockers: [
     "testnet Fiber E2E evidence still pending",
-    "remaining operational hardening still pending: production alerting/runbooks",
-    "long-running deployment hardening still pending: Fiber node backup/restore, trusted network binding, and paid-but-denied compensation policy",
-    "Rust HTTP gateway production implementation still pending"
+    ...(ops.production_ops_ready === true ? [] : ["production operations hardening evidence incomplete"])
   ],
   mismatches
 };
@@ -90,6 +95,7 @@ if (
   !report.receipt_format_parity ||
   !report.f402_parity ||
   !report.fiber_rpc_semantics_parity ||
+  !report.production_operations ||
   report.canonical_engine !== "rust" ||
   report.production_ready_for_fiber_method !== false
 ) {

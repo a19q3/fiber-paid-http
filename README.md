@@ -1,6 +1,6 @@
 # FiberMPP
 
-FiberMPP is a production-targeted Fiber payment method for Machine Payments Protocol, with F402 compatibility for Fiber-native HTTP 402 applications. It is not production-ready yet: local Fiber E2E evidence exists, while separate testnet evidence, operational hardening, and the Rust HTTP gateway remain pending.
+FiberMPP is a production-targeted Fiber payment method for Machine Payments Protocol, with F402 compatibility for Fiber-native HTTP 402 applications. It is not production-ready yet: local Fiber E2E evidence and production operations runbooks exist, while separate testnet evidence and the Rust HTTP gateway production implementation remain pending.
 
 FiberMPP lets services accept Fiber through one HTTP 402 challenge, credential, and receipt flow.
 
@@ -61,7 +61,7 @@ pnpm exec fiber-mpp doctor --role payee
 pnpm test:fiber
 ```
 
-See [docs/bootstrap.md](docs/bootstrap.md), [docs/fiber-local-e2e.md](docs/fiber-local-e2e.md), and [docs/fiber-testnet-e2e.md](docs/fiber-testnet-e2e.md) for gateway, payer, payee, local evidence, and testnet evidence steps.
+See [docs/bootstrap.md](docs/bootstrap.md), [docs/production-operations.md](docs/production-operations.md), [docs/fiber-client-wallet-integration-plan.md](docs/fiber-client-wallet-integration-plan.md), [docs/fiber-local-e2e.md](docs/fiber-local-e2e.md), and [docs/fiber-testnet-e2e.md](docs/fiber-testnet-e2e.md) for gateway, payer, payee, operations, wallet/client boundaries, local evidence, and testnet evidence steps.
 
 ## Security model
 
@@ -126,4 +126,4 @@ fiber-mpp evidence start --port 8787
 bash scripts/fiber_mpp_gate.sh
 ```
 
-The gate writes `reports/fiber-mpp-gate.json` and stays honest about skipped, local, and testnet modes. Production readiness must remain false until a real testnet Fiber E2E pass and operational hardening are recorded.
+The gate writes `reports/fiber-mpp-gate.json` and stays honest about skipped, local, and testnet modes. Production readiness must remain false until a real testnet Fiber E2E pass and the Rust HTTP gateway production path are recorded.

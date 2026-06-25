@@ -20,17 +20,17 @@ Rust and TypeScript must continue to match for:
 - Rust workspace and `fiber-mpp-rs` CLI.
 - Rust vector verifier against the shared `test-vectors/` suite.
 - Rust Fiber RPC method/quantity/status parity surface.
+- Rust HTTP gateway production path: signed 402 challenges, FNN invoice creation, FNN settlement inspection, durable SQLite challenge/credential/receipt storage, `Authorization: Payment` verification, `Payment-Receipt` issuance, and replay rejection.
+- `fiber-mpp-rs server --config` now starts the Rust gateway instead of only inspecting config.
 - Rust gate and canonical parity gate.
 - TypeScript preserved as maintained SDK/demo/F402 compatibility/vector harness.
 
 ## Remaining Migration Steps
 
 1. Keep both conformance reports green.
-2. Expand the Rust HTTP gateway beyond config inspection only when route ownership is defined.
-3. Run Rust against the same local Fiber network from `docs/fiber-local-network.md`.
-4. Add separate testnet Fiber E2E evidence.
-5. Complete operational hardening for long-running production deployment.
+2. Run Rust against the same local Fiber network from `docs/fiber-local-network.md`.
+3. Add separate testnet Fiber E2E evidence.
 
 ## Readiness Rule
 
-`production_ready_for_fiber_method` remains `false` after local E2E alone. It can only change after separate testnet Fiber E2E evidence and operational hardening are complete.
+`production_ready_for_fiber_method` remains `false` after local E2E alone. It can only change after separate testnet Fiber E2E evidence.

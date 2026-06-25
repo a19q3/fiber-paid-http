@@ -1,0 +1,50 @@
+{
+  "production_ops_ready": true,
+  "production_ready_for_fiber_method": false,
+  "artifacts": {
+    "runbook": "docs/production-operations.md",
+    "alert_rules": "deploy/prometheus/fiber-mpp-alerts.yml",
+    "client_wallet_plan": "docs/fiber-client-wallet-integration-plan.md"
+  },
+  "checks": [
+    {
+      "id": "prometheus_alert_rules",
+      "status": "passed",
+      "evidence": "deploy/prometheus/fiber-mpp-alerts.yml",
+      "missing": []
+    },
+    {
+      "id": "operator_runbook",
+      "status": "passed",
+      "evidence": "docs/production-operations.md",
+      "missing": []
+    },
+    {
+      "id": "fiber_node_backup_restore",
+      "status": "passed",
+      "evidence": "docs/production-operations.md",
+      "missing": []
+    },
+    {
+      "id": "trusted_network_binding",
+      "status": "passed",
+      "evidence": "docs/production-operations.md",
+      "missing": []
+    },
+    {
+      "id": "paid_but_denied_reconciliation",
+      "status": "passed",
+      "evidence": "docs/production-operations.md",
+      "missing": []
+    },
+    {
+      "id": "client_wallet_boundary",
+      "status": "passed",
+      "evidence": "docs/fiber-client-wallet-integration-plan.md",
+      "missing": []
+    }
+  ],
+  "remaining_blockers": [
+    "testnet Fiber E2E evidence still pending"
+  ]
+}

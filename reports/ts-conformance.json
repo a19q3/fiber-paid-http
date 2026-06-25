@@ -99,7 +99,7 @@
       "passed": true,
       "expected": "accepted",
       "actual": "accepted",
-      "canonical_hash": "27b33b50559cf265aa6c44da002cb66a98cd5196a96ae5645ef982b7f71dbfe9"
+      "canonical_hash": "5ebcebb7bfcbb2d40ccd84e82e57e9710679355e7e18017d2a64108376369919"
     },
     {
       "file": "receipt.valid.json",

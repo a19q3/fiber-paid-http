@@ -144,10 +144,7 @@ export async function generateVectors(cwd = process.cwd()): Promise<void> {
     receipt_id: liveEvidence.receiptInput.receipt_id,
     production_ready_for_fiber_method: false,
     blockers: [
-      "testnet Fiber E2E evidence still pending",
-      "remaining operational hardening still pending: production alerting/runbooks",
-      "long-running deployment hardening still pending: Fiber node backup/restore, trusted network binding, and paid-but-denied compensation policy",
-      "Rust HTTP gateway production implementation still pending"
+      "testnet Fiber E2E evidence still pending"
     ]
   });
 

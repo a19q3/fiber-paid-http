@@ -155,7 +155,7 @@ The testnet evidence is credible only when all of these are true:
 - `fiber_live_test_loaded` is `true`.
 - The output includes a non-empty `fiber_e2e_payment_hash`.
 - The output includes a non-empty `fiber_e2e_receipt_id`.
-- `production_ready_for_fiber_method` still remains `false` until operational hardening is also complete.
+- `production_ready_for_fiber_method` must remain `false` until the canonical gate has also recorded the testnet evidence.
 
 ## References
 

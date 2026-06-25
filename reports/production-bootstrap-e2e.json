@@ -3,6 +3,8 @@
   "status": "passed",
   "mode": "local-production-gateway",
   "production_ready_for_fiber_method": false,
+  "production_operations": true,
+  "production_operations_report": "reports/production-operations-matrix.json",
   "config_path": ".tmp/production-bootstrap-e2e/gateway.json",
   "storage_path": ".tmp/production-bootstrap-e2e/gateway.sqlite",
   "payer_bootstrap": {
@@ -44,10 +46,6 @@
     "failed_deliveries": 0
   },
   "blockers_remaining_for_production_ready": [
-    "testnet Fiber E2E evidence still pending",
-    "production alerting/runbooks still pending",
-    "Fiber node backup/restore and trusted network binding still pending",
-    "paid-but-denied compensation policy still pending",
-    "Rust HTTP gateway production implementation still pending"
+    "testnet Fiber E2E evidence still pending"
   ]
 }

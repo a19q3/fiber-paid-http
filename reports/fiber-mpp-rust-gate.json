@@ -21,11 +21,24 @@
       "invoice": "Paid"
     }
   },
+  "production_operations": true,
+  "production_operations_report": "reports/production-operations-matrix.json",
+  "rust_gateway_production_path": true,
+  "rust_gateway_evidence": {
+    "server_crate_tests": true,
+    "cli_server_command_starts_gateway": true,
+    "features": [
+      "signed 402 challenge issuance",
+      "Fiber invoice creation through FNN JSON-RPC",
+      "Fiber settlement inspection through FNN JSON-RPC",
+      "Authorization: Payment verification",
+      "durable SQLite challenge/credential/receipt storage",
+      "Payment-Receipt issuance",
+      "replay rejection"
+    ]
+  },
   "production_ready_for_fiber_method": false,
   "production_blockers": [
-    "testnet Fiber E2E evidence still pending",
-    "remaining operational hardening still pending: production alerting/runbooks",
-    "long-running deployment hardening still pending: Fiber node backup/restore, trusted network binding, and paid-but-denied compensation policy",
-    "Rust HTTP gateway production implementation still pending"
+    "testnet Fiber E2E evidence still pending"
   ]
 }

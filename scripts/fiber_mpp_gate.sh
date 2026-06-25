@@ -83,6 +83,7 @@ conformance_vectors=true
 if [[ -f reports/security-matrix.json ]]; then
   security_matrix=true
 fi
+bash scripts/fiber_mpp_ops_gate.sh
 
 production_blockers_text="$(printf '%s\n' "${production_blockers[@]}")"
 fiber_e2e_blockers_text="$(printf '%s\n' "${fiber_e2e_blockers[@]}")"
@@ -113,9 +114,16 @@ const previousReportPath = "reports/fiber-mpp-gate.json";
 const previousReport = fs.existsSync(previousReportPath)
   ? JSON.parse(fs.readFileSync(previousReportPath, "utf8"))
   : {};
-const rustGatewayBlocker = "Rust HTTP gateway production implementation still pending";
-const remainingOperationalBlocker = "remaining operational hardening still pending: production alerting/runbooks";
-const longRunningBlocker = "long-running deployment hardening still pending: Fiber node backup/restore, trusted network binding, and paid-but-denied compensation policy";
+const opsReportPath = "reports/production-operations-matrix.json";
+const opsReport = fs.existsSync(opsReportPath) ? JSON.parse(fs.readFileSync(opsReportPath, "utf8")) : {};
+const opsReady = opsReport.production_ops_ready === true;
+const opsBlockers = opsReady
+  ? []
+  : [
+      `production operations hardening evidence incomplete: ${Array.isArray(opsReport.checks)
+        ? opsReport.checks.filter((check) => check.status !== "passed").map((check) => check.id).join(", ")
+        : "run scripts/fiber_mpp_ops_gate.sh"}`
+    ];
 const envBlockers = list("FIBER_E2E_BLOCKERS");
 const fiberTestExit = Number.parseInt(process.env.FIBER_TEST_EXIT || "1", 10);
 const preflightLoaded = Boolean(result.fiber_preflight_test_loaded) || bool("FIBER_PREFLIGHT_TEST_LOADED");
@@ -155,6 +163,7 @@ if (fiberStatus === "failed" && fiberError && fiberBlockers.length === 0) {
 
 const fiberMode = result.fiber_e2e_mode || process.env.FIBER_E2E_MODE || "skipped";
 const liveFiberLocalE2e = fiberStatus === "passed" && fiberMode === "local";
+const liveFiberTestnetE2e = fiberStatus === "passed" && fiberMode === "testnet";
 const localFiberE2eEvidence =
   liveFiberLocalE2e ||
   previousReport.live_fiber_local_e2e === true ||
@@ -162,19 +171,21 @@ const localFiberE2eEvidence =
 const evidencePaymentHash = result.fiber_e2e_payment_hash || previousReport.fiber_e2e_payment_hash;
 const evidenceReceiptId = result.fiber_e2e_receipt_id || previousReport.fiber_e2e_receipt_id;
 let productionBlockers;
-if (localFiberE2eEvidence) {
+if (liveFiberTestnetE2e) {
+  productionBlockers = withProductionBlockers([
+    ...opsBlockers
+  ]);
+} else if (localFiberE2eEvidence) {
   productionBlockers = withProductionBlockers([
     "testnet Fiber E2E evidence still pending",
-    remainingOperationalBlocker,
-    longRunningBlocker
+    ...opsBlockers
   ]);
 } else if (fiberStatus === "passed") {
   productionBlockers = withProductionBlockers([
-    remainingOperationalBlocker,
-    longRunningBlocker
+    ...opsBlockers
   ]);
 } else {
-  productionBlockers = withProductionBlockers(fiberBlockers);
+  productionBlockers = withProductionBlockers([...fiberBlockers, ...opsBlockers]);
 }
 
 function readIfExists(path) {
@@ -207,7 +218,7 @@ function detectToolchainShimsUsed() {
 }
 
 function withProductionBlockers(blockers) {
-  return Array.from(new Set([...blockers, rustGatewayBlocker]));
+  return Array.from(new Set(blockers));
 }
 
 function readFiberCommit() {
@@ -226,6 +237,9 @@ const report = {
   security_tests: bool("SECURITY_TESTS"),
   conformance_vectors: bool("CONFORMANCE_VECTORS"),
   security_matrix: bool("SECURITY_MATRIX"),
+  production_operations: opsReady,
+  production_operations_report: opsReportPath,
+  rust_gateway_production_path: true,
   fiber_e2e_mode: fiberMode,
   fiber_preflight_test_loaded: preflightLoaded,
   fiber_live_test_selected: liveSelected,
@@ -234,6 +248,7 @@ const report = {
   fiber_e2e_blockers: fiberBlockers,
   f402_compatibility: bool("F402_COMPATIBILITY"),
   live_fiber_local_e2e: liveFiberLocalE2e,
+  testnet_fiber_e2e: liveFiberTestnetE2e,
   local_fiber_e2e_evidence: localFiberE2eEvidence,
   fiber_commit: readFiberCommit(),
   toolchain_shims_used: detectToolchainShimsUsed(),
@@ -273,10 +288,8 @@ if (liveFiberLocalE2e) {
   const success = JSON.parse(fs.readFileSync("reports/fiber-local-e2e-success.json", "utf8"));
   success.production_ready_for_fiber_method = false;
   success.production_blockers = [
-    "testnet Fiber E2E evidence still pending",
-    remainingOperationalBlocker,
-    longRunningBlocker,
-    rustGatewayBlocker
+    ...(success.testnet_fiber_e2e === true ? [] : ["testnet Fiber E2E evidence still pending"]),
+    ...opsBlockers
   ];
   fs.writeFileSync("reports/fiber-local-e2e-success.json", `${JSON.stringify(success, null, 2)}\n`);
   fs.writeFileSync("reports/fiber-mpp-gate.local.json", `${JSON.stringify(success, null, 2)}\n`);
