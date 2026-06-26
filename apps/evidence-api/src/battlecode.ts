@@ -1,0 +1,978 @@
+import { createHash, randomBytes } from "node:crypto";
+import { existsSync } from "node:fs";
+import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
+import { spawn } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import {
+  FiberRpcClient,
+  extractInvoicePaymentHash,
+  parseFiberMode,
+  parseFiberUdtTypeScript,
+  waitForFiberInvoicePaid,
+  waitForFiberPaymentSuccess
+} from "@fiber-mpp/fiber-method";
+import type { FiberUdtTypeScript } from "@fiber-mpp/core";
+
+export type BattlecodeRegistrationInput = {
+  playerId: string;
+  botPackage: "fiberchamp";
+  botScriptHash: string;
+  clientHash: string;
+  xudtAsset: string;
+  entryAmount: string;
+  prizeAmount: string;
+  map: string;
+};
+
+export type BattlecodeFairnessManifest = {
+  domain: "fiber-mpp-battlecode-fairness-v1";
+  botPackage: "fiberchamp";
+  botScriptHash: string;
+  clientHash: string;
+  runnerHash: string;
+  engineHash: string;
+  engineVersion: string;
+  hashAlgorithm: "sha256";
+  notes: string[];
+};
+
+export type BattlecodeFairnessVerification = {
+  status: "verified";
+  committed: {
+    botScriptHash: string;
+    clientHash: string;
+  };
+  observed: {
+    botScriptHash: string;
+    clientHash: string;
+    runnerHash: string;
+    engineHash: string;
+  };
+  verifiedAt: string;
+};
+
+export type BattlecodeTicket = {
+  ticketId: string;
+  playerId: string;
+  botPackage: string;
+  botScriptHash: string;
+  clientHash: string;
+  fairnessCommitment: BattlecodeFairnessManifest;
+  xudtAsset: string;
+  entryAmount: string;
+  prizeAmount: string;
+  map: string;
+  receiptId: string;
+  paymentHash?: string;
+  issuedAt: string;
+  status: "paid";
+};
+
+export type BattlecodeMatchResult = {
+  matchId: string;
+  map: string;
+  teamA: string;
+  teamB: string;
+  winner: string;
+  winnerSide: "A" | "B";
+  round: number;
+  reason: string;
+  replayPath: string;
+  matchHash: string;
+  stdout: string;
+  stderr: string;
+  engineVersion: string;
+  engineJar: string;
+  engineHash: string;
+  runnerHash: string;
+  fairness: BattlecodeFairnessVerification;
+  jdkHome: string;
+  startedAt: string;
+  finishedAt: string;
+};
+
+export type BattlecodeAward = {
+  awardId: string;
+  ticketId: string;
+  matchId: string;
+  playerId: string;
+  botPackage: string;
+  xudtAsset: string;
+  prizeAmount: string;
+  status: "claimable" | "paid";
+  settlement: "local-xudt-award-ledger" | "fiber-xudt-payment";
+  prizePayment?: BattlecodePrizePayment;
+  matchHash: string;
+  awardedAt: string;
+  note: string;
+};
+
+export type BattlecodePrizePayment = {
+  provider: "fiber-xudt";
+  mode: "local" | "testnet";
+  paymentHash: string;
+  invoice: string;
+  amountShannons: string;
+  xudtAsset: string;
+  udtTypeScript: FiberUdtTypeScript;
+  payerRpcUrl: string;
+  payeeRpcUrl: string;
+  payerNode?: string;
+  payeeNode?: string;
+  status: "settled";
+  observedAt: string;
+  sendResult: unknown;
+  settledPayment: unknown;
+  paidInvoice: unknown;
+};
+
+export type BattlecodeLedger = {
+  generatedAt: string;
+  tickets: BattlecodeTicket[];
+  matches: BattlecodeMatchResult[];
+  awards: BattlecodeAward[];
+};
+
+export type BattlecodeTournamentReport = {
+  generatedAt: string;
+  registration: BattlecodeRegistrationInput;
+  ticket: BattlecodeTicket;
+  match: BattlecodeMatchResult;
+  award: BattlecodeAward | null;
+  ledgerPath: string;
+  replayPath: string;
+  warnings: string[];
+};
+
+type RunOptions = {
+  registration: BattlecodeRegistrationInput;
+  ticket: BattlecodeTicket;
+  repoRoot: string;
+  env?: NodeJS.ProcessEnv;
+};
+
+const DEFAULT_BATTLECODE_DIR = "/home/arthur/a19q3/battlecode25-scaffold/java";
+const DEFAULT_JDK_HOME = "/home/arthur/a19q3/.toolchains/jdk-21.0.11+10";
+const DEFAULT_ENGINE_VERSION = "1.0.0";
+const HASH_PREFIX = "sha256:";
+const DEFAULT_LOCAL_XUDT_TYPE_SCRIPT: FiberUdtTypeScript = {
+  code_hash: "0x50bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95",
+  hash_type: "data2",
+  args: "0x32e555f3ff8e135cece1351a6a2971518392c1e30375c1e006ad0ce8eac07947"
+};
+
+export function normalizeBattlecodeRegistration(input: unknown): BattlecodeRegistrationInput {
+  const record = isRecord(input) ? input : {};
+  const playerId = cleanId(record.playerId, "arthur");
+  const requestedBot = cleanId(record.botPackage ?? record.bot, "fiberchamp");
+  if (requestedBot !== "fiberchamp") {
+    throw new Error("only the built-in fiberchamp Battlecode bot is enabled for paid entry");
+  }
+  return {
+    playerId,
+    botPackage: "fiberchamp",
+    botScriptHash: cleanHash(record.botScriptHash),
+    clientHash: cleanHash(record.clientHash),
+    xudtAsset: cleanAsset(record.xudtAsset ?? record.asset, "xUDT:BCODE"),
+    entryAmount: cleanAmount(record.entryAmount ?? record.amount, "100"),
+    prizeAmount: cleanAmount(record.prizeAmount ?? record.prize, "200"),
+    map: cleanId(record.map, "DefaultSmall")
+  };
+}
+
+export async function buildBattlecodeFairnessManifest(
+  repoRoot: string,
+  env: NodeJS.ProcessEnv = process.env
+): Promise<BattlecodeFairnessManifest> {
+  const engine = await resolveBattlecodeEngine(repoRoot, env);
+  const runnerHash = await hashFile(fileURLToPath(import.meta.url));
+  const engineHash = await hashFile(engine.engineJar);
+  const botScriptHash = battlecodeBuiltInBotScriptHash();
+  const clientHash = hashJson({
+    domain: "fiber-mpp-battlecode-client-v1",
+    botPackage: "fiberchamp",
+    botScriptHash,
+    runnerHash,
+    engineHash,
+    engineVersion: engine.version
+  });
+  return {
+    domain: "fiber-mpp-battlecode-fairness-v1",
+    botPackage: "fiberchamp",
+    botScriptHash,
+    clientHash,
+    runnerHash,
+    engineHash,
+    engineVersion: engine.version,
+    hashAlgorithm: "sha256",
+    notes: [
+      "botScriptHash commits to the exact submitted Battlecode RobotPlayer.java source used for this lane.",
+      "clientHash commits to the tournament runner module plus the Battlecode engine jar hash."
+    ]
+  };
+}
+
+export function battlecodeBuiltInBotScriptHash(): string {
+  return hashBytes(Buffer.from(FIBER_CHAMP_SOURCE, "utf8"));
+}
+
+export function assertBattlecodeFairnessCommitment(
+  registration: BattlecodeRegistrationInput,
+  manifest: BattlecodeFairnessManifest
+): void {
+  const mismatches = [];
+  if (registration.botPackage !== manifest.botPackage) {
+    mismatches.push(`botPackage expected ${manifest.botPackage} got ${registration.botPackage}`);
+  }
+  if (registration.botScriptHash !== manifest.botScriptHash) {
+    mismatches.push(`botScriptHash expected ${manifest.botScriptHash} got ${registration.botScriptHash}`);
+  }
+  if (registration.clientHash !== manifest.clientHash) {
+    mismatches.push(`clientHash expected ${manifest.clientHash} got ${registration.clientHash}`);
+  }
+  if (mismatches.length > 0) {
+    throw new Error(`fairness commitment mismatch: ${mismatches.join("; ")}`);
+  }
+}
+
+export function battlecodeEntryPrice(input: BattlecodeRegistrationInput): { value: string; currency: string; display: string } {
+  return {
+    value: input.entryAmount,
+    currency: input.xudtAsset,
+    display: `${input.entryAmount} ${input.xudtAsset}`
+  };
+}
+
+export async function readBattlecodeLedger(repoRoot: string): Promise<BattlecodeLedger> {
+  const ledgerPath = battlecodeLedgerPath(repoRoot);
+  try {
+    return normalizeLedger(JSON.parse(await readFile(ledgerPath, "utf8")));
+  } catch {
+    return emptyLedger();
+  }
+}
+
+export async function writeBattlecodeLedger(repoRoot: string, ledger: BattlecodeLedger): Promise<void> {
+  const ledgerPath = battlecodeLedgerPath(repoRoot);
+  await mkdir(dirname(ledgerPath), { recursive: true });
+  await writeFile(ledgerPath, `${JSON.stringify({ ...ledger, generatedAt: new Date().toISOString() }, null, 2)}\n`);
+}
+
+export function battlecodeLedgerPath(repoRoot: string): string {
+  return resolve(repoRoot, ".tmp/battlecode-tournament-ledger.json");
+}
+
+export function issueBattlecodeTicket(input: {
+  registration: BattlecodeRegistrationInput;
+  fairnessManifest: BattlecodeFairnessManifest;
+  receiptId: string;
+  paymentHash?: string;
+}): BattlecodeTicket {
+  assertBattlecodeFairnessCommitment(input.registration, input.fairnessManifest);
+  return {
+    ticketId: `bc_ticket_${randomBytes(8).toString("hex")}`,
+    playerId: input.registration.playerId,
+    botPackage: input.registration.botPackage,
+    botScriptHash: input.registration.botScriptHash,
+    clientHash: input.registration.clientHash,
+    fairnessCommitment: input.fairnessManifest,
+    xudtAsset: input.registration.xudtAsset,
+    entryAmount: input.registration.entryAmount,
+    prizeAmount: input.registration.prizeAmount,
+    map: input.registration.map,
+    receiptId: input.receiptId,
+    paymentHash: input.paymentHash,
+    issuedAt: new Date().toISOString(),
+    status: "paid"
+  };
+}
+
+export async function appendBattlecodeTicket(repoRoot: string, ticket: BattlecodeTicket): Promise<BattlecodeLedger> {
+  const ledger = await readBattlecodeLedger(repoRoot);
+  ledger.tickets = [...ledger.tickets.filter((item) => item.ticketId !== ticket.ticketId), ticket];
+  await writeBattlecodeLedger(repoRoot, ledger);
+  return ledger;
+}
+
+export async function runBattlecodeTournament(options: RunOptions): Promise<BattlecodeTournamentReport> {
+  const startedAt = new Date().toISOString();
+  const env = options.env ?? process.env;
+  const engine = await resolveBattlecodeEngine(options.repoRoot, env);
+  const fairnessManifest = await buildBattlecodeFairnessManifest(options.repoRoot, env);
+  assertBattlecodeFairnessCommitment(options.registration, fairnessManifest);
+  assertTicketFairnessCommitment(options.ticket, fairnessManifest);
+  const workDir = resolve(options.repoRoot, ".tmp/battlecode-tournament");
+  const classesDir = resolve(workDir, "classes");
+  const srcDir = resolve(workDir, "src");
+  const replayDir = resolve(workDir, "matches");
+  const replayPath = resolve(replayDir, `${options.ticket.ticketId}-${Date.now()}.bc25`);
+  await mkdir(srcDir, { recursive: true });
+  await mkdir(classesDir, { recursive: true });
+  await mkdir(replayDir, { recursive: true });
+  await writeBotSources(srcDir);
+  const observedBotScriptHash = await hashFile(resolve(srcDir, "fiberchamp/RobotPlayer.java"));
+  if (observedBotScriptHash !== options.ticket.botScriptHash) {
+    throw new Error(`materialized bot script hash mismatch: expected ${options.ticket.botScriptHash} got ${observedBotScriptHash}`);
+  }
+
+  const javaFiles = await listFiles(srcDir, ".java");
+  await runProcess(resolve(engine.jdkHome, "bin/javac"), ["-cp", engine.engineJar, "-d", classesDir, ...javaFiles], {
+    cwd: workDir,
+    timeoutMs: 30_000
+  });
+
+  const matchId = `bc_match_${randomBytes(8).toString("hex")}`;
+  const javaArgs = [
+    "--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED",
+    "--add-opens=java.base/jdk.internal.math=ALL-UNNAMED",
+    "--add-opens=java.base/jdk.internal.util=ALL-UNNAMED",
+    "--add-opens=java.base/jdk.internal.access=ALL-UNNAMED",
+    "--add-opens=java.base/sun.security.action=ALL-UNNAMED",
+    "-Dbc.server.wait-for-client=false",
+    "-Dbc.server.mode=headless",
+    "-Dbc.server.map-path=maps",
+    "-Dbc.server.robot-player-to-system-out=false",
+    "-Dbc.server.debug=false",
+    "-Dbc.engine.debug-methods=false",
+    "-Dbc.engine.enable-profiler=false",
+    "-Dbc.engine.show-indicators=false",
+    "-Dbc.game.team-a=fiberchamp",
+    "-Dbc.game.team-b=baselinebot",
+    `-Dbc.game.team-a.url=${classesDir}`,
+    `-Dbc.game.team-b.url=${classesDir}`,
+    "-Dbc.game.team-a.package=fiberchamp",
+    "-Dbc.game.team-b.package=baselinebot",
+    `-Dbc.game.maps=${options.registration.map}`,
+    "-Dbc.server.validate-maps=true",
+    "-Dbc.server.alternate-order=false",
+    `-Dbc.server.save-file=${replayPath}`,
+    "-cp",
+    `${engine.engineJar}:${classesDir}`,
+    "battlecode.server.Main",
+    "-c=-"
+  ];
+  const run = await runProcess(resolve(engine.jdkHome, "bin/java"), javaArgs, {
+    cwd: workDir,
+    timeoutMs: positiveInt(env.BATTLECODE_MATCH_TIMEOUT_MS, 120_000)
+  });
+  const parsed = parseMatchOutput(run.stdout);
+  const replayHashInput = existsSync(replayPath) ? await readFile(replayPath) : Buffer.alloc(0);
+  const fairness: BattlecodeFairnessVerification = {
+    status: "verified",
+    committed: {
+      botScriptHash: options.ticket.botScriptHash,
+      clientHash: options.ticket.clientHash
+    },
+    observed: {
+      botScriptHash: observedBotScriptHash,
+      clientHash: fairnessManifest.clientHash,
+      runnerHash: fairnessManifest.runnerHash,
+      engineHash: fairnessManifest.engineHash
+    },
+    verifiedAt: new Date().toISOString()
+  };
+  const matchHash = createHash("sha256")
+    .update(stableJson(fairness))
+    .update(run.stdout)
+    .update(run.stderr)
+    .update(replayHashInput)
+    .digest("hex");
+  const match: BattlecodeMatchResult = {
+    matchId,
+    map: options.registration.map,
+    teamA: "fiberchamp",
+    teamB: "baselinebot",
+    winner: parsed.winner,
+    winnerSide: parsed.side,
+    round: parsed.round,
+    reason: parsed.reason,
+    replayPath,
+    matchHash,
+    stdout: run.stdout,
+    stderr: run.stderr,
+    engineVersion: engine.version,
+    engineJar: engine.engineJar,
+    engineHash: fairnessManifest.engineHash,
+    runnerHash: fairnessManifest.runnerHash,
+    fairness,
+    jdkHome: engine.jdkHome,
+    startedAt,
+    finishedAt: new Date().toISOString()
+  };
+  const award = match.winner === options.ticket.botPackage
+    ? await createBattlecodeAward(options.ticket, match, env)
+    : null;
+  const ledger = await readBattlecodeLedger(options.repoRoot);
+  ledger.matches = [...ledger.matches.filter((item) => item.matchId !== match.matchId), match];
+  if (award) {
+    ledger.awards = [...ledger.awards.filter((item) => item.awardId !== award.awardId), award];
+  }
+  await writeBattlecodeLedger(options.repoRoot, ledger);
+  return {
+    generatedAt: new Date().toISOString(),
+    registration: options.registration,
+    ticket: options.ticket,
+    match,
+    award,
+    ledgerPath: battlecodeLedgerPath(options.repoRoot),
+    replayPath,
+    warnings: [
+      "Battlecode runs as an external AGPL-3.0 scaffold/engine dependency; FiberMPP stores only tournament evidence and local bot sources.",
+      award?.settlement === "fiber-xudt-payment"
+        ? "The prize was settled by a live Fiber xUDT payment and recorded with payment hash evidence."
+        : "The xUDT award is recorded as a local claimable prize ledger entry; set BATTLECODE_AWARD_SETTLEMENT=fiber-xudt for live Fiber xUDT prize payout."
+    ]
+  };
+}
+
+export async function battlecodeStatus(repoRoot: string, env: NodeJS.ProcessEnv = process.env): Promise<Record<string, unknown>> {
+  const ledger = await readBattlecodeLedger(repoRoot);
+  const engine = await resolveBattlecodeEngine(repoRoot, env).catch((error: unknown) => ({ error: errorMessage(error) }));
+  const fairnessManifest = await buildBattlecodeFairnessManifest(repoRoot, env).catch((error: unknown) => ({ error: errorMessage(error) }));
+  return {
+    enabled: true,
+    scaffoldDir: env.BATTLECODE_DIR ?? DEFAULT_BATTLECODE_DIR,
+    ledgerPath: battlecodeLedgerPath(repoRoot),
+    engine,
+    fairnessManifest,
+    awardSettlement: battlecodeAwardSettlementPlan(env),
+    tickets: ledger.tickets.length,
+    matches: ledger.matches.length,
+    awards: ledger.awards.length,
+    latestAward: ledger.awards.at(-1) ?? null
+  };
+}
+
+export function battlecodeAwardSettlementPlan(env: NodeJS.ProcessEnv = process.env): {
+  mode: "local-ledger" | "fiber-xudt";
+  live: boolean;
+  blockers: string[];
+  udtTypeScript?: FiberUdtTypeScript;
+  udtTypeScriptSource?: string;
+} {
+  const mode = env.BATTLECODE_AWARD_SETTLEMENT === "fiber-xudt" ? "fiber-xudt" : "local-ledger";
+  if (mode === "local-ledger") {
+    return { mode, live: false, blockers: [] };
+  }
+  const blockers: string[] = [];
+  try {
+    parseFiberMode(env.FIBER_MODE);
+  } catch {
+    blockers.push("FIBER_MODE must be local or testnet for Battlecode Fiber xUDT prize payout");
+  }
+  const payerRpcUrl = prizePayerRpcUrl(env);
+  const payeeRpcUrl = prizePayeeRpcUrl(env);
+  if (!payerRpcUrl) {
+    blockers.push("BATTLECODE_PRIZE_PAYER_RPC_URL or FIBER_PAYEE_RPC_URL is required for prize payout");
+  }
+  if (!payeeRpcUrl) {
+    blockers.push("BATTLECODE_PRIZE_PAYEE_RPC_URL or FIBER_PAYER_RPC_URL is required for prize payout");
+  }
+  let udtTypeScript: FiberUdtTypeScript | undefined;
+  let udtTypeScriptSource: string | undefined;
+  try {
+    const resolved = resolveBattlecodeUdtTypeScript(env);
+    udtTypeScript = resolved.udtTypeScript;
+    udtTypeScriptSource = resolved.source;
+  } catch (error) {
+    blockers.push(errorMessage(error));
+  }
+  return {
+    mode,
+    live: blockers.length === 0,
+    blockers,
+    udtTypeScript,
+    udtTypeScriptSource
+  };
+}
+
+export function battlecodeXudtTypeScript(env: NodeJS.ProcessEnv = process.env): FiberUdtTypeScript {
+  return resolveBattlecodeUdtTypeScript(env).udtTypeScript;
+}
+
+async function createBattlecodeAward(ticket: BattlecodeTicket, match: BattlecodeMatchResult, env: NodeJS.ProcessEnv): Promise<BattlecodeAward> {
+  const plan = battlecodeAwardSettlementPlan(env);
+  if (plan.mode === "fiber-xudt") {
+    if (plan.blockers.length > 0) {
+      throw new Error(`Battlecode Fiber xUDT prize payout is not ready: ${plan.blockers.join("; ")}`);
+    }
+    const prizePayment = await settleBattlecodeFiberXudtPrize(ticket, match, env, plan.udtTypeScript!);
+    return {
+      awardId: `bc_award_${randomBytes(8).toString("hex")}`,
+      ticketId: ticket.ticketId,
+      matchId: match.matchId,
+      playerId: ticket.playerId,
+      botPackage: ticket.botPackage,
+      xudtAsset: ticket.xudtAsset,
+      prizeAmount: ticket.prizeAmount,
+      status: "paid",
+      settlement: "fiber-xudt-payment",
+      prizePayment,
+      matchHash: match.matchHash,
+      awardedAt: new Date().toISOString(),
+      note: "Prize settled by a live Fiber xUDT payment after a paid FiberMPP entry and deterministic local Battlecode match."
+    };
+  }
+  return {
+    awardId: `bc_award_${randomBytes(8).toString("hex")}`,
+    ticketId: ticket.ticketId,
+    matchId: match.matchId,
+    playerId: ticket.playerId,
+    botPackage: ticket.botPackage,
+    xudtAsset: ticket.xudtAsset,
+    prizeAmount: ticket.prizeAmount,
+    status: "claimable",
+    settlement: "local-xudt-award-ledger",
+    matchHash: match.matchHash,
+    awardedAt: new Date().toISOString(),
+    note: "Prize claim recorded after a paid FiberMPP entry and deterministic local Battlecode match. On-chain xUDT payout signer is a separate integration step."
+  };
+}
+
+async function settleBattlecodeFiberXudtPrize(
+  ticket: BattlecodeTicket,
+  match: BattlecodeMatchResult,
+  env: NodeJS.ProcessEnv,
+  udtTypeScript: FiberUdtTypeScript
+): Promise<BattlecodePrizePayment> {
+  const mode = parseFiberMode(env.FIBER_MODE);
+  const payerRpcUrl = prizePayerRpcUrl(env)!;
+  const payeeRpcUrl = prizePayeeRpcUrl(env)!;
+  const timeoutSeconds = positiveInt(env.BATTLECODE_PRIZE_TIMEOUT_SECONDS, 30);
+  const timeoutMs = positiveInt(env.BATTLECODE_PRIZE_TIMEOUT_MS ?? env.FIBER_SETTLEMENT_TIMEOUT_MS, timeoutSeconds * 1000);
+  const pollMs = positiveInt(env.FIBER_SETTLEMENT_POLL_MS, 250);
+  const payerRpc = new FiberRpcClient({
+    url: payerRpcUrl,
+    auth: env.BATTLECODE_PRIZE_PAYER_RPC_AUTH ?? env.FIBER_PRIZE_PAYER_RPC_AUTH ?? env.FIBER_PAYEE_RPC_AUTH ?? env.FIBER_RPC_AUTH,
+    label: "battlecode-prize-payer"
+  });
+  const payeeRpc = new FiberRpcClient({
+    url: payeeRpcUrl,
+    auth: env.BATTLECODE_PRIZE_PAYEE_RPC_AUTH ?? env.FIBER_PRIZE_PAYEE_RPC_AUTH ?? env.FIBER_PAYER_RPC_AUTH ?? env.FIBER_RPC_AUTH,
+    label: "battlecode-prize-payee"
+  });
+  const [payerInfo, payeeInfo] = await Promise.all([
+    payerRpc.nodeInfo().catch(() => null),
+    payeeRpc.nodeInfo().catch(() => null)
+  ]);
+  const invoice = await payeeRpc.newInvoice({
+    amount: ticket.prizeAmount,
+    currency: env.FIBER_CURRENCY ?? (mode === "testnet" ? "Fibt" : "Fibd"),
+    description: `FiberMPP Battlecode prize ${ticket.ticketId} ${match.matchId}`,
+    expirySeconds: timeoutSeconds,
+    udtTypeScript
+  });
+  const paymentHash = extractInvoicePaymentHash(invoice);
+  const invoiceAddress = invoice.invoice_address;
+  if (!invoiceAddress) {
+    throw new Error("Fiber prize invoice did not return invoice_address");
+  }
+  const sendResult = await payerRpc.sendPayment({
+    invoice: invoiceAddress,
+    timeoutSeconds
+  });
+  const settledPayment = await waitForFiberPaymentSuccess(payerRpc, sendResult.payment_hash ?? paymentHash, {
+    timeoutMs,
+    pollMs
+  });
+  const paidInvoice = await waitForFiberInvoicePaid(payeeRpc, paymentHash, {
+    timeoutMs,
+    pollMs
+  });
+  return {
+    provider: "fiber-xudt",
+    mode,
+    paymentHash,
+    invoice: invoiceAddress,
+    amountShannons: ticket.prizeAmount,
+    xudtAsset: ticket.xudtAsset,
+    udtTypeScript,
+    payerRpcUrl,
+    payeeRpcUrl,
+    payerNode: extractFiberPubkey(payerInfo),
+    payeeNode: extractFiberPubkey(payeeInfo),
+    status: "settled",
+    observedAt: new Date().toISOString(),
+    sendResult,
+    settledPayment,
+    paidInvoice
+  };
+}
+
+function resolveBattlecodeUdtTypeScript(env: NodeJS.ProcessEnv): { udtTypeScript: FiberUdtTypeScript; source: string } {
+  const explicit = parseFiberUdtTypeScript(
+    env.BATTLECODE_XUDT_TYPE_SCRIPT ?? env.FIBER_XUDT_TYPE_SCRIPT ?? env.FIBER_UDT_TYPE_SCRIPT,
+    {
+      codeHash: env.BATTLECODE_XUDT_CODE_HASH ?? env.FIBER_XUDT_CODE_HASH ?? env.FIBER_UDT_CODE_HASH,
+      hashType: env.BATTLECODE_XUDT_HASH_TYPE ?? env.FIBER_XUDT_HASH_TYPE ?? env.FIBER_UDT_HASH_TYPE,
+      args: env.BATTLECODE_XUDT_ARGS ?? env.FIBER_XUDT_ARGS ?? env.FIBER_UDT_ARGS
+    }
+  );
+  if (explicit) {
+    return { udtTypeScript: explicit, source: "env" };
+  }
+  if (env.FIBER_MODE === "local") {
+    return { udtTypeScript: DEFAULT_LOCAL_XUDT_TYPE_SCRIPT, source: "fiber-local-default-xudt" };
+  }
+  throw new Error("BATTLECODE_XUDT_TYPE_SCRIPT or FIBER_XUDT_TYPE_SCRIPT is required for non-local xUDT payout");
+}
+
+function prizePayerRpcUrl(env: NodeJS.ProcessEnv): string | undefined {
+  return env.BATTLECODE_PRIZE_PAYER_RPC_URL ?? env.FIBER_PRIZE_PAYER_RPC_URL ?? env.FIBER_PAYEE_RPC_URL ?? env.FIBER_RPC_URL;
+}
+
+function prizePayeeRpcUrl(env: NodeJS.ProcessEnv): string | undefined {
+  return env.BATTLECODE_PRIZE_PAYEE_RPC_URL ?? env.FIBER_PRIZE_PAYEE_RPC_URL ?? env.FIBER_PAYER_RPC_URL;
+}
+
+function extractFiberPubkey(input: unknown): string | undefined {
+  return isRecord(input) && typeof input.pubkey === "string" ? input.pubkey : undefined;
+}
+
+function assertTicketFairnessCommitment(ticket: BattlecodeTicket, manifest: BattlecodeFairnessManifest): void {
+  const mismatches = [];
+  if (ticket.botScriptHash !== manifest.botScriptHash) {
+    mismatches.push(`ticket botScriptHash expected ${manifest.botScriptHash} got ${ticket.botScriptHash}`);
+  }
+  if (ticket.clientHash !== manifest.clientHash) {
+    mismatches.push(`ticket clientHash expected ${manifest.clientHash} got ${ticket.clientHash}`);
+  }
+  if (ticket.fairnessCommitment.botScriptHash !== manifest.botScriptHash) {
+    mismatches.push("ticket fairnessCommitment botScriptHash changed after payment");
+  }
+  if (ticket.fairnessCommitment.clientHash !== manifest.clientHash) {
+    mismatches.push("ticket fairnessCommitment clientHash changed after payment");
+  }
+  if (mismatches.length > 0) {
+    throw new Error(`ticket fairness commitment mismatch: ${mismatches.join("; ")}`);
+  }
+}
+
+async function resolveBattlecodeEngine(repoRoot: string, env: NodeJS.ProcessEnv): Promise<{
+  jdkHome: string;
+  engineJar: string;
+  version: string;
+}> {
+  const jdkHome = env.BATTLECODE_JDK_HOME ?? DEFAULT_JDK_HOME;
+  const javaBin = resolve(jdkHome, "bin/java");
+  const javacBin = resolve(jdkHome, "bin/javac");
+  if (!existsSync(javaBin) || !existsSync(javacBin)) {
+    throw new Error(`Battlecode JDK 21 is missing; set BATTLECODE_JDK_HOME or install ${DEFAULT_JDK_HOME}`);
+  }
+  const explicitJar = env.BATTLECODE_ENGINE_JAR;
+  if (explicitJar && existsSync(explicitJar)) {
+    return { jdkHome, engineJar: explicitJar, version: env.BATTLECODE_ENGINE_VERSION ?? "custom" };
+  }
+  const toolchainJar = resolve(repoRoot, "../.toolchains/battlecode25/battlecode25-java-3.1.0.jar");
+  if (existsSync(toolchainJar)) {
+    return { jdkHome, engineJar: toolchainJar, version: "3.1.0" };
+  }
+  const cached = await findCachedBattlecodeJar(DEFAULT_ENGINE_VERSION);
+  if (cached) {
+    return { jdkHome, engineJar: cached, version: DEFAULT_ENGINE_VERSION };
+  }
+  throw new Error("Battlecode engine jar is missing; set BATTLECODE_ENGINE_JAR or download battlecode25-java-3.1.0.jar");
+}
+
+async function findCachedBattlecodeJar(version: string): Promise<string | null> {
+  const root = `${process.env.HOME ?? "/home/arthur"}/.gradle/caches/modules-2/files-2.1/org.battlecode/battlecode25-java/${version}`;
+  try {
+    const files = await listFiles(root, ".jar");
+    return files[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function writeBotSources(srcDir: string): Promise<void> {
+  const bots = [
+    { name: "fiberchamp", source: FIBER_CHAMP_SOURCE },
+    { name: "baselinebot", source: BASELINE_BOT_SOURCE }
+  ];
+  for (const bot of bots) {
+    const dir = resolve(srcDir, bot.name);
+    await mkdir(dir, { recursive: true });
+    await writeFile(resolve(dir, "RobotPlayer.java"), bot.source);
+  }
+}
+
+async function listFiles(root: string, suffix: string): Promise<string[]> {
+  const result: string[] = [];
+  async function walk(dir: string): Promise<void> {
+    for (const entry of await readdir(dir)) {
+      const full = resolve(dir, entry);
+      const info = await stat(full);
+      if (info.isDirectory()) {
+        await walk(full);
+      } else if (entry.endsWith(suffix)) {
+        result.push(full);
+      }
+    }
+  }
+  await walk(root);
+  return result.sort();
+}
+
+async function runProcess(command: string, args: string[], options: { cwd: string; timeoutMs: number }): Promise<{ stdout: string; stderr: string }> {
+  return new Promise((resolveProcess, reject) => {
+    const child = spawn(command, args, {
+      cwd: options.cwd,
+      stdio: ["ignore", "pipe", "pipe"]
+    });
+    let stdout = "";
+    let stderr = "";
+    const timer = setTimeout(() => {
+      child.kill("SIGTERM");
+      reject(new Error(`${command} timed out after ${options.timeoutMs}ms`));
+    }, options.timeoutMs);
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
+    child.stdout.on("data", (chunk: string) => {
+      stdout += chunk;
+    });
+    child.stderr.on("data", (chunk: string) => {
+      stderr += chunk;
+    });
+    child.on("error", (error) => {
+      clearTimeout(timer);
+      reject(error);
+    });
+    child.on("close", (code) => {
+      clearTimeout(timer);
+      if (code === 0) {
+        resolveProcess({ stdout, stderr });
+      } else {
+        reject(new Error(`${command} exited with ${code}\n${stdout}\n${stderr}`));
+      }
+    });
+  });
+}
+
+function parseMatchOutput(stdout: string): { winner: string; side: "A" | "B"; round: number; reason: string } {
+  const winnerLine = stdout.match(/\[server\]\s+([^\n(]+?)\s+\((A|B)\)\s+wins\s+\(round\s+(\d+)\)/);
+  if (!winnerLine) {
+    throw new Error(`Battlecode match did not report a winner:\n${stdout.slice(-2000)}`);
+  }
+  const reasonLine = stdout.match(/\[server\]\s+Reason:\s+([^\n]+)/);
+  return {
+    winner: winnerLine[1]!.trim(),
+    side: winnerLine[2] as "A" | "B",
+    round: Number(winnerLine[3]),
+    reason: reasonLine?.[1]?.trim() ?? "not reported"
+  };
+}
+
+function normalizeLedger(input: unknown): BattlecodeLedger {
+  const record = isRecord(input) ? input : {};
+  return {
+    generatedAt: typeof record.generatedAt === "string" ? record.generatedAt : new Date().toISOString(),
+    tickets: Array.isArray(record.tickets) ? record.tickets.filter(isRecord) as BattlecodeTicket[] : [],
+    matches: Array.isArray(record.matches) ? record.matches.filter(isRecord) as BattlecodeMatchResult[] : [],
+    awards: Array.isArray(record.awards) ? record.awards.filter(isRecord) as BattlecodeAward[] : []
+  };
+}
+
+function emptyLedger(): BattlecodeLedger {
+  return {
+    generatedAt: new Date().toISOString(),
+    tickets: [],
+    matches: [],
+    awards: []
+  };
+}
+
+function cleanId(value: unknown, fallback: string): string {
+  const text = String(value ?? fallback).trim();
+  if (/^[a-z0-9][a-z0-9._:-]{0,63}$/i.test(text)) {
+    return text;
+  }
+  throw new Error(`invalid id: ${text}`);
+}
+
+function cleanAsset(value: unknown, fallback: string): string {
+  const text = String(value ?? fallback).trim();
+  if (/^(xUDT:[A-Z0-9._:-]{2,64}|0x[a-f0-9]{64})$/i.test(text)) {
+    return text;
+  }
+  throw new Error(`invalid xUDT asset identifier: ${text}`);
+}
+
+function cleanAmount(value: unknown, fallback: string): string {
+  const text = String(value ?? fallback).trim();
+  if (/^[1-9][0-9]{0,17}$/.test(text)) {
+    return text;
+  }
+  throw new Error(`invalid positive integer amount: ${text}`);
+}
+
+function cleanHash(value: unknown): string {
+  const text = String(value ?? "").trim().toLowerCase();
+  if (/^sha256:[a-f0-9]{64}$/.test(text)) {
+    return text;
+  }
+  throw new Error(`invalid sha256 hash commitment: ${text || "missing"}`);
+}
+
+async function hashFile(path: string): Promise<string> {
+  return hashBytes(await readFile(path));
+}
+
+function hashBytes(bytes: Buffer): string {
+  return `${HASH_PREFIX}${createHash("sha256").update(bytes).digest("hex")}`;
+}
+
+function hashJson(input: unknown): string {
+  return hashBytes(Buffer.from(stableJson(input), "utf8"));
+}
+
+function stableJson(input: unknown): string {
+  if (input === null || typeof input !== "object") {
+    return JSON.stringify(input);
+  }
+  if (Array.isArray(input)) {
+    return `[${input.map((item) => stableJson(item)).join(",")}]`;
+  }
+  const record = input as Record<string, unknown>;
+  return `{${Object.keys(record).sort().map((key) => `${JSON.stringify(key)}:${stableJson(record[key])}`).join(",")}}`;
+}
+
+function positiveInt(value: unknown, fallback: number): number {
+  const number = Number(value);
+  return Number.isSafeInteger(number) && number > 0 ? number : fallback;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === "object" && !Array.isArray(value));
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+const BASELINE_BOT_SOURCE = `package baselinebot;
+
+import battlecode.common.*;
+
+public strictfp class RobotPlayer {
+  public static void run(RobotController rc) throws GameActionException {
+    while (true) {
+      Clock.yield();
+    }
+  }
+}
+`;
+
+const FIBER_CHAMP_SOURCE = `package fiberchamp;
+
+import battlecode.common.*;
+
+public strictfp class RobotPlayer {
+  static int turns = 0;
+  static final Direction[] DIRECTIONS = {
+    Direction.NORTH,
+    Direction.NORTHEAST,
+    Direction.EAST,
+    Direction.SOUTHEAST,
+    Direction.SOUTH,
+    Direction.SOUTHWEST,
+    Direction.WEST,
+    Direction.NORTHWEST
+  };
+
+  public static void run(RobotController rc) throws GameActionException {
+    while (true) {
+      turns += 1;
+      try {
+        UnitType type = rc.getType();
+        if (type.isTowerType()) {
+          runTower(rc);
+        } else if (type == UnitType.SOLDIER) {
+          runSoldier(rc);
+        } else if (type == UnitType.MOPPER) {
+          runMopper(rc);
+        } else {
+          runSoldier(rc);
+        }
+      } catch (Exception e) {
+        System.out.println("fiberchamp error: " + e.getMessage());
+      } finally {
+        Clock.yield();
+      }
+    }
+  }
+
+  static void runTower(RobotController rc) throws GameActionException {
+    RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+    for (RobotInfo enemy : enemies) {
+      if (rc.canAttack(enemy.getLocation())) {
+        rc.attack(enemy.getLocation());
+        return;
+      }
+    }
+    UnitType unit = turns % 5 == 0 ? UnitType.MOPPER : UnitType.SOLDIER;
+    for (Direction dir : DIRECTIONS) {
+      MapLocation loc = rc.getLocation().add(dir);
+      if (rc.canBuildRobot(unit, loc)) {
+        rc.buildRobot(unit, loc);
+        return;
+      }
+    }
+  }
+
+  static void runSoldier(RobotController rc) throws GameActionException {
+    RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+    for (RobotInfo enemy : enemies) {
+      if (rc.canAttack(enemy.getLocation())) {
+        rc.attack(enemy.getLocation());
+        return;
+      }
+    }
+    MapInfo[] infos = rc.senseNearbyMapInfos();
+    MapLocation target = null;
+    for (MapInfo info : infos) {
+      if (info.hasRuin()) {
+        target = info.getMapLocation();
+        break;
+      }
+    }
+    if (target != null) {
+      Direction dir = rc.getLocation().directionTo(target);
+      if (rc.canMove(dir)) {
+        rc.move(dir);
+      }
+    } else {
+      movePattern(rc);
+    }
+    if (rc.canAttack(rc.getLocation())) {
+      rc.attack(rc.getLocation());
+    }
+  }
+
+  static void runMopper(RobotController rc) throws GameActionException {
+    RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
+    if (enemies.length > 0) {
+      Direction dir = rc.getLocation().directionTo(enemies[0].getLocation());
+      if (rc.canMopSwing(dir)) {
+        rc.mopSwing(dir);
+        return;
+      }
+      if (rc.canMove(dir)) {
+        rc.move(dir);
+        return;
+      }
+    }
+    movePattern(rc);
+  }
+
+  static void movePattern(RobotController rc) throws GameActionException {
+    for (int i = 0; i < DIRECTIONS.length; i++) {
+      Direction dir = DIRECTIONS[(turns + i) % DIRECTIONS.length];
+      if (rc.canMove(dir)) {
+        rc.move(dir);
+        return;
+      }
+    }
+  }
+}
+`;

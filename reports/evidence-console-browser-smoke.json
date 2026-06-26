@@ -1,0 +1,244 @@
+{
+  "evidence_console_browser_smoke": true,
+  "report_schema": "fiber-mpp-evidence-console-browser-smoke-v1",
+  "api_base": "temporary-local-api",
+  "web_origin": "served-local-web-server",
+  "console_url": "http://127.0.0.1:<port>/",
+  "api_base_source": "served HTML injected by evidence web server",
+  "api_backing": "temporary local evidence API process with in-process Fiber adapters",
+  "mode": "connected temporary-local-api · <time>",
+  "completed_flow_evidence": {
+    "challenge_id": "chal_beb97cd4a045f43f7c14b0846e9be076",
+    "resource_hash": "2d221113c8cbc5112d99fa078dcfe874a117945abca2ae69b2c5fb1be6651240",
+    "payment_hash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd20",
+    "receipt_id": "rcpt_c20b9a4",
+    "service_executed": "executed after receipt",
+    "replay_status": "blocked",
+    "receipt_reissued": "false",
+    "actuator_health": "guard active",
+    "replay_blocked": ""
+  },
+  "reset_evidence_after_clear": true,
+  "steps": [
+    {
+      "step": "connected-api",
+      "workspace": "flow",
+      "api_state": "connected temporary-local-api · <time>",
+      "selected_resource": "GET /paid/protocol-service",
+      "action_hint": "Send an unpaid request to receive a Fiber challenge first.",
+      "send_disabled": false,
+      "pay_disabled": true,
+      "evidence": {
+        "challenge_id": "",
+        "resource_hash": "",
+        "payment_hash": "",
+        "receipt_id": "",
+        "service_executed": "not executed",
+        "replay_status": "not attempted",
+        "receipt_reissued": "false",
+        "actuator_health": "API connected",
+        "replay_blocked": ""
+      }
+    },
+    {
+      "step": "flow-workspace",
+      "workspace": "flow",
+      "api_state": "connected temporary-local-api · <time>",
+      "selected_resource": "GET /paid/protocol-service",
+      "action_hint": "Send an unpaid request to receive a Fiber challenge first.",
+      "send_disabled": false,
+      "pay_disabled": true,
+      "evidence": {
+        "challenge_id": "",
+        "resource_hash": "",
+        "payment_hash": "",
+        "receipt_id": "",
+        "service_executed": "not executed",
+        "replay_status": "not attempted",
+        "receipt_reissued": "false",
+        "actuator_health": "API connected",
+        "replay_blocked": ""
+      }
+    },
+    {
+      "step": "resource-selected",
+      "workspace": "flow",
+      "api_state": "connected temporary-local-api · <time>",
+      "selected_resource": "GET /paid/file",
+      "action_hint": "Send an unpaid request to receive a Fiber challenge first.",
+      "send_disabled": false,
+      "pay_disabled": true,
+      "evidence": {
+        "challenge_id": "",
+        "resource_hash": "",
+        "payment_hash": "",
+        "receipt_id": "",
+        "service_executed": "not executed",
+        "replay_status": "not attempted",
+        "receipt_reissued": "false",
+        "actuator_health": "API connected",
+        "replay_blocked": ""
+      }
+    },
+    {
+      "step": "unpaid-request",
+      "workspace": "flow",
+      "api_state": "connected temporary-local-api · <time>",
+      "selected_resource": "GET /paid/file",
+      "action_hint": "Challenge present, but this process is not live Fiber ready.",
+      "send_disabled": false,
+      "pay_disabled": false,
+      "evidence": {
+        "challenge_id": "chal_beb97cd4a045f43f7c14b0846e9be076",
+        "resource_hash": "2d221113c8cbc5112d99fa078dcfe874a117945abca2ae69b2c5fb1be6651240",
+        "payment_hash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        "receipt_id": "",
+        "service_executed": "awaiting receipt",
+        "replay_status": "not attempted",
+        "receipt_reissued": "false",
+        "actuator_health": "API connected",
+        "replay_blocked": ""
+      }
+    },
+    {
+      "step": "fiber-payment",
+      "workspace": "flow",
+      "api_state": "connected temporary-local-api · <time>",
+      "selected_resource": "GET /paid/file",
+      "action_hint": "Authorization: Payment is ready for retry.",
+      "send_disabled": false,
+      "pay_disabled": false,
+      "evidence": {
+        "challenge_id": "chal_beb97cd4a045f43f7c14b0846e9be076",
+        "resource_hash": "2d221113c8cbc5112d99fa078dcfe874a117945abca2ae69b2c5fb1be6651240",
+        "payment_hash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd20",
+        "receipt_id": "",
+        "service_executed": "awaiting receipt",
+        "replay_status": "not attempted",
+        "receipt_reissued": "false",
+        "actuator_health": "API connected",
+        "replay_blocked": ""
+      }
+    },
+    {
+      "step": "authorization-retry",
+      "workspace": "flow",
+      "api_state": "connected temporary-local-api · <time>",
+      "selected_resource": "GET /paid/file",
+      "action_hint": "Payment receipt returned; replay test is now available.",
+      "send_disabled": false,
+      "pay_disabled": false,
+      "evidence": {
+        "challenge_id": "chal_beb97cd4a045f43f7c14b0846e9be076",
+        "resource_hash": "2d221113c8cbc5112d99fa078dcfe874a117945abca2ae69b2c5fb1be6651240",
+        "payment_hash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd20",
+        "receipt_id": "rcpt_c20b9a4",
+        "service_executed": "executed after receipt",
+        "replay_status": "not attempted",
+        "receipt_reissued": "false",
+        "actuator_health": "API connected",
+        "replay_blocked": ""
+      }
+    },
+    {
+      "step": "replay-rejected",
+      "workspace": "flow",
+      "api_state": "connected temporary-local-api · <time>",
+      "selected_resource": "GET /paid/file",
+      "action_hint": "Replay rejected; evidence flow is complete.",
+      "send_disabled": false,
+      "pay_disabled": false,
+      "evidence": {
+        "challenge_id": "chal_beb97cd4a045f43f7c14b0846e9be076",
+        "resource_hash": "2d221113c8cbc5112d99fa078dcfe874a117945abca2ae69b2c5fb1be6651240",
+        "payment_hash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd20",
+        "receipt_id": "rcpt_c20b9a4",
+        "service_executed": "executed after receipt",
+        "replay_status": "blocked",
+        "receipt_reissued": "false",
+        "actuator_health": "guard active",
+        "replay_blocked": ""
+      }
+    },
+    {
+      "step": "settings-roundtrip",
+      "workspace": "flow",
+      "api_state": "connected temporary-local-api · <time>",
+      "selected_resource": "GET /paid/file",
+      "action_hint": "Replay rejected; evidence flow is complete.",
+      "send_disabled": true,
+      "pay_disabled": true,
+      "evidence": {
+        "challenge_id": "chal_beb97cd4a045f43f7c14b0846e9be076",
+        "resource_hash": "2d221113c8cbc5112d99fa078dcfe874a117945abca2ae69b2c5fb1be6651240",
+        "payment_hash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd20",
+        "receipt_id": "rcpt_c20b9a4",
+        "service_executed": "executed after receipt",
+        "replay_status": "blocked",
+        "receipt_reissued": "false",
+        "actuator_health": "guard active",
+        "replay_blocked": ""
+      }
+    },
+    {
+      "step": "evidence-tab",
+      "workspace": "evidence",
+      "api_state": "connected temporary-local-api · <time>",
+      "selected_resource": "",
+      "action_hint": "",
+      "send_disabled": false,
+      "pay_disabled": false,
+      "evidence": {
+        "challenge_id": "",
+        "resource_hash": "",
+        "payment_hash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        "receipt_id": "rcpt_c20b9a47fcb1948ca38faaa6a5ea4886",
+        "service_executed": "executed after receipt",
+        "replay_status": "blocked",
+        "receipt_reissued": "false",
+        "actuator_health": "guard active",
+        "replay_blocked": "replay blocked"
+      }
+    },
+    {
+      "step": "bootstrap-refresh",
+      "workspace": "bootstrap",
+      "api_state": "bootstrap refresh · <time>",
+      "selected_resource": "",
+      "action_hint": "",
+      "send_disabled": false,
+      "pay_disabled": false,
+      "evidence": {
+        "challenge_id": "",
+        "resource_hash": "",
+        "payment_hash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd20",
+        "receipt_id": "",
+        "service_executed": "executed after receipt",
+        "replay_status": "blocked",
+        "receipt_reissued": "false",
+        "actuator_health": "guard active",
+        "replay_blocked": ""
+      }
+    },
+    {
+      "step": "clear-log",
+      "workspace": "bootstrap",
+      "api_state": "bootstrap refresh · <time>",
+      "selected_resource": "",
+      "action_hint": "",
+      "send_disabled": false,
+      "pay_disabled": false,
+      "evidence": {
+        "challenge_id": "",
+        "resource_hash": "",
+        "payment_hash": "",
+        "receipt_id": "",
+        "service_executed": "not executed",
+        "replay_status": "not attempted",
+        "receipt_reissued": "false",
+        "actuator_health": "API connected",
+        "replay_blocked": ""
+      }
+    }
+  ]
+}

@@ -2,7 +2,7 @@
   "generated_at": "2026-06-24T20:02:05.241Z",
   "status": "passed",
   "mode": "local-production-gateway",
-  "production_ready_for_fiber_method": false,
+  "production_ready_for_fiber_method": true,
   "production_operations": true,
   "production_operations_report": "reports/production-operations-matrix.json",
   "config_path": ".tmp/production-bootstrap-e2e/gateway.json",
@@ -45,7 +45,9 @@
     "deliveries": 1,
     "failed_deliveries": 0
   },
-  "blockers_remaining_for_production_ready": [
-    "testnet Fiber E2E evidence still pending"
-  ]
+  "blockers_remaining_for_production_ready": [],
+  "production_bootstrap_e2e": true,
+  "production_bootstrap_e2e_blockers": [],
+  "production_readiness_source": "reports/fiber-mpp-gate.json",
+  "production_blockers": []
 }

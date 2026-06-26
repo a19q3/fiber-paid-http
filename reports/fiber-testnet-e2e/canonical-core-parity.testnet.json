@@ -18,5 +18,8 @@
   "typescript_role": "sdk-evidence-f402-compat-vector-harness",
   "production_ready_for_fiber_method": true,
   "production_blockers": [],
-  "mismatches": []
+  "mismatches": [],
+  "production_bootstrap_e2e": true,
+  "production_bootstrap_report": "reports/production-bootstrap-e2e.json",
+  "production_bootstrap_e2e_blockers": []
 }

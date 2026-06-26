@@ -9,8 +9,8 @@ FiberMPP is a TypeScript monorepo with these layers:
 - `packages/server-middleware`: route protection and reverse proxy mode.
 - `packages/client`: paid fetch helper.
 - `packages/cli`: gateway, bootstrap, payment, vector, and local evidence tooling.
-- `apps/demo-api`: local evidence API for the 402 -> Fiber payment -> receipt -> replay rejection flow.
-- `apps/demo-web`: browser evidence console.
+- `apps/evidence-api`: local evidence API for the 402 -> Fiber payment -> receipt -> replay rejection flow.
+- `apps/evidence-web`: browser evidence console.
 
 ## Request flow
 

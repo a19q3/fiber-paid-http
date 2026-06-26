@@ -1,0 +1,367 @@
+{
+  "ok": true,
+  "generatedAt": "2026-06-25T14:02:57.116Z",
+  "startedAt": "2026-06-25T14:02:43.964Z",
+  "apiBase": "http://127.0.0.1:8877",
+  "sessionId": "live-demo",
+  "endpoint": "/paid/protocol-service",
+  "amountCkb": "100",
+  "amountShannons": "100",
+  "paymentHash": "0xb4004a4fc95b5a5ae7677f9ada2f3161c3eb1e8e37d78bbbb24921648ada681c",
+  "receiptId": "rcpt_7065a9007f8c63064c84205447dcc2c4",
+  "replayRejected": true,
+  "receiptReissued": false,
+  "frontendObserveUrl": "http://127.0.0.1:8878/?sessionId=live-demo&pollMs=1200",
+  "steps": [
+    {
+      "step": "readyz",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "service": "fiber-mpp-evidence-api",
+        "status": "ready",
+        "livePaymentEnabled": true,
+        "mode": "local",
+        "source": "env",
+        "roles": [
+          {
+            "role": "payer",
+            "status": "ready",
+            "source": "env",
+            "blockers": []
+          },
+          {
+            "role": "payee",
+            "status": "ready",
+            "source": "env",
+            "blockers": []
+          },
+          {
+            "role": "gateway",
+            "status": "ready",
+            "source": "env",
+            "blockers": []
+          }
+        ],
+        "blockers": [],
+        "generatedAt": "2026-06-25T14:02:44.008Z"
+      }
+    },
+    {
+      "step": "reset",
+      "status": 200,
+      "body": {
+        "flow": {
+          "events": []
+        }
+      }
+    },
+    {
+      "step": "unpaid",
+      "status": 200,
+      "body": {
+        "status": 402,
+        "fiberChallenge": {
+          "paymentHash": "0xb4004a4fc95b5a5ae7677f9ada2f3161c3eb1e8e37d78bbbb24921648ada681c"
+        },
+        "flow": {
+          "endpoint": "/paid/protocol-service",
+          "challengeId": "chal_fc63af43eb289aeaf37c368d43f4956e",
+          "resourceHash": "568433d232d84c63470e2661ffca1312884681380dbc019772842531dc8da102",
+          "paymentHash": "0xb4004a4fc95b5a5ae7677f9ada2f3161c3eb1e8e37d78bbbb24921648ada681c",
+          "events": [
+            {
+              "time": "2026-06-25T14:02:46.529Z",
+              "level": "INFO",
+              "actor": "client",
+              "message": "GET /paid/protocol-service",
+              "detail": "amount=100 CKB; fiber_amount_shannons=100"
+            },
+            {
+              "time": "2026-06-25T14:02:46.535Z",
+              "level": "INFO",
+              "actor": "server",
+              "message": "402 issued",
+              "detail": "challenge=chal_fc63af43eb289aeaf37c368d43f4956e"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "step": "pay",
+      "status": 200,
+      "body": {
+        "proof": {
+          "mode": "local",
+          "status": "Success",
+          "paymentHash": "0xb4004a4fc95b5a5ae7677f9ada2f3161c3eb1e8e37d78bbbb24921648ada681c"
+        },
+        "flow": {
+          "endpoint": "/paid/protocol-service",
+          "challengeId": "chal_fc63af43eb289aeaf37c368d43f4956e",
+          "resourceHash": "568433d232d84c63470e2661ffca1312884681380dbc019772842531dc8da102",
+          "paymentHash": "0xb4004a4fc95b5a5ae7677f9ada2f3161c3eb1e8e37d78bbbb24921648ada681c",
+          "events": [
+            {
+              "time": "2026-06-25T14:02:46.529Z",
+              "level": "INFO",
+              "actor": "client",
+              "message": "GET /paid/protocol-service",
+              "detail": "amount=100 CKB; fiber_amount_shannons=100"
+            },
+            {
+              "time": "2026-06-25T14:02:46.535Z",
+              "level": "INFO",
+              "actor": "server",
+              "message": "402 issued",
+              "detail": "challenge=chal_fc63af43eb289aeaf37c368d43f4956e"
+            },
+            {
+              "time": "2026-06-25T14:02:49.048Z",
+              "level": "INFO",
+              "actor": "node1 (payer)",
+              "message": "send_payment",
+              "detail": "payment_hash=0xb4004a4fc95b5a5ae7677f9ada2f3161c3eb1e8e37d78bbbb24921648ada681c"
+            },
+            {
+              "time": "2026-06-25T14:02:49.572Z",
+              "level": "INFO",
+              "actor": "fiber-method",
+              "message": "payment proof returned",
+              "detail": "mode=local; status=Success"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "step": "retry",
+      "status": 200,
+      "body": {
+        "status": 200,
+        "receipt": {
+          "receiptId": "rcpt_7065a9007f8c63064c84205447dcc2c4",
+          "challengeId": "chal_fc63af43eb289aeaf37c368d43f4956e"
+        },
+        "flow": {
+          "endpoint": "/paid/protocol-service",
+          "challengeId": "chal_fc63af43eb289aeaf37c368d43f4956e",
+          "resourceHash": "568433d232d84c63470e2661ffca1312884681380dbc019772842531dc8da102",
+          "paymentHash": "0xb4004a4fc95b5a5ae7677f9ada2f3161c3eb1e8e37d78bbbb24921648ada681c",
+          "receiptId": "rcpt_7065a9007f8c63064c84205447dcc2c4",
+          "events": [
+            {
+              "time": "2026-06-25T14:02:46.529Z",
+              "level": "INFO",
+              "actor": "client",
+              "message": "GET /paid/protocol-service",
+              "detail": "amount=100 CKB; fiber_amount_shannons=100"
+            },
+            {
+              "time": "2026-06-25T14:02:46.535Z",
+              "level": "INFO",
+              "actor": "server",
+              "message": "402 issued",
+              "detail": "challenge=chal_fc63af43eb289aeaf37c368d43f4956e"
+            },
+            {
+              "time": "2026-06-25T14:02:49.048Z",
+              "level": "INFO",
+              "actor": "node1 (payer)",
+              "message": "send_payment",
+              "detail": "payment_hash=0xb4004a4fc95b5a5ae7677f9ada2f3161c3eb1e8e37d78bbbb24921648ada681c"
+            },
+            {
+              "time": "2026-06-25T14:02:49.572Z",
+              "level": "INFO",
+              "actor": "fiber-method",
+              "message": "payment proof returned",
+              "detail": "mode=local; status=Success"
+            },
+            {
+              "time": "2026-06-25T14:02:52.084Z",
+              "level": "INFO",
+              "actor": "client",
+              "message": "retry with Authorization: Payment",
+              "detail": "Payment eyJkb2...kuNTcyWiJ9"
+            },
+            {
+              "time": "2026-06-25T14:02:52.089Z",
+              "level": "INFO",
+              "actor": "server",
+              "message": "payment verified",
+              "detail": "receipt_id=rcpt_7065a9007f8c63064c84205447dcc2c4"
+            },
+            {
+              "time": "2026-06-25T14:02:52.089Z",
+              "level": "INFO",
+              "actor": "protected-service",
+              "message": "service executed",
+              "detail": "HTTP 200"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "step": "replay",
+      "status": 200,
+      "body": {
+        "status": 402,
+        "rejected": true,
+        "receiptReissued": false,
+        "flow": {
+          "endpoint": "/paid/protocol-service",
+          "challengeId": "chal_fc63af43eb289aeaf37c368d43f4956e",
+          "resourceHash": "568433d232d84c63470e2661ffca1312884681380dbc019772842531dc8da102",
+          "paymentHash": "0xb4004a4fc95b5a5ae7677f9ada2f3161c3eb1e8e37d78bbbb24921648ada681c",
+          "receiptId": "rcpt_7065a9007f8c63064c84205447dcc2c4",
+          "replayStatus": 402,
+          "events": [
+            {
+              "time": "2026-06-25T14:02:46.529Z",
+              "level": "INFO",
+              "actor": "client",
+              "message": "GET /paid/protocol-service",
+              "detail": "amount=100 CKB; fiber_amount_shannons=100"
+            },
+            {
+              "time": "2026-06-25T14:02:46.535Z",
+              "level": "INFO",
+              "actor": "server",
+              "message": "402 issued",
+              "detail": "challenge=chal_fc63af43eb289aeaf37c368d43f4956e"
+            },
+            {
+              "time": "2026-06-25T14:02:49.048Z",
+              "level": "INFO",
+              "actor": "node1 (payer)",
+              "message": "send_payment",
+              "detail": "payment_hash=0xb4004a4fc95b5a5ae7677f9ada2f3161c3eb1e8e37d78bbbb24921648ada681c"
+            },
+            {
+              "time": "2026-06-25T14:02:49.572Z",
+              "level": "INFO",
+              "actor": "fiber-method",
+              "message": "payment proof returned",
+              "detail": "mode=local; status=Success"
+            },
+            {
+              "time": "2026-06-25T14:02:52.084Z",
+              "level": "INFO",
+              "actor": "client",
+              "message": "retry with Authorization: Payment",
+              "detail": "Payment eyJkb2...kuNTcyWiJ9"
+            },
+            {
+              "time": "2026-06-25T14:02:52.089Z",
+              "level": "INFO",
+              "actor": "server",
+              "message": "payment verified",
+              "detail": "receipt_id=rcpt_7065a9007f8c63064c84205447dcc2c4"
+            },
+            {
+              "time": "2026-06-25T14:02:52.089Z",
+              "level": "INFO",
+              "actor": "protected-service",
+              "message": "service executed",
+              "detail": "HTTP 200"
+            },
+            {
+              "time": "2026-06-25T14:02:54.601Z",
+              "level": "WARN",
+              "actor": "client",
+              "message": "replay same credential",
+              "detail": "Payment eyJkb2...kuNTcyWiJ9"
+            },
+            {
+              "time": "2026-06-25T14:02:54.602Z",
+              "level": "WARN",
+              "actor": "server",
+              "message": "replay rejected",
+              "detail": "HTTP 402"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "step": "status",
+      "status": 200,
+      "body": {
+        "endpoint": "/paid/protocol-service",
+        "challengeId": "chal_fc63af43eb289aeaf37c368d43f4956e",
+        "resourceHash": "568433d232d84c63470e2661ffca1312884681380dbc019772842531dc8da102",
+        "paymentHash": "0xb4004a4fc95b5a5ae7677f9ada2f3161c3eb1e8e37d78bbbb24921648ada681c",
+        "receiptId": "rcpt_7065a9007f8c63064c84205447dcc2c4",
+        "replayStatus": 402,
+        "events": [
+          {
+            "time": "2026-06-25T14:02:46.529Z",
+            "level": "INFO",
+            "actor": "client",
+            "message": "GET /paid/protocol-service",
+            "detail": "amount=100 CKB; fiber_amount_shannons=100"
+          },
+          {
+            "time": "2026-06-25T14:02:46.535Z",
+            "level": "INFO",
+            "actor": "server",
+            "message": "402 issued",
+            "detail": "challenge=chal_fc63af43eb289aeaf37c368d43f4956e"
+          },
+          {
+            "time": "2026-06-25T14:02:49.048Z",
+            "level": "INFO",
+            "actor": "node1 (payer)",
+            "message": "send_payment",
+            "detail": "payment_hash=0xb4004a4fc95b5a5ae7677f9ada2f3161c3eb1e8e37d78bbbb24921648ada681c"
+          },
+          {
+            "time": "2026-06-25T14:02:49.572Z",
+            "level": "INFO",
+            "actor": "fiber-method",
+            "message": "payment proof returned",
+            "detail": "mode=local; status=Success"
+          },
+          {
+            "time": "2026-06-25T14:02:52.084Z",
+            "level": "INFO",
+            "actor": "client",
+            "message": "retry with Authorization: Payment",
+            "detail": "Payment eyJkb2...kuNTcyWiJ9"
+          },
+          {
+            "time": "2026-06-25T14:02:52.089Z",
+            "level": "INFO",
+            "actor": "server",
+            "message": "payment verified",
+            "detail": "receipt_id=rcpt_7065a9007f8c63064c84205447dcc2c4"
+          },
+          {
+            "time": "2026-06-25T14:02:52.089Z",
+            "level": "INFO",
+            "actor": "protected-service",
+            "message": "service executed",
+            "detail": "HTTP 200"
+          },
+          {
+            "time": "2026-06-25T14:02:54.601Z",
+            "level": "WARN",
+            "actor": "client",
+            "message": "replay same credential",
+            "detail": "Payment eyJkb2...kuNTcyWiJ9"
+          },
+          {
+            "time": "2026-06-25T14:02:54.602Z",
+            "level": "WARN",
+            "actor": "server",
+            "message": "replay rejected",
+            "detail": "HTTP 402"
+          }
+        ]
+      }
+    }
+  ]
+}

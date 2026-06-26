@@ -4,7 +4,7 @@
 
 FiberMPP uses Rust as the canonical protocol core and verifier target. TypeScript remains a maintained JS ecosystem integration layer for SDKs, demos, examples, F402/MPP compatibility, and vector tooling. The project has local Fiber E2E evidence, separate testnet Fiber E2E evidence, shared conformance vectors, a security matrix, and canonical parity gates.
 
-The Rust HTTP gateway production path implements signed `402 Payment Required` challenge issuance, durable SQLite storage, Fiber method adapter wiring, receipt issuance, and replay rejection. Production readiness is now gated by the recorded testnet Fiber E2E evidence plus production operations evidence.
+The Rust HTTP gateway production path implements signed `402 Payment Required` challenge issuance, durable SQLite storage, Fiber method adapter wiring, receipt issuance, and replay rejection. Production readiness is now gated by recorded testnet Fiber E2E evidence, production operations evidence, and production bootstrap E2E readiness evidence.
 
 ## Ready
 
@@ -36,9 +36,9 @@ The Rust HTTP gateway production path implements signed `402 Payment Required` c
 - Rust canonical vector verification with TypeScript harness parity.
 - Rust HTTP gateway production path issues signed `402 Payment Required` challenges, creates Fiber invoices through FNN JSON-RPC, verifies settlement, records durable challenge/credential/receipt state, emits `Payment-Receipt`, and rejects replay.
 
-## Blockers before live production
+## Before live production
 
-- None currently recorded by the gate. Re-run the gates before release or deployment because production readiness is evidence-based and can regress if testnet evidence, operations checks, or canonical parity fail.
+- Re-run the gates before release or deployment because production readiness is evidence-based and can regress if testnet evidence, operations checks, bootstrap readiness, layout evidence, or canonical parity fail.
 
 ## Gate
 
@@ -68,4 +68,4 @@ Current production reports may set:
 "production_ready_for_fiber_method": true
 ```
 
-This value is valid only when `testnet_fiber_e2e`, `production_operations`, `rust_gateway_production_path`, conformance vectors, and security matrix checks all pass.
+This value may remain or become `true` only when `testnet_fiber_e2e`, `production_operations`, `production_bootstrap_e2e`, `rust_gateway_production_path`, conformance vectors, and security matrix checks all pass with no production blockers. The broader `fiber_mpp_gate_ready` field also requires the Evidence Console layout checks to pass.

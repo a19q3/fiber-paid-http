@@ -20,7 +20,8 @@
   "dependencies": {
     "@fiber-mpp/client": "workspace:*",
     "@fiber-mpp/core": "workspace:*",
-    "@fiber-mpp/demo-api": "workspace:*",
+    "@fiber-mpp/evidence-api": "workspace:*",
+    "@fiber-mpp/evidence-web": "workspace:*",
     "@fiber-mpp/f402-compat": "workspace:*",
     "@fiber-mpp/fiber-method": "workspace:*",
     "@fiber-mpp/server-middleware": "workspace:*",

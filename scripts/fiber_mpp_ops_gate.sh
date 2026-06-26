@@ -5,6 +5,12 @@ mkdir -p reports
 
 node <<'JSON'
 const fs = require("node:fs");
+const { execFileSync } = require("node:child_process");
+const { productionBootstrapReadiness } = require("./scripts/lib/production-bootstrap-readiness.cjs");
+const {
+  normalizePreservedTestnetEvidence,
+  verifyPreservedTestnetEvidence
+} = require("./scripts/lib/testnet-fiber-evidence-readiness.cjs");
 
 const requiredFiles = [
   "docs/production-operations.md",
@@ -79,20 +85,43 @@ const checks = [
 });
 
 const failed = checks.filter((check) => check.status !== "passed");
-const gate = fs.existsSync("reports/fiber-mpp-gate.json")
-  ? JSON.parse(fs.readFileSync("reports/fiber-mpp-gate.json", "utf8"))
+const productionBootstrap = fs.existsSync("reports/production-bootstrap-e2e.json")
+  ? JSON.parse(fs.readFileSync("reports/production-bootstrap-e2e.json", "utf8"))
   : {};
-const testnetEvidence =
-  gate.testnet_fiber_e2e === true ||
-  gate.testnet_fiber_e2e_evidence === true ||
-  fs.existsSync("reports/fiber-testnet-e2e-success.json");
+const testnetEvidencePath = "reports/fiber-testnet-e2e-success.json";
+let testnetEvidenceReport = fs.existsSync(testnetEvidencePath)
+  ? JSON.parse(fs.readFileSync(testnetEvidencePath, "utf8"))
+  : null;
+const currentFiberCommit = readFiberCommit();
+const testnetEvidenceRecordedAt = readTestnetEvidenceRecordedAt(testnetEvidenceReport);
+testnetEvidenceReport = normalizePreservedTestnetEvidence(testnetEvidenceReport, {
+  fallbackRecordedAt: testnetEvidenceRecordedAt
+});
+const testnetEvidenceCheck = verifyPreservedTestnetEvidence(testnetEvidenceReport, {
+  path: testnetEvidencePath,
+  expectedFiberCommit: currentFiberCommit,
+  fallbackRecordedAt: testnetEvidenceRecordedAt
+});
+const testnetEvidence = testnetEvidenceCheck.verified;
+const productionBootstrapCheck = productionBootstrapReadiness(productionBootstrap);
+const productionBootstrapReady = productionBootstrapCheck.ready;
 const remainingBlockers = [
   ...(testnetEvidence ? [] : ["testnet Fiber E2E evidence still pending"]),
+  ...(productionBootstrapReady ? [] : [`production bootstrap E2E readiness evidence still pending: ${productionBootstrapCheck.missing.join(", ") || "reports/production-bootstrap-e2e.json missing"}`]),
   ...(failed.length === 0 ? [] : ["production operations hardening evidence incomplete"])
 ];
 const report = {
   production_ops_ready: failed.length === 0,
   testnet_fiber_e2e: testnetEvidence,
+  testnet_fiber_e2e_evidence: testnetEvidence,
+  testnet_fiber_e2e_evidence_report: testnetEvidencePath,
+  testnet_evidence_recorded_at: testnetEvidenceCheck.recordedAt,
+  testnet_evidence_digest: testnetEvidenceCheck.evidenceDigest,
+  testnet_fiber_e2e_evidence_verified: testnetEvidenceCheck.verified,
+  testnet_fiber_e2e_evidence_blockers: testnetEvidenceCheck.blockers,
+  fiber_commit: currentFiberCommit,
+  production_bootstrap_e2e: productionBootstrapReady,
+  production_bootstrap_e2e_blockers: productionBootstrapCheck.missing,
   production_ready_for_fiber_method: remainingBlockers.length === 0,
   artifacts: {
     runbook: "docs/production-operations.md",
@@ -108,5 +137,33 @@ console.log(JSON.stringify(report, null, 2));
 
 if (failed.length > 0) {
   process.exit(1);
+}
+
+function readFiberCommit() {
+  try {
+    return execFileSync("git", ["-C", "/home/arthur/a19q3/fiber", "rev-parse", "HEAD"], {
+      encoding: "utf8"
+    }).trim();
+  } catch {
+    return null;
+  }
+}
+
+function readTestnetEvidenceRecordedAt(report) {
+  if (report && typeof report === "object") {
+    const direct =
+      report.testnet_evidence_recorded_at ||
+      report.generated_at ||
+      report.gate_report?.testnet_evidence_recorded_at ||
+      report.gate_report?.generated_at;
+    if (direct) {
+      return direct;
+    }
+  }
+  const wrapperPath = "reports/fiber-testnet-e2e/testnet-e2e-report.json";
+  if (!fs.existsSync(wrapperPath)) {
+    return null;
+  }
+  return JSON.parse(fs.readFileSync(wrapperPath, "utf8")).generated_at || null;
 }
 JSON

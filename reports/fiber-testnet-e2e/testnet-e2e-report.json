@@ -51,7 +51,24 @@
     "production_ready_for_fiber_method": true,
     "production_blockers": [],
     "fiber_e2e_payment_hash": "0x8adaeeb1c27b698d5a63447588f3de62568f94e23effeda973ff70281a545f9b",
-    "fiber_e2e_receipt_id": "rcpt_9ff3edb34ee30f56d20c3c6bf01fb453"
+    "fiber_e2e_receipt_id": "rcpt_9ff3edb34ee30f56d20c3c6bf01fb453",
+    "production_bootstrap_e2e": true,
+    "production_bootstrap_report": "reports/production-bootstrap-e2e.json",
+    "production_bootstrap_e2e_blockers": [],
+    "evidence_console_layout": true,
+    "evidence_console_layout_report": "reports/evidence-console-layout.log",
+    "evidence_console_layout_blockers": [],
+    "fiber_mpp_gate_ready": true,
+    "fiber_mpp_gate_blockers": [],
+    "evidence_console_action_coverage": true,
+    "evidence_console_action_coverage_report": "reports/evidence-console-action-coverage.json",
+    "evidence_console_action_coverage_blockers": [],
+    "evidence_console_browser_smoke": true,
+    "evidence_console_browser_smoke_report": "reports/evidence-console-browser-smoke.json",
+    "evidence_console_browser_smoke_blockers": [],
+    "evidence_console_server_hardening": true,
+    "evidence_console_server_hardening_report": "reports/evidence-console-server-hardening.log",
+    "evidence_console_server_hardening_blockers": []
   },
   "canonical_report": {
     "rust_canonical_verifier": true,
@@ -73,7 +90,10 @@
     "typescript_role": "sdk-evidence-f402-compat-vector-harness",
     "production_ready_for_fiber_method": true,
     "production_blockers": [],
-    "mismatches": []
+    "mismatches": [],
+    "production_bootstrap_e2e": true,
+    "production_bootstrap_report": "reports/production-bootstrap-e2e.json",
+    "production_bootstrap_e2e_blockers": []
   },
   "artifacts": {
     "preflight": "reports/fiber-testnet-e2e/preflight.json",
@@ -84,5 +104,12 @@
     "canonical_core_parity": "reports/canonical-core-parity.json",
     "testnet_success": "reports/fiber-testnet-e2e-success.json",
     "testnet_evidence": "reports/fiber-testnet-e2e-evidence.json"
-  }
+  },
+  "production_ready_for_fiber_method": true,
+  "production_blockers": [],
+  "production_bootstrap_e2e": true,
+  "production_bootstrap_report": "reports/production-bootstrap-e2e.json",
+  "production_bootstrap_e2e_blockers": [],
+  "fiber_mpp_gate_ready": true,
+  "fiber_mpp_gate_blockers": []
 }

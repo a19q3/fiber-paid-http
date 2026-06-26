@@ -7,7 +7,7 @@ export const aliases = {
   "@fiber-mpp/f402-compat": "/home/arthur/a19q3/fiber-mpp/packages/f402-compat/src/index.ts",
   "@fiber-mpp/server-middleware": "/home/arthur/a19q3/fiber-mpp/packages/server-middleware/src/index.ts",
   "@fiber-mpp/client": "/home/arthur/a19q3/fiber-mpp/packages/client/src/index.ts",
-  "@fiber-mpp/demo-api": "/home/arthur/a19q3/fiber-mpp/apps/demo-api/src/index.ts"
+  "@fiber-mpp/evidence-api": "/home/arthur/a19q3/fiber-mpp/apps/evidence-api/src/index.ts"
 };
 
 export default defineConfig({

@@ -1,6 +1,6 @@
 # AGENTS.md — FiberMPP
 
-FiberMPP is a **dual-stack** Fiber payment method for the Machine Payments Protocol (MPP) with F402 compatibility. It is a TypeScript pnpm workspace (`packages/*`, `apps/*`) **plus** a Rust Cargo workspace (`crates/*`). Rust is the production canonical engine; TypeScript is SDK/demo/F402-compat/vector tooling.
+FiberMPP is a **dual-stack** Fiber payment method for the Machine Payments Protocol (MPP) with F402 compatibility. It is a TypeScript pnpm workspace (`packages/*`, `apps/*`) **plus** a Rust Cargo workspace (`crates/*`). Rust is the production canonical engine; TypeScript is SDK, evidence-console, F402-compat, and vector tooling.
 
 ## Quick start
 
@@ -10,9 +10,9 @@ pnpm build
 export FIBER_MPP_SECRET="$(openssl rand -hex 32)"
 pnpm exec fiber-mpp init --role gateway --out fiber-mpp.gateway.json
 pnpm exec fiber-mpp doctor --role gateway --config fiber-mpp.gateway.json
-pnpm --filter @fiber-mpp/demo-api start        # evidence API on :8787
+pnpm --filter @fiber-mpp/evidence-api start        # evidence API on :8787
 # in another shell:
-pnpm --filter @fiber-mpp/demo-web start        # static evidence console on :8788
+pnpm --filter @fiber-mpp/evidence-web start        # evidence console on :8788 (serves dist/)
 ```
 
 Fiber payment execution requires `FIBER_MODE=local` or `FIBER_MODE=testnet` plus real payer/payee Fiber RPC endpoints. Without those variables, `pnpm test:fiber` runs the visible preflight and reports skipped blockers.
@@ -28,8 +28,8 @@ Fiber payment execution requires `FIBER_MODE=local` or `FIBER_MODE=testnet` plus
 | `packages/f402-compat` | `f402ChallengeToMpp`, `f402ProofToCredential`. |
 | `packages/client` | `paidFetch`, `inspectChallenge`. |
 | `packages/cli` | The `fiber-mpp` command (commander). Vectors live in `packages/cli/src/vectors.ts`. |
-| `apps/demo-api` | Hono app exposing `/paid/*` plus evidence console JSON APIs. |
-| `apps/demo-web` | Static HTML served by `server.mjs`. |
+| `apps/evidence-api` | Hono app exposing `/paid/*` plus evidence console JSON APIs. |
+| `apps/evidence-web` | React + Vite SPA: three-column shell (Sidebar + Main + Inspector), SettingsDrawer, PreferencesPopover. Built to `dist/`, served by `server.mjs`. Source in `src/{layouts,views,settings,components,state,lib}`. |
 | `examples/{paid-api,paid-mcp-tool}` | README-only (no source yet). |
 | `crates/fiber-mpp-core` | Rust canonical engine: `canonical_json`, `verify_vectors_dir`, `verify_receipt`, `decode_receipt_token`, all vector case verifiers. |
 | `crates/fiber-mpp-storage` | Rust `MemoryStore` + `SqliteStore` (rusqlite). |
@@ -53,8 +53,8 @@ pnpm test:fiber                    # vitest run --config vitest.fiber.config.ts
                                    # preflight always runs; live E2E only when env ready
 pnpm build                         # pnpm -r --if-present build
 pnpm gate                          # bash scripts/fiber_mpp_gate.sh (writes reports/fiber-mpp-gate.json)
-pnpm demo:api                      # @fiber-mpp/demo-api start
-pnpm demo:web                      # @fiber-mpp/demo-web start
+pnpm evidence:api                      # @fiber-mpp/evidence-api start
+pnpm evidence:web                      # @fiber-mpp/evidence-web start
 pnpm exec fiber-mpp vectors verify # TS vector harness (writes reports/ts-conformance.json)
 pnpm exec fiber-mpp vectors generate
 ```
@@ -130,12 +130,12 @@ Both Rust (`crates/fiber-mpp-core`) and TypeScript (`packages/core`) implement t
 6. **`reports/fiber-e2e-result.json` is the live E2E status file** (see `tests/integration/fiber-e2e-env.ts`). The gate reads this directly, but also has log-grep guards: if `pnpm test:fiber` output contains "No test files found" OR lacks `fiber-preflight.test.ts`, the gate marks Fiber E2E as **failed** regardless of exit code.
 7. **Gate reports mutate each other across runs.** `scripts/fiber_mpp_gate.sh` reads `reports/fiber-mpp-gate.json` from previous runs to preserve `live_fiber_local_e2e` evidence. Deleting `reports/` entirely loses the production-blocker downgrade history.
 8. **In-memory store is refused in production.** `createFiberMppMiddleware({production: true})` calls `assertProductionStore` and throws unless `allowInMemoryStore: true` OR `ALLOW_IN_MEMORY_STORE=1` OR a non-`memory://` storage URI is supplied. `fiber-mpp serve` defaults to `memory://` storage; pass `--storage sqlite://./fiber-mpp.sqlite` for anything real.
-9. **Secret length floor.** Middleware requires `secret.length >= 16`; default demo secrets all match this (`"fiber-mpp-demo-secret-at-least-16"`, `"fiber-mpp-conformance-secret"`, `"fiber-mpp-live-e2e-secret-at-least-16"`).
-10. **`apps/demo-api/src/index.ts` reads reports from `reports/`** (canonical-core-parity, fiber-local-e2e-evidence, gate.*). The evidence console only shows real status when these exist; otherwise it renders `static-evidence` mode and `node*.status: "unconfigured"`.
-11. **`production_ready_for_fiber_method` is hard-coded `false`** in every gate report. The remaining production blocker is separate testnet Fiber E2E evidence. Production operations evidence is gate-checked by `scripts/fiber_mpp_ops_gate.sh` and reported in `reports/production-operations-matrix.json`; don't set readiness to `true` without testnet evidence.
+9. **Secret length floor.** Middleware requires `secret.length >= 16`; evidence/conformance secrets all match this (`"fiber-mpp-conformance-secret"`, `"fiber-mpp-live-e2e-secret-at-least-16"`, generated runtime secrets).
+10. **`apps/evidence-api/src/index.ts` reads reports from `reports/`** (canonical-core-parity, fiber-local-e2e-evidence, gate.*). The evidence console only shows real status when these exist; otherwise it renders `static-evidence` mode and `node*.status: "unconfigured"`.
+11. **`production_ready_for_fiber_method` is evidence-gated.** It can be `true` only while preserved testnet Fiber E2E evidence verifies against the current Fiber commit, production operations checks pass, and production bootstrap E2E evidence is present.
 12. **TypeScript is NOT a trusted verifier.** `typescript_trusted_boundary: false` is asserted in the canonical parity gate. Any new verifier MUST be in Rust.
 13. **Vector parity is exact**: `canonical_hash`, `actual` (Accepted/Rejected), `actual_error_code`, and `passed` must all match across both engines per `crates/fiber-mpp-core/src/lib.rs:compare_reports`. Adding a new vector requires updating both `packages/cli/src/vectors.ts` (`verifyVectorInput` case) and `crates/fiber-mpp-core/src/lib.rs` (`verify_vector_input` case).
-14. **`apps/demo-web` is a static `index.html`** with stub scripts — no React/Vite build. `pnpm --filter @fiber-mpp/demo-web build/lint/typecheck` are no-op `console.log` stubs.
+14. **`apps/evidence-web` is a React + Vite SPA** built to `dist/` and served by `server.mjs`. `pnpm --filter @fiber-mpp/evidence-web build` runs Vite; `typecheck`/`lint` run `vite build` + `check-static.mjs` (verifies dist/ contains required API endpoint strings and DOM anchors). Layout, action coverage, and browser smoke checks run through the gate. Check scripts read `dist/` (not source). Icons are imported from `lucide-react` directly (no sprite sync). `@types/react` must be added to devDependencies for `tsc --noEmit` to work — until then, `typecheck` uses the build-based approach.
 15. **`node_modules/` is committed-adjacent only via lockfile**; `.gitignore` excludes `node_modules/`, `dist/`, `target/`, `.tmp/`, `*.db`, `*.sqlite`, `reports/fiber-local-network/*.pid`, `reports/fiber-local-network/*.log`. Reports themselves are committed.
 16. **CI gate (`scripts/fiber_mpp_gate.sh`) fails on Fiber E2E "failed" status** via the final `node -e '... process.exit(...)'` check. Even if everything else passes, a `fiber_e2e_status === "failed"` exits non-zero.
 

@@ -13,6 +13,12 @@ export const ResourceDescriptorSchema = z.object({
   contentType: z.string().optional()
 });
 
+export const FiberUdtTypeScriptSchema = z.object({
+  code_hash: z.string().regex(/^0x[a-f0-9]{64}$/i),
+  hash_type: z.string().min(1),
+  args: z.string().regex(/^0x[a-f0-9]*$/i)
+});
+
 export const FiberMethodChallengeSchema = z.object({
   method: z.literal("fiber"),
   intent: z.literal("charge"),
@@ -20,6 +26,7 @@ export const FiberMethodChallengeSchema = z.object({
   amountShannons: z.string().regex(/^\d+$/).optional(),
   paymentHash: z.string().min(1),
   invoice: z.string().optional(),
+  udtTypeScript: FiberUdtTypeScriptSchema.optional(),
   fiberNodeId: z.string().optional(),
   fiberRpcLabel: z.string().optional(),
   expiresAt: z.string().datetime()
@@ -86,6 +93,7 @@ export const SignedPaymentChallengeSchema = z.object({
 
 export type Amount = z.infer<typeof AmountSchema>;
 export type ResourceDescriptor = z.infer<typeof ResourceDescriptorSchema>;
+export type FiberUdtTypeScript = z.infer<typeof FiberUdtTypeScriptSchema>;
 export type FiberMethodChallenge = z.infer<typeof FiberMethodChallengeSchema>;
 export type PaymentMethodChallenge = z.infer<typeof PaymentMethodChallengeSchema>;
 export type PaymentChallenge = z.infer<typeof PaymentChallengeSchema>;

@@ -2,7 +2,7 @@
 
 This runbook covers the production operations pieces that are outside the protocol verifier: alerting, Fiber node backup/restore, trusted RPC/network binding, and paid-but-denied reconciliation.
 
-Production readiness requires both this operations evidence and separate testnet Fiber E2E evidence. Local E2E plus this runbook is not enough to set `production_ready_for_fiber_method` to `true`; the current gate may set it to `true` only when the recorded testnet evidence is still present and all operations checks pass.
+Production readiness requires this operations evidence, separate testnet Fiber E2E evidence, and production bootstrap E2E readiness evidence. Local E2E plus this runbook is not enough to set `production_ready_for_fiber_method` to `true`; the current gate may set it to `true` only when the recorded testnet evidence is still present, all operations checks pass, and the production bootstrap report is live-ready.
 
 ## Operating Model
 
@@ -79,6 +79,7 @@ Required binding policy:
 - Browser clients never receive privileged FNN RPC auth.
 - Gateway config must use `fiber.payee_rpc_auth_env`, `fiber.payer_rpc_auth_env`, or process env variables; literal RPC auth in config is rejected.
 - Restrict `/healthz`, `/readyz`, and `/metrics` to operators or private monitoring networks when deployed behind a public reverse proxy.
+- Serve the Evidence Console over loopback/private HTTP(S); `Origin: null` / `file://` access is disabled by default and should only be enabled with `FIBER_MPP_ALLOW_FILE_ORIGIN=1` for local debugging.
 - Use firewall/security-group rules to reject inbound traffic to FNN RPC from untrusted networks.
 
 Quick checks:

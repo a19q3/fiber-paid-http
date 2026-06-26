@@ -8,7 +8,7 @@ This page is the FiberMPP testnet evidence path. It follows the Fiber onboarding
 4. open and wait for `ChannelReady` channels,
 5. run FiberMPP's live `402 -> Fiber payment -> Payment-Receipt -> replay rejection` test.
 
-Local 3-node evidence is documented in [fiber-local-network.md](fiber-local-network.md). Testnet evidence must be collected separately before `production_ready_for_fiber_method` can become `true`.
+Local 3-node evidence is documented in [fiber-local-network.md](fiber-local-network.md). Testnet evidence must be collected separately before `production_ready_for_fiber_method` can become `true`, and the gate also requires production operations plus production bootstrap E2E readiness evidence.
 
 ## Prerequisites
 
@@ -166,7 +166,7 @@ reports/fiber-testnet-e2e-success.json
 reports/fiber-testnet-e2e-evidence.json
 ```
 
-When this passes, the gate may set `production_ready_for_fiber_method: true`. Local E2E alone is not enough.
+When this passes, the gate records testnet Fiber E2E evidence. Local E2E alone is not enough, and testnet evidence alone still does not set `production_ready_for_fiber_method: true` without production operations and production bootstrap E2E readiness evidence.
 
 ## Evidence Criteria
 
@@ -177,7 +177,7 @@ The testnet evidence is credible only when all of these are true:
 - `fiber_live_test_loaded` is `true`.
 - The output includes a non-empty `fiber_e2e_payment_hash`.
 - The output includes a non-empty `fiber_e2e_receipt_id`.
-- The canonical gate records `production_ready_for_fiber_method: true` only when this testnet evidence and the production operations checks are both present.
+- The canonical gate records `production_ready_for_fiber_method: true` only when this testnet evidence, production operations checks, and production bootstrap E2E readiness evidence are all present.
 
 ## References
 

@@ -123,8 +123,14 @@ fiber-mpp storage audit-receipts --config fiber-mpp.gateway.json
 fiber-mpp f402 convert f402-challenge.json
 fiber-mpp receipt verify receipt.json --secret <secret>
 fiber-mpp doctor --role payer
-fiber-mpp evidence start --port 8787
+fiber-mpp evidence start --port 8787 --web-port 8788
+fiber-mpp evidence start --port 8787 --api-only
 ```
+
+The Evidence API exposes operator probes at `GET /healthz` and `GET /readyz`.
+`/healthz` proves the API process is alive. `/readyz` proves the active env-backed or UI-runtime-backed payer/payee Fiber path is executable; it returns `503` with `livePaymentEnabled: false`, role statuses, `mode`, and exact Fiber blockers when the local/testnet payment path or ChannelReady probes are not ready.
+By default `fiber-mpp evidence start` starts both the local Evidence API and the Evidence Console web server. The web server injects the selected API port into the static console HTML, so custom `--port` values do not leave the browser pointed at stale `localhost:8787`.
+The Evidence API accepts served loopback console origins by default. `file://` pages (`Origin: null`) are rejected unless `FIBER_MPP_ALLOW_FILE_ORIGIN=1` is set for local-only debugging.
 
 ## Production gate
 
@@ -132,4 +138,4 @@ fiber-mpp evidence start --port 8787
 bash scripts/fiber_mpp_gate.sh
 ```
 
-The gate writes `reports/fiber-mpp-gate.json` and stays honest about skipped, local, and testnet modes. `production_ready_for_fiber_method` is true only when real testnet Fiber E2E evidence and production operations evidence are both present.
+The gate writes `reports/fiber-mpp-gate.json` and stays honest about skipped, local, and testnet modes. `production_ready_for_fiber_method` is true only when real testnet Fiber E2E evidence, production operations evidence, and production bootstrap E2E readiness evidence are all present.

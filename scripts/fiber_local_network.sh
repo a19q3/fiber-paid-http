@@ -17,8 +17,15 @@ NODE3_RPC_URL="${NODE3_RPC_URL:-http://127.0.0.1:21716}"
 
 NODE1_ADDR="${NODE1_ADDR:-/ip4/127.0.0.1/tcp/8344/p2p/QmbvRjJHAQDmj3cgnUBGQ5zVnGxUKwb2qJygwNs2wk41h8}"
 NODE2_ADDR="${NODE2_ADDR:-/ip4/127.0.0.1/tcp/8345/p2p/QmSRcPqUn4aQrKHXyCDjGn2qBVf43tWBDS2Wj9QDUZXtZp}"
+NODE1_PUBKEY="${NODE1_PUBKEY:-02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0}"
 NODE2_PUBKEY="${NODE2_PUBKEY:-02bcbd0e0d811d13363af1e5998f56e74e6aab8a7aa44005e1ce7d696a4d3f10f6}"
 NODE3_PUBKEY="${NODE3_PUBKEY:-03032b99943822e721a651c5a5b9621043017daa9dc3ec81d83215fd2e25121187}"
+FIBER_LOCAL_ASSET="${FIBER_LOCAL_ASSET:-ckb}"
+FIBER_LOCAL_PRIZE_ROUTE="${FIBER_LOCAL_PRIZE_ROUTE:-}"
+FIBER_LOCAL_UDT_CODE_HASH="${FIBER_LOCAL_UDT_CODE_HASH:-0x50bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95}"
+FIBER_LOCAL_UDT_HASH_TYPE="${FIBER_LOCAL_UDT_HASH_TYPE:-data2}"
+FIBER_LOCAL_UDT_ARGS="${FIBER_LOCAL_UDT_ARGS:-0x32e555f3ff8e135cece1351a6a2971518392c1e30375c1e006ad0ce8eac07947}"
+FIBER_LOCAL_UDT_FUNDING_AMOUNT="${FIBER_LOCAL_UDT_FUNDING_AMOUNT:-0x3B9ACA00}"
 
 usage() {
   cat <<'USAGE'
@@ -35,6 +42,8 @@ Environment:
   FIBER_REPO=/home/arthur/a19q3/fiber
   FIBER_LOCAL_LOG_DIR=reports/fiber-local-network
   REMOVE_OLD_STATE=y
+  FIBER_LOCAL_ASSET=ckb|xudt
+  FIBER_LOCAL_PRIZE_ROUTE=1
   PATH=/home/arthur/a19q3/ckb-bin/ckb_v0.207.0_x86_64-unknown-linux-gnu-portable:$PATH
 USAGE
 }
@@ -79,7 +88,11 @@ start_network() {
     rm -f "$PID_FILE"
     (
       cd "$FIBER_REPO"
-      setsid env REMOVE_OLD_STATE="${REMOVE_OLD_STATE:-y}" ./tests/nodes/start.sh e2e/router-pay >"$START_LOG" 2>&1 &
+      local testcase="${FIBER_LOCAL_TESTCASE:-e2e/router-pay}"
+      if [[ "$FIBER_LOCAL_ASSET" == "xudt" && -z "${FIBER_LOCAL_TESTCASE:-}" ]]; then
+        testcase="e2e/udt-router-pay"
+      fi
+      setsid env REMOVE_OLD_STATE="${REMOVE_OLD_STATE:-y}" ./tests/nodes/start.sh "$testcase" >"$START_LOG" 2>&1 &
       echo "$!" >"$PID_FILE"
     )
   fi
@@ -95,6 +108,14 @@ start_network() {
 
 setup_channels() {
   : >"$SETUP_LOG"
+  if [[ "$FIBER_LOCAL_ASSET" == "xudt" ]]; then
+    setup_xudt_channels
+    return
+  fi
+  setup_ckb_channels
+}
+
+setup_ckb_channels() {
   log_step "Connecting node2 -> node1"
   rpc_ok "$NODE2_RPC_URL" connect_peer "[{\"address\":\"${NODE1_ADDR}\"}]"
   sleep 1
@@ -120,7 +141,56 @@ setup_channels() {
   sleep 5
 
   log_step "Waiting for node2 graph_channels to include both channels"
-  wait_graph_channels
+  wait_graph_channels 2
+}
+
+setup_xudt_channels() {
+  log_step "Connecting node2 -> node1"
+  rpc_ok "$NODE2_RPC_URL" connect_peer "[{\"address\":\"${NODE1_ADDR}\"}]"
+  sleep 1
+
+  log_step "Connecting node3 -> node2"
+  rpc_ok "$NODE3_RPC_URL" connect_peer "[{\"address\":\"${NODE2_ADDR}\"}]"
+  sleep 1
+
+  log_step "Opening node1 -> node2 xUDT channel"
+  rpc_ok "$NODE1_RPC_URL" open_channel "[{\"pubkey\":\"${NODE2_PUBKEY}\",\"funding_amount\":\"${FIBER_LOCAL_UDT_FUNDING_AMOUNT}\",\"tlc_fee_proportional_millionths\":\"0x4B0\",\"funding_udt_type_script\":$(udt_type_script_json)}]"
+  sleep 2
+
+  log_step "Generating epochs for node1 -> node2 xUDT funding"
+  rpc_ok "$CKB_RPC_URL" generate_epochs "[\"0x2\"]"
+  sleep 5
+
+  log_step "Opening node2 -> node3 xUDT channel"
+  rpc_ok "$NODE2_RPC_URL" open_channel "[{\"pubkey\":\"${NODE3_PUBKEY}\",\"funding_amount\":\"${FIBER_LOCAL_UDT_FUNDING_AMOUNT}\",\"tlc_fee_proportional_millionths\":\"0x578\",\"funding_udt_type_script\":$(udt_type_script_json)}]"
+  sleep 2
+
+  log_step "Generating epochs for node2 -> node3 xUDT funding"
+  rpc_ok "$CKB_RPC_URL" generate_epochs "[\"0x2\"]"
+  sleep 5
+
+  local expected_channels=2
+  if [[ -n "$FIBER_LOCAL_PRIZE_ROUTE" ]]; then
+    log_step "Opening node3 -> node2 xUDT prize channel"
+    rpc_ok "$NODE3_RPC_URL" open_channel "[{\"pubkey\":\"${NODE2_PUBKEY}\",\"funding_amount\":\"${FIBER_LOCAL_UDT_FUNDING_AMOUNT}\",\"tlc_fee_proportional_millionths\":\"0x578\",\"funding_udt_type_script\":$(udt_type_script_json)}]"
+    sleep 2
+
+    log_step "Generating epochs for node3 -> node2 xUDT prize funding"
+    rpc_ok "$CKB_RPC_URL" generate_epochs "[\"0x2\"]"
+    sleep 5
+
+    log_step "Opening node2 -> node1 xUDT prize channel"
+    rpc_ok "$NODE2_RPC_URL" open_channel "[{\"pubkey\":\"${NODE1_PUBKEY}\",\"funding_amount\":\"${FIBER_LOCAL_UDT_FUNDING_AMOUNT}\",\"tlc_fee_proportional_millionths\":\"0x4B0\",\"funding_udt_type_script\":$(udt_type_script_json)}]"
+    sleep 2
+
+    log_step "Generating epochs for node2 -> node1 xUDT prize funding"
+    rpc_ok "$CKB_RPC_URL" generate_epochs "[\"0x2\"]"
+    sleep 5
+    expected_channels=4
+  fi
+
+  log_step "Waiting for node2 graph_channels to include xUDT route"
+  wait_graph_channels "$expected_channels"
 }
 
 status_network() {
@@ -191,11 +261,12 @@ wait_rpc() {
 wait_graph_channels() {
   local response
   local count
+  local expected="${1:-2}"
   for attempt in $(seq 1 60); do
     response="$(rpc_call "$NODE2_RPC_URL" graph_channels "[{}]")"
     count="$(RPC_RESPONSE="$response" node -e 'const res = JSON.parse(process.env.RPC_RESPONSE); console.log((res.result?.channels ?? []).length);')"
     echo "node2 graph channel count: ${count}"
-    if [[ "$count" -ge 2 ]]; then
+    if [[ "$count" -ge "$expected" ]]; then
       echo "$response" | tee -a "$SETUP_LOG"
       return 0
     fi
@@ -203,6 +274,13 @@ wait_graph_channels() {
   done
   echo "Timed out waiting for two graph channels" >&2
   exit 1
+}
+
+udt_type_script_json() {
+  printf '{"code_hash":"%s","hash_type":"%s","args":"%s"}' \
+    "$FIBER_LOCAL_UDT_CODE_HASH" \
+    "$FIBER_LOCAL_UDT_HASH_TYPE" \
+    "$FIBER_LOCAL_UDT_ARGS"
 }
 
 rpc_ok() {

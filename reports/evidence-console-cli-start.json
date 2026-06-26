@@ -1,0 +1,11 @@
+{
+  "ok": true,
+  "command": "fiber-mpp evidence start",
+  "api_port": 39225,
+  "web_port": 33515,
+  "api_health_status": "healthy",
+  "api_service": "fiber-mpp-evidence-api",
+  "injected_api_base": "http://localhost:39225",
+  "web_served_console": true,
+  "api_and_web_started_by_single_cli_command": true
+}

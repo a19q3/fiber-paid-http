@@ -56,10 +56,10 @@ Rust canonical engine: passed
 TS vector harness: passed
 Local Fiber E2E: passed
 F402 compatibility: passed
-Production ready: true when testnet evidence is present
+Production ready: true only when testnet, operations, and production bootstrap evidence are present
 ```
 
-`production_ready_for_fiber_method` is read from the gate report. It must remain `false` unless separate testnet Fiber E2E evidence is present; with the recorded testnet evidence and passing operations gates it may display `true`.
+`production_ready_for_fiber_method` is read from the gate report. It must remain `false` unless separate testnet Fiber E2E evidence, passing operations gates, and production bootstrap E2E readiness evidence are all present.
 
 ## Information Architecture
 
@@ -252,7 +252,7 @@ vector parity: passed
 error code parity: true
 f402 parity: true
 replay status: rejected
-production_ready_for_fiber_method: true
+production_ready_for_fiber_method: report-driven
 ```
 
 Report artifacts to surface:
@@ -410,7 +410,7 @@ That future adapter must be visibly labeled as optional and outside the canonica
 Suggested component tree:
 
 ```text
-apps/demo-web/
+apps/evidence-web/
   src/
     App.tsx
     routes/
@@ -439,7 +439,7 @@ apps/demo-web/
       report-normalizers.ts
 ```
 
-The existing static `apps/demo-web/index.html` can remain as a fallback, but the fancy console will be easier to maintain as a small Vite/React app or equivalent componentized frontend.
+The existing static `apps/evidence-web/index.html` can remain as a fallback, but the fancy console will be easier to maintain as a small Vite/React app or equivalent componentized frontend.
 
 ## Interaction Flow
 
@@ -579,10 +579,13 @@ The frontend is ready when:
 - Replay rejection is visible and treated as a security pass.
 - Rust is shown as the canonical engine.
 - TypeScript is shown as compatibility/vector tooling.
-- Production ready remains false with blockers visible.
+- Production ready matches the gate report, with blockers visible whenever it is false.
 - No Fiber node dashboard, wallet, checkout, or `fiber-pay` GUI behavior is present.
 - The console can show report-only evidence with no live Fiber nodes, while payment execution remains blocked.
 - The console can run live local mode when env vars are configured.
+- `pnpm --filter @fiber-mpp/evidence-web check-layout` passes across 1440px, 1024px, and 390px viewports with no horizontal overflow or Evidence tab jitter.
+- The production gate records `evidence_console_layout: true` and leaves `evidence_console_layout_blockers` empty.
+- The production gate records `fiber_mpp_gate_ready: true`; if layout fails, `fiber_mpp_gate_blockers` names the layout report even if Fiber method readiness remains true.
 - The UI is polished enough to communicate the evidence chain from a screenshot without needing narration.
 
 ## Non-Blocking Future Ideas

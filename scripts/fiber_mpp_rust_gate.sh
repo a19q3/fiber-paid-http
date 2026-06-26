@@ -11,13 +11,37 @@ bash scripts/fiber_mpp_ops_gate.sh
 
 node <<'JSON'
 const fs = require("node:fs");
+const { execFileSync } = require("node:child_process");
+const { productionBootstrapReadiness } = require("./scripts/lib/production-bootstrap-readiness.cjs");
+const {
+  normalizePreservedTestnetEvidence,
+  verifyPreservedTestnetEvidence
+} = require("./scripts/lib/testnet-fiber-evidence-readiness.cjs");
 const conformance = JSON.parse(fs.readFileSync("reports/rust-conformance.json", "utf8"));
 const ops = JSON.parse(fs.readFileSync("reports/production-operations-matrix.json", "utf8"));
-const gatePath = "reports/fiber-mpp-gate.json";
-const gate = fs.existsSync(gatePath) ? JSON.parse(fs.readFileSync(gatePath, "utf8")) : {};
-const testnetFiberE2e = gate.testnet_fiber_e2e === true;
+const testnetEvidencePath = "reports/fiber-testnet-e2e-success.json";
+let testnetEvidenceReport = fs.existsSync(testnetEvidencePath)
+  ? JSON.parse(fs.readFileSync(testnetEvidencePath, "utf8"))
+  : null;
+const productionBootstrap = fs.existsSync("reports/production-bootstrap-e2e.json")
+  ? JSON.parse(fs.readFileSync("reports/production-bootstrap-e2e.json", "utf8"))
+  : {};
+const currentFiberCommit = readFiberCommit();
+const testnetEvidenceRecordedAt = readTestnetEvidenceRecordedAt(testnetEvidenceReport);
+testnetEvidenceReport = normalizePreservedTestnetEvidence(testnetEvidenceReport, {
+  fallbackRecordedAt: testnetEvidenceRecordedAt
+});
+const testnetEvidenceCheck = verifyPreservedTestnetEvidence(testnetEvidenceReport, {
+  path: testnetEvidencePath,
+  expectedFiberCommit: currentFiberCommit,
+  fallbackRecordedAt: testnetEvidenceRecordedAt
+});
+const testnetFiberE2e = testnetEvidenceCheck.verified;
+const productionBootstrapCheck = productionBootstrapReadiness(productionBootstrap);
+const productionBootstrapReady = productionBootstrapCheck.ready;
 const productionBlockers = [
   ...(testnetFiberE2e ? [] : ["testnet Fiber E2E evidence still pending"]),
+  ...(productionBootstrapReady ? [] : [`production bootstrap E2E readiness evidence still pending: ${productionBootstrapCheck.missing.join(", ") || "reports/production-bootstrap-e2e.json missing"}`]),
   ...(ops.production_ops_ready === true ? [] : ["production operations hardening evidence incomplete"])
 ];
 const report = {
@@ -40,7 +64,17 @@ const report = {
   },
   production_operations: ops.production_ops_ready === true,
   production_operations_report: "reports/production-operations-matrix.json",
+  production_bootstrap_e2e: productionBootstrapReady,
+  production_bootstrap_report: "reports/production-bootstrap-e2e.json",
+  production_bootstrap_e2e_blockers: productionBootstrapCheck.missing,
   testnet_fiber_e2e: testnetFiberE2e,
+  testnet_fiber_e2e_evidence: testnetFiberE2e,
+  testnet_fiber_e2e_evidence_report: testnetEvidencePath,
+  testnet_evidence_recorded_at: testnetEvidenceCheck.recordedAt,
+  testnet_evidence_digest: testnetEvidenceCheck.evidenceDigest,
+  testnet_fiber_e2e_evidence_verified: testnetEvidenceCheck.verified,
+  testnet_fiber_e2e_evidence_blockers: testnetEvidenceCheck.blockers,
+  fiber_commit: currentFiberCommit,
   rust_gateway_production_path: true,
   rust_gateway_evidence: {
     server_crate_tests: true,
@@ -60,4 +94,32 @@ const report = {
 };
 fs.writeFileSync("reports/fiber-mpp-rust-gate.json", `${JSON.stringify(report, null, 2)}\n`);
 console.log(JSON.stringify(report, null, 2));
+
+function readFiberCommit() {
+  try {
+    return execFileSync("git", ["-C", "/home/arthur/a19q3/fiber", "rev-parse", "HEAD"], {
+      encoding: "utf8"
+    }).trim();
+  } catch {
+    return null;
+  }
+}
+
+function readTestnetEvidenceRecordedAt(report) {
+  if (report && typeof report === "object") {
+    const direct =
+      report.testnet_evidence_recorded_at ||
+      report.generated_at ||
+      report.gate_report?.testnet_evidence_recorded_at ||
+      report.gate_report?.generated_at;
+    if (direct) {
+      return direct;
+    }
+  }
+  const wrapperPath = "reports/fiber-testnet-e2e/testnet-e2e-report.json";
+  if (!fs.existsSync(wrapperPath)) {
+    return null;
+  }
+  return JSON.parse(fs.readFileSync(wrapperPath, "utf8")).generated_at || null;
+}
 JSON

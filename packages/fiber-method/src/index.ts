@@ -2,6 +2,7 @@ import {
   FiberMppError,
   FiberMethodChallengeSchema,
   type FiberMethodChallenge,
+  type FiberUdtTypeScript,
   type Settlement
 } from "@fiber-mpp/core";
 
@@ -13,6 +14,7 @@ export type FiberCreateChallengeInput = {
   amountShannons: string;
   expiresAt: string;
   description?: string;
+  udtTypeScript?: FiberUdtTypeScript;
 };
 
 export type FiberPaymentProof = {
@@ -21,6 +23,7 @@ export type FiberPaymentProof = {
   paymentHash: string;
   invoice?: string;
   amountShannons?: string;
+  udtTypeScript?: FiberUdtTypeScript;
   status?: string;
   observedAt: string;
   evidence?: unknown;
@@ -96,6 +99,7 @@ export class FiberRpcClient {
     amount: string;
     description?: string;
     currency: string;
+    udtTypeScript?: FiberUdtTypeScript;
     paymentHash?: string;
     paymentPreimage?: string;
     expirySeconds?: number;
@@ -104,6 +108,7 @@ export class FiberRpcClient {
       amount: toFiberHexQuantity(input.amount),
       description: input.description,
       currency: input.currency,
+      udt_type_script: input.udtTypeScript,
       expiry: typeof input.expirySeconds === "number" ? toFiberHexQuantity(input.expirySeconds) : undefined
     };
     if (input.paymentHash) {
@@ -132,6 +137,7 @@ export class FiberRpcClient {
     maxFeeRate?: string;
     maxParts?: number;
     timeoutSeconds?: number;
+    udtTypeScript?: FiberUdtTypeScript;
     keysend?: boolean;
     dryRun?: boolean;
   }): Promise<FiberPaymentResult> {
@@ -145,6 +151,7 @@ export class FiberRpcClient {
         max_fee_rate: input.maxFeeRate ? toFiberHexQuantity(input.maxFeeRate) : undefined,
         max_parts: typeof input.maxParts === "number" ? toFiberHexQuantity(input.maxParts) : undefined,
         timeout: typeof input.timeoutSeconds === "number" ? toFiberHexQuantity(input.timeoutSeconds) : undefined,
+        udt_type_script: input.invoice ? undefined : input.udtTypeScript,
         keysend: input.keysend,
         dry_run: input.dryRun
       })
@@ -163,6 +170,7 @@ export class FiberMethodAdapter {
   private readonly rpc?: FiberRpcClient;
   private readonly nodeId?: string;
   private readonly rpcLabel?: string;
+  private readonly udtTypeScript?: FiberUdtTypeScript;
   private readonly settlementTimeoutMs: number;
   private readonly settlementPollMs: number;
 
@@ -173,6 +181,7 @@ export class FiberMethodAdapter {
     currency?: string;
     nodeId?: string;
     rpcLabel?: string;
+    udtTypeScript?: FiberUdtTypeScript;
     settlementTimeoutMs?: number;
     settlementPollMs?: number;
   }) {
@@ -185,6 +194,7 @@ export class FiberMethodAdapter {
     this.currency = options.currency ?? (options.mode === "testnet" ? "Fibt" : "Fibd");
     this.nodeId = options.nodeId;
     this.rpcLabel = options.rpcLabel ?? options.rpc?.label;
+    this.udtTypeScript = options.udtTypeScript;
     this.settlementTimeoutMs = options.settlementTimeoutMs ?? 30_000;
     this.settlementPollMs = options.settlementPollMs ?? 250;
   }
@@ -217,6 +227,7 @@ export class FiberMethodAdapter {
       currency: env.FIBER_CURRENCY ?? (mode === "testnet" ? "Fibt" : "Fibd"),
       nodeId,
       rpcLabel: env.FIBER_RPC_LABEL ?? `${mode}-${role}`,
+      udtTypeScript: parseFiberUdtTypeScriptFromEnv(env),
       settlementTimeoutMs: parseOptionalInt(env.FIBER_SETTLEMENT_TIMEOUT_MS),
       settlementPollMs: parseOptionalInt(env.FIBER_SETTLEMENT_POLL_MS)
     });
@@ -231,6 +242,7 @@ export class FiberMethodAdapter {
       amount: input.amountShannons,
       description: input.description ?? `FiberMPP challenge ${input.challengeId}`,
       currency: this.currency,
+      udtTypeScript: input.udtTypeScript ?? this.udtTypeScript,
       expirySeconds
     });
     const paymentHash = extractInvoicePaymentHash(invoice);
@@ -241,6 +253,7 @@ export class FiberMethodAdapter {
       amountShannons: input.amountShannons,
       paymentHash,
       invoice: invoice.invoice_address,
+      udtTypeScript: input.udtTypeScript ?? this.udtTypeScript,
       fiberNodeId: this.nodeId,
       fiberRpcLabel: this.rpcLabel,
       expiresAt: input.expiresAt
@@ -263,6 +276,7 @@ export class FiberMethodAdapter {
       paymentHash,
       invoice: challenge.invoice,
       amountShannons: challenge.amountShannons,
+      udtTypeScript: challenge.udtTypeScript,
       status: settled.status,
       observedAt: new Date().toISOString(),
       evidence: {
@@ -289,6 +303,9 @@ export class FiberMethodAdapter {
         `Fiber payment proof mode ${normalized.mode} does not match configured ${this.mode} mode`,
         402
       );
+    }
+    if (JSON.stringify(normalized.udtTypeScript ?? null) !== JSON.stringify(challenge.udtTypeScript ?? null)) {
+      throw new FiberMppError("wrong-fiber-udt", "Fiber UDT type script does not match the challenge", 402);
     }
 
     const invoiceRecord = await waitForFiberInvoicePaid(this.rpc!, challenge.paymentHash, {
@@ -436,6 +453,57 @@ export type FiberPaymentResult = {
   custom_records?: unknown;
 };
 
+export function parseFiberUdtTypeScriptFromEnv(env: NodeJS.ProcessEnv = process.env): FiberUdtTypeScript | undefined {
+  return parseFiberUdtTypeScript(
+    env.FIBER_UDT_TYPE_SCRIPT ?? env.FIBER_XUDT_TYPE_SCRIPT,
+    {
+      codeHash: env.FIBER_UDT_CODE_HASH ?? env.FIBER_XUDT_CODE_HASH,
+      hashType: env.FIBER_UDT_HASH_TYPE ?? env.FIBER_XUDT_HASH_TYPE,
+      args: env.FIBER_UDT_ARGS ?? env.FIBER_XUDT_ARGS
+    }
+  );
+}
+
+export function parseFiberUdtTypeScript(
+  value?: string,
+  parts: { codeHash?: string; hashType?: string; args?: string } = {}
+): FiberUdtTypeScript | undefined {
+  const fromParts = normalizeFiberUdtTypeScript({
+    code_hash: parts.codeHash,
+    hash_type: parts.hashType,
+    args: parts.args
+  });
+  if (fromParts) {
+    return fromParts;
+  }
+  if (!value) {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  if (trimmed.startsWith("{")) {
+    const parsed = JSON.parse(trimmed) as unknown;
+    const normalized = normalizeFiberUdtTypeScript(parsed);
+    if (normalized) {
+      return normalized;
+    }
+  }
+  const tuple = trimmed.split(",").map((item) => item.trim());
+  if (tuple.length === 3) {
+    const normalized = normalizeFiberUdtTypeScript({
+      code_hash: tuple[0],
+      hash_type: tuple[1],
+      args: tuple[2]
+    });
+    if (normalized) {
+      return normalized;
+    }
+  }
+  throw new Error("Fiber UDT type script must be JSON or code_hash,hash_type,args");
+}
+
 type JsonRpcResponse<T> = {
   jsonrpc?: "2.0";
   id?: number;
@@ -464,18 +532,46 @@ function normalizeProof(proof: unknown): FiberPaymentProof {
     paymentHash: candidate.paymentHash,
     invoice: candidate.invoice,
     amountShannons: candidate.amountShannons,
+    udtTypeScript: normalizeFiberUdtTypeScript(candidate.udtTypeScript),
     status: candidate.status,
     observedAt: candidate.observedAt,
     evidence: candidate.evidence
   };
 }
 
-function extractInvoicePaymentHash(invoice: FiberInvoiceResult): string {
+export function extractInvoicePaymentHash(invoice: FiberInvoiceResult): string {
   const paymentHash = invoice.invoice?.data?.payment_hash;
   if (!paymentHash) {
     throw new FiberMppError("fiber-invoice-missing-payment-hash", "Fiber new_invoice did not return a payment hash", 502);
   }
   return paymentHash;
+}
+
+function normalizeFiberUdtTypeScript(input: unknown): FiberUdtTypeScript | undefined {
+  if (!input || typeof input !== "object") {
+    return undefined;
+  }
+  const record = input as Record<string, unknown>;
+  const codeHash = typeof record.code_hash === "string" ? record.code_hash.toLowerCase() : undefined;
+  const hashType = typeof record.hash_type === "string" ? record.hash_type.toLowerCase() : undefined;
+  const args = typeof record.args === "string" ? record.args.toLowerCase() : undefined;
+  if (!codeHash && !hashType && !args) {
+    return undefined;
+  }
+  if (!codeHash || !/^0x[a-f0-9]{64}$/.test(codeHash)) {
+    throw new Error("Fiber UDT type script code_hash must be a 32-byte hex string");
+  }
+  if (!hashType || !["data", "data1", "data2", "type"].includes(hashType)) {
+    throw new Error("Fiber UDT type script hash_type must be data, data1, data2, or type");
+  }
+  if (!args || !/^0x[a-f0-9]*$/.test(args)) {
+    throw new Error("Fiber UDT type script args must be hex");
+  }
+  return {
+    code_hash: codeHash,
+    hash_type: hashType,
+    args
+  };
 }
 
 export function toFiberHexQuantity(value: string | number | bigint): string {

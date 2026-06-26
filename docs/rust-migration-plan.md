@@ -33,4 +33,4 @@ Rust and TypeScript must continue to match for:
 
 ## Readiness Rule
 
-`production_ready_for_fiber_method` remains `false` after local E2E alone. It can be `true` only while separate testnet Fiber E2E evidence and production operations gates are both present.
+`production_ready_for_fiber_method` remains `false` after local E2E alone. It can be `true` only while separate testnet Fiber E2E evidence, production operations gates, and production bootstrap E2E readiness evidence are all present.

@@ -23,7 +23,7 @@
       "@fiber-mpp/f402-compat": ["packages/f402-compat/src/index.ts"],
       "@fiber-mpp/server-middleware": ["packages/server-middleware/src/index.ts"],
       "@fiber-mpp/client": ["packages/client/src/index.ts"],
-      "@fiber-mpp/demo-api": ["apps/demo-api/src/index.ts"]
+      "@fiber-mpp/evidence-api": ["apps/evidence-api/src/index.ts"]
     }
   }
 }

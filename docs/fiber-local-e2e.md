@@ -157,4 +157,4 @@ export FIBER_PAYER_RPC_AUTH='<payer auth if required>'
 pnpm test:fiber
 ```
 
-If these variables are incomplete, `pnpm test:fiber` runs only the visible preflight test and reports skipped blockers. The production gate records `fiber_e2e_mode`, `fiber_e2e_status`, `fiber_e2e_blockers`, and `fiber_e2e_test_file_loaded`; it only marks production readiness true after a real local/testnet Fiber E2E pass.
+If these variables are incomplete, `pnpm test:fiber` runs only the visible preflight test and reports skipped blockers. The production gate records `fiber_e2e_mode`, `fiber_e2e_status`, `fiber_e2e_blockers`, and `fiber_e2e_test_file_loaded`. Local E2E alone never marks production readiness true; the gate requires separate testnet Fiber E2E evidence, production operations evidence, and production bootstrap E2E readiness evidence.

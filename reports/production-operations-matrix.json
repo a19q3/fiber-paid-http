@@ -1,6 +1,15 @@
 {
   "production_ops_ready": true,
   "testnet_fiber_e2e": true,
+  "testnet_fiber_e2e_evidence": true,
+  "testnet_fiber_e2e_evidence_report": "reports/fiber-testnet-e2e-success.json",
+  "testnet_evidence_recorded_at": "2026-06-25T03:14:53.023Z",
+  "testnet_evidence_digest": "sha256:f15a59555878336820fa5def252a05f336951bb9c615b49f1eef065e58c7d92d",
+  "testnet_fiber_e2e_evidence_verified": true,
+  "testnet_fiber_e2e_evidence_blockers": [],
+  "fiber_commit": "3c25bcf16200e5d641dcd9b79f086f391e976172",
+  "production_bootstrap_e2e": true,
+  "production_bootstrap_e2e_blockers": [],
   "production_ready_for_fiber_method": true,
   "artifacts": {
     "runbook": "docs/production-operations.md",

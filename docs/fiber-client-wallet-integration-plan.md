@@ -591,7 +591,7 @@ FiberMPP supports WalletConnect payments directly.
    - `send_payment` settles,
    - receipt/replay semantics match the direct FNN path.
 7. Add CCC only to the external funding flow, not to Fiber payment verification.
-8. Keep `production_ready_for_fiber_method: false` when separate testnet evidence is absent; allow it to become `true` only when direct FNN testnet evidence and operations gates pass.
+8. Keep `production_ready_for_fiber_method: false` when separate testnet evidence, operations evidence, or production bootstrap E2E readiness evidence is absent; allow it to become `true` only when direct FNN testnet evidence, operations gates, and production bootstrap readiness all pass.
 
 ## Decision
 

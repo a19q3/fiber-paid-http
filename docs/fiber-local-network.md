@@ -69,6 +69,24 @@ The script:
 5. generates local CKB epochs for funding confirmation,
 6. waits for node2 `graph_channels` to show both channels.
 
+For xUDT payment routes, set:
+
+```bash
+FIBER_LOCAL_ASSET=xudt FIBER_LOCAL_PRIZE_ROUTE=1 scripts/fiber_local_network.sh up
+```
+
+This uses Fiber's `e2e/udt-router-pay` local testcase, opens `node1 -> node2 -> node3` xUDT channels for paid entry, and opens `node3 -> node2 -> node1` xUDT channels for reverse prize payout. The local Fiber dev xUDT script is:
+
+```json
+{
+  "code_hash": "0x50bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95",
+  "hash_type": "data2",
+  "args": "0x32e555f3ff8e135cece1351a6a2971518392c1e30375c1e006ad0ce8eac07947"
+}
+```
+
+Use the same script in FiberMPP runtime env as `FIBER_XUDT_TYPE_SCRIPT` when testing xUDT entry or tournament prize payouts.
+
 Logs are written under:
 
 ```text

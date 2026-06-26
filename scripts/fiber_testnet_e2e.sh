@@ -141,15 +141,24 @@ const passed =
   gateExit === 0 &&
   gate?.fiber_e2e_mode === "testnet" &&
   gate?.fiber_e2e_status === "passed" &&
-  gate?.testnet_fiber_e2e === true &&
-  gate?.production_ready_for_fiber_method === true &&
-  canonical?.testnet_fiber_e2e === true &&
-  canonical?.production_ready_for_fiber_method === true;
+  gate?.live_fiber_testnet_e2e === true &&
+  gate?.testnet_fiber_e2e_evidence_verified === true &&
+  gate?.testnet_fiber_e2e_evidence_source === "current-live-testnet-run";
 
 const summary = {
   generated_at: new Date().toISOString(),
   status: passed ? "passed" : "failed",
   gate_exit: gateExit,
+  production_ready_for_fiber_method: gate?.production_ready_for_fiber_method ?? canonical?.production_ready_for_fiber_method ?? false,
+  production_blockers: gate?.production_blockers ?? canonical?.production_blockers ?? [],
+  production_bootstrap_e2e: gate?.production_bootstrap_e2e ?? canonical?.production_bootstrap_e2e ?? false,
+  production_bootstrap_e2e_blockers: gate?.production_bootstrap_e2e_blockers ?? canonical?.production_bootstrap_e2e_blockers ?? [],
+  testnet_evidence_recorded_at: gate?.testnet_evidence_recorded_at ?? null,
+  testnet_evidence_digest: gate?.testnet_evidence_digest ?? null,
+  testnet_fiber_e2e_evidence_verified: gate?.testnet_fiber_e2e_evidence_verified === true,
+  testnet_fiber_e2e_evidence_source: gate?.testnet_fiber_e2e_evidence_source ?? null,
+  fiber_mpp_gate_ready: gate?.fiber_mpp_gate_ready ?? false,
+  fiber_mpp_gate_blockers: gate?.fiber_mpp_gate_blockers ?? [],
   fiber_e2e_result: fiber,
   gate_report: gate,
   canonical_report: canonical,

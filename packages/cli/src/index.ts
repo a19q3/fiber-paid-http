@@ -345,12 +345,20 @@ program
 program
   .command("evidence")
   .argument("<action>", "start")
-  .option("--port <port>", "port", "8787")
-  .description("Start the FiberMPP local evidence API")
-  .action(async (action: string, opts: { port: string }) => {
+  .option("--port <port>", "API port", "8787")
+  .option("--web-port <port>", "web console port", "8788")
+  .option("--api-only", "start only the Evidence API")
+  .description("Start the FiberMPP local evidence API and web console")
+  .action(async (action: string, opts: { port: string; webPort: string; apiOnly?: boolean }) => {
     if (action === "start") {
+      const apiPort = Number(opts.port);
       const { startEvidenceApi } = await loadEvidenceApi();
-      startEvidenceApi(Number(opts.port));
+      const servers: unknown[] = [startEvidenceApi(apiPort)];
+      if (!opts.apiOnly) {
+        const { startEvidenceWeb } = await loadEvidenceWeb();
+        servers.push(startEvidenceWeb(Number(opts.webPort), { apiBase: `http://127.0.0.1:${apiPort}` }));
+      }
+      await waitForEvidenceServers(servers);
       return;
     }
     throw new Error("Use `fiber-mpp evidence start`");
@@ -885,14 +893,49 @@ class GatewayHttpError extends Error {
   }
 }
 
-async function loadEvidenceApi(): Promise<{ startEvidenceApi: (port?: number) => void }> {
-  const mod = await import("@fiber-mpp/demo-api") as unknown as {
-    startEvidenceApi?: (port?: number) => void;
+async function loadEvidenceApi(): Promise<{ startEvidenceApi: (port?: number) => unknown }> {
+  const mod = await import("@fiber-mpp/evidence-api") as unknown as {
+    startEvidenceApi?: (port?: number) => unknown;
   };
   if (!mod.startEvidenceApi) {
-    throw new Error("@fiber-mpp/demo-api does not export startEvidenceApi; run pnpm build before using the evidence API");
+    throw new Error("@fiber-mpp/evidence-api does not export startEvidenceApi; run pnpm build before using the evidence API");
   }
   return { startEvidenceApi: mod.startEvidenceApi };
+}
+
+async function loadEvidenceWeb(): Promise<{ startEvidenceWeb: (port?: number, options?: { apiBase?: string }) => unknown }> {
+  const mod = await import("@fiber-mpp/evidence-web") as unknown as {
+    startEvidenceWeb?: (port?: number, options?: { apiBase?: string }) => unknown;
+  };
+  if (!mod.startEvidenceWeb) {
+    throw new Error("@fiber-mpp/evidence-web does not export startEvidenceWeb; run pnpm install and pnpm build before using the evidence console");
+  }
+  return { startEvidenceWeb: mod.startEvidenceWeb };
+}
+
+async function waitForEvidenceServers(servers: unknown[]): Promise<void> {
+  await new Promise<void>((resolve) => {
+    let closing = false;
+    const keeper = setInterval(() => undefined, 60_000);
+    const close = () => {
+      if (closing) return;
+      closing = true;
+      clearInterval(keeper);
+      Promise.all(servers.map(closeServerHandle)).finally(resolve);
+    };
+    process.once("SIGINT", close);
+    process.once("SIGTERM", close);
+  });
+}
+
+function closeServerHandle(server: unknown): Promise<void> {
+  const close = (server as { close?: (callback?: (error?: Error) => void) => void } | null)?.close;
+  if (typeof close !== "function") {
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => {
+    close.call(server, () => resolve());
+  });
 }
 
 type GatewayMetrics = {

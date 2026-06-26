@@ -1,0 +1,5 @@
+
+> @fiber-mpp/evidence-web@0.1.0 check-layout /home/arthur/a19q3/fiber-mpp/apps/evidence-web
+> node scripts/check-layout.mjs
+
+evidence console layout checks passed: 5 viewports, tab jitter stable across all checked viewports

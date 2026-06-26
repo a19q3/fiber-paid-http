@@ -20,6 +20,7 @@ import {
   canonicalJson,
   type Amount,
   type FiberMethodChallenge,
+  type FiberUdtTypeScript,
   type PaymentChallenge,
   type PaymentCredential,
   type PaymentMethodName,
@@ -36,6 +37,7 @@ export type PaidRouteConfig = {
   price: Amount;
   methods?: PaymentMethodName[];
   fiberAmountShannons?: string;
+  fiberUdtTypeScript?: FiberUdtTypeScript;
   ttlSeconds?: number;
   audience?: string;
   metadata?: unknown;
@@ -97,6 +99,7 @@ export function createFiberMppMiddleware(config: FiberMppMiddlewareConfig): Fibe
           challengeId,
           amountShannons: route.fiberAmountShannons ?? config.defaultFiberAmountShannons ?? "1000",
           expiresAt,
+          udtTypeScript: route.fiberUdtTypeScript,
           description: `FiberMPP ${request.method.toUpperCase()} ${new URL(request.url).pathname}`
         })
       );

@@ -25,7 +25,7 @@ importers:
         specifier: ^3.2.0
         version: 3.2.6(@types/node@24.13.2)(tsx@4.22.4)
 
-  apps/demo-api:
+  apps/evidence-api:
     dependencies:
       '@fiber-mpp/core':
         specifier: workspace:*
@@ -46,7 +46,7 @@ importers:
         specifier: ^4.8.0
         version: 4.12.27
 
-  apps/demo-web:
+  apps/evidence-web:
     dependencies:
       lucide-react:
         specifier: ^1.21.0
@@ -57,6 +57,16 @@ importers:
       react-dom:
         specifier: ^19.2.7
         version: 19.2.7(react@19.2.7)
+    devDependencies:
+      '@types/react':
+        specifier: ^19.2.17
+        version: 19.2.17
+      '@types/react-dom':
+        specifier: ^19.2.3
+        version: 19.2.3(@types/react@19.2.17)
+      vite:
+        specifier: ^7.3.5
+        version: 7.3.5(@types/node@24.13.2)(tsx@4.22.4)
 
   packages/cli:
     dependencies:
@@ -66,9 +76,12 @@ importers:
       '@fiber-mpp/core':
         specifier: workspace:*
         version: link:../core
-      '@fiber-mpp/demo-api':
+      '@fiber-mpp/evidence-api':
         specifier: workspace:*
-        version: link:../../apps/demo-api
+        version: link:../../apps/evidence-api
+      '@fiber-mpp/evidence-web':
+        specifier: workspace:*
+        version: link:../../apps/evidence-web
       '@fiber-mpp/f402-compat':
         specifier: workspace:*
         version: link:../f402-compat
@@ -606,6 +619,14 @@ packages:
   '@types/node@24.13.2':
     resolution: {integrity: sha512-fRa09kZTgu8o71KFcDjUFuc7F+dEbZYZmkI0mg5YBTRs0yMKjYHsq/c0urDKeDb+D5qVgXOdFcuu+DZPKOITwA==}
 
+  '@types/react-dom@19.2.3':
+    resolution: {integrity: sha512-jp2L/eY6fn+KgVVQAOqYItbF0VY/YApe5Mz2F0aykSO8gx31bYCZyvSeYxCHKvzHG5eZjc+zyaS5BrBWya2+kQ==}
+    peerDependencies:
+      '@types/react': ^19.2.0
+
+  '@types/react@19.2.17':
+    resolution: {integrity: sha512-MXfmqaVPEVgkBT/aY0aGCkRWWtByiYQXo3xdQ8r5RzuFrPiRn8Gar2tQdXSUQ2GKV3bkXckek89V8wQBY2Q/Aw==}
+
   '@vitest/expect@3.2.6':
     resolution: {integrity: sha512-1+7q9BtaKzEmO+fmNT3kYvoNn5Y71XWAx2Q5HRim4tTVRQVRv4uJFAQ5FbK0OPUeNP/WmVCpxYxoJdvuHVjzBQ==}
 
@@ -654,6 +675,9 @@ packages:
   commander@12.1.0:
     resolution: {integrity: sha512-Vw8qHK3bZM9y/P10u3Vib8o/DdkvA2OtPtZvD871QKjy74Wj1WSKFILMPRPSdUSx5RFK1arlJzEtA4PkFgnbuA==}
     engines: {node: '>=18'}
+
+  csstype@3.2.3:
+    resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
 
   debug@4.4.3:
     resolution: {integrity: sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==}
@@ -1147,6 +1171,14 @@ snapshots:
     dependencies:
       undici-types: 7.18.2
 
+  '@types/react-dom@19.2.3(@types/react@19.2.17)':
+    dependencies:
+      '@types/react': 19.2.17
+
+  '@types/react@19.2.17':
+    dependencies:
+      csstype: 3.2.3
+
   '@vitest/expect@3.2.6':
     dependencies:
       '@types/chai': 5.2.3
@@ -1204,6 +1236,8 @@ snapshots:
   check-error@2.1.3: {}
 
   commander@12.1.0: {}
+
+  csstype@3.2.3: {}
 
   debug@4.4.3:
     dependencies:

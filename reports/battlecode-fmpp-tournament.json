@@ -1,0 +1,2270 @@
+{
+  "generatedAt": "2026-06-25T15:56:51.612Z",
+  "apiBase": "http://127.0.0.1:8877",
+  "sessionId": "battlecode-xudt-live",
+  "fairnessManifest": {
+    "domain": "fiber-mpp-battlecode-fairness-v1",
+    "botPackage": "fiberchamp",
+    "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+    "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515",
+    "runnerHash": "sha256:c025984308a79ff73633f4249c15be79c0159fffcecdd92c59dcdd4927929d79",
+    "engineHash": "sha256:d0cc775610d5221fc17b23d818bc881bb3e882076a809696d15f8d380b09520b",
+    "engineVersion": "3.1.0",
+    "hashAlgorithm": "sha256",
+    "notes": [
+      "botScriptHash commits to the exact submitted Battlecode RobotPlayer.java source used for this lane.",
+      "clientHash commits to the tournament runner module plus the Battlecode engine jar hash."
+    ]
+  },
+  "registration": {
+    "playerId": "arthur",
+    "botPackage": "fiberchamp",
+    "xudtAsset": "xUDT:BCODE",
+    "entryAmount": "100",
+    "prizeAmount": "200",
+    "map": "DefaultSmall",
+    "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+    "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515"
+  },
+  "steps": [
+    {
+      "status": 402,
+      "challengeId": "chal_b1ad9cae8a3741b95587e0155edd9836",
+      "paymentHash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+      "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+      "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515"
+    },
+    {
+      "challengeId": "chal_b1ad9cae8a3741b95587e0155edd9836",
+      "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+      "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515"
+    },
+    {
+      "status": 200,
+      "challengeId": "chal_b1ad9cae8a3741b95587e0155edd9836",
+      "paymentHash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+      "receiptId": "rcpt_9f2ce38b739bdf6012d35d31ab0dfb0b",
+      "ticketId": "bc_ticket_e0ab8600711c395e",
+      "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+      "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515"
+    },
+    {
+      "status": 200,
+      "challengeId": "chal_b1ad9cae8a3741b95587e0155edd9836",
+      "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+      "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515",
+      "winner": "fiberchamp",
+      "awardId": "bc_award_3235a4dbf42e0c5a",
+      "awardSettlement": "fiber-xudt-payment",
+      "prizePaymentHash": "0xf315c1a8429cfc728348ea23d17f637d734a287db419f7df37b9e9f13fac02f6"
+    }
+  ],
+  "final": {
+    "ok": true,
+    "report": {
+      "generatedAt": "2026-06-25T15:56:51.599Z",
+      "registration": {
+        "playerId": "arthur",
+        "botPackage": "fiberchamp",
+        "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+        "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515",
+        "xudtAsset": "xUDT:BCODE",
+        "entryAmount": "100",
+        "prizeAmount": "200",
+        "map": "DefaultSmall"
+      },
+      "ticket": {
+        "ticketId": "bc_ticket_e0ab8600711c395e",
+        "playerId": "arthur",
+        "botPackage": "fiberchamp",
+        "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+        "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515",
+        "fairnessCommitment": {
+          "domain": "fiber-mpp-battlecode-fairness-v1",
+          "botPackage": "fiberchamp",
+          "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+          "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515",
+          "runnerHash": "sha256:c025984308a79ff73633f4249c15be79c0159fffcecdd92c59dcdd4927929d79",
+          "engineHash": "sha256:d0cc775610d5221fc17b23d818bc881bb3e882076a809696d15f8d380b09520b",
+          "engineVersion": "3.1.0",
+          "hashAlgorithm": "sha256",
+          "notes": [
+            "botScriptHash commits to the exact submitted Battlecode RobotPlayer.java source used for this lane.",
+            "clientHash commits to the tournament runner module plus the Battlecode engine jar hash."
+          ]
+        },
+        "xudtAsset": "xUDT:BCODE",
+        "entryAmount": "100",
+        "prizeAmount": "200",
+        "map": "DefaultSmall",
+        "receiptId": "rcpt_9f2ce38b739bdf6012d35d31ab0dfb0b",
+        "paymentHash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+        "issuedAt": "2026-06-25T15:56:49.772Z",
+        "status": "paid"
+      },
+      "match": {
+        "matchId": "bc_match_bff5899accf4b492",
+        "map": "DefaultSmall",
+        "teamA": "fiberchamp",
+        "teamB": "baselinebot",
+        "winner": "fiberchamp",
+        "winnerSide": "A",
+        "round": 2000,
+        "reason": "The winning team won on tiebreakers (painted more of the map).",
+        "replayPath": "/home/arthur/a19q3/fiber-mpp/.tmp/battlecode-tournament/matches/bc_ticket_e0ab8600711c395e-1782403009780.bc25",
+        "matchHash": "229b140bbffed06d030e46f37400ca6d37a29be77d1196001dfd157e8d90a03f",
+        "stdout": "[server] -------------------- Match Starting --------------------\n[server] fiberchamp vs. baselinebot on DefaultSmall\n[server]                   fiberchamp (A) wins (round 2000)\n[server] Reason: The winning team won on tiebreakers (painted more of the map).\n[server] -------------------- Match Finished --------------------\n",
+        "stderr": "",
+        "engineVersion": "3.1.0",
+        "engineJar": "/home/arthur/a19q3/.toolchains/battlecode25/battlecode25-java-3.1.0.jar",
+        "engineHash": "sha256:d0cc775610d5221fc17b23d818bc881bb3e882076a809696d15f8d380b09520b",
+        "runnerHash": "sha256:c025984308a79ff73633f4249c15be79c0159fffcecdd92c59dcdd4927929d79",
+        "fairness": {
+          "status": "verified",
+          "committed": {
+            "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+            "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515"
+          },
+          "observed": {
+            "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+            "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515",
+            "runnerHash": "sha256:c025984308a79ff73633f4249c15be79c0159fffcecdd92c59dcdd4927929d79",
+            "engineHash": "sha256:d0cc775610d5221fc17b23d818bc881bb3e882076a809696d15f8d380b09520b"
+          },
+          "verifiedAt": "2026-06-25T15:56:51.067Z"
+        },
+        "jdkHome": "/home/arthur/a19q3/.toolchains/jdk-21.0.11+10",
+        "startedAt": "2026-06-25T15:56:49.774Z",
+        "finishedAt": "2026-06-25T15:56:51.067Z"
+      },
+      "award": {
+        "awardId": "bc_award_3235a4dbf42e0c5a",
+        "ticketId": "bc_ticket_e0ab8600711c395e",
+        "matchId": "bc_match_bff5899accf4b492",
+        "playerId": "arthur",
+        "botPackage": "fiberchamp",
+        "xudtAsset": "xUDT:BCODE",
+        "prizeAmount": "200",
+        "status": "paid",
+        "settlement": "fiber-xudt-payment",
+        "prizePayment": {
+          "provider": "fiber-xudt",
+          "mode": "local",
+          "paymentHash": "0xf315c1a8429cfc728348ea23d17f637d734a287db419f7df37b9e9f13fac02f6",
+          "invoice": "fibd2001pt7s4efm5nrczxzat8almn3ql9xlm67x8t8yltat3lfuyjdzyp6c39ql05446amgyd0c0j906j0z4ke2w0gz9lnx2nduyfksrzzerl2spqgq4q5xaet8vnz07us3fcjydg43cnkq0dq2gsuhcu4dmczzvnetsqpe253y5r9q36tu6qm65z38htt6shg72eptjvmvfjp8qtesnxzpm2yp3g9ausku3yagfune6h26v3qpp66d32dn9eh49c8nq6ns888nxmeyxq3rs9a03ay7z6d6sn5947dhpkp3xxsgwlgxevmhutak7kzuktjwql970glcylpe77hjcrejfs57erpsypp7pw63lnvwgctmnfdlh2202rx8cpja9c383vvdpxeptznyk5asqq0egavw5wdrdg9r9fw20fdqtvj2zq3dsr5ypwmyts792xvq6wc4gns3upq94t7xhz8ut8snrcanqgqjv4qanuqwz34tggzuyfpztnfla2s9s4l8pthvc3e50xhh0j27qjrxycnkcj7e3mqf0fqnljkhgfychf5jsdzfttjmjrtc8n9vs3dsdqpwfx57a",
+          "amountShannons": "200",
+          "xudtAsset": "xUDT:BCODE",
+          "udtTypeScript": {
+            "code_hash": "0x50bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95",
+            "hash_type": "data2",
+            "args": "0x32e555f3ff8e135cece1351a6a2971518392c1e30375c1e006ad0ce8eac07947"
+          },
+          "payerRpcUrl": "http://127.0.0.1:21716",
+          "payeeRpcUrl": "http://127.0.0.1:21714",
+          "payerNode": "03032b99943822e721a651c5a5b9621043017daa9dc3ec81d83215fd2e25121187",
+          "payeeNode": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0",
+          "status": "settled",
+          "observedAt": "2026-06-25T15:56:51.598Z",
+          "sendResult": {
+            "payment_hash": "0xf315c1a8429cfc728348ea23d17f637d734a287db419f7df37b9e9f13fac02f6",
+            "status": "Created",
+            "created_at": "0x19eff7f9203",
+            "last_updated_at": "0x19eff7f9203",
+            "failed_error": null,
+            "fee": "0x1",
+            "custom_records": null,
+            "routers": [
+              {
+                "nodes": [
+                  {
+                    "pubkey": "03032b99943822e721a651c5a5b9621043017daa9dc3ec81d83215fd2e25121187",
+                    "amount": "0xc9",
+                    "channel_outpoint": "0x4cf98e685b44c3289a38f7b2502674c3489da2b7ac1f58e5554011359d3da07300000000"
+                  },
+                  {
+                    "pubkey": "02bcbd0e0d811d13363af1e5998f56e74e6aab8a7aa44005e1ce7d696a4d3f10f6",
+                    "amount": "0xc8",
+                    "channel_outpoint": "0xb13afe5935333a804c52bdc4c25faf06bcd0d28d511bddc4cce15ffeb7bd723e00000000"
+                  },
+                  {
+                    "pubkey": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0",
+                    "amount": "0xc8",
+                    "channel_outpoint": "0x000000000000000000000000000000000000000000000000000000000000000000000000"
+                  }
+                ]
+              }
+            ]
+          },
+          "settledPayment": {
+            "payment_hash": "0xf315c1a8429cfc728348ea23d17f637d734a287db419f7df37b9e9f13fac02f6",
+            "status": "Success",
+            "created_at": "0x19eff7f9203",
+            "last_updated_at": "0x19eff7f9203",
+            "failed_error": null,
+            "fee": "0x1",
+            "custom_records": null,
+            "routers": [
+              {
+                "nodes": [
+                  {
+                    "pubkey": "03032b99943822e721a651c5a5b9621043017daa9dc3ec81d83215fd2e25121187",
+                    "amount": "0xc9",
+                    "channel_outpoint": "0x4cf98e685b44c3289a38f7b2502674c3489da2b7ac1f58e5554011359d3da07300000000"
+                  },
+                  {
+                    "pubkey": "02bcbd0e0d811d13363af1e5998f56e74e6aab8a7aa44005e1ce7d696a4d3f10f6",
+                    "amount": "0xc8",
+                    "channel_outpoint": "0xb13afe5935333a804c52bdc4c25faf06bcd0d28d511bddc4cce15ffeb7bd723e00000000"
+                  },
+                  {
+                    "pubkey": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0",
+                    "amount": "0xc8",
+                    "channel_outpoint": "0x000000000000000000000000000000000000000000000000000000000000000000000000"
+                  }
+                ]
+              }
+            ]
+          },
+          "paidInvoice": {
+            "invoice_address": "fibd2001pt7s4efm5nrczxzat8almn3ql9xlm67x8t8yltat3lfuyjdzyp6c39ql05446amgyd0c0j906j0z4ke2w0gz9lnx2nduyfksrzzerl2spqgq4q5xaet8vnz07us3fcjydg43cnkq0dq2gsuhcu4dmczzvnetsqpe253y5r9q36tu6qm65z38htt6shg72eptjvmvfjp8qtesnxzpm2yp3g9ausku3yagfune6h26v3qpp66d32dn9eh49c8nq6ns888nxmeyxq3rs9a03ay7z6d6sn5947dhpkp3xxsgwlgxevmhutak7kzuktjwql970glcylpe77hjcrejfs57erpsypp7pw63lnvwgctmnfdlh2202rx8cpja9c383vvdpxeptznyk5asqq0egavw5wdrdg9r9fw20fdqtvj2zq3dsr5ypwmyts792xvq6wc4gns3upq94t7xhz8ut8snrcanqgqjv4qanuqwz34tggzuyfpztnfla2s9s4l8pthvc3e50xhh0j27qjrxycnkcj7e3mqf0fqnljkhgfychf5jsdzfttjmjrtc8n9vs3dsdqpwfx57a",
+            "invoice": {
+              "currency": "Fibd",
+              "amount": "0xc8",
+              "signature": "120c15001d131c000e0211150b0808021c040901020b13091f1d0a100510151f07010b170c181119140f0617170f120a1e001203060418131618121e19111b00090f0900131f1216170809041817091412100d02090b0b121b12030b180713050c10110d100d0001",
+              "data": {
+                "timestamp": "0x19eff7f91ff",
+                "payment_hash": "0xf315c1a8429cfc728348ea23d17f637d734a287db419f7df37b9e9f13fac02f6",
+                "attrs": [
+                  {
+                    "description": "FiberMPP Battlecode prize bc_ticket_e0ab8600711c395e bc_match_bff5899accf4b492"
+                  },
+                  {
+                    "expiry_time": "0x1e"
+                  },
+                  {
+                    "final_htlc_minimum_expiry_delta": "0x535"
+                  },
+                  {
+                    "udt_script": "0x5500000010000000300000003100000050bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95042000000032e555f3ff8e135cece1351a6a2971518392c1e30375c1e006ad0ce8eac07947"
+                  },
+                  {
+                    "payee_public_key": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0"
+                  }
+                ]
+              }
+            },
+            "status": "Paid"
+          }
+        },
+        "matchHash": "229b140bbffed06d030e46f37400ca6d37a29be77d1196001dfd157e8d90a03f",
+        "awardedAt": "2026-06-25T15:56:51.598Z",
+        "note": "Prize settled by a live Fiber xUDT payment after a paid FiberMPP entry and deterministic local Battlecode match."
+      },
+      "ledgerPath": "/home/arthur/a19q3/fiber-mpp/.tmp/battlecode-tournament-ledger.json",
+      "replayPath": "/home/arthur/a19q3/fiber-mpp/.tmp/battlecode-tournament/matches/bc_ticket_e0ab8600711c395e-1782403009780.bc25",
+      "warnings": [
+        "Battlecode runs as an external AGPL-3.0 scaffold/engine dependency; FiberMPP stores only tournament evidence and local bot sources.",
+        "The prize was settled by a live Fiber xUDT payment and recorded with payment hash evidence."
+      ]
+    },
+    "flow": {
+      "events": [
+        {
+          "time": "2026-06-25T15:56:49.228Z",
+          "level": "INFO",
+          "actor": "tournament",
+          "message": "Battlecode xUDT entry requested",
+          "detail": "100 xUDT:BCODE"
+        },
+        {
+          "time": "2026-06-25T15:56:49.241Z",
+          "level": "INFO",
+          "actor": "gateway",
+          "message": "Battlecode entry 402 issued",
+          "detail": "HTTP 402"
+        },
+        {
+          "time": "2026-06-25T15:56:49.243Z",
+          "level": "INFO",
+          "actor": "payer",
+          "message": "pay Battlecode xUDT ticket over Fiber",
+          "detail": "payment_hash=0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa"
+        },
+        {
+          "time": "2026-06-25T15:56:49.766Z",
+          "level": "INFO",
+          "actor": "fiber-method",
+          "message": "Battlecode ticket payment settled",
+          "detail": "mode=local"
+        },
+        {
+          "time": "2026-06-25T15:56:49.768Z",
+          "level": "INFO",
+          "actor": "client",
+          "message": "claim Battlecode ticket with Authorization: Payment",
+          "detail": "Payment eyJkb2...kuNzY2WiJ9"
+        },
+        {
+          "time": "2026-06-25T15:56:49.772Z",
+          "level": "INFO",
+          "actor": "tournament",
+          "message": "Battlecode ticket issued",
+          "detail": "bc_ticket_e0ab8600711c395e"
+        },
+        {
+          "time": "2026-06-25T15:56:49.774Z",
+          "level": "INFO",
+          "actor": "battlecode",
+          "message": "match started",
+          "detail": "fiberchamp vs baselinebot on DefaultSmall"
+        },
+        {
+          "time": "2026-06-25T15:56:51.599Z",
+          "level": "INFO",
+          "actor": "battlecode",
+          "message": "match finished",
+          "detail": "fiberchamp wins round 2000"
+        },
+        {
+          "time": "2026-06-25T15:56:51.599Z",
+          "level": "INFO",
+          "actor": "fiber-xudt",
+          "message": "prize payment settled",
+          "detail": "200 xUDT:BCODE"
+        }
+      ],
+      "tournament": {
+        "registration": {
+          "playerId": "arthur",
+          "botPackage": "fiberchamp",
+          "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+          "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515",
+          "xudtAsset": "xUDT:BCODE",
+          "entryAmount": "100",
+          "prizeAmount": "200",
+          "map": "DefaultSmall"
+        },
+        "fairnessManifest": {
+          "domain": "fiber-mpp-battlecode-fairness-v1",
+          "botPackage": "fiberchamp",
+          "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+          "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515",
+          "runnerHash": "sha256:c025984308a79ff73633f4249c15be79c0159fffcecdd92c59dcdd4927929d79",
+          "engineHash": "sha256:d0cc775610d5221fc17b23d818bc881bb3e882076a809696d15f8d380b09520b",
+          "engineVersion": "3.1.0",
+          "hashAlgorithm": "sha256",
+          "notes": [
+            "botScriptHash commits to the exact submitted Battlecode RobotPlayer.java source used for this lane.",
+            "clientHash commits to the tournament runner module plus the Battlecode engine jar hash."
+          ]
+        },
+        "requestBody": "{\"playerId\":\"arthur\",\"botPackage\":\"fiberchamp\",\"botScriptHash\":\"sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45\",\"clientHash\":\"sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515\",\"xudtAsset\":\"xUDT:BCODE\",\"entryAmount\":\"100\",\"prizeAmount\":\"200\",\"map\":\"DefaultSmall\"}",
+        "resourceUrl": "http://127.0.0.1:8877/api/tournament/battlecode/register",
+        "challengeBody": {
+          "type": "https://paymentauth.org/problems/payment-required",
+          "title": "Payment Required",
+          "status": 402,
+          "detail": "Payment is required.",
+          "challengeId": "chal_b1ad9cae8a3741b95587e0155edd9836",
+          "challenge": {
+            "domain": "fiber-mpp-challenge-v1",
+            "challengeId": "chal_b1ad9cae8a3741b95587e0155edd9836",
+            "resource": {
+              "method": "POST",
+              "url": "http://127.0.0.1:8877/api/tournament/battlecode/register",
+              "bodyHash": "74e083a444d1312fe5c67c9f5a0d2bee38eacc0c4e678029dea7ea30ef0110ec",
+              "contentType": "application/json"
+            },
+            "amount": {
+              "value": "100",
+              "currency": "xUDT:BCODE",
+              "display": "100 xUDT:BCODE"
+            },
+            "methods": [
+              {
+                "method": "fiber",
+                "intent": "charge",
+                "asset": "xUDT:BCODE",
+                "amountShannons": "100",
+                "paymentHash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+                "invoice": "fibd1001pg2lrl3zhkhczxzat8almnzdujtcjfl2g8mtn7y9rlajktr3f2xdx4vraknvsejdnhmjjj3p5z6j3694py3ypc5gnskl34hv6f969u7vz7l44matsn038v2ydkh5r3npjaw7ue6qrm7lwknzm2yx2p063f6tdny7jx09y59045ry5zsm6pl3a49057cpzlmzpzdtpzjj6vw0gdmr8rxdjgvc4d5a47qwuxqg6yjc0lqsew8r4wca0k75x5xj5y32d8pvtgdvrpx37wadjllyl93pk2s0xmulpx3gzfhtxu2usyz84tsh36vzg08gy56tnvrnmanm80nrmfke4pnp0s4wev02qydd68sahrkxg7qr39dcx8d0xy24fvyjpn97lwwauz9hazmcnce4qk4k3tlpg27jsr89tpp5fmmarvwkqxtzegx0gqlywjj7e6ch9mjvml3zdd30fzs9dv6e8jqc8vs4294sjlayt44ultvs5q25vw4k42xs729g9c6p60e2emn9edd6x5pfgmmgq4azaef",
+                "udtTypeScript": {
+                  "code_hash": "0x50bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95",
+                  "hash_type": "data2",
+                  "args": "0x32e555f3ff8e135cece1351a6a2971518392c1e30375c1e006ad0ce8eac07947"
+                },
+                "fiberRpcLabel": "local-payee",
+                "expiresAt": "2026-06-25T15:58:49.229Z"
+              }
+            ],
+            "nonce": "1441f8aeb7155b8e3bcb28e0dcb22f1c",
+            "issuedAt": "2026-06-25T15:56:49.229Z",
+            "expiresAt": "2026-06-25T15:58:49.229Z",
+            "serverId": "fiber-mpp-evidence-api",
+            "maxUses": 1,
+            "metadataHash": "784ae703528ea794202efe1fd8d1b0f4568b0afd75c907b53e88a5f45a33be4d"
+          },
+          "challengeSignature": "0de42d2182130be5df0f561f16209aef538a06d3114d8ffef0c2d7c9023c36dc",
+          "methods": [
+            {
+              "method": "fiber",
+              "intent": "charge",
+              "asset": "xUDT:BCODE",
+              "amountShannons": "100",
+              "paymentHash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+              "invoice": "fibd1001pg2lrl3zhkhczxzat8almnzdujtcjfl2g8mtn7y9rlajktr3f2xdx4vraknvsejdnhmjjj3p5z6j3694py3ypc5gnskl34hv6f969u7vz7l44matsn038v2ydkh5r3npjaw7ue6qrm7lwknzm2yx2p063f6tdny7jx09y59045ry5zsm6pl3a49057cpzlmzpzdtpzjj6vw0gdmr8rxdjgvc4d5a47qwuxqg6yjc0lqsew8r4wca0k75x5xj5y32d8pvtgdvrpx37wadjllyl93pk2s0xmulpx3gzfhtxu2usyz84tsh36vzg08gy56tnvrnmanm80nrmfke4pnp0s4wev02qydd68sahrkxg7qr39dcx8d0xy24fvyjpn97lwwauz9hazmcnce4qk4k3tlpg27jsr89tpp5fmmarvwkqxtzegx0gqlywjj7e6ch9mjvml3zdd30fzs9dv6e8jqc8vs4294sjlayt44ultvs5q25vw4k42xs729g9c6p60e2emn9edd6x5pfgmmgq4azaef",
+              "udtTypeScript": {
+                "code_hash": "0x50bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95",
+                "hash_type": "data2",
+                "args": "0x32e555f3ff8e135cece1351a6a2971518392c1e30375c1e006ad0ce8eac07947"
+              },
+              "fiberRpcLabel": "local-payee",
+              "expiresAt": "2026-06-25T15:58:49.229Z"
+            }
+          ]
+        },
+        "challengeId": "chal_b1ad9cae8a3741b95587e0155edd9836",
+        "fiberChallenge": {
+          "method": "fiber",
+          "intent": "charge",
+          "asset": "xUDT:BCODE",
+          "amountShannons": "100",
+          "paymentHash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+          "invoice": "fibd1001pg2lrl3zhkhczxzat8almnzdujtcjfl2g8mtn7y9rlajktr3f2xdx4vraknvsejdnhmjjj3p5z6j3694py3ypc5gnskl34hv6f969u7vz7l44matsn038v2ydkh5r3npjaw7ue6qrm7lwknzm2yx2p063f6tdny7jx09y59045ry5zsm6pl3a49057cpzlmzpzdtpzjj6vw0gdmr8rxdjgvc4d5a47qwuxqg6yjc0lqsew8r4wca0k75x5xj5y32d8pvtgdvrpx37wadjllyl93pk2s0xmulpx3gzfhtxu2usyz84tsh36vzg08gy56tnvrnmanm80nrmfke4pnp0s4wev02qydd68sahrkxg7qr39dcx8d0xy24fvyjpn97lwwauz9hazmcnce4qk4k3tlpg27jsr89tpp5fmmarvwkqxtzegx0gqlywjj7e6ch9mjvml3zdd30fzs9dv6e8jqc8vs4294sjlayt44ultvs5q25vw4k42xs729g9c6p60e2emn9edd6x5pfgmmgq4azaef",
+          "udtTypeScript": {
+            "code_hash": "0x50bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95",
+            "hash_type": "data2",
+            "args": "0x32e555f3ff8e135cece1351a6a2971518392c1e30375c1e006ad0ce8eac07947"
+          },
+          "fiberRpcLabel": "local-payee",
+          "expiresAt": "2026-06-25T15:58:49.229Z"
+        },
+        "proof": {
+          "kind": "fiber-payment-proof-v1",
+          "mode": "local",
+          "paymentHash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+          "invoice": "fibd1001pg2lrl3zhkhczxzat8almnzdujtcjfl2g8mtn7y9rlajktr3f2xdx4vraknvsejdnhmjjj3p5z6j3694py3ypc5gnskl34hv6f969u7vz7l44matsn038v2ydkh5r3npjaw7ue6qrm7lwknzm2yx2p063f6tdny7jx09y59045ry5zsm6pl3a49057cpzlmzpzdtpzjj6vw0gdmr8rxdjgvc4d5a47qwuxqg6yjc0lqsew8r4wca0k75x5xj5y32d8pvtgdvrpx37wadjllyl93pk2s0xmulpx3gzfhtxu2usyz84tsh36vzg08gy56tnvrnmanm80nrmfke4pnp0s4wev02qydd68sahrkxg7qr39dcx8d0xy24fvyjpn97lwwauz9hazmcnce4qk4k3tlpg27jsr89tpp5fmmarvwkqxtzegx0gqlywjj7e6ch9mjvml3zdd30fzs9dv6e8jqc8vs4294sjlayt44ultvs5q25vw4k42xs729g9c6p60e2emn9edd6x5pfgmmgq4azaef",
+          "amountShannons": "100",
+          "udtTypeScript": {
+            "code_hash": "0x50bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95",
+            "hash_type": "data2",
+            "args": "0x32e555f3ff8e135cece1351a6a2971518392c1e30375c1e006ad0ce8eac07947"
+          },
+          "status": "Success",
+          "observedAt": "2026-06-25T15:56:49.766Z",
+          "evidence": {
+            "sendResult": {
+              "payment_hash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+              "status": "Created",
+              "created_at": "0x19eff7f8ade",
+              "last_updated_at": "0x19eff7f8ade",
+              "failed_error": null,
+              "fee": "0x1",
+              "custom_records": null,
+              "routers": [
+                {
+                  "nodes": [
+                    {
+                      "pubkey": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0",
+                      "amount": "0x65",
+                      "channel_outpoint": "0x677a32fec023c135543efba81fc8d629214b03f91f0823852bb3ec9d8c4e87d800000000"
+                    },
+                    {
+                      "pubkey": "02bcbd0e0d811d13363af1e5998f56e74e6aab8a7aa44005e1ce7d696a4d3f10f6",
+                      "amount": "0x64",
+                      "channel_outpoint": "0x706a7a88457ff69236f6cb53761d51385475145e5f43f860fbbbf2d0a37fe9d700000000"
+                    },
+                    {
+                      "pubkey": "03032b99943822e721a651c5a5b9621043017daa9dc3ec81d83215fd2e25121187",
+                      "amount": "0x64",
+                      "channel_outpoint": "0x000000000000000000000000000000000000000000000000000000000000000000000000"
+                    }
+                  ]
+                }
+              ]
+            },
+            "settledPayment": {
+              "payment_hash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+              "status": "Success",
+              "created_at": "0x19eff7f8ade",
+              "last_updated_at": "0x19eff7f8ade",
+              "failed_error": null,
+              "fee": "0x1",
+              "custom_records": null,
+              "routers": [
+                {
+                  "nodes": [
+                    {
+                      "pubkey": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0",
+                      "amount": "0x65",
+                      "channel_outpoint": "0x677a32fec023c135543efba81fc8d629214b03f91f0823852bb3ec9d8c4e87d800000000"
+                    },
+                    {
+                      "pubkey": "02bcbd0e0d811d13363af1e5998f56e74e6aab8a7aa44005e1ce7d696a4d3f10f6",
+                      "amount": "0x64",
+                      "channel_outpoint": "0x706a7a88457ff69236f6cb53761d51385475145e5f43f860fbbbf2d0a37fe9d700000000"
+                    },
+                    {
+                      "pubkey": "03032b99943822e721a651c5a5b9621043017daa9dc3ec81d83215fd2e25121187",
+                      "amount": "0x64",
+                      "channel_outpoint": "0x000000000000000000000000000000000000000000000000000000000000000000000000"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "credential": {
+          "domain": "fiber-mpp-credential-v1",
+          "challengeId": "chal_b1ad9cae8a3741b95587e0155edd9836",
+          "method": "fiber",
+          "resourceHash": "5aece8b19a84874dc12bd6c5573a4c61a3637be19c72377a82251729d2fad126",
+          "paymentProof": {
+            "kind": "fiber-payment-proof-v1",
+            "mode": "local",
+            "paymentHash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+            "invoice": "fibd1001pg2lrl3zhkhczxzat8almnzdujtcjfl2g8mtn7y9rlajktr3f2xdx4vraknvsejdnhmjjj3p5z6j3694py3ypc5gnskl34hv6f969u7vz7l44matsn038v2ydkh5r3npjaw7ue6qrm7lwknzm2yx2p063f6tdny7jx09y59045ry5zsm6pl3a49057cpzlmzpzdtpzjj6vw0gdmr8rxdjgvc4d5a47qwuxqg6yjc0lqsew8r4wca0k75x5xj5y32d8pvtgdvrpx37wadjllyl93pk2s0xmulpx3gzfhtxu2usyz84tsh36vzg08gy56tnvrnmanm80nrmfke4pnp0s4wev02qydd68sahrkxg7qr39dcx8d0xy24fvyjpn97lwwauz9hazmcnce4qk4k3tlpg27jsr89tpp5fmmarvwkqxtzegx0gqlywjj7e6ch9mjvml3zdd30fzs9dv6e8jqc8vs4294sjlayt44ultvs5q25vw4k42xs729g9c6p60e2emn9edd6x5pfgmmgq4azaef",
+            "amountShannons": "100",
+            "udtTypeScript": {
+              "code_hash": "0x50bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95",
+              "hash_type": "data2",
+              "args": "0x32e555f3ff8e135cece1351a6a2971518392c1e30375c1e006ad0ce8eac07947"
+            },
+            "status": "Success",
+            "observedAt": "2026-06-25T15:56:49.766Z",
+            "evidence": {
+              "sendResult": {
+                "payment_hash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+                "status": "Created",
+                "created_at": "0x19eff7f8ade",
+                "last_updated_at": "0x19eff7f8ade",
+                "failed_error": null,
+                "fee": "0x1",
+                "custom_records": null,
+                "routers": [
+                  {
+                    "nodes": [
+                      {
+                        "pubkey": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0",
+                        "amount": "0x65",
+                        "channel_outpoint": "0x677a32fec023c135543efba81fc8d629214b03f91f0823852bb3ec9d8c4e87d800000000"
+                      },
+                      {
+                        "pubkey": "02bcbd0e0d811d13363af1e5998f56e74e6aab8a7aa44005e1ce7d696a4d3f10f6",
+                        "amount": "0x64",
+                        "channel_outpoint": "0x706a7a88457ff69236f6cb53761d51385475145e5f43f860fbbbf2d0a37fe9d700000000"
+                      },
+                      {
+                        "pubkey": "03032b99943822e721a651c5a5b9621043017daa9dc3ec81d83215fd2e25121187",
+                        "amount": "0x64",
+                        "channel_outpoint": "0x000000000000000000000000000000000000000000000000000000000000000000000000"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "settledPayment": {
+                "payment_hash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+                "status": "Success",
+                "created_at": "0x19eff7f8ade",
+                "last_updated_at": "0x19eff7f8ade",
+                "failed_error": null,
+                "fee": "0x1",
+                "custom_records": null,
+                "routers": [
+                  {
+                    "nodes": [
+                      {
+                        "pubkey": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0",
+                        "amount": "0x65",
+                        "channel_outpoint": "0x677a32fec023c135543efba81fc8d629214b03f91f0823852bb3ec9d8c4e87d800000000"
+                      },
+                      {
+                        "pubkey": "02bcbd0e0d811d13363af1e5998f56e74e6aab8a7aa44005e1ce7d696a4d3f10f6",
+                        "amount": "0x64",
+                        "channel_outpoint": "0x706a7a88457ff69236f6cb53761d51385475145e5f43f860fbbbf2d0a37fe9d700000000"
+                      },
+                      {
+                        "pubkey": "03032b99943822e721a651c5a5b9621043017daa9dc3ec81d83215fd2e25121187",
+                        "amount": "0x64",
+                        "channel_outpoint": "0x000000000000000000000000000000000000000000000000000000000000000000000000"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          },
+          "submittedAt": "2026-06-25T15:56:49.766Z"
+        },
+        "authorization": "Payment eyJkb21haW4iOiJmaWJlci1tcHAtY3JlZGVudGlhbC12MSIsImNoYWxsZW5nZUlkIjoiY2hhbF9iMWFkOWNhZThhMzc0MWI5NTU4N2UwMTU1ZWRkOTgzNiIsIm1ldGhvZCI6ImZpYmVyIiwicmVzb3VyY2VIYXNoIjoiNWFlY2U4YjE5YTg0ODc0ZGMxMmJkNmM1NTczYTRjNjFhMzYzN2JlMTljNzIzNzdhODIyNTE3MjlkMmZhZDEyNiIsInBheW1lbnRQcm9vZiI6eyJraW5kIjoiZmliZXItcGF5bWVudC1wcm9vZi12MSIsIm1vZGUiOiJsb2NhbCIsInBheW1lbnRIYXNoIjoiMHhkMzhiNTk5NDdiMjVjYTkzZjY3ZmM0N2Q2MWUyN2I3NzBkNDRmNzJlZGZiNzMzNTkzZjk4YmI2YzkwNjE5OGZhIiwiaW52b2ljZSI6ImZpYmQxMDAxcGcybHJsM3poa2hjenh6YXQ4YWxtbnpkdWp0Y2pmbDJnOG10bjd5OXJsYWprdHIzZjJ4ZHg0dnJha252c2VqZG5obWpqajNwNXo2ajM2OTRweTN5cGM1Z25za2wzNGh2NmY5Njl1N3Z6N2w0NG1hdHNuMDM4djJ5ZGtoNXIzbnBqYXc3dWU2cXJtN2x3a256bTJ5eDJwMDYzZjZ0ZG55N2p4MDl5NTkwNDVyeTV6c202cGwzYTQ5MDU3Y3B6bG16cHpkdHB6amo2dncwZ2RtcjhyeGRqZ3ZjNGQ1YTQ3cXd1eHFnNnlqYzBscXNldzhyNHdjYTBrNzV4NXhqNXkzMmQ4cHZ0Z2R2cnB4Mzd3YWRqbGx5bDkzcGsyczB4bXVscHgzZ3pmaHR4dTJ1c3l6ODR0c2gzNnZ6ZzA4Z3k1NnRudnJubWFubTgwbnJtZmtlNHBucDBzNHdldjAycXlkZDY4c2Focmt4ZzdxcjM5ZGN4OGQweHkyNGZ2eWpwbjk3bHd3YXV6OWhhem1jbmNlNHFrNGszdGxwZzI3anNyODl0cHA1Zm1tYXJ2d2txeHR6ZWd4MGdxbHl3amo3ZTZjaDltanZtbDN6ZGQzMGZ6czlkdjZlOGpxYzh2czQyOTRzamxheXQ0NHVsdHZzNXEyNXZ3NGs0MnhzNzI5ZzljNnA2MGUyZW1uOWVkZDZ4NXBmZ21tZ3E0YXphZWYiLCJhbW91bnRTaGFubm9ucyI6IjEwMCIsInVkdFR5cGVTY3JpcHQiOnsiY29kZV9oYXNoIjoiMHg1MGJkOGQ2NjgwYjhiOWNmOThiNzNmM2MwOGZhZjhiMmEyMTkxNDMxMTk1NDExOGFkNjYwOWJlNmU3OGExYjk1IiwiaGFzaF90eXBlIjoiZGF0YTIiLCJhcmdzIjoiMHgzMmU1NTVmM2ZmOGUxMzVjZWNlMTM1MWE2YTI5NzE1MTgzOTJjMWUzMDM3NWMxZTAwNmFkMGNlOGVhYzA3OTQ3In0sInN0YXR1cyI6IlN1Y2Nlc3MiLCJvYnNlcnZlZEF0IjoiMjAyNi0wNi0yNVQxNTo1Njo0OS43NjZaIiwiZXZpZGVuY2UiOnsic2VuZFJlc3VsdCI6eyJwYXltZW50X2hhc2giOiIweGQzOGI1OTk0N2IyNWNhOTNmNjdmYzQ3ZDYxZTI3Yjc3MGQ0NGY3MmVkZmI3MzM1OTNmOThiYjZjOTA2MTk4ZmEiLCJzdGF0dXMiOiJDcmVhdGVkIiwiY3JlYXRlZF9hdCI6IjB4MTllZmY3ZjhhZGUiLCJsYXN0X3VwZGF0ZWRfYXQiOiIweDE5ZWZmN2Y4YWRlIiwiZmFpbGVkX2Vycm9yIjpudWxsLCJmZWUiOiIweDEiLCJjdXN0b21fcmVjb3JkcyI6bnVsbCwicm91dGVycyI6W3sibm9kZXMiOlt7InB1YmtleSI6IjAyYTY0Yjg5OTNmMzNiMmViZDM3YTRkZTFjOTQ0MWY0OTEyOTFhNGU3NzlkYThlNTE5YmNmYjdjMWYzZjU2YzljMCIsImFtb3VudCI6IjB4NjUiLCJjaGFubmVsX291dHBvaW50IjoiMHg2NzdhMzJmZWMwMjNjMTM1NTQzZWZiYTgxZmM4ZDYyOTIxNGIwM2Y5MWYwODIzODUyYmIzZWM5ZDhjNGU4N2Q4MDAwMDAwMDAifSx7InB1YmtleSI6IjAyYmNiZDBlMGQ4MTFkMTMzNjNhZjFlNTk5OGY1NmU3NGU2YWFiOGE3YWE0NDAwNWUxY2U3ZDY5NmE0ZDNmMTBmNiIsImFtb3VudCI6IjB4NjQiLCJjaGFubmVsX291dHBvaW50IjoiMHg3MDZhN2E4ODQ1N2ZmNjkyMzZmNmNiNTM3NjFkNTEzODU0NzUxNDVlNWY0M2Y4NjBmYmJiZjJkMGEzN2ZlOWQ3MDAwMDAwMDAifSx7InB1YmtleSI6IjAzMDMyYjk5OTQzODIyZTcyMWE2NTFjNWE1Yjk2MjEwNDMwMTdkYWE5ZGMzZWM4MWQ4MzIxNWZkMmUyNTEyMTE4NyIsImFtb3VudCI6IjB4NjQiLCJjaGFubmVsX291dHBvaW50IjoiMHgwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAifV19XX0sInNldHRsZWRQYXltZW50Ijp7InBheW1lbnRfaGFzaCI6IjB4ZDM4YjU5OTQ3YjI1Y2E5M2Y2N2ZjNDdkNjFlMjdiNzcwZDQ0ZjcyZWRmYjczMzU5M2Y5OGJiNmM5MDYxOThmYSIsInN0YXR1cyI6IlN1Y2Nlc3MiLCJjcmVhdGVkX2F0IjoiMHgxOWVmZjdmOGFkZSIsImxhc3RfdXBkYXRlZF9hdCI6IjB4MTllZmY3ZjhhZGUiLCJmYWlsZWRfZXJyb3IiOm51bGwsImZlZSI6IjB4MSIsImN1c3RvbV9yZWNvcmRzIjpudWxsLCJyb3V0ZXJzIjpbeyJub2RlcyI6W3sicHVia2V5IjoiMDJhNjRiODk5M2YzM2IyZWJkMzdhNGRlMWM5NDQxZjQ5MTI5MWE0ZTc3OWRhOGU1MTliY2ZiN2MxZjNmNTZjOWMwIiwiYW1vdW50IjoiMHg2NSIsImNoYW5uZWxfb3V0cG9pbnQiOiIweDY3N2EzMmZlYzAyM2MxMzU1NDNlZmJhODFmYzhkNjI5MjE0YjAzZjkxZjA4MjM4NTJiYjNlYzlkOGM0ZTg3ZDgwMDAwMDAwMCJ9LHsicHVia2V5IjoiMDJiY2JkMGUwZDgxMWQxMzM2M2FmMWU1OTk4ZjU2ZTc0ZTZhYWI4YTdhYTQ0MDA1ZTFjZTdkNjk2YTRkM2YxMGY2IiwiYW1vdW50IjoiMHg2NCIsImNoYW5uZWxfb3V0cG9pbnQiOiIweDcwNmE3YTg4NDU3ZmY2OTIzNmY2Y2I1Mzc2MWQ1MTM4NTQ3NTE0NWU1ZjQzZjg2MGZiYmJmMmQwYTM3ZmU5ZDcwMDAwMDAwMCJ9LHsicHVia2V5IjoiMDMwMzJiOTk5NDM4MjJlNzIxYTY1MWM1YTViOTYyMTA0MzAxN2RhYTlkYzNlYzgxZDgzMjE1ZmQyZTI1MTIxMTg3IiwiYW1vdW50IjoiMHg2NCIsImNoYW5uZWxfb3V0cG9pbnQiOiIweDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMCJ9XX1dfX19LCJzdWJtaXR0ZWRBdCI6IjIwMjYtMDYtMjVUMTU6NTY6NDkuNzY2WiJ9",
+        "receipt": {
+          "domain": "fiber-mpp-receipt-v1",
+          "receiptId": "rcpt_9f2ce38b739bdf6012d35d31ab0dfb0b",
+          "challengeId": "chal_b1ad9cae8a3741b95587e0155edd9836",
+          "method": "fiber",
+          "resourceHash": "5aece8b19a84874dc12bd6c5573a4c61a3637be19c72377a82251729d2fad126",
+          "amount": {
+            "value": "100",
+            "currency": "xUDT:BCODE"
+          },
+          "settlement": {
+            "status": "settled",
+            "paymentHash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+            "invoiceId": "fibd1001pg2lrl3zhkhczxzat8almnzdujtcjfl2g8mtn7y9rlajktr3f2xdx4vraknvsejdnhmjjj3p5z6j3694py3ypc5gnskl34hv6f969u7vz7l44matsn038v2ydkh5r3npjaw7ue6qrm7lwknzm2yx2p063f6tdny7jx09y59045ry5zsm6pl3a49057cpzlmzpzdtpzjj6vw0gdmr8rxdjgvc4d5a47qwuxqg6yjc0lqsew8r4wca0k75x5xj5y32d8pvtgdvrpx37wadjllyl93pk2s0xmulpx3gzfhtxu2usyz84tsh36vzg08gy56tnvrnmanm80nrmfke4pnp0s4wev02qydd68sahrkxg7qr39dcx8d0xy24fvyjpn97lwwauz9hazmcnce4qk4k3tlpg27jsr89tpp5fmmarvwkqxtzegx0gqlywjj7e6ch9mjvml3zdd30fzs9dv6e8jqc8vs4294sjlayt44ultvs5q25vw4k42xs729g9c6p60e2emn9edd6x5pfgmmgq4azaef",
+            "provider": "local-payee",
+            "observedAt": "2026-06-25T15:56:49.771Z"
+          },
+          "serverId": "fiber-mpp-evidence-api",
+          "issuedAt": "2026-06-25T15:56:49.771Z",
+          "signature": "919d6f7176a1ed05bfa03bc3ed29377b3fce9f04bc600fe20dccdee732c6da1e"
+        },
+        "ticket": {
+          "ticketId": "bc_ticket_e0ab8600711c395e",
+          "playerId": "arthur",
+          "botPackage": "fiberchamp",
+          "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+          "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515",
+          "fairnessCommitment": {
+            "domain": "fiber-mpp-battlecode-fairness-v1",
+            "botPackage": "fiberchamp",
+            "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+            "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515",
+            "runnerHash": "sha256:c025984308a79ff73633f4249c15be79c0159fffcecdd92c59dcdd4927929d79",
+            "engineHash": "sha256:d0cc775610d5221fc17b23d818bc881bb3e882076a809696d15f8d380b09520b",
+            "engineVersion": "3.1.0",
+            "hashAlgorithm": "sha256",
+            "notes": [
+              "botScriptHash commits to the exact submitted Battlecode RobotPlayer.java source used for this lane.",
+              "clientHash commits to the tournament runner module plus the Battlecode engine jar hash."
+            ]
+          },
+          "xudtAsset": "xUDT:BCODE",
+          "entryAmount": "100",
+          "prizeAmount": "200",
+          "map": "DefaultSmall",
+          "receiptId": "rcpt_9f2ce38b739bdf6012d35d31ab0dfb0b",
+          "paymentHash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+          "issuedAt": "2026-06-25T15:56:49.772Z",
+          "status": "paid"
+        },
+        "report": {
+          "generatedAt": "2026-06-25T15:56:51.599Z",
+          "registration": {
+            "playerId": "arthur",
+            "botPackage": "fiberchamp",
+            "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+            "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515",
+            "xudtAsset": "xUDT:BCODE",
+            "entryAmount": "100",
+            "prizeAmount": "200",
+            "map": "DefaultSmall"
+          },
+          "ticket": {
+            "ticketId": "bc_ticket_e0ab8600711c395e",
+            "playerId": "arthur",
+            "botPackage": "fiberchamp",
+            "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+            "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515",
+            "fairnessCommitment": {
+              "domain": "fiber-mpp-battlecode-fairness-v1",
+              "botPackage": "fiberchamp",
+              "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+              "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515",
+              "runnerHash": "sha256:c025984308a79ff73633f4249c15be79c0159fffcecdd92c59dcdd4927929d79",
+              "engineHash": "sha256:d0cc775610d5221fc17b23d818bc881bb3e882076a809696d15f8d380b09520b",
+              "engineVersion": "3.1.0",
+              "hashAlgorithm": "sha256",
+              "notes": [
+                "botScriptHash commits to the exact submitted Battlecode RobotPlayer.java source used for this lane.",
+                "clientHash commits to the tournament runner module plus the Battlecode engine jar hash."
+              ]
+            },
+            "xudtAsset": "xUDT:BCODE",
+            "entryAmount": "100",
+            "prizeAmount": "200",
+            "map": "DefaultSmall",
+            "receiptId": "rcpt_9f2ce38b739bdf6012d35d31ab0dfb0b",
+            "paymentHash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+            "issuedAt": "2026-06-25T15:56:49.772Z",
+            "status": "paid"
+          },
+          "match": {
+            "matchId": "bc_match_bff5899accf4b492",
+            "map": "DefaultSmall",
+            "teamA": "fiberchamp",
+            "teamB": "baselinebot",
+            "winner": "fiberchamp",
+            "winnerSide": "A",
+            "round": 2000,
+            "reason": "The winning team won on tiebreakers (painted more of the map).",
+            "replayPath": "/home/arthur/a19q3/fiber-mpp/.tmp/battlecode-tournament/matches/bc_ticket_e0ab8600711c395e-1782403009780.bc25",
+            "matchHash": "229b140bbffed06d030e46f37400ca6d37a29be77d1196001dfd157e8d90a03f",
+            "stdout": "[server] -------------------- Match Starting --------------------\n[server] fiberchamp vs. baselinebot on DefaultSmall\n[server]                   fiberchamp (A) wins (round 2000)\n[server] Reason: The winning team won on tiebreakers (painted more of the map).\n[server] -------------------- Match Finished --------------------\n",
+            "stderr": "",
+            "engineVersion": "3.1.0",
+            "engineJar": "/home/arthur/a19q3/.toolchains/battlecode25/battlecode25-java-3.1.0.jar",
+            "engineHash": "sha256:d0cc775610d5221fc17b23d818bc881bb3e882076a809696d15f8d380b09520b",
+            "runnerHash": "sha256:c025984308a79ff73633f4249c15be79c0159fffcecdd92c59dcdd4927929d79",
+            "fairness": {
+              "status": "verified",
+              "committed": {
+                "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+                "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515"
+              },
+              "observed": {
+                "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+                "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515",
+                "runnerHash": "sha256:c025984308a79ff73633f4249c15be79c0159fffcecdd92c59dcdd4927929d79",
+                "engineHash": "sha256:d0cc775610d5221fc17b23d818bc881bb3e882076a809696d15f8d380b09520b"
+              },
+              "verifiedAt": "2026-06-25T15:56:51.067Z"
+            },
+            "jdkHome": "/home/arthur/a19q3/.toolchains/jdk-21.0.11+10",
+            "startedAt": "2026-06-25T15:56:49.774Z",
+            "finishedAt": "2026-06-25T15:56:51.067Z"
+          },
+          "award": {
+            "awardId": "bc_award_3235a4dbf42e0c5a",
+            "ticketId": "bc_ticket_e0ab8600711c395e",
+            "matchId": "bc_match_bff5899accf4b492",
+            "playerId": "arthur",
+            "botPackage": "fiberchamp",
+            "xudtAsset": "xUDT:BCODE",
+            "prizeAmount": "200",
+            "status": "paid",
+            "settlement": "fiber-xudt-payment",
+            "prizePayment": {
+              "provider": "fiber-xudt",
+              "mode": "local",
+              "paymentHash": "0xf315c1a8429cfc728348ea23d17f637d734a287db419f7df37b9e9f13fac02f6",
+              "invoice": "fibd2001pt7s4efm5nrczxzat8almn3ql9xlm67x8t8yltat3lfuyjdzyp6c39ql05446amgyd0c0j906j0z4ke2w0gz9lnx2nduyfksrzzerl2spqgq4q5xaet8vnz07us3fcjydg43cnkq0dq2gsuhcu4dmczzvnetsqpe253y5r9q36tu6qm65z38htt6shg72eptjvmvfjp8qtesnxzpm2yp3g9ausku3yagfune6h26v3qpp66d32dn9eh49c8nq6ns888nxmeyxq3rs9a03ay7z6d6sn5947dhpkp3xxsgwlgxevmhutak7kzuktjwql970glcylpe77hjcrejfs57erpsypp7pw63lnvwgctmnfdlh2202rx8cpja9c383vvdpxeptznyk5asqq0egavw5wdrdg9r9fw20fdqtvj2zq3dsr5ypwmyts792xvq6wc4gns3upq94t7xhz8ut8snrcanqgqjv4qanuqwz34tggzuyfpztnfla2s9s4l8pthvc3e50xhh0j27qjrxycnkcj7e3mqf0fqnljkhgfychf5jsdzfttjmjrtc8n9vs3dsdqpwfx57a",
+              "amountShannons": "200",
+              "xudtAsset": "xUDT:BCODE",
+              "udtTypeScript": {
+                "code_hash": "0x50bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95",
+                "hash_type": "data2",
+                "args": "0x32e555f3ff8e135cece1351a6a2971518392c1e30375c1e006ad0ce8eac07947"
+              },
+              "payerRpcUrl": "http://127.0.0.1:21716",
+              "payeeRpcUrl": "http://127.0.0.1:21714",
+              "payerNode": "03032b99943822e721a651c5a5b9621043017daa9dc3ec81d83215fd2e25121187",
+              "payeeNode": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0",
+              "status": "settled",
+              "observedAt": "2026-06-25T15:56:51.598Z",
+              "sendResult": {
+                "payment_hash": "0xf315c1a8429cfc728348ea23d17f637d734a287db419f7df37b9e9f13fac02f6",
+                "status": "Created",
+                "created_at": "0x19eff7f9203",
+                "last_updated_at": "0x19eff7f9203",
+                "failed_error": null,
+                "fee": "0x1",
+                "custom_records": null,
+                "routers": [
+                  {
+                    "nodes": [
+                      {
+                        "pubkey": "03032b99943822e721a651c5a5b9621043017daa9dc3ec81d83215fd2e25121187",
+                        "amount": "0xc9",
+                        "channel_outpoint": "0x4cf98e685b44c3289a38f7b2502674c3489da2b7ac1f58e5554011359d3da07300000000"
+                      },
+                      {
+                        "pubkey": "02bcbd0e0d811d13363af1e5998f56e74e6aab8a7aa44005e1ce7d696a4d3f10f6",
+                        "amount": "0xc8",
+                        "channel_outpoint": "0xb13afe5935333a804c52bdc4c25faf06bcd0d28d511bddc4cce15ffeb7bd723e00000000"
+                      },
+                      {
+                        "pubkey": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0",
+                        "amount": "0xc8",
+                        "channel_outpoint": "0x000000000000000000000000000000000000000000000000000000000000000000000000"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "settledPayment": {
+                "payment_hash": "0xf315c1a8429cfc728348ea23d17f637d734a287db419f7df37b9e9f13fac02f6",
+                "status": "Success",
+                "created_at": "0x19eff7f9203",
+                "last_updated_at": "0x19eff7f9203",
+                "failed_error": null,
+                "fee": "0x1",
+                "custom_records": null,
+                "routers": [
+                  {
+                    "nodes": [
+                      {
+                        "pubkey": "03032b99943822e721a651c5a5b9621043017daa9dc3ec81d83215fd2e25121187",
+                        "amount": "0xc9",
+                        "channel_outpoint": "0x4cf98e685b44c3289a38f7b2502674c3489da2b7ac1f58e5554011359d3da07300000000"
+                      },
+                      {
+                        "pubkey": "02bcbd0e0d811d13363af1e5998f56e74e6aab8a7aa44005e1ce7d696a4d3f10f6",
+                        "amount": "0xc8",
+                        "channel_outpoint": "0xb13afe5935333a804c52bdc4c25faf06bcd0d28d511bddc4cce15ffeb7bd723e00000000"
+                      },
+                      {
+                        "pubkey": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0",
+                        "amount": "0xc8",
+                        "channel_outpoint": "0x000000000000000000000000000000000000000000000000000000000000000000000000"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "paidInvoice": {
+                "invoice_address": "fibd2001pt7s4efm5nrczxzat8almn3ql9xlm67x8t8yltat3lfuyjdzyp6c39ql05446amgyd0c0j906j0z4ke2w0gz9lnx2nduyfksrzzerl2spqgq4q5xaet8vnz07us3fcjydg43cnkq0dq2gsuhcu4dmczzvnetsqpe253y5r9q36tu6qm65z38htt6shg72eptjvmvfjp8qtesnxzpm2yp3g9ausku3yagfune6h26v3qpp66d32dn9eh49c8nq6ns888nxmeyxq3rs9a03ay7z6d6sn5947dhpkp3xxsgwlgxevmhutak7kzuktjwql970glcylpe77hjcrejfs57erpsypp7pw63lnvwgctmnfdlh2202rx8cpja9c383vvdpxeptznyk5asqq0egavw5wdrdg9r9fw20fdqtvj2zq3dsr5ypwmyts792xvq6wc4gns3upq94t7xhz8ut8snrcanqgqjv4qanuqwz34tggzuyfpztnfla2s9s4l8pthvc3e50xhh0j27qjrxycnkcj7e3mqf0fqnljkhgfychf5jsdzfttjmjrtc8n9vs3dsdqpwfx57a",
+                "invoice": {
+                  "currency": "Fibd",
+                  "amount": "0xc8",
+                  "signature": "120c15001d131c000e0211150b0808021c040901020b13091f1d0a100510151f07010b170c181119140f0617170f120a1e001203060418131618121e19111b00090f0900131f1216170809041817091412100d02090b0b121b12030b180713050c10110d100d0001",
+                  "data": {
+                    "timestamp": "0x19eff7f91ff",
+                    "payment_hash": "0xf315c1a8429cfc728348ea23d17f637d734a287db419f7df37b9e9f13fac02f6",
+                    "attrs": [
+                      {
+                        "description": "FiberMPP Battlecode prize bc_ticket_e0ab8600711c395e bc_match_bff5899accf4b492"
+                      },
+                      {
+                        "expiry_time": "0x1e"
+                      },
+                      {
+                        "final_htlc_minimum_expiry_delta": "0x535"
+                      },
+                      {
+                        "udt_script": "0x5500000010000000300000003100000050bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95042000000032e555f3ff8e135cece1351a6a2971518392c1e30375c1e006ad0ce8eac07947"
+                      },
+                      {
+                        "payee_public_key": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0"
+                      }
+                    ]
+                  }
+                },
+                "status": "Paid"
+              }
+            },
+            "matchHash": "229b140bbffed06d030e46f37400ca6d37a29be77d1196001dfd157e8d90a03f",
+            "awardedAt": "2026-06-25T15:56:51.598Z",
+            "note": "Prize settled by a live Fiber xUDT payment after a paid FiberMPP entry and deterministic local Battlecode match."
+          },
+          "ledgerPath": "/home/arthur/a19q3/fiber-mpp/.tmp/battlecode-tournament-ledger.json",
+          "replayPath": "/home/arthur/a19q3/fiber-mpp/.tmp/battlecode-tournament/matches/bc_ticket_e0ab8600711c395e-1782403009780.bc25",
+          "warnings": [
+            "Battlecode runs as an external AGPL-3.0 scaffold/engine dependency; FiberMPP stores only tournament evidence and local bot sources.",
+            "The prize was settled by a live Fiber xUDT payment and recorded with payment hash evidence."
+          ]
+        }
+      }
+    }
+  },
+  "status": {
+    "ok": true,
+    "tournament": {
+      "enabled": true,
+      "scaffoldDir": "/home/arthur/a19q3/battlecode25-scaffold/java",
+      "ledgerPath": "/home/arthur/a19q3/fiber-mpp/.tmp/battlecode-tournament-ledger.json",
+      "engine": {
+        "jdkHome": "/home/arthur/a19q3/.toolchains/jdk-21.0.11+10",
+        "engineJar": "/home/arthur/a19q3/.toolchains/battlecode25/battlecode25-java-3.1.0.jar",
+        "version": "3.1.0"
+      },
+      "fairnessManifest": {
+        "domain": "fiber-mpp-battlecode-fairness-v1",
+        "botPackage": "fiberchamp",
+        "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+        "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515",
+        "runnerHash": "sha256:c025984308a79ff73633f4249c15be79c0159fffcecdd92c59dcdd4927929d79",
+        "engineHash": "sha256:d0cc775610d5221fc17b23d818bc881bb3e882076a809696d15f8d380b09520b",
+        "engineVersion": "3.1.0",
+        "hashAlgorithm": "sha256",
+        "notes": [
+          "botScriptHash commits to the exact submitted Battlecode RobotPlayer.java source used for this lane.",
+          "clientHash commits to the tournament runner module plus the Battlecode engine jar hash."
+        ]
+      },
+      "awardSettlement": {
+        "mode": "fiber-xudt",
+        "live": true,
+        "blockers": [],
+        "udtTypeScript": {
+          "code_hash": "0x50bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95",
+          "hash_type": "data2",
+          "args": "0x32e555f3ff8e135cece1351a6a2971518392c1e30375c1e006ad0ce8eac07947"
+        },
+        "udtTypeScriptSource": "env"
+      },
+      "tickets": 1,
+      "matches": 1,
+      "awards": 1,
+      "latestAward": {
+        "awardId": "bc_award_3235a4dbf42e0c5a",
+        "ticketId": "bc_ticket_e0ab8600711c395e",
+        "matchId": "bc_match_bff5899accf4b492",
+        "playerId": "arthur",
+        "botPackage": "fiberchamp",
+        "xudtAsset": "xUDT:BCODE",
+        "prizeAmount": "200",
+        "status": "paid",
+        "settlement": "fiber-xudt-payment",
+        "prizePayment": {
+          "provider": "fiber-xudt",
+          "mode": "local",
+          "paymentHash": "0xf315c1a8429cfc728348ea23d17f637d734a287db419f7df37b9e9f13fac02f6",
+          "invoice": "fibd2001pt7s4efm5nrczxzat8almn3ql9xlm67x8t8yltat3lfuyjdzyp6c39ql05446amgyd0c0j906j0z4ke2w0gz9lnx2nduyfksrzzerl2spqgq4q5xaet8vnz07us3fcjydg43cnkq0dq2gsuhcu4dmczzvnetsqpe253y5r9q36tu6qm65z38htt6shg72eptjvmvfjp8qtesnxzpm2yp3g9ausku3yagfune6h26v3qpp66d32dn9eh49c8nq6ns888nxmeyxq3rs9a03ay7z6d6sn5947dhpkp3xxsgwlgxevmhutak7kzuktjwql970glcylpe77hjcrejfs57erpsypp7pw63lnvwgctmnfdlh2202rx8cpja9c383vvdpxeptznyk5asqq0egavw5wdrdg9r9fw20fdqtvj2zq3dsr5ypwmyts792xvq6wc4gns3upq94t7xhz8ut8snrcanqgqjv4qanuqwz34tggzuyfpztnfla2s9s4l8pthvc3e50xhh0j27qjrxycnkcj7e3mqf0fqnljkhgfychf5jsdzfttjmjrtc8n9vs3dsdqpwfx57a",
+          "amountShannons": "200",
+          "xudtAsset": "xUDT:BCODE",
+          "udtTypeScript": {
+            "code_hash": "0x50bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95",
+            "hash_type": "data2",
+            "args": "0x32e555f3ff8e135cece1351a6a2971518392c1e30375c1e006ad0ce8eac07947"
+          },
+          "payerRpcUrl": "http://127.0.0.1:21716",
+          "payeeRpcUrl": "http://127.0.0.1:21714",
+          "payerNode": "03032b99943822e721a651c5a5b9621043017daa9dc3ec81d83215fd2e25121187",
+          "payeeNode": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0",
+          "status": "settled",
+          "observedAt": "2026-06-25T15:56:51.598Z",
+          "sendResult": {
+            "payment_hash": "0xf315c1a8429cfc728348ea23d17f637d734a287db419f7df37b9e9f13fac02f6",
+            "status": "Created",
+            "created_at": "0x19eff7f9203",
+            "last_updated_at": "0x19eff7f9203",
+            "failed_error": null,
+            "fee": "0x1",
+            "custom_records": null,
+            "routers": [
+              {
+                "nodes": [
+                  {
+                    "pubkey": "03032b99943822e721a651c5a5b9621043017daa9dc3ec81d83215fd2e25121187",
+                    "amount": "0xc9",
+                    "channel_outpoint": "0x4cf98e685b44c3289a38f7b2502674c3489da2b7ac1f58e5554011359d3da07300000000"
+                  },
+                  {
+                    "pubkey": "02bcbd0e0d811d13363af1e5998f56e74e6aab8a7aa44005e1ce7d696a4d3f10f6",
+                    "amount": "0xc8",
+                    "channel_outpoint": "0xb13afe5935333a804c52bdc4c25faf06bcd0d28d511bddc4cce15ffeb7bd723e00000000"
+                  },
+                  {
+                    "pubkey": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0",
+                    "amount": "0xc8",
+                    "channel_outpoint": "0x000000000000000000000000000000000000000000000000000000000000000000000000"
+                  }
+                ]
+              }
+            ]
+          },
+          "settledPayment": {
+            "payment_hash": "0xf315c1a8429cfc728348ea23d17f637d734a287db419f7df37b9e9f13fac02f6",
+            "status": "Success",
+            "created_at": "0x19eff7f9203",
+            "last_updated_at": "0x19eff7f9203",
+            "failed_error": null,
+            "fee": "0x1",
+            "custom_records": null,
+            "routers": [
+              {
+                "nodes": [
+                  {
+                    "pubkey": "03032b99943822e721a651c5a5b9621043017daa9dc3ec81d83215fd2e25121187",
+                    "amount": "0xc9",
+                    "channel_outpoint": "0x4cf98e685b44c3289a38f7b2502674c3489da2b7ac1f58e5554011359d3da07300000000"
+                  },
+                  {
+                    "pubkey": "02bcbd0e0d811d13363af1e5998f56e74e6aab8a7aa44005e1ce7d696a4d3f10f6",
+                    "amount": "0xc8",
+                    "channel_outpoint": "0xb13afe5935333a804c52bdc4c25faf06bcd0d28d511bddc4cce15ffeb7bd723e00000000"
+                  },
+                  {
+                    "pubkey": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0",
+                    "amount": "0xc8",
+                    "channel_outpoint": "0x000000000000000000000000000000000000000000000000000000000000000000000000"
+                  }
+                ]
+              }
+            ]
+          },
+          "paidInvoice": {
+            "invoice_address": "fibd2001pt7s4efm5nrczxzat8almn3ql9xlm67x8t8yltat3lfuyjdzyp6c39ql05446amgyd0c0j906j0z4ke2w0gz9lnx2nduyfksrzzerl2spqgq4q5xaet8vnz07us3fcjydg43cnkq0dq2gsuhcu4dmczzvnetsqpe253y5r9q36tu6qm65z38htt6shg72eptjvmvfjp8qtesnxzpm2yp3g9ausku3yagfune6h26v3qpp66d32dn9eh49c8nq6ns888nxmeyxq3rs9a03ay7z6d6sn5947dhpkp3xxsgwlgxevmhutak7kzuktjwql970glcylpe77hjcrejfs57erpsypp7pw63lnvwgctmnfdlh2202rx8cpja9c383vvdpxeptznyk5asqq0egavw5wdrdg9r9fw20fdqtvj2zq3dsr5ypwmyts792xvq6wc4gns3upq94t7xhz8ut8snrcanqgqjv4qanuqwz34tggzuyfpztnfla2s9s4l8pthvc3e50xhh0j27qjrxycnkcj7e3mqf0fqnljkhgfychf5jsdzfttjmjrtc8n9vs3dsdqpwfx57a",
+            "invoice": {
+              "currency": "Fibd",
+              "amount": "0xc8",
+              "signature": "120c15001d131c000e0211150b0808021c040901020b13091f1d0a100510151f07010b170c181119140f0617170f120a1e001203060418131618121e19111b00090f0900131f1216170809041817091412100d02090b0b121b12030b180713050c10110d100d0001",
+              "data": {
+                "timestamp": "0x19eff7f91ff",
+                "payment_hash": "0xf315c1a8429cfc728348ea23d17f637d734a287db419f7df37b9e9f13fac02f6",
+                "attrs": [
+                  {
+                    "description": "FiberMPP Battlecode prize bc_ticket_e0ab8600711c395e bc_match_bff5899accf4b492"
+                  },
+                  {
+                    "expiry_time": "0x1e"
+                  },
+                  {
+                    "final_htlc_minimum_expiry_delta": "0x535"
+                  },
+                  {
+                    "udt_script": "0x5500000010000000300000003100000050bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95042000000032e555f3ff8e135cece1351a6a2971518392c1e30375c1e006ad0ce8eac07947"
+                  },
+                  {
+                    "payee_public_key": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0"
+                  }
+                ]
+              }
+            },
+            "status": "Paid"
+          }
+        },
+        "matchHash": "229b140bbffed06d030e46f37400ca6d37a29be77d1196001dfd157e8d90a03f",
+        "awardedAt": "2026-06-25T15:56:51.598Z",
+        "note": "Prize settled by a live Fiber xUDT payment after a paid FiberMPP entry and deterministic local Battlecode match."
+      }
+    },
+    "current": {
+      "registration": {
+        "playerId": "arthur",
+        "botPackage": "fiberchamp",
+        "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+        "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515",
+        "xudtAsset": "xUDT:BCODE",
+        "entryAmount": "100",
+        "prizeAmount": "200",
+        "map": "DefaultSmall"
+      },
+      "fairnessManifest": {
+        "domain": "fiber-mpp-battlecode-fairness-v1",
+        "botPackage": "fiberchamp",
+        "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+        "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515",
+        "runnerHash": "sha256:c025984308a79ff73633f4249c15be79c0159fffcecdd92c59dcdd4927929d79",
+        "engineHash": "sha256:d0cc775610d5221fc17b23d818bc881bb3e882076a809696d15f8d380b09520b",
+        "engineVersion": "3.1.0",
+        "hashAlgorithm": "sha256",
+        "notes": [
+          "botScriptHash commits to the exact submitted Battlecode RobotPlayer.java source used for this lane.",
+          "clientHash commits to the tournament runner module plus the Battlecode engine jar hash."
+        ]
+      },
+      "requestBody": "{\"playerId\":\"arthur\",\"botPackage\":\"fiberchamp\",\"botScriptHash\":\"sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45\",\"clientHash\":\"sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515\",\"xudtAsset\":\"xUDT:BCODE\",\"entryAmount\":\"100\",\"prizeAmount\":\"200\",\"map\":\"DefaultSmall\"}",
+      "resourceUrl": "http://127.0.0.1:8877/api/tournament/battlecode/register",
+      "challengeBody": {
+        "type": "https://paymentauth.org/problems/payment-required",
+        "title": "Payment Required",
+        "status": 402,
+        "detail": "Payment is required.",
+        "challengeId": "chal_b1ad9cae8a3741b95587e0155edd9836",
+        "challenge": {
+          "domain": "fiber-mpp-challenge-v1",
+          "challengeId": "chal_b1ad9cae8a3741b95587e0155edd9836",
+          "resource": {
+            "method": "POST",
+            "url": "http://127.0.0.1:8877/api/tournament/battlecode/register",
+            "bodyHash": "74e083a444d1312fe5c67c9f5a0d2bee38eacc0c4e678029dea7ea30ef0110ec",
+            "contentType": "application/json"
+          },
+          "amount": {
+            "value": "100",
+            "currency": "xUDT:BCODE",
+            "display": "100 xUDT:BCODE"
+          },
+          "methods": [
+            {
+              "method": "fiber",
+              "intent": "charge",
+              "asset": "xUDT:BCODE",
+              "amountShannons": "100",
+              "paymentHash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+              "invoice": "fibd1001pg2lrl3zhkhczxzat8almnzdujtcjfl2g8mtn7y9rlajktr3f2xdx4vraknvsejdnhmjjj3p5z6j3694py3ypc5gnskl34hv6f969u7vz7l44matsn038v2ydkh5r3npjaw7ue6qrm7lwknzm2yx2p063f6tdny7jx09y59045ry5zsm6pl3a49057cpzlmzpzdtpzjj6vw0gdmr8rxdjgvc4d5a47qwuxqg6yjc0lqsew8r4wca0k75x5xj5y32d8pvtgdvrpx37wadjllyl93pk2s0xmulpx3gzfhtxu2usyz84tsh36vzg08gy56tnvrnmanm80nrmfke4pnp0s4wev02qydd68sahrkxg7qr39dcx8d0xy24fvyjpn97lwwauz9hazmcnce4qk4k3tlpg27jsr89tpp5fmmarvwkqxtzegx0gqlywjj7e6ch9mjvml3zdd30fzs9dv6e8jqc8vs4294sjlayt44ultvs5q25vw4k42xs729g9c6p60e2emn9edd6x5pfgmmgq4azaef",
+              "udtTypeScript": {
+                "code_hash": "0x50bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95",
+                "hash_type": "data2",
+                "args": "0x32e555f3ff8e135cece1351a6a2971518392c1e30375c1e006ad0ce8eac07947"
+              },
+              "fiberRpcLabel": "local-payee",
+              "expiresAt": "2026-06-25T15:58:49.229Z"
+            }
+          ],
+          "nonce": "1441f8aeb7155b8e3bcb28e0dcb22f1c",
+          "issuedAt": "2026-06-25T15:56:49.229Z",
+          "expiresAt": "2026-06-25T15:58:49.229Z",
+          "serverId": "fiber-mpp-evidence-api",
+          "maxUses": 1,
+          "metadataHash": "784ae703528ea794202efe1fd8d1b0f4568b0afd75c907b53e88a5f45a33be4d"
+        },
+        "challengeSignature": "0de42d2182130be5df0f561f16209aef538a06d3114d8ffef0c2d7c9023c36dc",
+        "methods": [
+          {
+            "method": "fiber",
+            "intent": "charge",
+            "asset": "xUDT:BCODE",
+            "amountShannons": "100",
+            "paymentHash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+            "invoice": "fibd1001pg2lrl3zhkhczxzat8almnzdujtcjfl2g8mtn7y9rlajktr3f2xdx4vraknvsejdnhmjjj3p5z6j3694py3ypc5gnskl34hv6f969u7vz7l44matsn038v2ydkh5r3npjaw7ue6qrm7lwknzm2yx2p063f6tdny7jx09y59045ry5zsm6pl3a49057cpzlmzpzdtpzjj6vw0gdmr8rxdjgvc4d5a47qwuxqg6yjc0lqsew8r4wca0k75x5xj5y32d8pvtgdvrpx37wadjllyl93pk2s0xmulpx3gzfhtxu2usyz84tsh36vzg08gy56tnvrnmanm80nrmfke4pnp0s4wev02qydd68sahrkxg7qr39dcx8d0xy24fvyjpn97lwwauz9hazmcnce4qk4k3tlpg27jsr89tpp5fmmarvwkqxtzegx0gqlywjj7e6ch9mjvml3zdd30fzs9dv6e8jqc8vs4294sjlayt44ultvs5q25vw4k42xs729g9c6p60e2emn9edd6x5pfgmmgq4azaef",
+            "udtTypeScript": {
+              "code_hash": "0x50bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95",
+              "hash_type": "data2",
+              "args": "0x32e555f3ff8e135cece1351a6a2971518392c1e30375c1e006ad0ce8eac07947"
+            },
+            "fiberRpcLabel": "local-payee",
+            "expiresAt": "2026-06-25T15:58:49.229Z"
+          }
+        ]
+      },
+      "challengeId": "chal_b1ad9cae8a3741b95587e0155edd9836",
+      "fiberChallenge": {
+        "method": "fiber",
+        "intent": "charge",
+        "asset": "xUDT:BCODE",
+        "amountShannons": "100",
+        "paymentHash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+        "invoice": "fibd1001pg2lrl3zhkhczxzat8almnzdujtcjfl2g8mtn7y9rlajktr3f2xdx4vraknvsejdnhmjjj3p5z6j3694py3ypc5gnskl34hv6f969u7vz7l44matsn038v2ydkh5r3npjaw7ue6qrm7lwknzm2yx2p063f6tdny7jx09y59045ry5zsm6pl3a49057cpzlmzpzdtpzjj6vw0gdmr8rxdjgvc4d5a47qwuxqg6yjc0lqsew8r4wca0k75x5xj5y32d8pvtgdvrpx37wadjllyl93pk2s0xmulpx3gzfhtxu2usyz84tsh36vzg08gy56tnvrnmanm80nrmfke4pnp0s4wev02qydd68sahrkxg7qr39dcx8d0xy24fvyjpn97lwwauz9hazmcnce4qk4k3tlpg27jsr89tpp5fmmarvwkqxtzegx0gqlywjj7e6ch9mjvml3zdd30fzs9dv6e8jqc8vs4294sjlayt44ultvs5q25vw4k42xs729g9c6p60e2emn9edd6x5pfgmmgq4azaef",
+        "udtTypeScript": {
+          "code_hash": "0x50bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95",
+          "hash_type": "data2",
+          "args": "0x32e555f3ff8e135cece1351a6a2971518392c1e30375c1e006ad0ce8eac07947"
+        },
+        "fiberRpcLabel": "local-payee",
+        "expiresAt": "2026-06-25T15:58:49.229Z"
+      },
+      "proof": {
+        "kind": "fiber-payment-proof-v1",
+        "mode": "local",
+        "paymentHash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+        "invoice": "fibd1001pg2lrl3zhkhczxzat8almnzdujtcjfl2g8mtn7y9rlajktr3f2xdx4vraknvsejdnhmjjj3p5z6j3694py3ypc5gnskl34hv6f969u7vz7l44matsn038v2ydkh5r3npjaw7ue6qrm7lwknzm2yx2p063f6tdny7jx09y59045ry5zsm6pl3a49057cpzlmzpzdtpzjj6vw0gdmr8rxdjgvc4d5a47qwuxqg6yjc0lqsew8r4wca0k75x5xj5y32d8pvtgdvrpx37wadjllyl93pk2s0xmulpx3gzfhtxu2usyz84tsh36vzg08gy56tnvrnmanm80nrmfke4pnp0s4wev02qydd68sahrkxg7qr39dcx8d0xy24fvyjpn97lwwauz9hazmcnce4qk4k3tlpg27jsr89tpp5fmmarvwkqxtzegx0gqlywjj7e6ch9mjvml3zdd30fzs9dv6e8jqc8vs4294sjlayt44ultvs5q25vw4k42xs729g9c6p60e2emn9edd6x5pfgmmgq4azaef",
+        "amountShannons": "100",
+        "udtTypeScript": {
+          "code_hash": "0x50bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95",
+          "hash_type": "data2",
+          "args": "0x32e555f3ff8e135cece1351a6a2971518392c1e30375c1e006ad0ce8eac07947"
+        },
+        "status": "Success",
+        "observedAt": "2026-06-25T15:56:49.766Z",
+        "evidence": {
+          "sendResult": {
+            "payment_hash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+            "status": "Created",
+            "created_at": "0x19eff7f8ade",
+            "last_updated_at": "0x19eff7f8ade",
+            "failed_error": null,
+            "fee": "0x1",
+            "custom_records": null,
+            "routers": [
+              {
+                "nodes": [
+                  {
+                    "pubkey": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0",
+                    "amount": "0x65",
+                    "channel_outpoint": "0x677a32fec023c135543efba81fc8d629214b03f91f0823852bb3ec9d8c4e87d800000000"
+                  },
+                  {
+                    "pubkey": "02bcbd0e0d811d13363af1e5998f56e74e6aab8a7aa44005e1ce7d696a4d3f10f6",
+                    "amount": "0x64",
+                    "channel_outpoint": "0x706a7a88457ff69236f6cb53761d51385475145e5f43f860fbbbf2d0a37fe9d700000000"
+                  },
+                  {
+                    "pubkey": "03032b99943822e721a651c5a5b9621043017daa9dc3ec81d83215fd2e25121187",
+                    "amount": "0x64",
+                    "channel_outpoint": "0x000000000000000000000000000000000000000000000000000000000000000000000000"
+                  }
+                ]
+              }
+            ]
+          },
+          "settledPayment": {
+            "payment_hash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+            "status": "Success",
+            "created_at": "0x19eff7f8ade",
+            "last_updated_at": "0x19eff7f8ade",
+            "failed_error": null,
+            "fee": "0x1",
+            "custom_records": null,
+            "routers": [
+              {
+                "nodes": [
+                  {
+                    "pubkey": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0",
+                    "amount": "0x65",
+                    "channel_outpoint": "0x677a32fec023c135543efba81fc8d629214b03f91f0823852bb3ec9d8c4e87d800000000"
+                  },
+                  {
+                    "pubkey": "02bcbd0e0d811d13363af1e5998f56e74e6aab8a7aa44005e1ce7d696a4d3f10f6",
+                    "amount": "0x64",
+                    "channel_outpoint": "0x706a7a88457ff69236f6cb53761d51385475145e5f43f860fbbbf2d0a37fe9d700000000"
+                  },
+                  {
+                    "pubkey": "03032b99943822e721a651c5a5b9621043017daa9dc3ec81d83215fd2e25121187",
+                    "amount": "0x64",
+                    "channel_outpoint": "0x000000000000000000000000000000000000000000000000000000000000000000000000"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "credential": {
+        "domain": "fiber-mpp-credential-v1",
+        "challengeId": "chal_b1ad9cae8a3741b95587e0155edd9836",
+        "method": "fiber",
+        "resourceHash": "5aece8b19a84874dc12bd6c5573a4c61a3637be19c72377a82251729d2fad126",
+        "paymentProof": {
+          "kind": "fiber-payment-proof-v1",
+          "mode": "local",
+          "paymentHash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+          "invoice": "fibd1001pg2lrl3zhkhczxzat8almnzdujtcjfl2g8mtn7y9rlajktr3f2xdx4vraknvsejdnhmjjj3p5z6j3694py3ypc5gnskl34hv6f969u7vz7l44matsn038v2ydkh5r3npjaw7ue6qrm7lwknzm2yx2p063f6tdny7jx09y59045ry5zsm6pl3a49057cpzlmzpzdtpzjj6vw0gdmr8rxdjgvc4d5a47qwuxqg6yjc0lqsew8r4wca0k75x5xj5y32d8pvtgdvrpx37wadjllyl93pk2s0xmulpx3gzfhtxu2usyz84tsh36vzg08gy56tnvrnmanm80nrmfke4pnp0s4wev02qydd68sahrkxg7qr39dcx8d0xy24fvyjpn97lwwauz9hazmcnce4qk4k3tlpg27jsr89tpp5fmmarvwkqxtzegx0gqlywjj7e6ch9mjvml3zdd30fzs9dv6e8jqc8vs4294sjlayt44ultvs5q25vw4k42xs729g9c6p60e2emn9edd6x5pfgmmgq4azaef",
+          "amountShannons": "100",
+          "udtTypeScript": {
+            "code_hash": "0x50bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95",
+            "hash_type": "data2",
+            "args": "0x32e555f3ff8e135cece1351a6a2971518392c1e30375c1e006ad0ce8eac07947"
+          },
+          "status": "Success",
+          "observedAt": "2026-06-25T15:56:49.766Z",
+          "evidence": {
+            "sendResult": {
+              "payment_hash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+              "status": "Created",
+              "created_at": "0x19eff7f8ade",
+              "last_updated_at": "0x19eff7f8ade",
+              "failed_error": null,
+              "fee": "0x1",
+              "custom_records": null,
+              "routers": [
+                {
+                  "nodes": [
+                    {
+                      "pubkey": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0",
+                      "amount": "0x65",
+                      "channel_outpoint": "0x677a32fec023c135543efba81fc8d629214b03f91f0823852bb3ec9d8c4e87d800000000"
+                    },
+                    {
+                      "pubkey": "02bcbd0e0d811d13363af1e5998f56e74e6aab8a7aa44005e1ce7d696a4d3f10f6",
+                      "amount": "0x64",
+                      "channel_outpoint": "0x706a7a88457ff69236f6cb53761d51385475145e5f43f860fbbbf2d0a37fe9d700000000"
+                    },
+                    {
+                      "pubkey": "03032b99943822e721a651c5a5b9621043017daa9dc3ec81d83215fd2e25121187",
+                      "amount": "0x64",
+                      "channel_outpoint": "0x000000000000000000000000000000000000000000000000000000000000000000000000"
+                    }
+                  ]
+                }
+              ]
+            },
+            "settledPayment": {
+              "payment_hash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+              "status": "Success",
+              "created_at": "0x19eff7f8ade",
+              "last_updated_at": "0x19eff7f8ade",
+              "failed_error": null,
+              "fee": "0x1",
+              "custom_records": null,
+              "routers": [
+                {
+                  "nodes": [
+                    {
+                      "pubkey": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0",
+                      "amount": "0x65",
+                      "channel_outpoint": "0x677a32fec023c135543efba81fc8d629214b03f91f0823852bb3ec9d8c4e87d800000000"
+                    },
+                    {
+                      "pubkey": "02bcbd0e0d811d13363af1e5998f56e74e6aab8a7aa44005e1ce7d696a4d3f10f6",
+                      "amount": "0x64",
+                      "channel_outpoint": "0x706a7a88457ff69236f6cb53761d51385475145e5f43f860fbbbf2d0a37fe9d700000000"
+                    },
+                    {
+                      "pubkey": "03032b99943822e721a651c5a5b9621043017daa9dc3ec81d83215fd2e25121187",
+                      "amount": "0x64",
+                      "channel_outpoint": "0x000000000000000000000000000000000000000000000000000000000000000000000000"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "submittedAt": "2026-06-25T15:56:49.766Z"
+      },
+      "authorization": "Payment eyJkb21haW4iOiJmaWJlci1tcHAtY3JlZGVudGlhbC12MSIsImNoYWxsZW5nZUlkIjoiY2hhbF9iMWFkOWNhZThhMzc0MWI5NTU4N2UwMTU1ZWRkOTgzNiIsIm1ldGhvZCI6ImZpYmVyIiwicmVzb3VyY2VIYXNoIjoiNWFlY2U4YjE5YTg0ODc0ZGMxMmJkNmM1NTczYTRjNjFhMzYzN2JlMTljNzIzNzdhODIyNTE3MjlkMmZhZDEyNiIsInBheW1lbnRQcm9vZiI6eyJraW5kIjoiZmliZXItcGF5bWVudC1wcm9vZi12MSIsIm1vZGUiOiJsb2NhbCIsInBheW1lbnRIYXNoIjoiMHhkMzhiNTk5NDdiMjVjYTkzZjY3ZmM0N2Q2MWUyN2I3NzBkNDRmNzJlZGZiNzMzNTkzZjk4YmI2YzkwNjE5OGZhIiwiaW52b2ljZSI6ImZpYmQxMDAxcGcybHJsM3poa2hjenh6YXQ4YWxtbnpkdWp0Y2pmbDJnOG10bjd5OXJsYWprdHIzZjJ4ZHg0dnJha252c2VqZG5obWpqajNwNXo2ajM2OTRweTN5cGM1Z25za2wzNGh2NmY5Njl1N3Z6N2w0NG1hdHNuMDM4djJ5ZGtoNXIzbnBqYXc3dWU2cXJtN2x3a256bTJ5eDJwMDYzZjZ0ZG55N2p4MDl5NTkwNDVyeTV6c202cGwzYTQ5MDU3Y3B6bG16cHpkdHB6amo2dncwZ2RtcjhyeGRqZ3ZjNGQ1YTQ3cXd1eHFnNnlqYzBscXNldzhyNHdjYTBrNzV4NXhqNXkzMmQ4cHZ0Z2R2cnB4Mzd3YWRqbGx5bDkzcGsyczB4bXVscHgzZ3pmaHR4dTJ1c3l6ODR0c2gzNnZ6ZzA4Z3k1NnRudnJubWFubTgwbnJtZmtlNHBucDBzNHdldjAycXlkZDY4c2Focmt4ZzdxcjM5ZGN4OGQweHkyNGZ2eWpwbjk3bHd3YXV6OWhhem1jbmNlNHFrNGszdGxwZzI3anNyODl0cHA1Zm1tYXJ2d2txeHR6ZWd4MGdxbHl3amo3ZTZjaDltanZtbDN6ZGQzMGZ6czlkdjZlOGpxYzh2czQyOTRzamxheXQ0NHVsdHZzNXEyNXZ3NGs0MnhzNzI5ZzljNnA2MGUyZW1uOWVkZDZ4NXBmZ21tZ3E0YXphZWYiLCJhbW91bnRTaGFubm9ucyI6IjEwMCIsInVkdFR5cGVTY3JpcHQiOnsiY29kZV9oYXNoIjoiMHg1MGJkOGQ2NjgwYjhiOWNmOThiNzNmM2MwOGZhZjhiMmEyMTkxNDMxMTk1NDExOGFkNjYwOWJlNmU3OGExYjk1IiwiaGFzaF90eXBlIjoiZGF0YTIiLCJhcmdzIjoiMHgzMmU1NTVmM2ZmOGUxMzVjZWNlMTM1MWE2YTI5NzE1MTgzOTJjMWUzMDM3NWMxZTAwNmFkMGNlOGVhYzA3OTQ3In0sInN0YXR1cyI6IlN1Y2Nlc3MiLCJvYnNlcnZlZEF0IjoiMjAyNi0wNi0yNVQxNTo1Njo0OS43NjZaIiwiZXZpZGVuY2UiOnsic2VuZFJlc3VsdCI6eyJwYXltZW50X2hhc2giOiIweGQzOGI1OTk0N2IyNWNhOTNmNjdmYzQ3ZDYxZTI3Yjc3MGQ0NGY3MmVkZmI3MzM1OTNmOThiYjZjOTA2MTk4ZmEiLCJzdGF0dXMiOiJDcmVhdGVkIiwiY3JlYXRlZF9hdCI6IjB4MTllZmY3ZjhhZGUiLCJsYXN0X3VwZGF0ZWRfYXQiOiIweDE5ZWZmN2Y4YWRlIiwiZmFpbGVkX2Vycm9yIjpudWxsLCJmZWUiOiIweDEiLCJjdXN0b21fcmVjb3JkcyI6bnVsbCwicm91dGVycyI6W3sibm9kZXMiOlt7InB1YmtleSI6IjAyYTY0Yjg5OTNmMzNiMmViZDM3YTRkZTFjOTQ0MWY0OTEyOTFhNGU3NzlkYThlNTE5YmNmYjdjMWYzZjU2YzljMCIsImFtb3VudCI6IjB4NjUiLCJjaGFubmVsX291dHBvaW50IjoiMHg2NzdhMzJmZWMwMjNjMTM1NTQzZWZiYTgxZmM4ZDYyOTIxNGIwM2Y5MWYwODIzODUyYmIzZWM5ZDhjNGU4N2Q4MDAwMDAwMDAifSx7InB1YmtleSI6IjAyYmNiZDBlMGQ4MTFkMTMzNjNhZjFlNTk5OGY1NmU3NGU2YWFiOGE3YWE0NDAwNWUxY2U3ZDY5NmE0ZDNmMTBmNiIsImFtb3VudCI6IjB4NjQiLCJjaGFubmVsX291dHBvaW50IjoiMHg3MDZhN2E4ODQ1N2ZmNjkyMzZmNmNiNTM3NjFkNTEzODU0NzUxNDVlNWY0M2Y4NjBmYmJiZjJkMGEzN2ZlOWQ3MDAwMDAwMDAifSx7InB1YmtleSI6IjAzMDMyYjk5OTQzODIyZTcyMWE2NTFjNWE1Yjk2MjEwNDMwMTdkYWE5ZGMzZWM4MWQ4MzIxNWZkMmUyNTEyMTE4NyIsImFtb3VudCI6IjB4NjQiLCJjaGFubmVsX291dHBvaW50IjoiMHgwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAifV19XX0sInNldHRsZWRQYXltZW50Ijp7InBheW1lbnRfaGFzaCI6IjB4ZDM4YjU5OTQ3YjI1Y2E5M2Y2N2ZjNDdkNjFlMjdiNzcwZDQ0ZjcyZWRmYjczMzU5M2Y5OGJiNmM5MDYxOThmYSIsInN0YXR1cyI6IlN1Y2Nlc3MiLCJjcmVhdGVkX2F0IjoiMHgxOWVmZjdmOGFkZSIsImxhc3RfdXBkYXRlZF9hdCI6IjB4MTllZmY3ZjhhZGUiLCJmYWlsZWRfZXJyb3IiOm51bGwsImZlZSI6IjB4MSIsImN1c3RvbV9yZWNvcmRzIjpudWxsLCJyb3V0ZXJzIjpbeyJub2RlcyI6W3sicHVia2V5IjoiMDJhNjRiODk5M2YzM2IyZWJkMzdhNGRlMWM5NDQxZjQ5MTI5MWE0ZTc3OWRhOGU1MTliY2ZiN2MxZjNmNTZjOWMwIiwiYW1vdW50IjoiMHg2NSIsImNoYW5uZWxfb3V0cG9pbnQiOiIweDY3N2EzMmZlYzAyM2MxMzU1NDNlZmJhODFmYzhkNjI5MjE0YjAzZjkxZjA4MjM4NTJiYjNlYzlkOGM0ZTg3ZDgwMDAwMDAwMCJ9LHsicHVia2V5IjoiMDJiY2JkMGUwZDgxMWQxMzM2M2FmMWU1OTk4ZjU2ZTc0ZTZhYWI4YTdhYTQ0MDA1ZTFjZTdkNjk2YTRkM2YxMGY2IiwiYW1vdW50IjoiMHg2NCIsImNoYW5uZWxfb3V0cG9pbnQiOiIweDcwNmE3YTg4NDU3ZmY2OTIzNmY2Y2I1Mzc2MWQ1MTM4NTQ3NTE0NWU1ZjQzZjg2MGZiYmJmMmQwYTM3ZmU5ZDcwMDAwMDAwMCJ9LHsicHVia2V5IjoiMDMwMzJiOTk5NDM4MjJlNzIxYTY1MWM1YTViOTYyMTA0MzAxN2RhYTlkYzNlYzgxZDgzMjE1ZmQyZTI1MTIxMTg3IiwiYW1vdW50IjoiMHg2NCIsImNoYW5uZWxfb3V0cG9pbnQiOiIweDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMCJ9XX1dfX19LCJzdWJtaXR0ZWRBdCI6IjIwMjYtMDYtMjVUMTU6NTY6NDkuNzY2WiJ9",
+      "receipt": {
+        "domain": "fiber-mpp-receipt-v1",
+        "receiptId": "rcpt_9f2ce38b739bdf6012d35d31ab0dfb0b",
+        "challengeId": "chal_b1ad9cae8a3741b95587e0155edd9836",
+        "method": "fiber",
+        "resourceHash": "5aece8b19a84874dc12bd6c5573a4c61a3637be19c72377a82251729d2fad126",
+        "amount": {
+          "value": "100",
+          "currency": "xUDT:BCODE"
+        },
+        "settlement": {
+          "status": "settled",
+          "paymentHash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+          "invoiceId": "fibd1001pg2lrl3zhkhczxzat8almnzdujtcjfl2g8mtn7y9rlajktr3f2xdx4vraknvsejdnhmjjj3p5z6j3694py3ypc5gnskl34hv6f969u7vz7l44matsn038v2ydkh5r3npjaw7ue6qrm7lwknzm2yx2p063f6tdny7jx09y59045ry5zsm6pl3a49057cpzlmzpzdtpzjj6vw0gdmr8rxdjgvc4d5a47qwuxqg6yjc0lqsew8r4wca0k75x5xj5y32d8pvtgdvrpx37wadjllyl93pk2s0xmulpx3gzfhtxu2usyz84tsh36vzg08gy56tnvrnmanm80nrmfke4pnp0s4wev02qydd68sahrkxg7qr39dcx8d0xy24fvyjpn97lwwauz9hazmcnce4qk4k3tlpg27jsr89tpp5fmmarvwkqxtzegx0gqlywjj7e6ch9mjvml3zdd30fzs9dv6e8jqc8vs4294sjlayt44ultvs5q25vw4k42xs729g9c6p60e2emn9edd6x5pfgmmgq4azaef",
+          "provider": "local-payee",
+          "observedAt": "2026-06-25T15:56:49.771Z"
+        },
+        "serverId": "fiber-mpp-evidence-api",
+        "issuedAt": "2026-06-25T15:56:49.771Z",
+        "signature": "919d6f7176a1ed05bfa03bc3ed29377b3fce9f04bc600fe20dccdee732c6da1e"
+      },
+      "ticket": {
+        "ticketId": "bc_ticket_e0ab8600711c395e",
+        "playerId": "arthur",
+        "botPackage": "fiberchamp",
+        "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+        "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515",
+        "fairnessCommitment": {
+          "domain": "fiber-mpp-battlecode-fairness-v1",
+          "botPackage": "fiberchamp",
+          "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+          "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515",
+          "runnerHash": "sha256:c025984308a79ff73633f4249c15be79c0159fffcecdd92c59dcdd4927929d79",
+          "engineHash": "sha256:d0cc775610d5221fc17b23d818bc881bb3e882076a809696d15f8d380b09520b",
+          "engineVersion": "3.1.0",
+          "hashAlgorithm": "sha256",
+          "notes": [
+            "botScriptHash commits to the exact submitted Battlecode RobotPlayer.java source used for this lane.",
+            "clientHash commits to the tournament runner module plus the Battlecode engine jar hash."
+          ]
+        },
+        "xudtAsset": "xUDT:BCODE",
+        "entryAmount": "100",
+        "prizeAmount": "200",
+        "map": "DefaultSmall",
+        "receiptId": "rcpt_9f2ce38b739bdf6012d35d31ab0dfb0b",
+        "paymentHash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+        "issuedAt": "2026-06-25T15:56:49.772Z",
+        "status": "paid"
+      },
+      "report": {
+        "generatedAt": "2026-06-25T15:56:51.599Z",
+        "registration": {
+          "playerId": "arthur",
+          "botPackage": "fiberchamp",
+          "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+          "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515",
+          "xudtAsset": "xUDT:BCODE",
+          "entryAmount": "100",
+          "prizeAmount": "200",
+          "map": "DefaultSmall"
+        },
+        "ticket": {
+          "ticketId": "bc_ticket_e0ab8600711c395e",
+          "playerId": "arthur",
+          "botPackage": "fiberchamp",
+          "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+          "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515",
+          "fairnessCommitment": {
+            "domain": "fiber-mpp-battlecode-fairness-v1",
+            "botPackage": "fiberchamp",
+            "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+            "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515",
+            "runnerHash": "sha256:c025984308a79ff73633f4249c15be79c0159fffcecdd92c59dcdd4927929d79",
+            "engineHash": "sha256:d0cc775610d5221fc17b23d818bc881bb3e882076a809696d15f8d380b09520b",
+            "engineVersion": "3.1.0",
+            "hashAlgorithm": "sha256",
+            "notes": [
+              "botScriptHash commits to the exact submitted Battlecode RobotPlayer.java source used for this lane.",
+              "clientHash commits to the tournament runner module plus the Battlecode engine jar hash."
+            ]
+          },
+          "xudtAsset": "xUDT:BCODE",
+          "entryAmount": "100",
+          "prizeAmount": "200",
+          "map": "DefaultSmall",
+          "receiptId": "rcpt_9f2ce38b739bdf6012d35d31ab0dfb0b",
+          "paymentHash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+          "issuedAt": "2026-06-25T15:56:49.772Z",
+          "status": "paid"
+        },
+        "match": {
+          "matchId": "bc_match_bff5899accf4b492",
+          "map": "DefaultSmall",
+          "teamA": "fiberchamp",
+          "teamB": "baselinebot",
+          "winner": "fiberchamp",
+          "winnerSide": "A",
+          "round": 2000,
+          "reason": "The winning team won on tiebreakers (painted more of the map).",
+          "replayPath": "/home/arthur/a19q3/fiber-mpp/.tmp/battlecode-tournament/matches/bc_ticket_e0ab8600711c395e-1782403009780.bc25",
+          "matchHash": "229b140bbffed06d030e46f37400ca6d37a29be77d1196001dfd157e8d90a03f",
+          "stdout": "[server] -------------------- Match Starting --------------------\n[server] fiberchamp vs. baselinebot on DefaultSmall\n[server]                   fiberchamp (A) wins (round 2000)\n[server] Reason: The winning team won on tiebreakers (painted more of the map).\n[server] -------------------- Match Finished --------------------\n",
+          "stderr": "",
+          "engineVersion": "3.1.0",
+          "engineJar": "/home/arthur/a19q3/.toolchains/battlecode25/battlecode25-java-3.1.0.jar",
+          "engineHash": "sha256:d0cc775610d5221fc17b23d818bc881bb3e882076a809696d15f8d380b09520b",
+          "runnerHash": "sha256:c025984308a79ff73633f4249c15be79c0159fffcecdd92c59dcdd4927929d79",
+          "fairness": {
+            "status": "verified",
+            "committed": {
+              "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+              "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515"
+            },
+            "observed": {
+              "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+              "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515",
+              "runnerHash": "sha256:c025984308a79ff73633f4249c15be79c0159fffcecdd92c59dcdd4927929d79",
+              "engineHash": "sha256:d0cc775610d5221fc17b23d818bc881bb3e882076a809696d15f8d380b09520b"
+            },
+            "verifiedAt": "2026-06-25T15:56:51.067Z"
+          },
+          "jdkHome": "/home/arthur/a19q3/.toolchains/jdk-21.0.11+10",
+          "startedAt": "2026-06-25T15:56:49.774Z",
+          "finishedAt": "2026-06-25T15:56:51.067Z"
+        },
+        "award": {
+          "awardId": "bc_award_3235a4dbf42e0c5a",
+          "ticketId": "bc_ticket_e0ab8600711c395e",
+          "matchId": "bc_match_bff5899accf4b492",
+          "playerId": "arthur",
+          "botPackage": "fiberchamp",
+          "xudtAsset": "xUDT:BCODE",
+          "prizeAmount": "200",
+          "status": "paid",
+          "settlement": "fiber-xudt-payment",
+          "prizePayment": {
+            "provider": "fiber-xudt",
+            "mode": "local",
+            "paymentHash": "0xf315c1a8429cfc728348ea23d17f637d734a287db419f7df37b9e9f13fac02f6",
+            "invoice": "fibd2001pt7s4efm5nrczxzat8almn3ql9xlm67x8t8yltat3lfuyjdzyp6c39ql05446amgyd0c0j906j0z4ke2w0gz9lnx2nduyfksrzzerl2spqgq4q5xaet8vnz07us3fcjydg43cnkq0dq2gsuhcu4dmczzvnetsqpe253y5r9q36tu6qm65z38htt6shg72eptjvmvfjp8qtesnxzpm2yp3g9ausku3yagfune6h26v3qpp66d32dn9eh49c8nq6ns888nxmeyxq3rs9a03ay7z6d6sn5947dhpkp3xxsgwlgxevmhutak7kzuktjwql970glcylpe77hjcrejfs57erpsypp7pw63lnvwgctmnfdlh2202rx8cpja9c383vvdpxeptznyk5asqq0egavw5wdrdg9r9fw20fdqtvj2zq3dsr5ypwmyts792xvq6wc4gns3upq94t7xhz8ut8snrcanqgqjv4qanuqwz34tggzuyfpztnfla2s9s4l8pthvc3e50xhh0j27qjrxycnkcj7e3mqf0fqnljkhgfychf5jsdzfttjmjrtc8n9vs3dsdqpwfx57a",
+            "amountShannons": "200",
+            "xudtAsset": "xUDT:BCODE",
+            "udtTypeScript": {
+              "code_hash": "0x50bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95",
+              "hash_type": "data2",
+              "args": "0x32e555f3ff8e135cece1351a6a2971518392c1e30375c1e006ad0ce8eac07947"
+            },
+            "payerRpcUrl": "http://127.0.0.1:21716",
+            "payeeRpcUrl": "http://127.0.0.1:21714",
+            "payerNode": "03032b99943822e721a651c5a5b9621043017daa9dc3ec81d83215fd2e25121187",
+            "payeeNode": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0",
+            "status": "settled",
+            "observedAt": "2026-06-25T15:56:51.598Z",
+            "sendResult": {
+              "payment_hash": "0xf315c1a8429cfc728348ea23d17f637d734a287db419f7df37b9e9f13fac02f6",
+              "status": "Created",
+              "created_at": "0x19eff7f9203",
+              "last_updated_at": "0x19eff7f9203",
+              "failed_error": null,
+              "fee": "0x1",
+              "custom_records": null,
+              "routers": [
+                {
+                  "nodes": [
+                    {
+                      "pubkey": "03032b99943822e721a651c5a5b9621043017daa9dc3ec81d83215fd2e25121187",
+                      "amount": "0xc9",
+                      "channel_outpoint": "0x4cf98e685b44c3289a38f7b2502674c3489da2b7ac1f58e5554011359d3da07300000000"
+                    },
+                    {
+                      "pubkey": "02bcbd0e0d811d13363af1e5998f56e74e6aab8a7aa44005e1ce7d696a4d3f10f6",
+                      "amount": "0xc8",
+                      "channel_outpoint": "0xb13afe5935333a804c52bdc4c25faf06bcd0d28d511bddc4cce15ffeb7bd723e00000000"
+                    },
+                    {
+                      "pubkey": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0",
+                      "amount": "0xc8",
+                      "channel_outpoint": "0x000000000000000000000000000000000000000000000000000000000000000000000000"
+                    }
+                  ]
+                }
+              ]
+            },
+            "settledPayment": {
+              "payment_hash": "0xf315c1a8429cfc728348ea23d17f637d734a287db419f7df37b9e9f13fac02f6",
+              "status": "Success",
+              "created_at": "0x19eff7f9203",
+              "last_updated_at": "0x19eff7f9203",
+              "failed_error": null,
+              "fee": "0x1",
+              "custom_records": null,
+              "routers": [
+                {
+                  "nodes": [
+                    {
+                      "pubkey": "03032b99943822e721a651c5a5b9621043017daa9dc3ec81d83215fd2e25121187",
+                      "amount": "0xc9",
+                      "channel_outpoint": "0x4cf98e685b44c3289a38f7b2502674c3489da2b7ac1f58e5554011359d3da07300000000"
+                    },
+                    {
+                      "pubkey": "02bcbd0e0d811d13363af1e5998f56e74e6aab8a7aa44005e1ce7d696a4d3f10f6",
+                      "amount": "0xc8",
+                      "channel_outpoint": "0xb13afe5935333a804c52bdc4c25faf06bcd0d28d511bddc4cce15ffeb7bd723e00000000"
+                    },
+                    {
+                      "pubkey": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0",
+                      "amount": "0xc8",
+                      "channel_outpoint": "0x000000000000000000000000000000000000000000000000000000000000000000000000"
+                    }
+                  ]
+                }
+              ]
+            },
+            "paidInvoice": {
+              "invoice_address": "fibd2001pt7s4efm5nrczxzat8almn3ql9xlm67x8t8yltat3lfuyjdzyp6c39ql05446amgyd0c0j906j0z4ke2w0gz9lnx2nduyfksrzzerl2spqgq4q5xaet8vnz07us3fcjydg43cnkq0dq2gsuhcu4dmczzvnetsqpe253y5r9q36tu6qm65z38htt6shg72eptjvmvfjp8qtesnxzpm2yp3g9ausku3yagfune6h26v3qpp66d32dn9eh49c8nq6ns888nxmeyxq3rs9a03ay7z6d6sn5947dhpkp3xxsgwlgxevmhutak7kzuktjwql970glcylpe77hjcrejfs57erpsypp7pw63lnvwgctmnfdlh2202rx8cpja9c383vvdpxeptznyk5asqq0egavw5wdrdg9r9fw20fdqtvj2zq3dsr5ypwmyts792xvq6wc4gns3upq94t7xhz8ut8snrcanqgqjv4qanuqwz34tggzuyfpztnfla2s9s4l8pthvc3e50xhh0j27qjrxycnkcj7e3mqf0fqnljkhgfychf5jsdzfttjmjrtc8n9vs3dsdqpwfx57a",
+              "invoice": {
+                "currency": "Fibd",
+                "amount": "0xc8",
+                "signature": "120c15001d131c000e0211150b0808021c040901020b13091f1d0a100510151f07010b170c181119140f0617170f120a1e001203060418131618121e19111b00090f0900131f1216170809041817091412100d02090b0b121b12030b180713050c10110d100d0001",
+                "data": {
+                  "timestamp": "0x19eff7f91ff",
+                  "payment_hash": "0xf315c1a8429cfc728348ea23d17f637d734a287db419f7df37b9e9f13fac02f6",
+                  "attrs": [
+                    {
+                      "description": "FiberMPP Battlecode prize bc_ticket_e0ab8600711c395e bc_match_bff5899accf4b492"
+                    },
+                    {
+                      "expiry_time": "0x1e"
+                    },
+                    {
+                      "final_htlc_minimum_expiry_delta": "0x535"
+                    },
+                    {
+                      "udt_script": "0x5500000010000000300000003100000050bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95042000000032e555f3ff8e135cece1351a6a2971518392c1e30375c1e006ad0ce8eac07947"
+                    },
+                    {
+                      "payee_public_key": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0"
+                    }
+                  ]
+                }
+              },
+              "status": "Paid"
+            }
+          },
+          "matchHash": "229b140bbffed06d030e46f37400ca6d37a29be77d1196001dfd157e8d90a03f",
+          "awardedAt": "2026-06-25T15:56:51.598Z",
+          "note": "Prize settled by a live Fiber xUDT payment after a paid FiberMPP entry and deterministic local Battlecode match."
+        },
+        "ledgerPath": "/home/arthur/a19q3/fiber-mpp/.tmp/battlecode-tournament-ledger.json",
+        "replayPath": "/home/arthur/a19q3/fiber-mpp/.tmp/battlecode-tournament/matches/bc_ticket_e0ab8600711c395e-1782403009780.bc25",
+        "warnings": [
+          "Battlecode runs as an external AGPL-3.0 scaffold/engine dependency; FiberMPP stores only tournament evidence and local bot sources.",
+          "The prize was settled by a live Fiber xUDT payment and recorded with payment hash evidence."
+        ]
+      }
+    }
+  },
+  "export": {
+    "generatedAt": "2026-06-25T15:56:51.611Z",
+    "tournament": {
+      "registration": {
+        "playerId": "arthur",
+        "botPackage": "fiberchamp",
+        "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+        "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515",
+        "xudtAsset": "xUDT:BCODE",
+        "entryAmount": "100",
+        "prizeAmount": "200",
+        "map": "DefaultSmall"
+      },
+      "fairnessManifest": {
+        "domain": "fiber-mpp-battlecode-fairness-v1",
+        "botPackage": "fiberchamp",
+        "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+        "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515",
+        "runnerHash": "sha256:c025984308a79ff73633f4249c15be79c0159fffcecdd92c59dcdd4927929d79",
+        "engineHash": "sha256:d0cc775610d5221fc17b23d818bc881bb3e882076a809696d15f8d380b09520b",
+        "engineVersion": "3.1.0",
+        "hashAlgorithm": "sha256",
+        "notes": [
+          "botScriptHash commits to the exact submitted Battlecode RobotPlayer.java source used for this lane.",
+          "clientHash commits to the tournament runner module plus the Battlecode engine jar hash."
+        ]
+      },
+      "requestBody": "{\"playerId\":\"arthur\",\"botPackage\":\"fiberchamp\",\"botScriptHash\":\"sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45\",\"clientHash\":\"sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515\",\"xudtAsset\":\"xUDT:BCODE\",\"entryAmount\":\"100\",\"prizeAmount\":\"200\",\"map\":\"DefaultSmall\"}",
+      "resourceUrl": "http://127.0.0.1:8877/api/tournament/battlecode/register",
+      "challengeBody": {
+        "type": "https://paymentauth.org/problems/payment-required",
+        "title": "Payment Required",
+        "status": 402,
+        "detail": "Payment is required.",
+        "challengeId": "chal_b1ad9cae8a3741b95587e0155edd9836",
+        "challenge": {
+          "domain": "fiber-mpp-challenge-v1",
+          "challengeId": "chal_b1ad9cae8a3741b95587e0155edd9836",
+          "resource": {
+            "method": "POST",
+            "url": "http://127.0.0.1:8877/api/tournament/battlecode/register",
+            "bodyHash": "74e083a444d1312fe5c67c9f5a0d2bee38eacc0c4e678029dea7ea30ef0110ec",
+            "contentType": "application/json"
+          },
+          "amount": {
+            "value": "100",
+            "currency": "xUDT:BCODE",
+            "display": "100 xUDT:BCODE"
+          },
+          "methods": [
+            {
+              "method": "fiber",
+              "intent": "charge",
+              "asset": "xUDT:BCODE",
+              "amountShannons": "100",
+              "paymentHash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+              "invoice": "fibd1001pg2lrl3zhkhczxzat8almnzdujtcjfl2g8mtn7y9rlajktr3f2xdx4vraknvsejdnhmjjj3p5z6j3694py3ypc5gnskl34hv6f969u7vz7l44matsn038v2ydkh5r3npjaw7ue6qrm7lwknzm2yx2p063f6tdny7jx09y59045ry5zsm6pl3a49057cpzlmzpzdtpzjj6vw0gdmr8rxdjgvc4d5a47qwuxqg6yjc0lqsew8r4wca0k75x5xj5y32d8pvtgdvrpx37wadjllyl93pk2s0xmulpx3gzfhtxu2usyz84tsh36vzg08gy56tnvrnmanm80nrmfke4pnp0s4wev02qydd68sahrkxg7qr39dcx8d0xy24fvyjpn97lwwauz9hazmcnce4qk4k3tlpg27jsr89tpp5fmmarvwkqxtzegx0gqlywjj7e6ch9mjvml3zdd30fzs9dv6e8jqc8vs4294sjlayt44ultvs5q25vw4k42xs729g9c6p60e2emn9edd6x5pfgmmgq4azaef",
+              "udtTypeScript": {
+                "code_hash": "0x50bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95",
+                "hash_type": "data2",
+                "args": "0x32e555f3ff8e135cece1351a6a2971518392c1e30375c1e006ad0ce8eac07947"
+              },
+              "fiberRpcLabel": "local-payee",
+              "expiresAt": "2026-06-25T15:58:49.229Z"
+            }
+          ],
+          "nonce": "1441f8aeb7155b8e3bcb28e0dcb22f1c",
+          "issuedAt": "2026-06-25T15:56:49.229Z",
+          "expiresAt": "2026-06-25T15:58:49.229Z",
+          "serverId": "fiber-mpp-evidence-api",
+          "maxUses": 1,
+          "metadataHash": "784ae703528ea794202efe1fd8d1b0f4568b0afd75c907b53e88a5f45a33be4d"
+        },
+        "challengeSignature": "0de42d2182130be5df0f561f16209aef538a06d3114d8ffef0c2d7c9023c36dc",
+        "methods": [
+          {
+            "method": "fiber",
+            "intent": "charge",
+            "asset": "xUDT:BCODE",
+            "amountShannons": "100",
+            "paymentHash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+            "invoice": "fibd1001pg2lrl3zhkhczxzat8almnzdujtcjfl2g8mtn7y9rlajktr3f2xdx4vraknvsejdnhmjjj3p5z6j3694py3ypc5gnskl34hv6f969u7vz7l44matsn038v2ydkh5r3npjaw7ue6qrm7lwknzm2yx2p063f6tdny7jx09y59045ry5zsm6pl3a49057cpzlmzpzdtpzjj6vw0gdmr8rxdjgvc4d5a47qwuxqg6yjc0lqsew8r4wca0k75x5xj5y32d8pvtgdvrpx37wadjllyl93pk2s0xmulpx3gzfhtxu2usyz84tsh36vzg08gy56tnvrnmanm80nrmfke4pnp0s4wev02qydd68sahrkxg7qr39dcx8d0xy24fvyjpn97lwwauz9hazmcnce4qk4k3tlpg27jsr89tpp5fmmarvwkqxtzegx0gqlywjj7e6ch9mjvml3zdd30fzs9dv6e8jqc8vs4294sjlayt44ultvs5q25vw4k42xs729g9c6p60e2emn9edd6x5pfgmmgq4azaef",
+            "udtTypeScript": {
+              "code_hash": "0x50bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95",
+              "hash_type": "data2",
+              "args": "0x32e555f3ff8e135cece1351a6a2971518392c1e30375c1e006ad0ce8eac07947"
+            },
+            "fiberRpcLabel": "local-payee",
+            "expiresAt": "2026-06-25T15:58:49.229Z"
+          }
+        ]
+      },
+      "challengeId": "chal_b1ad9cae8a3741b95587e0155edd9836",
+      "fiberChallenge": {
+        "method": "fiber",
+        "intent": "charge",
+        "asset": "xUDT:BCODE",
+        "amountShannons": "100",
+        "paymentHash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+        "invoice": "fibd1001pg2lrl3zhkhczxzat8almnzdujtcjfl2g8mtn7y9rlajktr3f2xdx4vraknvsejdnhmjjj3p5z6j3694py3ypc5gnskl34hv6f969u7vz7l44matsn038v2ydkh5r3npjaw7ue6qrm7lwknzm2yx2p063f6tdny7jx09y59045ry5zsm6pl3a49057cpzlmzpzdtpzjj6vw0gdmr8rxdjgvc4d5a47qwuxqg6yjc0lqsew8r4wca0k75x5xj5y32d8pvtgdvrpx37wadjllyl93pk2s0xmulpx3gzfhtxu2usyz84tsh36vzg08gy56tnvrnmanm80nrmfke4pnp0s4wev02qydd68sahrkxg7qr39dcx8d0xy24fvyjpn97lwwauz9hazmcnce4qk4k3tlpg27jsr89tpp5fmmarvwkqxtzegx0gqlywjj7e6ch9mjvml3zdd30fzs9dv6e8jqc8vs4294sjlayt44ultvs5q25vw4k42xs729g9c6p60e2emn9edd6x5pfgmmgq4azaef",
+        "udtTypeScript": {
+          "code_hash": "0x50bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95",
+          "hash_type": "data2",
+          "args": "0x32e555f3ff8e135cece1351a6a2971518392c1e30375c1e006ad0ce8eac07947"
+        },
+        "fiberRpcLabel": "local-payee",
+        "expiresAt": "2026-06-25T15:58:49.229Z"
+      },
+      "proof": {
+        "kind": "fiber-payment-proof-v1",
+        "mode": "local",
+        "paymentHash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+        "invoice": "fibd1001pg2lrl3zhkhczxzat8almnzdujtcjfl2g8mtn7y9rlajktr3f2xdx4vraknvsejdnhmjjj3p5z6j3694py3ypc5gnskl34hv6f969u7vz7l44matsn038v2ydkh5r3npjaw7ue6qrm7lwknzm2yx2p063f6tdny7jx09y59045ry5zsm6pl3a49057cpzlmzpzdtpzjj6vw0gdmr8rxdjgvc4d5a47qwuxqg6yjc0lqsew8r4wca0k75x5xj5y32d8pvtgdvrpx37wadjllyl93pk2s0xmulpx3gzfhtxu2usyz84tsh36vzg08gy56tnvrnmanm80nrmfke4pnp0s4wev02qydd68sahrkxg7qr39dcx8d0xy24fvyjpn97lwwauz9hazmcnce4qk4k3tlpg27jsr89tpp5fmmarvwkqxtzegx0gqlywjj7e6ch9mjvml3zdd30fzs9dv6e8jqc8vs4294sjlayt44ultvs5q25vw4k42xs729g9c6p60e2emn9edd6x5pfgmmgq4azaef",
+        "amountShannons": "100",
+        "udtTypeScript": {
+          "code_hash": "0x50bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95",
+          "hash_type": "data2",
+          "args": "0x32e555f3ff8e135cece1351a6a2971518392c1e30375c1e006ad0ce8eac07947"
+        },
+        "status": "Success",
+        "observedAt": "2026-06-25T15:56:49.766Z",
+        "evidence": {
+          "sendResult": {
+            "payment_hash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+            "status": "Created",
+            "created_at": "0x19eff7f8ade",
+            "last_updated_at": "0x19eff7f8ade",
+            "failed_error": null,
+            "fee": "0x1",
+            "custom_records": null,
+            "routers": [
+              {
+                "nodes": [
+                  {
+                    "pubkey": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0",
+                    "amount": "0x65",
+                    "channel_outpoint": "0x677a32fec023c135543efba81fc8d629214b03f91f0823852bb3ec9d8c4e87d800000000"
+                  },
+                  {
+                    "pubkey": "02bcbd0e0d811d13363af1e5998f56e74e6aab8a7aa44005e1ce7d696a4d3f10f6",
+                    "amount": "0x64",
+                    "channel_outpoint": "0x706a7a88457ff69236f6cb53761d51385475145e5f43f860fbbbf2d0a37fe9d700000000"
+                  },
+                  {
+                    "pubkey": "03032b99943822e721a651c5a5b9621043017daa9dc3ec81d83215fd2e25121187",
+                    "amount": "0x64",
+                    "channel_outpoint": "0x000000000000000000000000000000000000000000000000000000000000000000000000"
+                  }
+                ]
+              }
+            ]
+          },
+          "settledPayment": {
+            "payment_hash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+            "status": "Success",
+            "created_at": "0x19eff7f8ade",
+            "last_updated_at": "0x19eff7f8ade",
+            "failed_error": null,
+            "fee": "0x1",
+            "custom_records": null,
+            "routers": [
+              {
+                "nodes": [
+                  {
+                    "pubkey": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0",
+                    "amount": "0x65",
+                    "channel_outpoint": "0x677a32fec023c135543efba81fc8d629214b03f91f0823852bb3ec9d8c4e87d800000000"
+                  },
+                  {
+                    "pubkey": "02bcbd0e0d811d13363af1e5998f56e74e6aab8a7aa44005e1ce7d696a4d3f10f6",
+                    "amount": "0x64",
+                    "channel_outpoint": "0x706a7a88457ff69236f6cb53761d51385475145e5f43f860fbbbf2d0a37fe9d700000000"
+                  },
+                  {
+                    "pubkey": "03032b99943822e721a651c5a5b9621043017daa9dc3ec81d83215fd2e25121187",
+                    "amount": "0x64",
+                    "channel_outpoint": "0x000000000000000000000000000000000000000000000000000000000000000000000000"
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "credential": {
+        "domain": "fiber-mpp-credential-v1",
+        "challengeId": "chal_b1ad9cae8a3741b95587e0155edd9836",
+        "method": "fiber",
+        "resourceHash": "5aece8b19a84874dc12bd6c5573a4c61a3637be19c72377a82251729d2fad126",
+        "paymentProof": {
+          "kind": "fiber-payment-proof-v1",
+          "mode": "local",
+          "paymentHash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+          "invoice": "fibd1001pg2lrl3zhkhczxzat8almnzdujtcjfl2g8mtn7y9rlajktr3f2xdx4vraknvsejdnhmjjj3p5z6j3694py3ypc5gnskl34hv6f969u7vz7l44matsn038v2ydkh5r3npjaw7ue6qrm7lwknzm2yx2p063f6tdny7jx09y59045ry5zsm6pl3a49057cpzlmzpzdtpzjj6vw0gdmr8rxdjgvc4d5a47qwuxqg6yjc0lqsew8r4wca0k75x5xj5y32d8pvtgdvrpx37wadjllyl93pk2s0xmulpx3gzfhtxu2usyz84tsh36vzg08gy56tnvrnmanm80nrmfke4pnp0s4wev02qydd68sahrkxg7qr39dcx8d0xy24fvyjpn97lwwauz9hazmcnce4qk4k3tlpg27jsr89tpp5fmmarvwkqxtzegx0gqlywjj7e6ch9mjvml3zdd30fzs9dv6e8jqc8vs4294sjlayt44ultvs5q25vw4k42xs729g9c6p60e2emn9edd6x5pfgmmgq4azaef",
+          "amountShannons": "100",
+          "udtTypeScript": {
+            "code_hash": "0x50bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95",
+            "hash_type": "data2",
+            "args": "0x32e555f3ff8e135cece1351a6a2971518392c1e30375c1e006ad0ce8eac07947"
+          },
+          "status": "Success",
+          "observedAt": "2026-06-25T15:56:49.766Z",
+          "evidence": {
+            "sendResult": {
+              "payment_hash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+              "status": "Created",
+              "created_at": "0x19eff7f8ade",
+              "last_updated_at": "0x19eff7f8ade",
+              "failed_error": null,
+              "fee": "0x1",
+              "custom_records": null,
+              "routers": [
+                {
+                  "nodes": [
+                    {
+                      "pubkey": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0",
+                      "amount": "0x65",
+                      "channel_outpoint": "0x677a32fec023c135543efba81fc8d629214b03f91f0823852bb3ec9d8c4e87d800000000"
+                    },
+                    {
+                      "pubkey": "02bcbd0e0d811d13363af1e5998f56e74e6aab8a7aa44005e1ce7d696a4d3f10f6",
+                      "amount": "0x64",
+                      "channel_outpoint": "0x706a7a88457ff69236f6cb53761d51385475145e5f43f860fbbbf2d0a37fe9d700000000"
+                    },
+                    {
+                      "pubkey": "03032b99943822e721a651c5a5b9621043017daa9dc3ec81d83215fd2e25121187",
+                      "amount": "0x64",
+                      "channel_outpoint": "0x000000000000000000000000000000000000000000000000000000000000000000000000"
+                    }
+                  ]
+                }
+              ]
+            },
+            "settledPayment": {
+              "payment_hash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+              "status": "Success",
+              "created_at": "0x19eff7f8ade",
+              "last_updated_at": "0x19eff7f8ade",
+              "failed_error": null,
+              "fee": "0x1",
+              "custom_records": null,
+              "routers": [
+                {
+                  "nodes": [
+                    {
+                      "pubkey": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0",
+                      "amount": "0x65",
+                      "channel_outpoint": "0x677a32fec023c135543efba81fc8d629214b03f91f0823852bb3ec9d8c4e87d800000000"
+                    },
+                    {
+                      "pubkey": "02bcbd0e0d811d13363af1e5998f56e74e6aab8a7aa44005e1ce7d696a4d3f10f6",
+                      "amount": "0x64",
+                      "channel_outpoint": "0x706a7a88457ff69236f6cb53761d51385475145e5f43f860fbbbf2d0a37fe9d700000000"
+                    },
+                    {
+                      "pubkey": "03032b99943822e721a651c5a5b9621043017daa9dc3ec81d83215fd2e25121187",
+                      "amount": "0x64",
+                      "channel_outpoint": "0x000000000000000000000000000000000000000000000000000000000000000000000000"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "submittedAt": "2026-06-25T15:56:49.766Z"
+      },
+      "authorization": "Payment eyJkb21haW4iOiJmaWJlci1tcHAtY3JlZGVudGlhbC12MSIsImNoYWxsZW5nZUlkIjoiY2hhbF9iMWFkOWNhZThhMzc0MWI5NTU4N2UwMTU1ZWRkOTgzNiIsIm1ldGhvZCI6ImZpYmVyIiwicmVzb3VyY2VIYXNoIjoiNWFlY2U4YjE5YTg0ODc0ZGMxMmJkNmM1NTczYTRjNjFhMzYzN2JlMTljNzIzNzdhODIyNTE3MjlkMmZhZDEyNiIsInBheW1lbnRQcm9vZiI6eyJraW5kIjoiZmliZXItcGF5bWVudC1wcm9vZi12MSIsIm1vZGUiOiJsb2NhbCIsInBheW1lbnRIYXNoIjoiMHhkMzhiNTk5NDdiMjVjYTkzZjY3ZmM0N2Q2MWUyN2I3NzBkNDRmNzJlZGZiNzMzNTkzZjk4YmI2YzkwNjE5OGZhIiwiaW52b2ljZSI6ImZpYmQxMDAxcGcybHJsM3poa2hjenh6YXQ4YWxtbnpkdWp0Y2pmbDJnOG10bjd5OXJsYWprdHIzZjJ4ZHg0dnJha252c2VqZG5obWpqajNwNXo2ajM2OTRweTN5cGM1Z25za2wzNGh2NmY5Njl1N3Z6N2w0NG1hdHNuMDM4djJ5ZGtoNXIzbnBqYXc3dWU2cXJtN2x3a256bTJ5eDJwMDYzZjZ0ZG55N2p4MDl5NTkwNDVyeTV6c202cGwzYTQ5MDU3Y3B6bG16cHpkdHB6amo2dncwZ2RtcjhyeGRqZ3ZjNGQ1YTQ3cXd1eHFnNnlqYzBscXNldzhyNHdjYTBrNzV4NXhqNXkzMmQ4cHZ0Z2R2cnB4Mzd3YWRqbGx5bDkzcGsyczB4bXVscHgzZ3pmaHR4dTJ1c3l6ODR0c2gzNnZ6ZzA4Z3k1NnRudnJubWFubTgwbnJtZmtlNHBucDBzNHdldjAycXlkZDY4c2Focmt4ZzdxcjM5ZGN4OGQweHkyNGZ2eWpwbjk3bHd3YXV6OWhhem1jbmNlNHFrNGszdGxwZzI3anNyODl0cHA1Zm1tYXJ2d2txeHR6ZWd4MGdxbHl3amo3ZTZjaDltanZtbDN6ZGQzMGZ6czlkdjZlOGpxYzh2czQyOTRzamxheXQ0NHVsdHZzNXEyNXZ3NGs0MnhzNzI5ZzljNnA2MGUyZW1uOWVkZDZ4NXBmZ21tZ3E0YXphZWYiLCJhbW91bnRTaGFubm9ucyI6IjEwMCIsInVkdFR5cGVTY3JpcHQiOnsiY29kZV9oYXNoIjoiMHg1MGJkOGQ2NjgwYjhiOWNmOThiNzNmM2MwOGZhZjhiMmEyMTkxNDMxMTk1NDExOGFkNjYwOWJlNmU3OGExYjk1IiwiaGFzaF90eXBlIjoiZGF0YTIiLCJhcmdzIjoiMHgzMmU1NTVmM2ZmOGUxMzVjZWNlMTM1MWE2YTI5NzE1MTgzOTJjMWUzMDM3NWMxZTAwNmFkMGNlOGVhYzA3OTQ3In0sInN0YXR1cyI6IlN1Y2Nlc3MiLCJvYnNlcnZlZEF0IjoiMjAyNi0wNi0yNVQxNTo1Njo0OS43NjZaIiwiZXZpZGVuY2UiOnsic2VuZFJlc3VsdCI6eyJwYXltZW50X2hhc2giOiIweGQzOGI1OTk0N2IyNWNhOTNmNjdmYzQ3ZDYxZTI3Yjc3MGQ0NGY3MmVkZmI3MzM1OTNmOThiYjZjOTA2MTk4ZmEiLCJzdGF0dXMiOiJDcmVhdGVkIiwiY3JlYXRlZF9hdCI6IjB4MTllZmY3ZjhhZGUiLCJsYXN0X3VwZGF0ZWRfYXQiOiIweDE5ZWZmN2Y4YWRlIiwiZmFpbGVkX2Vycm9yIjpudWxsLCJmZWUiOiIweDEiLCJjdXN0b21fcmVjb3JkcyI6bnVsbCwicm91dGVycyI6W3sibm9kZXMiOlt7InB1YmtleSI6IjAyYTY0Yjg5OTNmMzNiMmViZDM3YTRkZTFjOTQ0MWY0OTEyOTFhNGU3NzlkYThlNTE5YmNmYjdjMWYzZjU2YzljMCIsImFtb3VudCI6IjB4NjUiLCJjaGFubmVsX291dHBvaW50IjoiMHg2NzdhMzJmZWMwMjNjMTM1NTQzZWZiYTgxZmM4ZDYyOTIxNGIwM2Y5MWYwODIzODUyYmIzZWM5ZDhjNGU4N2Q4MDAwMDAwMDAifSx7InB1YmtleSI6IjAyYmNiZDBlMGQ4MTFkMTMzNjNhZjFlNTk5OGY1NmU3NGU2YWFiOGE3YWE0NDAwNWUxY2U3ZDY5NmE0ZDNmMTBmNiIsImFtb3VudCI6IjB4NjQiLCJjaGFubmVsX291dHBvaW50IjoiMHg3MDZhN2E4ODQ1N2ZmNjkyMzZmNmNiNTM3NjFkNTEzODU0NzUxNDVlNWY0M2Y4NjBmYmJiZjJkMGEzN2ZlOWQ3MDAwMDAwMDAifSx7InB1YmtleSI6IjAzMDMyYjk5OTQzODIyZTcyMWE2NTFjNWE1Yjk2MjEwNDMwMTdkYWE5ZGMzZWM4MWQ4MzIxNWZkMmUyNTEyMTE4NyIsImFtb3VudCI6IjB4NjQiLCJjaGFubmVsX291dHBvaW50IjoiMHgwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAifV19XX0sInNldHRsZWRQYXltZW50Ijp7InBheW1lbnRfaGFzaCI6IjB4ZDM4YjU5OTQ3YjI1Y2E5M2Y2N2ZjNDdkNjFlMjdiNzcwZDQ0ZjcyZWRmYjczMzU5M2Y5OGJiNmM5MDYxOThmYSIsInN0YXR1cyI6IlN1Y2Nlc3MiLCJjcmVhdGVkX2F0IjoiMHgxOWVmZjdmOGFkZSIsImxhc3RfdXBkYXRlZF9hdCI6IjB4MTllZmY3ZjhhZGUiLCJmYWlsZWRfZXJyb3IiOm51bGwsImZlZSI6IjB4MSIsImN1c3RvbV9yZWNvcmRzIjpudWxsLCJyb3V0ZXJzIjpbeyJub2RlcyI6W3sicHVia2V5IjoiMDJhNjRiODk5M2YzM2IyZWJkMzdhNGRlMWM5NDQxZjQ5MTI5MWE0ZTc3OWRhOGU1MTliY2ZiN2MxZjNmNTZjOWMwIiwiYW1vdW50IjoiMHg2NSIsImNoYW5uZWxfb3V0cG9pbnQiOiIweDY3N2EzMmZlYzAyM2MxMzU1NDNlZmJhODFmYzhkNjI5MjE0YjAzZjkxZjA4MjM4NTJiYjNlYzlkOGM0ZTg3ZDgwMDAwMDAwMCJ9LHsicHVia2V5IjoiMDJiY2JkMGUwZDgxMWQxMzM2M2FmMWU1OTk4ZjU2ZTc0ZTZhYWI4YTdhYTQ0MDA1ZTFjZTdkNjk2YTRkM2YxMGY2IiwiYW1vdW50IjoiMHg2NCIsImNoYW5uZWxfb3V0cG9pbnQiOiIweDcwNmE3YTg4NDU3ZmY2OTIzNmY2Y2I1Mzc2MWQ1MTM4NTQ3NTE0NWU1ZjQzZjg2MGZiYmJmMmQwYTM3ZmU5ZDcwMDAwMDAwMCJ9LHsicHVia2V5IjoiMDMwMzJiOTk5NDM4MjJlNzIxYTY1MWM1YTViOTYyMTA0MzAxN2RhYTlkYzNlYzgxZDgzMjE1ZmQyZTI1MTIxMTg3IiwiYW1vdW50IjoiMHg2NCIsImNoYW5uZWxfb3V0cG9pbnQiOiIweDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMCJ9XX1dfX19LCJzdWJtaXR0ZWRBdCI6IjIwMjYtMDYtMjVUMTU6NTY6NDkuNzY2WiJ9",
+      "receipt": {
+        "domain": "fiber-mpp-receipt-v1",
+        "receiptId": "rcpt_9f2ce38b739bdf6012d35d31ab0dfb0b",
+        "challengeId": "chal_b1ad9cae8a3741b95587e0155edd9836",
+        "method": "fiber",
+        "resourceHash": "5aece8b19a84874dc12bd6c5573a4c61a3637be19c72377a82251729d2fad126",
+        "amount": {
+          "value": "100",
+          "currency": "xUDT:BCODE"
+        },
+        "settlement": {
+          "status": "settled",
+          "paymentHash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+          "invoiceId": "fibd1001pg2lrl3zhkhczxzat8almnzdujtcjfl2g8mtn7y9rlajktr3f2xdx4vraknvsejdnhmjjj3p5z6j3694py3ypc5gnskl34hv6f969u7vz7l44matsn038v2ydkh5r3npjaw7ue6qrm7lwknzm2yx2p063f6tdny7jx09y59045ry5zsm6pl3a49057cpzlmzpzdtpzjj6vw0gdmr8rxdjgvc4d5a47qwuxqg6yjc0lqsew8r4wca0k75x5xj5y32d8pvtgdvrpx37wadjllyl93pk2s0xmulpx3gzfhtxu2usyz84tsh36vzg08gy56tnvrnmanm80nrmfke4pnp0s4wev02qydd68sahrkxg7qr39dcx8d0xy24fvyjpn97lwwauz9hazmcnce4qk4k3tlpg27jsr89tpp5fmmarvwkqxtzegx0gqlywjj7e6ch9mjvml3zdd30fzs9dv6e8jqc8vs4294sjlayt44ultvs5q25vw4k42xs729g9c6p60e2emn9edd6x5pfgmmgq4azaef",
+          "provider": "local-payee",
+          "observedAt": "2026-06-25T15:56:49.771Z"
+        },
+        "serverId": "fiber-mpp-evidence-api",
+        "issuedAt": "2026-06-25T15:56:49.771Z",
+        "signature": "919d6f7176a1ed05bfa03bc3ed29377b3fce9f04bc600fe20dccdee732c6da1e"
+      },
+      "ticket": {
+        "ticketId": "bc_ticket_e0ab8600711c395e",
+        "playerId": "arthur",
+        "botPackage": "fiberchamp",
+        "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+        "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515",
+        "fairnessCommitment": {
+          "domain": "fiber-mpp-battlecode-fairness-v1",
+          "botPackage": "fiberchamp",
+          "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+          "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515",
+          "runnerHash": "sha256:c025984308a79ff73633f4249c15be79c0159fffcecdd92c59dcdd4927929d79",
+          "engineHash": "sha256:d0cc775610d5221fc17b23d818bc881bb3e882076a809696d15f8d380b09520b",
+          "engineVersion": "3.1.0",
+          "hashAlgorithm": "sha256",
+          "notes": [
+            "botScriptHash commits to the exact submitted Battlecode RobotPlayer.java source used for this lane.",
+            "clientHash commits to the tournament runner module plus the Battlecode engine jar hash."
+          ]
+        },
+        "xudtAsset": "xUDT:BCODE",
+        "entryAmount": "100",
+        "prizeAmount": "200",
+        "map": "DefaultSmall",
+        "receiptId": "rcpt_9f2ce38b739bdf6012d35d31ab0dfb0b",
+        "paymentHash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+        "issuedAt": "2026-06-25T15:56:49.772Z",
+        "status": "paid"
+      },
+      "report": {
+        "generatedAt": "2026-06-25T15:56:51.599Z",
+        "registration": {
+          "playerId": "arthur",
+          "botPackage": "fiberchamp",
+          "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+          "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515",
+          "xudtAsset": "xUDT:BCODE",
+          "entryAmount": "100",
+          "prizeAmount": "200",
+          "map": "DefaultSmall"
+        },
+        "ticket": {
+          "ticketId": "bc_ticket_e0ab8600711c395e",
+          "playerId": "arthur",
+          "botPackage": "fiberchamp",
+          "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+          "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515",
+          "fairnessCommitment": {
+            "domain": "fiber-mpp-battlecode-fairness-v1",
+            "botPackage": "fiberchamp",
+            "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+            "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515",
+            "runnerHash": "sha256:c025984308a79ff73633f4249c15be79c0159fffcecdd92c59dcdd4927929d79",
+            "engineHash": "sha256:d0cc775610d5221fc17b23d818bc881bb3e882076a809696d15f8d380b09520b",
+            "engineVersion": "3.1.0",
+            "hashAlgorithm": "sha256",
+            "notes": [
+              "botScriptHash commits to the exact submitted Battlecode RobotPlayer.java source used for this lane.",
+              "clientHash commits to the tournament runner module plus the Battlecode engine jar hash."
+            ]
+          },
+          "xudtAsset": "xUDT:BCODE",
+          "entryAmount": "100",
+          "prizeAmount": "200",
+          "map": "DefaultSmall",
+          "receiptId": "rcpt_9f2ce38b739bdf6012d35d31ab0dfb0b",
+          "paymentHash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+          "issuedAt": "2026-06-25T15:56:49.772Z",
+          "status": "paid"
+        },
+        "match": {
+          "matchId": "bc_match_bff5899accf4b492",
+          "map": "DefaultSmall",
+          "teamA": "fiberchamp",
+          "teamB": "baselinebot",
+          "winner": "fiberchamp",
+          "winnerSide": "A",
+          "round": 2000,
+          "reason": "The winning team won on tiebreakers (painted more of the map).",
+          "replayPath": "/home/arthur/a19q3/fiber-mpp/.tmp/battlecode-tournament/matches/bc_ticket_e0ab8600711c395e-1782403009780.bc25",
+          "matchHash": "229b140bbffed06d030e46f37400ca6d37a29be77d1196001dfd157e8d90a03f",
+          "stdout": "[server] -------------------- Match Starting --------------------\n[server] fiberchamp vs. baselinebot on DefaultSmall\n[server]                   fiberchamp (A) wins (round 2000)\n[server] Reason: The winning team won on tiebreakers (painted more of the map).\n[server] -------------------- Match Finished --------------------\n",
+          "stderr": "",
+          "engineVersion": "3.1.0",
+          "engineJar": "/home/arthur/a19q3/.toolchains/battlecode25/battlecode25-java-3.1.0.jar",
+          "engineHash": "sha256:d0cc775610d5221fc17b23d818bc881bb3e882076a809696d15f8d380b09520b",
+          "runnerHash": "sha256:c025984308a79ff73633f4249c15be79c0159fffcecdd92c59dcdd4927929d79",
+          "fairness": {
+            "status": "verified",
+            "committed": {
+              "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+              "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515"
+            },
+            "observed": {
+              "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+              "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515",
+              "runnerHash": "sha256:c025984308a79ff73633f4249c15be79c0159fffcecdd92c59dcdd4927929d79",
+              "engineHash": "sha256:d0cc775610d5221fc17b23d818bc881bb3e882076a809696d15f8d380b09520b"
+            },
+            "verifiedAt": "2026-06-25T15:56:51.067Z"
+          },
+          "jdkHome": "/home/arthur/a19q3/.toolchains/jdk-21.0.11+10",
+          "startedAt": "2026-06-25T15:56:49.774Z",
+          "finishedAt": "2026-06-25T15:56:51.067Z"
+        },
+        "award": {
+          "awardId": "bc_award_3235a4dbf42e0c5a",
+          "ticketId": "bc_ticket_e0ab8600711c395e",
+          "matchId": "bc_match_bff5899accf4b492",
+          "playerId": "arthur",
+          "botPackage": "fiberchamp",
+          "xudtAsset": "xUDT:BCODE",
+          "prizeAmount": "200",
+          "status": "paid",
+          "settlement": "fiber-xudt-payment",
+          "prizePayment": {
+            "provider": "fiber-xudt",
+            "mode": "local",
+            "paymentHash": "0xf315c1a8429cfc728348ea23d17f637d734a287db419f7df37b9e9f13fac02f6",
+            "invoice": "fibd2001pt7s4efm5nrczxzat8almn3ql9xlm67x8t8yltat3lfuyjdzyp6c39ql05446amgyd0c0j906j0z4ke2w0gz9lnx2nduyfksrzzerl2spqgq4q5xaet8vnz07us3fcjydg43cnkq0dq2gsuhcu4dmczzvnetsqpe253y5r9q36tu6qm65z38htt6shg72eptjvmvfjp8qtesnxzpm2yp3g9ausku3yagfune6h26v3qpp66d32dn9eh49c8nq6ns888nxmeyxq3rs9a03ay7z6d6sn5947dhpkp3xxsgwlgxevmhutak7kzuktjwql970glcylpe77hjcrejfs57erpsypp7pw63lnvwgctmnfdlh2202rx8cpja9c383vvdpxeptznyk5asqq0egavw5wdrdg9r9fw20fdqtvj2zq3dsr5ypwmyts792xvq6wc4gns3upq94t7xhz8ut8snrcanqgqjv4qanuqwz34tggzuyfpztnfla2s9s4l8pthvc3e50xhh0j27qjrxycnkcj7e3mqf0fqnljkhgfychf5jsdzfttjmjrtc8n9vs3dsdqpwfx57a",
+            "amountShannons": "200",
+            "xudtAsset": "xUDT:BCODE",
+            "udtTypeScript": {
+              "code_hash": "0x50bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95",
+              "hash_type": "data2",
+              "args": "0x32e555f3ff8e135cece1351a6a2971518392c1e30375c1e006ad0ce8eac07947"
+            },
+            "payerRpcUrl": "http://127.0.0.1:21716",
+            "payeeRpcUrl": "http://127.0.0.1:21714",
+            "payerNode": "03032b99943822e721a651c5a5b9621043017daa9dc3ec81d83215fd2e25121187",
+            "payeeNode": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0",
+            "status": "settled",
+            "observedAt": "2026-06-25T15:56:51.598Z",
+            "sendResult": {
+              "payment_hash": "0xf315c1a8429cfc728348ea23d17f637d734a287db419f7df37b9e9f13fac02f6",
+              "status": "Created",
+              "created_at": "0x19eff7f9203",
+              "last_updated_at": "0x19eff7f9203",
+              "failed_error": null,
+              "fee": "0x1",
+              "custom_records": null,
+              "routers": [
+                {
+                  "nodes": [
+                    {
+                      "pubkey": "03032b99943822e721a651c5a5b9621043017daa9dc3ec81d83215fd2e25121187",
+                      "amount": "0xc9",
+                      "channel_outpoint": "0x4cf98e685b44c3289a38f7b2502674c3489da2b7ac1f58e5554011359d3da07300000000"
+                    },
+                    {
+                      "pubkey": "02bcbd0e0d811d13363af1e5998f56e74e6aab8a7aa44005e1ce7d696a4d3f10f6",
+                      "amount": "0xc8",
+                      "channel_outpoint": "0xb13afe5935333a804c52bdc4c25faf06bcd0d28d511bddc4cce15ffeb7bd723e00000000"
+                    },
+                    {
+                      "pubkey": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0",
+                      "amount": "0xc8",
+                      "channel_outpoint": "0x000000000000000000000000000000000000000000000000000000000000000000000000"
+                    }
+                  ]
+                }
+              ]
+            },
+            "settledPayment": {
+              "payment_hash": "0xf315c1a8429cfc728348ea23d17f637d734a287db419f7df37b9e9f13fac02f6",
+              "status": "Success",
+              "created_at": "0x19eff7f9203",
+              "last_updated_at": "0x19eff7f9203",
+              "failed_error": null,
+              "fee": "0x1",
+              "custom_records": null,
+              "routers": [
+                {
+                  "nodes": [
+                    {
+                      "pubkey": "03032b99943822e721a651c5a5b9621043017daa9dc3ec81d83215fd2e25121187",
+                      "amount": "0xc9",
+                      "channel_outpoint": "0x4cf98e685b44c3289a38f7b2502674c3489da2b7ac1f58e5554011359d3da07300000000"
+                    },
+                    {
+                      "pubkey": "02bcbd0e0d811d13363af1e5998f56e74e6aab8a7aa44005e1ce7d696a4d3f10f6",
+                      "amount": "0xc8",
+                      "channel_outpoint": "0xb13afe5935333a804c52bdc4c25faf06bcd0d28d511bddc4cce15ffeb7bd723e00000000"
+                    },
+                    {
+                      "pubkey": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0",
+                      "amount": "0xc8",
+                      "channel_outpoint": "0x000000000000000000000000000000000000000000000000000000000000000000000000"
+                    }
+                  ]
+                }
+              ]
+            },
+            "paidInvoice": {
+              "invoice_address": "fibd2001pt7s4efm5nrczxzat8almn3ql9xlm67x8t8yltat3lfuyjdzyp6c39ql05446amgyd0c0j906j0z4ke2w0gz9lnx2nduyfksrzzerl2spqgq4q5xaet8vnz07us3fcjydg43cnkq0dq2gsuhcu4dmczzvnetsqpe253y5r9q36tu6qm65z38htt6shg72eptjvmvfjp8qtesnxzpm2yp3g9ausku3yagfune6h26v3qpp66d32dn9eh49c8nq6ns888nxmeyxq3rs9a03ay7z6d6sn5947dhpkp3xxsgwlgxevmhutak7kzuktjwql970glcylpe77hjcrejfs57erpsypp7pw63lnvwgctmnfdlh2202rx8cpja9c383vvdpxeptznyk5asqq0egavw5wdrdg9r9fw20fdqtvj2zq3dsr5ypwmyts792xvq6wc4gns3upq94t7xhz8ut8snrcanqgqjv4qanuqwz34tggzuyfpztnfla2s9s4l8pthvc3e50xhh0j27qjrxycnkcj7e3mqf0fqnljkhgfychf5jsdzfttjmjrtc8n9vs3dsdqpwfx57a",
+              "invoice": {
+                "currency": "Fibd",
+                "amount": "0xc8",
+                "signature": "120c15001d131c000e0211150b0808021c040901020b13091f1d0a100510151f07010b170c181119140f0617170f120a1e001203060418131618121e19111b00090f0900131f1216170809041817091412100d02090b0b121b12030b180713050c10110d100d0001",
+                "data": {
+                  "timestamp": "0x19eff7f91ff",
+                  "payment_hash": "0xf315c1a8429cfc728348ea23d17f637d734a287db419f7df37b9e9f13fac02f6",
+                  "attrs": [
+                    {
+                      "description": "FiberMPP Battlecode prize bc_ticket_e0ab8600711c395e bc_match_bff5899accf4b492"
+                    },
+                    {
+                      "expiry_time": "0x1e"
+                    },
+                    {
+                      "final_htlc_minimum_expiry_delta": "0x535"
+                    },
+                    {
+                      "udt_script": "0x5500000010000000300000003100000050bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95042000000032e555f3ff8e135cece1351a6a2971518392c1e30375c1e006ad0ce8eac07947"
+                    },
+                    {
+                      "payee_public_key": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0"
+                    }
+                  ]
+                }
+              },
+              "status": "Paid"
+            }
+          },
+          "matchHash": "229b140bbffed06d030e46f37400ca6d37a29be77d1196001dfd157e8d90a03f",
+          "awardedAt": "2026-06-25T15:56:51.598Z",
+          "note": "Prize settled by a live Fiber xUDT payment after a paid FiberMPP entry and deterministic local Battlecode match."
+        },
+        "ledgerPath": "/home/arthur/a19q3/fiber-mpp/.tmp/battlecode-tournament-ledger.json",
+        "replayPath": "/home/arthur/a19q3/fiber-mpp/.tmp/battlecode-tournament/matches/bc_ticket_e0ab8600711c395e-1782403009780.bc25",
+        "warnings": [
+          "Battlecode runs as an external AGPL-3.0 scaffold/engine dependency; FiberMPP stores only tournament evidence and local bot sources.",
+          "The prize was settled by a live Fiber xUDT payment and recorded with payment hash evidence."
+        ]
+      }
+    },
+    "ledger": {
+      "generatedAt": "2026-06-25T15:56:51.598Z",
+      "tickets": [
+        {
+          "ticketId": "bc_ticket_e0ab8600711c395e",
+          "playerId": "arthur",
+          "botPackage": "fiberchamp",
+          "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+          "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515",
+          "fairnessCommitment": {
+            "domain": "fiber-mpp-battlecode-fairness-v1",
+            "botPackage": "fiberchamp",
+            "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+            "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515",
+            "runnerHash": "sha256:c025984308a79ff73633f4249c15be79c0159fffcecdd92c59dcdd4927929d79",
+            "engineHash": "sha256:d0cc775610d5221fc17b23d818bc881bb3e882076a809696d15f8d380b09520b",
+            "engineVersion": "3.1.0",
+            "hashAlgorithm": "sha256",
+            "notes": [
+              "botScriptHash commits to the exact submitted Battlecode RobotPlayer.java source used for this lane.",
+              "clientHash commits to the tournament runner module plus the Battlecode engine jar hash."
+            ]
+          },
+          "xudtAsset": "xUDT:BCODE",
+          "entryAmount": "100",
+          "prizeAmount": "200",
+          "map": "DefaultSmall",
+          "receiptId": "rcpt_9f2ce38b739bdf6012d35d31ab0dfb0b",
+          "paymentHash": "0xd38b59947b25ca93f67fc47d61e27b770d44f72edfb733593f98bb6c906198fa",
+          "issuedAt": "2026-06-25T15:56:49.772Z",
+          "status": "paid"
+        }
+      ],
+      "matches": [
+        {
+          "matchId": "bc_match_bff5899accf4b492",
+          "map": "DefaultSmall",
+          "teamA": "fiberchamp",
+          "teamB": "baselinebot",
+          "winner": "fiberchamp",
+          "winnerSide": "A",
+          "round": 2000,
+          "reason": "The winning team won on tiebreakers (painted more of the map).",
+          "replayPath": "/home/arthur/a19q3/fiber-mpp/.tmp/battlecode-tournament/matches/bc_ticket_e0ab8600711c395e-1782403009780.bc25",
+          "matchHash": "229b140bbffed06d030e46f37400ca6d37a29be77d1196001dfd157e8d90a03f",
+          "stdout": "[server] -------------------- Match Starting --------------------\n[server] fiberchamp vs. baselinebot on DefaultSmall\n[server]                   fiberchamp (A) wins (round 2000)\n[server] Reason: The winning team won on tiebreakers (painted more of the map).\n[server] -------------------- Match Finished --------------------\n",
+          "stderr": "",
+          "engineVersion": "3.1.0",
+          "engineJar": "/home/arthur/a19q3/.toolchains/battlecode25/battlecode25-java-3.1.0.jar",
+          "engineHash": "sha256:d0cc775610d5221fc17b23d818bc881bb3e882076a809696d15f8d380b09520b",
+          "runnerHash": "sha256:c025984308a79ff73633f4249c15be79c0159fffcecdd92c59dcdd4927929d79",
+          "fairness": {
+            "status": "verified",
+            "committed": {
+              "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+              "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515"
+            },
+            "observed": {
+              "botScriptHash": "sha256:d6bb5463115bb4c825a19ff556d238efb87e3ae2f32b03b0317ac4fcebd45a45",
+              "clientHash": "sha256:bf064cee4ef605b62e83e390f53ce10626507fbcd82716699c3907a2bf5e5515",
+              "runnerHash": "sha256:c025984308a79ff73633f4249c15be79c0159fffcecdd92c59dcdd4927929d79",
+              "engineHash": "sha256:d0cc775610d5221fc17b23d818bc881bb3e882076a809696d15f8d380b09520b"
+            },
+            "verifiedAt": "2026-06-25T15:56:51.067Z"
+          },
+          "jdkHome": "/home/arthur/a19q3/.toolchains/jdk-21.0.11+10",
+          "startedAt": "2026-06-25T15:56:49.774Z",
+          "finishedAt": "2026-06-25T15:56:51.067Z"
+        }
+      ],
+      "awards": [
+        {
+          "awardId": "bc_award_3235a4dbf42e0c5a",
+          "ticketId": "bc_ticket_e0ab8600711c395e",
+          "matchId": "bc_match_bff5899accf4b492",
+          "playerId": "arthur",
+          "botPackage": "fiberchamp",
+          "xudtAsset": "xUDT:BCODE",
+          "prizeAmount": "200",
+          "status": "paid",
+          "settlement": "fiber-xudt-payment",
+          "prizePayment": {
+            "provider": "fiber-xudt",
+            "mode": "local",
+            "paymentHash": "0xf315c1a8429cfc728348ea23d17f637d734a287db419f7df37b9e9f13fac02f6",
+            "invoice": "fibd2001pt7s4efm5nrczxzat8almn3ql9xlm67x8t8yltat3lfuyjdzyp6c39ql05446amgyd0c0j906j0z4ke2w0gz9lnx2nduyfksrzzerl2spqgq4q5xaet8vnz07us3fcjydg43cnkq0dq2gsuhcu4dmczzvnetsqpe253y5r9q36tu6qm65z38htt6shg72eptjvmvfjp8qtesnxzpm2yp3g9ausku3yagfune6h26v3qpp66d32dn9eh49c8nq6ns888nxmeyxq3rs9a03ay7z6d6sn5947dhpkp3xxsgwlgxevmhutak7kzuktjwql970glcylpe77hjcrejfs57erpsypp7pw63lnvwgctmnfdlh2202rx8cpja9c383vvdpxeptznyk5asqq0egavw5wdrdg9r9fw20fdqtvj2zq3dsr5ypwmyts792xvq6wc4gns3upq94t7xhz8ut8snrcanqgqjv4qanuqwz34tggzuyfpztnfla2s9s4l8pthvc3e50xhh0j27qjrxycnkcj7e3mqf0fqnljkhgfychf5jsdzfttjmjrtc8n9vs3dsdqpwfx57a",
+            "amountShannons": "200",
+            "xudtAsset": "xUDT:BCODE",
+            "udtTypeScript": {
+              "code_hash": "0x50bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95",
+              "hash_type": "data2",
+              "args": "0x32e555f3ff8e135cece1351a6a2971518392c1e30375c1e006ad0ce8eac07947"
+            },
+            "payerRpcUrl": "http://127.0.0.1:21716",
+            "payeeRpcUrl": "http://127.0.0.1:21714",
+            "payerNode": "03032b99943822e721a651c5a5b9621043017daa9dc3ec81d83215fd2e25121187",
+            "payeeNode": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0",
+            "status": "settled",
+            "observedAt": "2026-06-25T15:56:51.598Z",
+            "sendResult": {
+              "payment_hash": "0xf315c1a8429cfc728348ea23d17f637d734a287db419f7df37b9e9f13fac02f6",
+              "status": "Created",
+              "created_at": "0x19eff7f9203",
+              "last_updated_at": "0x19eff7f9203",
+              "failed_error": null,
+              "fee": "0x1",
+              "custom_records": null,
+              "routers": [
+                {
+                  "nodes": [
+                    {
+                      "pubkey": "03032b99943822e721a651c5a5b9621043017daa9dc3ec81d83215fd2e25121187",
+                      "amount": "0xc9",
+                      "channel_outpoint": "0x4cf98e685b44c3289a38f7b2502674c3489da2b7ac1f58e5554011359d3da07300000000"
+                    },
+                    {
+                      "pubkey": "02bcbd0e0d811d13363af1e5998f56e74e6aab8a7aa44005e1ce7d696a4d3f10f6",
+                      "amount": "0xc8",
+                      "channel_outpoint": "0xb13afe5935333a804c52bdc4c25faf06bcd0d28d511bddc4cce15ffeb7bd723e00000000"
+                    },
+                    {
+                      "pubkey": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0",
+                      "amount": "0xc8",
+                      "channel_outpoint": "0x000000000000000000000000000000000000000000000000000000000000000000000000"
+                    }
+                  ]
+                }
+              ]
+            },
+            "settledPayment": {
+              "payment_hash": "0xf315c1a8429cfc728348ea23d17f637d734a287db419f7df37b9e9f13fac02f6",
+              "status": "Success",
+              "created_at": "0x19eff7f9203",
+              "last_updated_at": "0x19eff7f9203",
+              "failed_error": null,
+              "fee": "0x1",
+              "custom_records": null,
+              "routers": [
+                {
+                  "nodes": [
+                    {
+                      "pubkey": "03032b99943822e721a651c5a5b9621043017daa9dc3ec81d83215fd2e25121187",
+                      "amount": "0xc9",
+                      "channel_outpoint": "0x4cf98e685b44c3289a38f7b2502674c3489da2b7ac1f58e5554011359d3da07300000000"
+                    },
+                    {
+                      "pubkey": "02bcbd0e0d811d13363af1e5998f56e74e6aab8a7aa44005e1ce7d696a4d3f10f6",
+                      "amount": "0xc8",
+                      "channel_outpoint": "0xb13afe5935333a804c52bdc4c25faf06bcd0d28d511bddc4cce15ffeb7bd723e00000000"
+                    },
+                    {
+                      "pubkey": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0",
+                      "amount": "0xc8",
+                      "channel_outpoint": "0x000000000000000000000000000000000000000000000000000000000000000000000000"
+                    }
+                  ]
+                }
+              ]
+            },
+            "paidInvoice": {
+              "invoice_address": "fibd2001pt7s4efm5nrczxzat8almn3ql9xlm67x8t8yltat3lfuyjdzyp6c39ql05446amgyd0c0j906j0z4ke2w0gz9lnx2nduyfksrzzerl2spqgq4q5xaet8vnz07us3fcjydg43cnkq0dq2gsuhcu4dmczzvnetsqpe253y5r9q36tu6qm65z38htt6shg72eptjvmvfjp8qtesnxzpm2yp3g9ausku3yagfune6h26v3qpp66d32dn9eh49c8nq6ns888nxmeyxq3rs9a03ay7z6d6sn5947dhpkp3xxsgwlgxevmhutak7kzuktjwql970glcylpe77hjcrejfs57erpsypp7pw63lnvwgctmnfdlh2202rx8cpja9c383vvdpxeptznyk5asqq0egavw5wdrdg9r9fw20fdqtvj2zq3dsr5ypwmyts792xvq6wc4gns3upq94t7xhz8ut8snrcanqgqjv4qanuqwz34tggzuyfpztnfla2s9s4l8pthvc3e50xhh0j27qjrxycnkcj7e3mqf0fqnljkhgfychf5jsdzfttjmjrtc8n9vs3dsdqpwfx57a",
+              "invoice": {
+                "currency": "Fibd",
+                "amount": "0xc8",
+                "signature": "120c15001d131c000e0211150b0808021c040901020b13091f1d0a100510151f07010b170c181119140f0617170f120a1e001203060418131618121e19111b00090f0900131f1216170809041817091412100d02090b0b121b12030b180713050c10110d100d0001",
+                "data": {
+                  "timestamp": "0x19eff7f91ff",
+                  "payment_hash": "0xf315c1a8429cfc728348ea23d17f637d734a287db419f7df37b9e9f13fac02f6",
+                  "attrs": [
+                    {
+                      "description": "FiberMPP Battlecode prize bc_ticket_e0ab8600711c395e bc_match_bff5899accf4b492"
+                    },
+                    {
+                      "expiry_time": "0x1e"
+                    },
+                    {
+                      "final_htlc_minimum_expiry_delta": "0x535"
+                    },
+                    {
+                      "udt_script": "0x5500000010000000300000003100000050bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95042000000032e555f3ff8e135cece1351a6a2971518392c1e30375c1e006ad0ce8eac07947"
+                    },
+                    {
+                      "payee_public_key": "02a64b8993f33b2ebd37a4de1c9441f491291a4e779da8e519bcfb7c1f3f56c9c0"
+                    }
+                  ]
+                }
+              },
+              "status": "Paid"
+            }
+          },
+          "matchHash": "229b140bbffed06d030e46f37400ca6d37a29be77d1196001dfd157e8d90a03f",
+          "awardedAt": "2026-06-25T15:56:51.598Z",
+          "note": "Prize settled by a live Fiber xUDT payment after a paid FiberMPP entry and deterministic local Battlecode match."
+        }
+      ]
+    }
+  }
+}

@@ -21,10 +21,22 @@ bash scripts/fiber_mpp_ops_gate.sh
 
 node <<'JSON'
 const fs = require("node:fs");
+const { execFileSync } = require("node:child_process");
+const { productionBootstrapReadiness } = require("./scripts/lib/production-bootstrap-readiness.cjs");
+const {
+  normalizePreservedTestnetEvidence,
+  verifyPreservedTestnetEvidence
+} = require("./scripts/lib/testnet-fiber-evidence-readiness.cjs");
 const ts = JSON.parse(fs.readFileSync("reports/ts-conformance.json", "utf8"));
 const rust = JSON.parse(fs.readFileSync("reports/rust-conformance.json", "utf8"));
 const ops = JSON.parse(fs.readFileSync("reports/production-operations-matrix.json", "utf8"));
-const gate = JSON.parse(fs.readFileSync("reports/fiber-mpp-gate.json", "utf8"));
+const testnetEvidencePath = "reports/fiber-testnet-e2e-success.json";
+let testnetEvidenceReport = fs.existsSync(testnetEvidencePath)
+  ? JSON.parse(fs.readFileSync(testnetEvidencePath, "utf8"))
+  : null;
+const productionBootstrap = fs.existsSync("reports/production-bootstrap-e2e.json")
+  ? JSON.parse(fs.readFileSync("reports/production-bootstrap-e2e.json", "utf8"))
+  : {};
 
 const tsByFile = new Map(ts.results.map((result) => [result.file, result]));
 const rustByFile = new Map(rust.results.map((result) => [result.file, result]));
@@ -54,9 +66,22 @@ const fiberRpcSemanticsParity = fiberMethods.every((method) => tsSource.includes
 const receiptVectors = ["receipt.valid.json", "fiber.local-e2e.receipt.json"];
 const f402Vectors = ["f402.challenge.valid.json", "f402.credential.valid.json"];
 const vectorPassed = (report, file) => report.results.some((result) => result.file === file && result.passed);
-const testnetFiberE2e = gate.testnet_fiber_e2e === true;
+const currentFiberCommit = readFiberCommit();
+const testnetEvidenceRecordedAt = readTestnetEvidenceRecordedAt(testnetEvidenceReport);
+testnetEvidenceReport = normalizePreservedTestnetEvidence(testnetEvidenceReport, {
+  fallbackRecordedAt: testnetEvidenceRecordedAt
+});
+const testnetEvidenceCheck = verifyPreservedTestnetEvidence(testnetEvidenceReport, {
+  path: testnetEvidencePath,
+  expectedFiberCommit: currentFiberCommit,
+  fallbackRecordedAt: testnetEvidenceRecordedAt
+});
+const testnetFiberE2e = testnetEvidenceCheck.verified;
+const productionBootstrapCheck = productionBootstrapReadiness(productionBootstrap);
+const productionBootstrapReady = productionBootstrapCheck.ready;
 const productionBlockers = [
   ...(testnetFiberE2e ? [] : ["testnet Fiber E2E evidence still pending"]),
+  ...(productionBootstrapReady ? [] : [`production bootstrap E2E readiness evidence still pending: ${productionBootstrapCheck.missing.join(", ") || "reports/production-bootstrap-e2e.json missing"}`]),
   ...(ops.production_ops_ready === true ? [] : ["production operations hardening evidence incomplete"])
 ];
 const productionReady = productionBlockers.length === 0;
@@ -74,8 +99,18 @@ const report = {
   fiber_rpc_semantics_parity: fiberRpcSemanticsParity,
   production_operations: ops.production_ops_ready === true,
   production_operations_report: "reports/production-operations-matrix.json",
+  production_bootstrap_e2e: productionBootstrapReady,
+  production_bootstrap_report: "reports/production-bootstrap-e2e.json",
+  production_bootstrap_e2e_blockers: productionBootstrapCheck.missing,
   rust_gateway_production_path: true,
   testnet_fiber_e2e: testnetFiberE2e,
+  testnet_fiber_e2e_evidence: testnetFiberE2e,
+  testnet_fiber_e2e_evidence_report: testnetEvidencePath,
+  testnet_evidence_recorded_at: testnetEvidenceCheck.recordedAt,
+  testnet_evidence_digest: testnetEvidenceCheck.evidenceDigest,
+  testnet_fiber_e2e_evidence_verified: testnetEvidenceCheck.verified,
+  testnet_fiber_e2e_evidence_blockers: testnetEvidenceCheck.blockers,
+  fiber_commit: currentFiberCommit,
   canonical_engine: "rust",
   typescript_role: "sdk-evidence-f402-compat-vector-harness",
   production_ready_for_fiber_method: productionReady,
@@ -104,5 +139,33 @@ if (
   (report.production_ready_for_fiber_method === true && report.production_blockers.length > 0)
 ) {
   process.exit(1);
+}
+
+function readFiberCommit() {
+  try {
+    return execFileSync("git", ["-C", "/home/arthur/a19q3/fiber", "rev-parse", "HEAD"], {
+      encoding: "utf8"
+    }).trim();
+  } catch {
+    return null;
+  }
+}
+
+function readTestnetEvidenceRecordedAt(report) {
+  if (report && typeof report === "object") {
+    const direct =
+      report.testnet_evidence_recorded_at ||
+      report.generated_at ||
+      report.gate_report?.testnet_evidence_recorded_at ||
+      report.gate_report?.generated_at;
+    if (direct) {
+      return direct;
+    }
+  }
+  const wrapperPath = "reports/fiber-testnet-e2e/testnet-e2e-report.json";
+  if (!fs.existsSync(wrapperPath)) {
+    return null;
+  }
+  return JSON.parse(fs.readFileSync(wrapperPath, "utf8")).generated_at || null;
 }
 JSON

@@ -1,0 +1,104 @@
+{
+  "controls": [
+    {
+      "id": "api-apply",
+      "label": "Connect API",
+      "surfaceFound": true,
+      "endpointFound": true,
+      "testFound": true,
+      "endpoint": "/api/status",
+      "status": "passed"
+    },
+    {
+      "id": "refresh-all",
+      "label": "Refresh console",
+      "surfaceFound": true,
+      "endpointFound": true,
+      "testFound": true,
+      "endpoint": "/api/status",
+      "status": "passed"
+    },
+    {
+      "id": "send",
+      "label": "Send unpaid request",
+      "surfaceFound": true,
+      "endpointFound": true,
+      "testFound": true,
+      "endpoint": "/api/evidence/unpaid",
+      "status": "passed"
+    },
+    {
+      "id": "pay",
+      "label": "Pay with Fiber",
+      "surfaceFound": true,
+      "endpointFound": true,
+      "testFound": true,
+      "endpoint": "/api/evidence/pay",
+      "status": "passed"
+    },
+    {
+      "id": "retry",
+      "label": "Retry with Authorization",
+      "surfaceFound": true,
+      "endpointFound": true,
+      "testFound": true,
+      "endpoint": "/api/evidence/retry",
+      "status": "passed"
+    },
+    {
+      "id": "replay",
+      "label": "Replay same credential",
+      "surfaceFound": true,
+      "endpointFound": true,
+      "testFound": true,
+      "endpoint": "/api/evidence/replay",
+      "status": "passed"
+    },
+    {
+      "id": "clear-log",
+      "label": "Clear log / reset flow",
+      "surfaceFound": true,
+      "endpointFound": true,
+      "testFound": true,
+      "endpoint": "/api/evidence/reset",
+      "status": "passed"
+    },
+    {
+      "id": "apply-runtime-bootstrap",
+      "label": "Apply runtime bootstrap",
+      "surfaceFound": true,
+      "endpointFound": true,
+      "testFound": true,
+      "endpoint": "/api/bootstrap/runtime",
+      "status": "passed"
+    },
+    {
+      "id": "clear-runtime-bootstrap",
+      "label": "Clear runtime bootstrap",
+      "surfaceFound": true,
+      "endpointFound": true,
+      "testFound": true,
+      "endpoint": "/api/bootstrap/runtime/reset",
+      "status": "passed"
+    },
+    {
+      "id": "export-evidence",
+      "label": "Export evidence",
+      "surfaceFound": true,
+      "endpointFound": true,
+      "testFound": true,
+      "endpoint": "/api/evidence/export",
+      "status": "passed"
+    },
+    {
+      "id": "copy-env",
+      "label": "Copy env template",
+      "surfaceFound": true,
+      "endpointFound": true,
+      "testFound": true,
+      "endpoint": null,
+      "status": "passed"
+    }
+  ],
+  "timestamp": "2026-06-25T16:05:53.185Z"
+}
