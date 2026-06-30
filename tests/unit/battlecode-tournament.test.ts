@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -9,8 +9,11 @@ import {
   battlecodeBuiltInBotScriptHash,
   battlecodeBuiltInBotSource,
   battlecodeEntryPrice,
+  battlecodeLedgerHealth,
+  battlecodeLedgerPath,
   createBattlecodeSubmission,
   issueBattlecodeTicket,
+  legacyBattlecodeLedgerPath,
   normalizeBattlecodeRegistration,
   normalizeBattlecodeSubmission,
   readBattlecodeLedger
@@ -92,10 +95,47 @@ describe("Battlecode tournament helpers", () => {
         BATTLECODE_ENGINE_VERSION: "3.1.0"
       });
       const ledger = await readBattlecodeLedger(root);
+      const health = await battlecodeLedgerHealth(root);
       expect(submission.submissionId).toMatch(/^bc_sub_/);
       expect(submission.botScriptHash).toBe(battlecodeBuiltInBotScriptHash());
       expect(fairnessManifest.submissionId).toBe(submission.submissionId);
       expect(ledger.submissions).toHaveLength(1);
+      expect(battlecodeLedgerPath(root)).toMatch(/battlecode-tournament-ledger\.sqlite$/);
+      expect(health).toMatchObject({
+        schemaVersion: 1,
+        journalMode: "wal",
+        foreignKeys: true,
+        integrityCheck: "ok",
+        counts: {
+          submissions: 1,
+          tickets: 0,
+          matches: 0,
+          awards: 0
+        }
+      });
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("migrates the legacy JSON tournament ledger into SQLite", async () => {
+    const root = await mkdtemp(join(tmpdir(), "fiber-mpp-battlecode-legacy-ledger-"));
+    try {
+      const legacyPath = legacyBattlecodeLedgerPath(root);
+      await mkdir(join(root, ".tmp"), { recursive: true });
+      await writeFile(legacyPath, `${JSON.stringify({
+        generatedAt: "2026-01-01T00:00:00.000Z",
+        submissions: [unitSubmission],
+        tickets: [],
+        matches: [],
+        awards: []
+      })}\n`);
+      const ledger = await readBattlecodeLedger(root);
+      const health = await battlecodeLedgerHealth(root);
+      expect(ledger.submissions).toHaveLength(1);
+      expect(ledger.submissions[0]?.submissionId).toBe(unitSubmission.submissionId);
+      expect(health.counts.submissions).toBe(1);
+      expect(health.legacyJsonPresent).toBe(true);
     } finally {
       await rm(root, { recursive: true, force: true });
     }
@@ -155,9 +195,11 @@ describe("Battlecode tournament helpers", () => {
       });
       await appendBattlecodeTicket(root, ticket);
       const ledger = await readBattlecodeLedger(root);
+      const health = await battlecodeLedgerHealth(root);
       expect(ledger.tickets).toHaveLength(1);
       expect(ledger.tickets[0]?.ticketId).toBe(ticket.ticketId);
       expect(ledger.tickets[0]?.xudtAsset).toBe("xUDT:BCODE");
+      expect(health.counts.tickets).toBe(1);
     } finally {
       await rm(root, { recursive: true, force: true });
     }

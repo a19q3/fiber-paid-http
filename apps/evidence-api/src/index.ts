@@ -795,7 +795,7 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
     let fairnessManifest: BattlecodeFairnessManifest;
     try {
       registration = normalizeBattlecodeRegistration(parseJsonBody(bodyText));
-      submission = await findBattlecodeSubmission(repoRoot, registration.submissionId);
+      submission = await findBattlecodeSubmission(repoRoot, registration.submissionId, effectiveEnv());
       fairnessManifest = await buildBattlecodeFairnessManifest(repoRoot, effectiveEnv(), submission);
       assertBattlecodeFairnessCommitment(registration, fairnessManifest, submission);
     } catch (error) {
@@ -896,17 +896,17 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
     if (response.status === 200 && receipt) {
       ticket = issueBattlecodeTicket({
         registration: tournament.registration,
-        submission: tournament.submission ?? await findBattlecodeSubmission(repoRoot, tournament.registration.submissionId),
+        submission: tournament.submission ?? await findBattlecodeSubmission(repoRoot, tournament.registration.submissionId, effectiveEnv()),
         fairnessManifest: tournament.fairnessManifest ?? await buildBattlecodeFairnessManifest(
           repoRoot,
           effectiveEnv(),
-          tournament.submission ?? await findBattlecodeSubmission(repoRoot, tournament.registration.submissionId)
+          tournament.submission ?? await findBattlecodeSubmission(repoRoot, tournament.registration.submissionId, effectiveEnv())
         ),
         receiptId: receipt.receiptId,
         paymentHash: receipt.settlement.paymentHash
       });
       tournament.ticket = ticket;
-      await appendBattlecodeTicket(repoRoot, ticket);
+      await appendBattlecodeTicket(repoRoot, ticket, effectiveEnv());
       appendEvent(flow, "INFO", "tournament", "Battlecode ticket issued", ticket.ticketId);
     }
     c.header("cache-control", "no-store");
@@ -1044,7 +1044,7 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
   async function readBattlecodeLedgerSafe(): Promise<unknown> {
     try {
       const { readBattlecodeLedger } = await import("./battlecode.js");
-      return readBattlecodeLedger(repoRoot);
+      return readBattlecodeLedger(repoRoot, effectiveEnv());
     } catch (error) {
       return { error: errorMessage(error) };
     }

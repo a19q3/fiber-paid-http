@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { existsSync } from "node:fs";
 import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
+import { createRequire } from "node:module";
 import { dirname, resolve } from "node:path";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -207,6 +208,7 @@ const DEFAULT_JDK_HOME = "/home/arthur/a19q3/.toolchains/jdk-21.0.11+10";
 const DEFAULT_ENGINE_VERSION = "1.0.0";
 const HASH_PREFIX = "sha256:";
 const BATTLECODE_MAX_SOURCE_BYTES = 128_000;
+const BATTLECODE_LEDGER_SCHEMA_VERSION = 1;
 const DISALLOWED_BOT_PATTERNS = [
   "java.net.",
   "java.nio.file.",
@@ -323,7 +325,7 @@ export async function createBattlecodeSubmission(
     }
   };
   const fairnessManifest = await buildBattlecodeFairnessManifest(repoRoot, env, submission);
-  const ledger = await appendBattlecodeSubmission(repoRoot, submission);
+  const ledger = await appendBattlecodeSubmission(repoRoot, submission, env);
   return { submission, fairnessManifest, ledger };
 }
 
@@ -361,34 +363,305 @@ export function battlecodeEntryPrice(input: BattlecodeRegistrationInput): { valu
   };
 }
 
-export async function readBattlecodeLedger(repoRoot: string): Promise<BattlecodeLedger> {
-  const ledgerPath = battlecodeLedgerPath(repoRoot);
-  try {
-    return normalizeLedger(JSON.parse(await readFile(ledgerPath, "utf8")));
-  } catch {
-    return emptyLedger();
-  }
+export async function readBattlecodeLedger(repoRoot: string, env: NodeJS.ProcessEnv = process.env): Promise<BattlecodeLedger> {
+  return withBattlecodeLedgerDb(repoRoot, env, async (db) => {
+    const ledger = readBattlecodeLedgerFromDb(db);
+    if (!battlecodeLedgerIsEmpty(ledger) || !existsSync(legacyBattlecodeLedgerPath(repoRoot))) {
+      return ledger;
+    }
+    try {
+      const legacy = normalizeLedger(JSON.parse(await readFile(legacyBattlecodeLedgerPath(repoRoot), "utf8")));
+      if (!battlecodeLedgerIsEmpty(legacy)) {
+        writeBattlecodeLedgerToDb(db, legacy);
+        return readBattlecodeLedgerFromDb(db);
+      }
+    } catch {
+      return ledger;
+    }
+    return ledger;
+  });
 }
 
-export async function writeBattlecodeLedger(repoRoot: string, ledger: BattlecodeLedger): Promise<void> {
-  const ledgerPath = battlecodeLedgerPath(repoRoot);
-  await mkdir(dirname(ledgerPath), { recursive: true });
-  await writeFile(ledgerPath, `${JSON.stringify({ ...ledger, generatedAt: new Date().toISOString() }, null, 2)}\n`);
+export async function battlecodeLedgerHealth(repoRoot: string, env: NodeJS.ProcessEnv = process.env): Promise<{
+  path: string;
+  schemaVersion: number;
+  journalMode: string | null;
+  foreignKeys: boolean;
+  integrityCheck: string;
+  legacyJsonPath: string;
+  legacyJsonPresent: boolean;
+  counts: {
+    submissions: number;
+    tickets: number;
+    matches: number;
+    awards: number;
+  };
+}> {
+  return withBattlecodeLedgerDb(repoRoot, env, async (db, path) => {
+    const ledger = readBattlecodeLedgerFromDb(db);
+    const journalRow = db.prepare("PRAGMA journal_mode").get() as { journal_mode?: string } | undefined;
+    const foreignKeysRow = db.prepare("PRAGMA foreign_keys").get() as { foreign_keys?: number } | undefined;
+    const integrityRow = db.prepare("PRAGMA integrity_check").get() as { integrity_check?: string } | undefined;
+    const legacyJsonPath = legacyBattlecodeLedgerPath(repoRoot);
+    return {
+      path,
+      schemaVersion: battlecodeLedgerUserVersion(db),
+      journalMode: journalRow?.journal_mode ?? null,
+      foreignKeys: foreignKeysRow?.foreign_keys === 1,
+      integrityCheck: integrityRow?.integrity_check ?? "unknown",
+      legacyJsonPath,
+      legacyJsonPresent: existsSync(legacyJsonPath),
+      counts: {
+        submissions: ledger.submissions.length,
+        tickets: ledger.tickets.length,
+        matches: ledger.matches.length,
+        awards: ledger.awards.length
+      }
+    };
+  });
 }
 
-export function battlecodeLedgerPath(repoRoot: string): string {
+export async function writeBattlecodeLedger(repoRoot: string, ledger: BattlecodeLedger, env: NodeJS.ProcessEnv = process.env): Promise<void> {
+  await withBattlecodeLedgerDb(repoRoot, env, async (db) => {
+    writeBattlecodeLedgerToDb(db, ledger);
+  });
+}
+
+export function battlecodeLedgerPath(repoRoot: string, env: NodeJS.ProcessEnv = process.env): string {
+  return resolve(repoRoot, env.BATTLECODE_LEDGER_PATH ?? env.BATTLECODE_TOURNAMENT_LEDGER_PATH ?? ".tmp/battlecode-tournament-ledger.sqlite");
+}
+
+export function legacyBattlecodeLedgerPath(repoRoot: string): string {
   return resolve(repoRoot, ".tmp/battlecode-tournament-ledger.json");
 }
 
-export async function appendBattlecodeSubmission(repoRoot: string, submission: BattlecodeSubmission): Promise<BattlecodeLedger> {
-  const ledger = await readBattlecodeLedger(repoRoot);
+async function withBattlecodeLedgerDb<T>(
+  repoRoot: string,
+  env: NodeJS.ProcessEnv,
+  fn: (db: SqliteDatabase, path: string) => T | Promise<T>
+): Promise<T> {
+  const path = battlecodeLedgerPath(repoRoot, env);
+  await mkdir(dirname(path), { recursive: true });
+  const { DatabaseSync } = loadNodeSqlite();
+  const db = new DatabaseSync(path) as SqliteDatabase;
+  try {
+    applyBattlecodeLedgerMigrations(db);
+    return await fn(db, path);
+  } finally {
+    db.close?.();
+  }
+}
+
+function applyBattlecodeLedgerMigrations(db: SqliteDatabase): void {
+  db.exec(`
+    PRAGMA journal_mode = WAL;
+    PRAGMA synchronous = NORMAL;
+    PRAGMA busy_timeout = 5000;
+    PRAGMA foreign_keys = ON;
+    CREATE TABLE IF NOT EXISTS battlecode_meta (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS battlecode_submissions (
+      submission_id TEXT PRIMARY KEY,
+      player_id TEXT NOT NULL,
+      bot_package TEXT NOT NULL,
+      bot_script_hash TEXT NOT NULL,
+      source_path TEXT NOT NULL,
+      source_bytes INTEGER NOT NULL,
+      submitted_at TEXT NOT NULL,
+      submission_json TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS battlecode_tickets (
+      ticket_id TEXT PRIMARY KEY,
+      submission_id TEXT NOT NULL,
+      player_id TEXT NOT NULL,
+      receipt_id TEXT NOT NULL,
+      payment_hash TEXT,
+      issued_at TEXT NOT NULL,
+      ticket_json TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS battlecode_matches (
+      match_id TEXT PRIMARY KEY,
+      winner TEXT NOT NULL,
+      match_hash TEXT NOT NULL,
+      finished_at TEXT NOT NULL,
+      match_json TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS battlecode_awards (
+      award_id TEXT PRIMARY KEY,
+      ticket_id TEXT NOT NULL,
+      match_id TEXT NOT NULL,
+      settlement TEXT NOT NULL,
+      status TEXT NOT NULL,
+      awarded_at TEXT NOT NULL,
+      award_json TEXT NOT NULL
+    );
+    PRAGMA user_version = ${BATTLECODE_LEDGER_SCHEMA_VERSION};
+  `);
+  db.prepare("INSERT OR REPLACE INTO battlecode_meta (key, value) VALUES (?, ?)").run(
+    "schema_version",
+    String(BATTLECODE_LEDGER_SCHEMA_VERSION)
+  );
+}
+
+function readBattlecodeLedgerFromDb(db: SqliteDatabase): BattlecodeLedger {
+  const generatedAtRow = db.prepare("SELECT value FROM battlecode_meta WHERE key = ?").get("generated_at") as
+    | { value?: string }
+    | undefined;
+  const submissions = db
+    .prepare("SELECT submission_json FROM battlecode_submissions ORDER BY submitted_at, submission_id")
+    .all() as Array<{ submission_json: string }>;
+  const tickets = db
+    .prepare("SELECT ticket_json FROM battlecode_tickets ORDER BY issued_at, ticket_id")
+    .all() as Array<{ ticket_json: string }>;
+  const matches = db
+    .prepare("SELECT match_json FROM battlecode_matches ORDER BY finished_at, match_id")
+    .all() as Array<{ match_json: string }>;
+  const awards = db
+    .prepare("SELECT award_json FROM battlecode_awards ORDER BY awarded_at, award_id")
+    .all() as Array<{ award_json: string }>;
+  return normalizeLedger({
+    generatedAt: generatedAtRow?.value ?? new Date().toISOString(),
+    submissions: submissions.map((row) => JSON.parse(row.submission_json)),
+    tickets: tickets.map((row) => JSON.parse(row.ticket_json)),
+    matches: matches.map((row) => JSON.parse(row.match_json)),
+    awards: awards.map((row) => JSON.parse(row.award_json))
+  });
+}
+
+function writeBattlecodeLedgerToDb(db: SqliteDatabase, ledger: BattlecodeLedger): void {
+  const normalized = normalizeLedger(ledger);
+  const generatedAt = new Date().toISOString();
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    db.exec(`
+      DELETE FROM battlecode_awards;
+      DELETE FROM battlecode_matches;
+      DELETE FROM battlecode_tickets;
+      DELETE FROM battlecode_submissions;
+    `);
+    const insertSubmission = db.prepare(`
+      INSERT OR REPLACE INTO battlecode_submissions
+        (submission_id, player_id, bot_package, bot_script_hash, source_path, source_bytes, submitted_at, submission_json)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    const insertTicket = db.prepare(`
+      INSERT OR REPLACE INTO battlecode_tickets
+        (ticket_id, submission_id, player_id, receipt_id, payment_hash, issued_at, ticket_json)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    const insertMatch = db.prepare(`
+      INSERT OR REPLACE INTO battlecode_matches
+        (match_id, winner, match_hash, finished_at, match_json)
+      VALUES (?, ?, ?, ?, ?)
+    `);
+    const insertAward = db.prepare(`
+      INSERT OR REPLACE INTO battlecode_awards
+        (award_id, ticket_id, match_id, settlement, status, awarded_at, award_json)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    for (const submission of normalized.submissions) {
+      insertSubmission.run(
+        submission.submissionId,
+        submission.playerId,
+        submission.botPackage,
+        submission.botScriptHash,
+        submission.sourcePath,
+        submission.sourceBytes,
+        submission.submittedAt,
+        JSON.stringify(submission)
+      );
+    }
+    for (const ticket of normalized.tickets) {
+      insertTicket.run(
+        ticket.ticketId,
+        ticket.submissionId,
+        ticket.playerId,
+        ticket.receiptId,
+        ticket.paymentHash ?? null,
+        ticket.issuedAt,
+        JSON.stringify(ticket)
+      );
+    }
+    for (const match of normalized.matches) {
+      insertMatch.run(
+        match.matchId,
+        match.winner,
+        match.matchHash,
+        match.finishedAt,
+        JSON.stringify(match)
+      );
+    }
+    for (const award of normalized.awards) {
+      insertAward.run(
+        award.awardId,
+        award.ticketId,
+        award.matchId,
+        award.settlement,
+        award.status,
+        award.awardedAt,
+        JSON.stringify(award)
+      );
+    }
+    db.prepare("INSERT OR REPLACE INTO battlecode_meta (key, value) VALUES (?, ?)").run("generated_at", generatedAt);
+    db.prepare("INSERT OR REPLACE INTO battlecode_meta (key, value) VALUES (?, ?)").run(
+      "schema_version",
+      String(BATTLECODE_LEDGER_SCHEMA_VERSION)
+    );
+    db.exec("COMMIT");
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
+}
+
+function battlecodeLedgerUserVersion(db: SqliteDatabase): number {
+  const row = db.prepare("PRAGMA user_version").get() as { user_version?: number } | undefined;
+  return Number(row?.user_version ?? 0);
+}
+
+function battlecodeLedgerIsEmpty(ledger: BattlecodeLedger): boolean {
+  return ledger.submissions.length === 0 &&
+    ledger.tickets.length === 0 &&
+    ledger.matches.length === 0 &&
+    ledger.awards.length === 0;
+}
+
+type SqliteStatement = {
+  run: (...args: unknown[]) => unknown;
+  get: (...args: unknown[]) => unknown;
+  all: (...args: unknown[]) => unknown[];
+};
+
+type SqliteDatabase = {
+  exec: (sql: string) => void;
+  prepare: (sql: string) => SqliteStatement;
+  close?: () => void;
+};
+
+function loadNodeSqlite(): { DatabaseSync: new (path: string) => unknown } {
+  const loader = createRequire(import.meta.url);
+  return loader("node:sqlite") as { DatabaseSync: new (path: string) => unknown };
+}
+
+export async function appendBattlecodeSubmission(
+  repoRoot: string,
+  submission: BattlecodeSubmission,
+  env: NodeJS.ProcessEnv = process.env
+): Promise<BattlecodeLedger> {
+  const ledger = await readBattlecodeLedger(repoRoot, env);
   ledger.submissions = [...ledger.submissions.filter((item) => item.submissionId !== submission.submissionId), submission];
-  await writeBattlecodeLedger(repoRoot, ledger);
+  await writeBattlecodeLedger(repoRoot, ledger, env);
   return ledger;
 }
 
-export async function findBattlecodeSubmission(repoRoot: string, submissionId: string): Promise<BattlecodeSubmission> {
-  const ledger = await readBattlecodeLedger(repoRoot);
+export async function findBattlecodeSubmission(
+  repoRoot: string,
+  submissionId: string,
+  env: NodeJS.ProcessEnv = process.env
+): Promise<BattlecodeSubmission> {
+  const ledger = await readBattlecodeLedger(repoRoot, env);
   const submission = ledger.submissions.find((item) => item.submissionId === submissionId);
   if (!submission) {
     throw new Error(`Battlecode submission not found: ${submissionId || "missing"}`);
@@ -423,10 +696,14 @@ export function issueBattlecodeTicket(input: {
   };
 }
 
-export async function appendBattlecodeTicket(repoRoot: string, ticket: BattlecodeTicket): Promise<BattlecodeLedger> {
-  const ledger = await readBattlecodeLedger(repoRoot);
+export async function appendBattlecodeTicket(
+  repoRoot: string,
+  ticket: BattlecodeTicket,
+  env: NodeJS.ProcessEnv = process.env
+): Promise<BattlecodeLedger> {
+  const ledger = await readBattlecodeLedger(repoRoot, env);
   ledger.tickets = [...ledger.tickets.filter((item) => item.ticketId !== ticket.ticketId), ticket];
-  await writeBattlecodeLedger(repoRoot, ledger);
+  await writeBattlecodeLedger(repoRoot, ledger, env);
   return ledger;
 }
 
@@ -585,12 +862,12 @@ export async function runBattlecodeTournament(options: RunOptions): Promise<Batt
   const award = match.winner === options.ticket.botPackage
     ? await createBattlecodeAward(options.ticket, match, env)
     : null;
-  const ledger = await readBattlecodeLedger(options.repoRoot);
+  const ledger = await readBattlecodeLedger(options.repoRoot, env);
   ledger.matches = [...ledger.matches.filter((item) => item.matchId !== match.matchId), match];
   if (award) {
     ledger.awards = [...ledger.awards.filter((item) => item.awardId !== award.awardId), award];
   }
-  await writeBattlecodeLedger(options.repoRoot, ledger);
+  await writeBattlecodeLedger(options.repoRoot, ledger, env);
   return {
     generatedAt: new Date().toISOString(),
     registration: options.registration,
@@ -598,7 +875,7 @@ export async function runBattlecodeTournament(options: RunOptions): Promise<Batt
     ticket: options.ticket,
     match,
     award,
-    ledgerPath: battlecodeLedgerPath(options.repoRoot),
+    ledgerPath: battlecodeLedgerPath(options.repoRoot, env),
     replayPath,
     warnings: [
       "Battlecode runs as an external AGPL-3.0 scaffold/engine dependency; FiberMPP stores only tournament evidence and local bot sources.",
@@ -610,13 +887,16 @@ export async function runBattlecodeTournament(options: RunOptions): Promise<Batt
 }
 
 export async function battlecodeStatus(repoRoot: string, env: NodeJS.ProcessEnv = process.env): Promise<Record<string, unknown>> {
-  const ledger = await readBattlecodeLedger(repoRoot);
+  const ledger = await readBattlecodeLedger(repoRoot, env);
+  const ledgerHealth = await battlecodeLedgerHealth(repoRoot, env).catch((error: unknown) => ({ error: errorMessage(error) }));
   const engine = await resolveBattlecodeEngine(repoRoot, env).catch((error: unknown) => ({ error: errorMessage(error) }));
   const fairnessManifest = await buildBattlecodeFairnessManifest(repoRoot, env).catch((error: unknown) => ({ error: errorMessage(error) }));
   return {
     enabled: true,
     scaffoldDir: env.BATTLECODE_DIR ?? DEFAULT_BATTLECODE_DIR,
-    ledgerPath: battlecodeLedgerPath(repoRoot),
+    ledgerPath: battlecodeLedgerPath(repoRoot, env),
+    ledgerStorage: "sqlite",
+    ledgerHealth,
     engine,
     fairnessManifest,
     awardSettlement: battlecodeAwardSettlementPlan(env),

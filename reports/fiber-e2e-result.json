@@ -5,6 +5,6 @@
   "fiber_e2e_mode": "local",
   "fiber_e2e_blockers": [],
   "fiber_e2e_status": "passed",
-  "fiber_e2e_payment_hash": "0x34bbdbc64c55ff0a221694e39b990f532bc8671e2959889db6590fd03e45b721",
-  "fiber_e2e_receipt_id": "rcpt_174e94af5b9b52c74a380476d91f05bb"
+  "fiber_e2e_payment_hash": "0x4de4574f1f2dd2ec47933506822860d3af3decbe4651de3f861ff81b9d61effc",
+  "fiber_e2e_receipt_id": "rcpt_d6368f6113b2a81e262fdf1c79a4e44d"
 }

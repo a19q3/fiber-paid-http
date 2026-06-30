@@ -18,7 +18,7 @@ The Battlecode engine is an external AGPL-3.0 dependency. Keep it outside this r
 git clone --depth 1 https://github.com/battlecode/battlecode25-scaffold.git /home/arthur/a19q3/battlecode25-scaffold
 ```
 
-The API runner does not copy Battlecode scaffold code into FiberMPP. It stores submitted bot sources under `.tmp/battlecode-tournament/submissions/`, materializes each match under `.tmp/battlecode-tournament/runs/`, and runs `battlecode.server.Main` headlessly.
+The API runner does not copy Battlecode scaffold code into FiberMPP. It stores submitted bot sources under `.tmp/battlecode-tournament/submissions/`, records tournament state in a SQLite ledger, materializes each match under `.tmp/battlecode-tournament/runs/`, and runs `battlecode.server.Main` headlessly.
 
 ## Toolchain
 
@@ -150,8 +150,16 @@ reports/battlecode-fmpp-tournament.json
 The API ledger is:
 
 ```text
-.tmp/battlecode-tournament-ledger.json
+.tmp/battlecode-tournament-ledger.sqlite
 ```
+
+Set a durable path explicitly for production-like runs:
+
+```bash
+BATTLECODE_LEDGER_PATH=/var/lib/fiber-mpp/battlecode-tournament-ledger.sqlite
+```
+
+The API also accepts `BATTLECODE_TOURNAMENT_LEDGER_PATH` for the same purpose. On first read, an old `.tmp/battlecode-tournament-ledger.json` file is imported into SQLite if the SQLite ledger is empty; the JSON file is left in place as migration evidence.
 
 Locked submission sources are written under:
 
@@ -197,7 +205,7 @@ That mode requires `/usr/bin/bwrap` and `/usr/bin/prlimit`, unshares networking,
 Real today:
 
 - HTTP 402 challenge for tournament entry.
-- Durable bot submission ledger with `submissionId`, source path, source byte length, source hash, policy metadata, and lock timestamp.
+- Durable SQLite bot submission/ticket/match/award ledger with `submissionId`, source path, source byte length, source hash, policy metadata, and lock timestamp.
 - Paid challenge metadata includes the locked submission id, committed bot source hash, and tournament client hash.
 - Real Fiber payment when local/testnet Fiber env is configured.
 - `Payment-Receipt` issued by the FiberMPP gateway.
