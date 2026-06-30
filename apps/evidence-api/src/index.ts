@@ -24,11 +24,15 @@ import {
   battlecodeStatus,
   battlecodeXudtTypeScript,
   buildBattlecodeFairnessManifest,
+  createBattlecodeSubmission,
+  findBattlecodeSubmission,
   issueBattlecodeTicket,
   normalizeBattlecodeRegistration,
+  normalizeBattlecodeSubmission,
   runBattlecodeTournament,
   type BattlecodeRegistrationInput,
   type BattlecodeFairnessManifest,
+  type BattlecodeSubmission,
   type BattlecodeTicket,
   type BattlecodeTournamentReport
 } from "./battlecode.js";
@@ -251,6 +255,7 @@ type EvidenceFlowState = {
   replayBody?: unknown;
   replayStatus?: number;
   tournament?: {
+    submission?: BattlecodeSubmission;
     registration?: BattlecodeRegistrationInput;
     fairnessManifest?: BattlecodeFairnessManifest;
     requestBody?: string;
@@ -747,21 +752,59 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
     });
   });
 
+  app.post("/api/tournament/battlecode/submissions", async (c) => {
+    const flow = currentFlow(c.req.raw);
+    let submission: BattlecodeSubmission;
+    let fairnessManifest: BattlecodeFairnessManifest;
+    try {
+      const input = normalizeBattlecodeSubmission(await c.req.json().catch(() => ({})));
+      const created = await createBattlecodeSubmission(repoRoot, input, effectiveEnv());
+      submission = created.submission;
+      fairnessManifest = created.fairnessManifest;
+    } catch (error) {
+      appendEvent(flow, "ERROR", "tournament", "Battlecode submission rejected", errorMessage(error));
+      return c.json({ error: "invalid-battlecode-submission", message: errorMessage(error), flow }, 400);
+    }
+    flow.tournament = {
+      ...(flow.tournament ?? {}),
+      submission,
+      fairnessManifest
+    };
+    appendEvent(flow, "INFO", "tournament", "Battlecode bot submission locked", `${submission.submissionId} ${submission.botScriptHash}`);
+    c.header("cache-control", "no-store");
+    return c.json({
+      ok: true,
+      submission,
+      fairnessManifest,
+      registrationDefaults: {
+        playerId: submission.playerId,
+        submissionId: submission.submissionId,
+        botPackage: submission.botPackage,
+        botScriptHash: submission.botScriptHash,
+        clientHash: fairnessManifest.clientHash
+      },
+      flow
+    });
+  });
+
   app.post("/api/tournament/battlecode/register/unpaid", async (c) => {
     const flow = currentFlow(c.req.raw);
     const bodyText = await c.req.raw.text();
     let registration: BattlecodeRegistrationInput;
+    let submission: BattlecodeSubmission;
     let fairnessManifest: BattlecodeFairnessManifest;
     try {
       registration = normalizeBattlecodeRegistration(parseJsonBody(bodyText));
-      fairnessManifest = await buildBattlecodeFairnessManifest(repoRoot, effectiveEnv());
-      assertBattlecodeFairnessCommitment(registration, fairnessManifest);
+      submission = await findBattlecodeSubmission(repoRoot, registration.submissionId);
+      fairnessManifest = await buildBattlecodeFairnessManifest(repoRoot, effectiveEnv(), submission);
+      assertBattlecodeFairnessCommitment(registration, fairnessManifest, submission);
     } catch (error) {
       appendEvent(flow, "ERROR", "tournament", "invalid Battlecode registration", errorMessage(error));
       return c.json({ error: "invalid-battlecode-registration", message: errorMessage(error), flow }, 400);
     }
     const resourceUrl = new URL("/api/tournament/battlecode/register", c.req.url).toString();
     flow.tournament = {
+      submission,
       registration,
       fairnessManifest,
       requestBody: JSON.stringify(registration),
@@ -783,6 +826,7 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
     return c.json({
       status: response.status,
       registration,
+      submission,
       headers: exposeHeaders(response),
       body,
       fiberChallenge,
@@ -852,7 +896,12 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
     if (response.status === 200 && receipt) {
       ticket = issueBattlecodeTicket({
         registration: tournament.registration,
-        fairnessManifest: tournament.fairnessManifest ?? await buildBattlecodeFairnessManifest(repoRoot, effectiveEnv()),
+        submission: tournament.submission ?? await findBattlecodeSubmission(repoRoot, tournament.registration.submissionId),
+        fairnessManifest: tournament.fairnessManifest ?? await buildBattlecodeFairnessManifest(
+          repoRoot,
+          effectiveEnv(),
+          tournament.submission ?? await findBattlecodeSubmission(repoRoot, tournament.registration.submissionId)
+        ),
         receiptId: receipt.receiptId,
         paymentHash: receipt.settlement.paymentHash
       });
@@ -874,7 +923,7 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
   app.post("/api/tournament/battlecode/match/run", async (c) => {
     const flow = currentFlow(c.req.raw);
     const tournament = flow.tournament;
-    if (!tournament?.registration || !tournament.ticket) {
+    if (!tournament?.registration || !tournament.ticket || !tournament.submission) {
       appendEvent(flow, "WARN", "tournament", "Battlecode match blocked", "claim a paid ticket first");
       return c.json({ error: "invalid-tournament-state", message: "claim a paid ticket first", flow }, 409);
     }
@@ -883,6 +932,7 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
       const report = await runBattlecodeTournament({
         registration: tournament.registration,
         ticket: tournament.ticket,
+        submission: tournament.submission,
         repoRoot,
         env: effectiveEnv()
       });
@@ -963,6 +1013,7 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
       metadata: {
         application: "fiber-mpp-battlecode-tournament",
         playerId: registration.playerId,
+        submissionId: registration.submissionId,
         botPackage: registration.botPackage,
         botScriptHash: registration.botScriptHash,
         clientHash: registration.clientHash,
@@ -979,6 +1030,7 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
         accepted: true,
         tournament: "battlecode",
         playerId: registration.playerId,
+        submissionId: registration.submissionId,
         botPackage: registration.botPackage,
         botScriptHash: registration.botScriptHash,
         clientHash: registration.clientHash,

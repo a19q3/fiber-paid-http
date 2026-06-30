@@ -295,11 +295,13 @@ a:hover { color: var(--cyan); }
 .form-grid.compact { gap: 8px; }
 .form-grid label { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .form-grid label span { font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
-.form-grid input {
+.form-grid input, .form-grid textarea {
   width: 100%; padding: 8px 11px; border: 1px solid rgba(0, 0, 0, 0.55); border-radius: 2px;
   background: rgba(0, 0, 0, 0.5); color: var(--text); font-size: 13px; outline: none; transition: border-color .2s ease-in-out, box-shadow .2s ease-in-out;
 }
-.form-grid input:focus { border-color: var(--cyan); box-shadow: 0 0 0 2px rgba(0, 232, 143, 0.2); }
+.form-grid textarea { min-height: 118px; resize: vertical; font-family: var(--mono); line-height: 1.45; }
+.form-grid .wide-field { grid-column: 1 / -1; }
+.form-grid input:focus, .form-grid textarea:focus { border-color: var(--cyan); box-shadow: 0 0 0 2px rgba(0, 232, 143, 0.2); }
 /* Checkbox styling */
 .field input[type="checkbox"] { accent-color: var(--blue); width: 16px; height: 16px; }
 

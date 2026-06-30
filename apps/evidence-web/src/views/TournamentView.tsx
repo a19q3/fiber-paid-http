@@ -4,6 +4,7 @@ import { Icon } from "../components/Icon.js";
 import { short, downloadJson } from "../lib/utils.js";
 
 type TournamentFlow = {
+  submission?: TournamentSubmission;
   registration?: TournamentRegistration;
   challengeId?: string;
   fiberChallenge?: { paymentHash?: string };
@@ -14,6 +15,7 @@ type TournamentFlow = {
 
 type TournamentRegistration = {
   playerId: string;
+  submissionId: string;
   botPackage: string;
   botScriptHash: string;
   clientHash: string;
@@ -21,6 +23,14 @@ type TournamentRegistration = {
   entryAmount: string;
   prizeAmount: string;
   map: string;
+};
+
+type TournamentSubmission = {
+  submissionId: string;
+  botPackage: string;
+  botScriptHash: string;
+  sourceBytes?: number;
+  status?: string;
 };
 
 type TournamentTicket = TournamentRegistration & {
@@ -65,6 +75,7 @@ export function TournamentView() {
   const tournament = useMemo(() => tournamentFromFlow(ev.flow), [ev.flow]);
   const [form, setForm] = useState<TournamentRegistration>(() => ({
     playerId: "arthur",
+    submissionId: "",
     botPackage: "fiberchamp",
     botScriptHash: "",
     clientHash: "",
@@ -73,6 +84,7 @@ export function TournamentView() {
     prizeAmount: "200",
     map: "DefaultSmall",
   }));
+  const [botSource, setBotSource] = useState("");
   const [busyStep, setBusyStep] = useState<string | null>(null);
   const [message, setMessage] = useState("");
 
@@ -116,6 +128,42 @@ export function TournamentView() {
     }
   };
 
+  const submitBot = async () => {
+    setBusyStep("submit-bot");
+    setMessage("");
+    try {
+      const payload = await ev.api.postJson<{
+        submission?: TournamentSubmission;
+        fairnessManifest?: { botScriptHash?: string; clientHash?: string };
+        registrationDefaults?: Partial<TournamentRegistration>;
+      }>("/api/tournament/battlecode/submissions", {
+        playerId: form.playerId,
+        botPackage: form.botPackage,
+        ...(botSource.trim() ? { source: botSource } : {})
+      });
+      const submission = payload.submission;
+      if (!submission?.submissionId || !payload.fairnessManifest?.clientHash) {
+        throw new Error("submission did not return locked hashes");
+      }
+      setForm((current) => ({
+        ...current,
+        ...payload.registrationDefaults,
+        submissionId: submission.submissionId,
+        botPackage: submission.botPackage,
+        botScriptHash: submission.botScriptHash,
+        clientHash: payload.fairnessManifest!.clientHash!
+      }));
+      await ev.refreshAll("submit-bot");
+      setMessage(`bot locked ${submission.submissionId}`);
+    } catch (error) {
+      const text = (error as Error).message;
+      setMessage(text);
+      ev.addLocalLog("ERROR", "tournament", "submit-bot failed", text);
+    } finally {
+      setBusyStep(null);
+    }
+  };
+
   const exportTournament = async () => {
     setBusyStep("export");
     try {
@@ -133,7 +181,7 @@ export function TournamentView() {
   const canPay = Boolean(tournament.fiberChallenge);
   const canClaim = Boolean(tournament.fiberChallenge);
   const canRun = Boolean(tournament.ticket);
-  const commitmentReady = Boolean(form.botScriptHash && form.clientHash);
+  const commitmentReady = Boolean(form.submissionId && form.botScriptHash && form.clientHash);
 
   return (
     <>
@@ -156,14 +204,19 @@ export function TournamentView() {
             <div className="form-grid compact">
               <label><span>PLAYER</span><input value={form.playerId} onChange={(e) => setForm({ ...form, playerId: e.target.value })} /></label>
               <label><span>BOT</span><input value={form.botPackage} onChange={(e) => setForm({ ...form, botPackage: e.target.value })} /></label>
-              <label><span>BOT HASH</span><input value={form.botScriptHash} onChange={(e) => setForm({ ...form, botScriptHash: e.target.value })} /></label>
-              <label><span>CLIENT HASH</span><input value={form.clientHash} onChange={(e) => setForm({ ...form, clientHash: e.target.value })} /></label>
+              <label><span>SUBMISSION</span><input value={form.submissionId || "submit bot first"} readOnly /></label>
+              <label><span>BOT HASH</span><input value={form.botScriptHash} readOnly /></label>
+              <label><span>CLIENT HASH</span><input value={form.clientHash} readOnly /></label>
               <label><span>xUDT ASSET</span><input value={form.xudtAsset} onChange={(e) => setForm({ ...form, xudtAsset: e.target.value })} /></label>
               <label><span>ENTRY</span><input value={form.entryAmount} onChange={(e) => setForm({ ...form, entryAmount: e.target.value })} /></label>
               <label><span>PRIZE</span><input value={form.prizeAmount} onChange={(e) => setForm({ ...form, prizeAmount: e.target.value })} /></label>
               <label><span>MAP</span><input value={form.map} onChange={(e) => setForm({ ...form, map: e.target.value })} /></label>
+              <label className="wide-field"><span>BOT SOURCE</span><textarea value={botSource} onChange={(e) => setBotSource(e.target.value)} placeholder="Paste RobotPlayer.java here, or leave empty to lock the bundled fiberchamp source." spellCheck={false} /></label>
             </div>
             <div className="actions btn-row tournament-actions">
+              <button className="btn primary" disabled={disabled} onClick={submitBot}>
+                <Icon name="StatusPassed" /> Submit / Lock Bot
+              </button>
               <button className="btn" disabled={disabled || !commitmentReady} onClick={() => runStep("request-entry", "/api/tournament/battlecode/register/unpaid", form)}>
                 <Icon name="ActionSend" /> Request 402
               </button>
@@ -188,7 +241,8 @@ export function TournamentView() {
           <div className="panel-title"><Icon name="Evidence" /> Evidence Chain</div>
           <div className="panel-body tournament-cards">
             <EvidenceCell label="Challenge" value={tournament.challengeId || "pending"} />
-            <EvidenceCell label="Bot Hash" value={tournament.ticket?.botScriptHash || tournament.registration?.botScriptHash || form.botScriptHash || "pending"} />
+            <EvidenceCell label="Submission" value={tournament.ticket?.submissionId || tournament.registration?.submissionId || tournament.submission?.submissionId || form.submissionId || "pending"} />
+            <EvidenceCell label="Bot Hash" value={tournament.ticket?.botScriptHash || tournament.registration?.botScriptHash || tournament.submission?.botScriptHash || form.botScriptHash || "pending"} />
             <EvidenceCell label="Client Hash" value={tournament.ticket?.clientHash || tournament.registration?.clientHash || form.clientHash || "pending"} />
             <EvidenceCell label="Payment Hash" value={tournament.receipt?.settlement?.paymentHash || tournament.fiberChallenge?.paymentHash || "pending"} />
             <EvidenceCell label="Receipt" value={tournament.receipt?.receiptId || tournament.ticket?.receiptId || "pending"} />

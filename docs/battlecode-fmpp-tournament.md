@@ -2,14 +2,15 @@
 
 This flow turns a local Battlecode match into a paid-entry tournament:
 
-1. A player requests a Battlecode entry ticket.
-2. The request includes `botScriptHash` and `clientHash` from the current tournament fairness manifest.
-3. FiberMPP returns an HTTP 402 challenge that binds the entry request and hash commitments.
-4. The payer FNN settles the Fiber payment.
-5. The gateway verifies settlement and issues `Payment-Receipt`.
-6. The ticket is recorded with the receipt id and payment hash.
-7. The local Battlecode engine runs `fiberchamp` against `baselinebot`.
-8. If `fiberchamp` wins, the tournament either records a local claimable xUDT prize award or, when explicitly enabled, pays the prize through a live Fiber xUDT payment.
+1. A player submits a Battlecode `RobotPlayer.java` source file.
+2. FiberMPP locks that submission in the tournament ledger and returns `submissionId`, `botScriptHash`, and `clientHash`.
+3. The player requests a Battlecode entry ticket with the locked submission id and hash commitments.
+4. FiberMPP returns an HTTP 402 challenge that binds the entry request, submission id, and hash commitments.
+5. The payer FNN settles the Fiber payment.
+6. The gateway verifies settlement and issues `Payment-Receipt`.
+7. The ticket is recorded with the receipt id, payment hash, and locked submission id.
+8. The local Battlecode engine materializes that locked submission and runs it against `baselinebot`.
+9. If the submitted bot wins, the tournament either records a local claimable xUDT prize award or, when explicitly enabled, pays the prize through a live Fiber xUDT payment.
 
 The Battlecode engine is an external AGPL-3.0 dependency. Keep it outside this repository:
 
@@ -17,7 +18,7 @@ The Battlecode engine is an external AGPL-3.0 dependency. Keep it outside this r
 git clone --depth 1 https://github.com/battlecode/battlecode25-scaffold.git /home/arthur/a19q3/battlecode25-scaffold
 ```
 
-The API runner does not copy Battlecode scaffold code into FiberMPP. It writes local bot sources into `.tmp/battlecode-tournament/` and runs `battlecode.server.Main` headlessly.
+The API runner does not copy Battlecode scaffold code into FiberMPP. It stores submitted bot sources under `.tmp/battlecode-tournament/submissions/`, materializes each match under `.tmp/battlecode-tournament/runs/`, and runs `battlecode.server.Main` headlessly.
 
 ## Toolchain
 
@@ -86,23 +87,37 @@ http://127.0.0.1:8878/?sessionId=battlecode-live&pollMs=1200
 
 ## Run The Full Tournament Flow
 
-First inspect the hash commitments that entrants must submit:
+First lock the bot source. This command submits the bundled `fiberchamp` source and returns the hash commitments:
 
 ```bash
-curl -sS http://127.0.0.1:8877/api/tournament/battlecode/manifest \
-  -H 'x-fiber-mpp-session: battlecode-live' | jq .
+curl -sS -X POST http://127.0.0.1:8877/api/tournament/battlecode/submissions \
+  -H 'content-type: application/json' \
+  -H 'x-fiber-mpp-session: battlecode-live' \
+  --data '{"playerId":"arthur","botPackage":"fiberchamp"}' | jq .
 ```
 
-The manifest contains:
+To submit a different strategy, pass a Java source string with a package matching `botPackage`:
+
+```bash
+jq -n --rawfile source ./RobotPlayer.java \
+  '{playerId:"arthur", botPackage:"mybot", source:$source}' \
+| curl -sS -X POST http://127.0.0.1:8877/api/tournament/battlecode/submissions \
+  -H 'content-type: application/json' \
+  -H 'x-fiber-mpp-session: battlecode-live' \
+  --data @- | jq .
+```
+
+The submission response contains:
 
 ```text
+submissionId   durable locked submission id
 botScriptHash  sha256 of the submitted Battlecode RobotPlayer.java source
-clientHash     sha256 commitment to the tournament runner module, Battlecode engine jar hash, engine version, and bot hash
+clientHash     sha256 commitment to the tournament runner module, Battlecode engine jar hash, engine version, submission id, and bot hash
 runnerHash     sha256 of the running FiberMPP tournament runner module
 engineHash     sha256 of the Battlecode engine jar
 ```
 
-`pnpm battlecode:tournament` fetches this manifest and submits `botScriptHash` and `clientHash` before requesting the paid entry challenge:
+`pnpm battlecode:tournament` performs the submission step first, then requests the paid entry challenge. By default it submits the bundled `fiberchamp` source; set `BATTLECODE_BOT_SOURCE=/path/to/RobotPlayer.java` and `BATTLECODE_BOT=<java_package>` to submit another strategy:
 
 ```bash
 EVIDENCE_API_BASE=http://127.0.0.1:8877 \
@@ -138,24 +153,58 @@ The API ledger is:
 .tmp/battlecode-tournament-ledger.json
 ```
 
+Locked submission sources are written under:
+
+```text
+.tmp/battlecode-tournament/submissions/
+```
+
 Battlecode replay files are written under:
 
 ```text
 .tmp/battlecode-tournament/matches/
 ```
 
+## Runner Isolation
+
+The tournament runner always materializes the locked submission into a per-ticket run directory, recalculates the source hash before compilation, uses a controlled Java environment, and enforces a process timeout.
+
+By default, when `/usr/bin/prlimit` is available, match compilation and execution run in `prlimit-local` mode:
+
+```text
+BATTLECODE_SANDBOX_MODE=prlimit-local
+```
+
+This records CPU and address-space limits in the report. It does not claim full filesystem or network namespace isolation; reports mark the filesystem boundary as `run-dir-only-by-convention` and network as `not-granted`.
+
+The default address-space limit is 8 GiB because the Java 21 VM and Battlecode instrumenter reserve large virtual address ranges even with a small `-Xmx`. Override it only after testing:
+
+```bash
+BATTLECODE_SANDBOX_MEMORY_BYTES=8589934592
+BATTLECODE_SANDBOX_CPU_SECONDS=125
+```
+
+For stricter local experiments, set:
+
+```bash
+BATTLECODE_SANDBOX_MODE=bubblewrap-prlimit
+```
+
+That mode requires `/usr/bin/bwrap` and `/usr/bin/prlimit`, unshares networking, bind-mounts the run directory writable, and keeps the rest of the root filesystem read-only. It is intentionally opt-in because some Battlecode/JDK combinations are slower or stricter under Bubblewrap.
+
 ## Evidence Boundary
 
 Real today:
 
 - HTTP 402 challenge for tournament entry.
-- Paid challenge metadata includes the committed bot source hash and tournament client hash.
+- Durable bot submission ledger with `submissionId`, source path, source byte length, source hash, policy metadata, and lock timestamp.
+- Paid challenge metadata includes the locked submission id, committed bot source hash, and tournament client hash.
 - Real Fiber payment when local/testnet Fiber env is configured.
 - `Payment-Receipt` issued by the FiberMPP gateway.
-- Ticket issuance stores the same hash commitments and rejects mismatches.
-- Match execution recalculates the materialized bot source hash and runner/client hash before running; mismatch fails closed.
+- Ticket issuance stores the same submission id and hash commitments and rejects mismatches.
+- Match execution materializes the locked source into an isolated run directory, recalculates the source hash and runner/client hash before running, enforces process limits when available, and fails closed on mismatch.
 - Battlecode headless match execution.
-- Deterministic local match hash that includes the fairness verification record.
+- Deterministic local match hash that includes the fairness verification record and replay bytes.
 - xUDT prize award recorded in a local claimable award ledger by default.
 - Live Fiber xUDT prize payout when `BATTLECODE_AWARD_SETTLEMENT=fiber-xudt` and UDT Fiber channels are configured.
 

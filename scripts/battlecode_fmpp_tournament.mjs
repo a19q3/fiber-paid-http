@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 const repoRoot = resolve(new URL("..", import.meta.url).pathname);
@@ -16,13 +16,16 @@ const registrationBase = {
 };
 
 async function main() {
-  const manifest = await get("/api/tournament/battlecode/manifest");
-  const fairnessManifest = manifest.fairnessManifest;
-  if (!fairnessManifest?.botScriptHash || !fairnessManifest?.clientHash) {
-    throw new Error("Battlecode fairness manifest did not include botScriptHash and clientHash");
+  const submissionBody = await submissionRequestBody();
+  const submitted = await post("/api/tournament/battlecode/submissions", submissionBody);
+  const { submission, fairnessManifest } = submitted;
+  if (!submission?.submissionId || !fairnessManifest?.botScriptHash || !fairnessManifest?.clientHash) {
+    throw new Error("Battlecode submission did not return submissionId, botScriptHash, and clientHash");
   }
   const registration = {
     ...registrationBase,
+    submissionId: submission.submissionId,
+    botPackage: submission.botPackage,
     botScriptHash: process.env.BATTLECODE_BOT_SCRIPT_HASH || fairnessManifest.botScriptHash,
     clientHash: process.env.BATTLECODE_CLIENT_HASH || fairnessManifest.clientHash
   };
@@ -37,6 +40,7 @@ async function main() {
     generatedAt: new Date().toISOString(),
     apiBase,
     sessionId,
+    submission,
     fairnessManifest,
     registration,
     steps: steps.map((step) => summarizeStep(step)),
@@ -49,6 +53,7 @@ async function main() {
   console.log(JSON.stringify({
     ok: true,
     reportPath,
+    submissionId: submission.submissionId,
     ticketId: steps[2]?.ticket?.ticketId,
     receiptId: steps[2]?.receipt?.receiptId,
     paymentHash: steps[2]?.receipt?.settlement?.paymentHash,
@@ -61,6 +66,20 @@ async function main() {
     xudtAsset: steps[3]?.report?.award?.xudtAsset,
     prizeAmount: steps[3]?.report?.award?.prizeAmount
   }, null, 2));
+}
+
+async function submissionRequestBody() {
+  const body = {
+    playerId: registrationBase.playerId,
+    botPackage: registrationBase.botPackage
+  };
+  if (process.env.BATTLECODE_BOT_SOURCE_TEXT) {
+    return { ...body, source: process.env.BATTLECODE_BOT_SOURCE_TEXT };
+  }
+  if (process.env.BATTLECODE_BOT_SOURCE) {
+    return { ...body, source: await readFile(process.env.BATTLECODE_BOT_SOURCE, "utf8") };
+  }
+  return body;
 }
 
 async function get(path) {
@@ -104,6 +123,7 @@ function summarizeStep(step) {
     paymentHash: step.fiberChallenge?.paymentHash ?? step.receipt?.settlement?.paymentHash,
     receiptId: step.receipt?.receiptId,
     ticketId: step.ticket?.ticketId,
+    submissionId: step.ticket?.submissionId ?? step.submission?.submissionId ?? step.flow?.tournament?.submission?.submissionId,
     botScriptHash: step.ticket?.botScriptHash ?? step.flow?.tournament?.registration?.botScriptHash,
     clientHash: step.ticket?.clientHash ?? step.flow?.tournament?.registration?.clientHash,
     winner: step.report?.match?.winner,

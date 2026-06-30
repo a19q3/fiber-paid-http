@@ -27,6 +27,22 @@ fiber_live_test_loaded=false
 fiber_e2e_blockers=()
 production_blockers=()
 
+without_live_fiber_env() {
+  env \
+    -u RUN_FIBER_E2E \
+    -u FIBER_MODE \
+    -u FIBER_RPC_URL \
+    -u FIBER_PAYEE_RPC_URL \
+    -u FIBER_PAYER_RPC_URL \
+    -u FIBER_ROUTER_RPC_URL \
+    -u FIBER_RPC_AUTH \
+    -u FIBER_PAYEE_RPC_AUTH \
+    -u FIBER_PAYER_RPC_AUTH \
+    -u FIBER_MPP_SECRET \
+    -u FIBER_MPP_EVIDENCE_API_BASE \
+    "$@"
+}
+
 pnpm install --frozen-lockfile
 pnpm lint
 pnpm typecheck
@@ -68,7 +84,7 @@ fi
 cli_start_output="reports/evidence-console-cli-start.log"
 cli_start_report="reports/evidence-console-cli-start.json"
 set +e
-pnpm --filter @fiber-mpp/evidence-web check-cli-start 2>&1 | tee "${cli_start_output}"
+without_live_fiber_env pnpm --filter @fiber-mpp/evidence-web check-cli-start 2>&1 | tee "${cli_start_output}"
 cli_start_exit="${PIPESTATUS[0]}"
 set -e
 if [[ "${cli_start_exit}" -eq 0 ]]; then
@@ -115,7 +131,7 @@ JSON
 else
   evidence_console_browser_smoke_blockers+=("Evidence console browser smoke check failed: see ${browser_smoke_output}")
 fi
-pnpm test:integration
+without_live_fiber_env pnpm test:integration
 integration_tests=true
 
 fiber_mode="${FIBER_MODE:-}"
@@ -270,7 +286,7 @@ const cliStartVerified = cliStartReport.ok === true &&
   cliStartReport.api_and_web_started_by_single_cli_command === true &&
   cliStartReport.web_served_console === true &&
   typeof cliStartReport.injected_api_base === "string" &&
-  cliStartReport.injected_api_base.startsWith("http://localhost:");
+  /^http:\/\/(localhost|127\.0\.0\.1):[0-9]+$/.test(cliStartReport.injected_api_base);
 const browserSmokeBlockers = list("EVIDENCE_CONSOLE_BROWSER_SMOKE_BLOCKERS");
 const browserSmokeReportPath = process.env.EVIDENCE_CONSOLE_BROWSER_SMOKE_REPORT || "reports/evidence-console-browser-smoke.json";
 const browserSmokeReport = fs.existsSync(browserSmokeReportPath)
@@ -384,8 +400,23 @@ const fiberMppGateReady =
   fiberStatus !== "failed" &&
   fiberMppGateBlockers.length === 0;
 
-function readIfExists(path) {
-  return fs.existsSync(path) ? fs.readFileSync(path, "utf8") : "";
+function readIfExists(path, maxBytes = 1024 * 1024) {
+  if (!fs.existsSync(path)) {
+    return "";
+  }
+  const stat = fs.statSync(path);
+  if (stat.size <= maxBytes) {
+    return fs.readFileSync(path, "utf8");
+  }
+  const fd = fs.openSync(path, "r");
+  try {
+    const start = stat.size - maxBytes;
+    const buffer = Buffer.alloc(maxBytes);
+    fs.readSync(fd, buffer, 0, maxBytes, start);
+    return buffer.toString("utf8");
+  } finally {
+    fs.closeSync(fd);
+  }
 }
 
 function readJsonIfExists(path) {

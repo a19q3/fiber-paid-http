@@ -16,7 +16,8 @@ import type { FiberUdtTypeScript } from "@fiber-mpp/core";
 
 export type BattlecodeRegistrationInput = {
   playerId: string;
-  botPackage: "fiberchamp";
+  submissionId: string;
+  botPackage: string;
   botScriptHash: string;
   clientHash: string;
   xudtAsset: string;
@@ -27,7 +28,8 @@ export type BattlecodeRegistrationInput = {
 
 export type BattlecodeFairnessManifest = {
   domain: "fiber-mpp-battlecode-fairness-v1";
-  botPackage: "fiberchamp";
+  botPackage: string;
+  submissionId?: string;
   botScriptHash: string;
   clientHash: string;
   runnerHash: string;
@@ -55,6 +57,7 @@ export type BattlecodeFairnessVerification = {
 export type BattlecodeTicket = {
   ticketId: string;
   playerId: string;
+  submissionId: string;
   botPackage: string;
   botScriptHash: string;
   clientHash: string;
@@ -87,6 +90,7 @@ export type BattlecodeMatchResult = {
   engineHash: string;
   runnerHash: string;
   fairness: BattlecodeFairnessVerification;
+  sandbox: BattlecodeSandboxEvidence;
   jdkHome: string;
   startedAt: string;
   finishedAt: string;
@@ -129,14 +133,59 @@ export type BattlecodePrizePayment = {
 
 export type BattlecodeLedger = {
   generatedAt: string;
+  submissions: BattlecodeSubmission[];
   tickets: BattlecodeTicket[];
   matches: BattlecodeMatchResult[];
   awards: BattlecodeAward[];
 };
 
+export type BattlecodeSubmissionInput = {
+  playerId: string;
+  botPackage: string;
+  source: string;
+};
+
+export type BattlecodeSubmission = {
+  submissionId: string;
+  playerId: string;
+  botPackage: string;
+  botScriptHash: string;
+  sourcePath: string;
+  sourceBytes: number;
+  status: "locked";
+  submittedAt: string;
+  policy: {
+    language: "java";
+    entrypoint: "RobotPlayer.java";
+    packageRequired: string;
+    maxSourceBytes: number;
+    disallowedPatterns: string[];
+  };
+};
+
+export type BattlecodeSandboxEvidence = {
+  mode: "bubblewrap-prlimit" | "prlimit-local" | "local-process";
+  runDir: string;
+  sourceDir: string;
+  classesDir: string;
+  replayDir: string;
+  timeoutMs: number;
+  jdkHome: string;
+  engineJar: string;
+  environmentKeys: string[];
+  limits: {
+    network: "unshared" | "not-granted";
+    filesystem: "bubblewrap-ro-root-run-dir-rw" | "run-dir-only-by-convention";
+    processTimeoutMs: number;
+    cpuSeconds: number;
+    addressSpaceBytes: number;
+  };
+};
+
 export type BattlecodeTournamentReport = {
   generatedAt: string;
   registration: BattlecodeRegistrationInput;
+  submission: BattlecodeSubmission;
   ticket: BattlecodeTicket;
   match: BattlecodeMatchResult;
   award: BattlecodeAward | null;
@@ -148,6 +197,7 @@ export type BattlecodeTournamentReport = {
 type RunOptions = {
   registration: BattlecodeRegistrationInput;
   ticket: BattlecodeTicket;
+  submission: BattlecodeSubmission;
   repoRoot: string;
   env?: NodeJS.ProcessEnv;
 };
@@ -156,6 +206,17 @@ const DEFAULT_BATTLECODE_DIR = "/home/arthur/a19q3/battlecode25-scaffold/java";
 const DEFAULT_JDK_HOME = "/home/arthur/a19q3/.toolchains/jdk-21.0.11+10";
 const DEFAULT_ENGINE_VERSION = "1.0.0";
 const HASH_PREFIX = "sha256:";
+const BATTLECODE_MAX_SOURCE_BYTES = 128_000;
+const DISALLOWED_BOT_PATTERNS = [
+  "java.net.",
+  "java.nio.file.",
+  "java.io.File",
+  "ProcessBuilder",
+  "Runtime.getRuntime",
+  "System.exit",
+  "System.load",
+  "System.getenv"
+];
 const DEFAULT_LOCAL_XUDT_TYPE_SCRIPT: FiberUdtTypeScript = {
   code_hash: "0x50bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95",
   hash_type: "data2",
@@ -165,13 +226,11 @@ const DEFAULT_LOCAL_XUDT_TYPE_SCRIPT: FiberUdtTypeScript = {
 export function normalizeBattlecodeRegistration(input: unknown): BattlecodeRegistrationInput {
   const record = isRecord(input) ? input : {};
   const playerId = cleanId(record.playerId, "arthur");
-  const requestedBot = cleanId(record.botPackage ?? record.bot, "fiberchamp");
-  if (requestedBot !== "fiberchamp") {
-    throw new Error("only the built-in fiberchamp Battlecode bot is enabled for paid entry");
-  }
+  const botPackage = cleanPackage(record.botPackage ?? record.bot, "fiberchamp");
   return {
     playerId,
-    botPackage: "fiberchamp",
+    submissionId: cleanId(record.submissionId, ""),
+    botPackage,
     botScriptHash: cleanHash(record.botScriptHash),
     clientHash: cleanHash(record.clientHash),
     xudtAsset: cleanAsset(record.xudtAsset ?? record.asset, "xUDT:BCODE"),
@@ -183,15 +242,18 @@ export function normalizeBattlecodeRegistration(input: unknown): BattlecodeRegis
 
 export async function buildBattlecodeFairnessManifest(
   repoRoot: string,
-  env: NodeJS.ProcessEnv = process.env
+  env: NodeJS.ProcessEnv = process.env,
+  input?: { botPackage?: string; botScriptHash?: string; submissionId?: string }
 ): Promise<BattlecodeFairnessManifest> {
   const engine = await resolveBattlecodeEngine(repoRoot, env);
   const runnerHash = await hashFile(fileURLToPath(import.meta.url));
   const engineHash = await hashFile(engine.engineJar);
-  const botScriptHash = battlecodeBuiltInBotScriptHash();
+  const botPackage = input?.botPackage ?? "fiberchamp";
+  const botScriptHash = input?.botScriptHash ?? battlecodeBuiltInBotScriptHash();
   const clientHash = hashJson({
     domain: "fiber-mpp-battlecode-client-v1",
-    botPackage: "fiberchamp",
+    botPackage,
+    submissionId: input?.submissionId,
     botScriptHash,
     runnerHash,
     engineHash,
@@ -199,7 +261,8 @@ export async function buildBattlecodeFairnessManifest(
   });
   return {
     domain: "fiber-mpp-battlecode-fairness-v1",
-    botPackage: "fiberchamp",
+    botPackage,
+    submissionId: input?.submissionId,
     botScriptHash,
     clientHash,
     runnerHash,
@@ -217,11 +280,65 @@ export function battlecodeBuiltInBotScriptHash(): string {
   return hashBytes(Buffer.from(FIBER_CHAMP_SOURCE, "utf8"));
 }
 
+export function battlecodeBuiltInBotSource(): string {
+  return FIBER_CHAMP_SOURCE;
+}
+
+export function normalizeBattlecodeSubmission(input: unknown): BattlecodeSubmissionInput {
+  const record = isRecord(input) ? input : {};
+  const playerId = cleanId(record.playerId, "arthur");
+  const botPackage = cleanPackage(record.botPackage ?? record.bot, "fiberchamp");
+  const source = String(record.source ?? record.botSource ?? FIBER_CHAMP_SOURCE);
+  validateBattlecodeBotSource(source, botPackage);
+  return { playerId, botPackage, source };
+}
+
+export async function createBattlecodeSubmission(
+  repoRoot: string,
+  input: BattlecodeSubmissionInput,
+  env: NodeJS.ProcessEnv = process.env
+): Promise<{ submission: BattlecodeSubmission; fairnessManifest: BattlecodeFairnessManifest; ledger: BattlecodeLedger }> {
+  validateBattlecodeBotSource(input.source, input.botPackage);
+  const botScriptHash = hashBytes(Buffer.from(input.source, "utf8"));
+  const submissionId = `bc_sub_${randomBytes(8).toString("hex")}`;
+  const sourceDir = resolve(repoRoot, ".tmp/battlecode-tournament/submissions", submissionId, input.botPackage);
+  const sourcePath = resolve(sourceDir, "RobotPlayer.java");
+  await mkdir(sourceDir, { recursive: true });
+  await writeFile(sourcePath, input.source);
+  const submission: BattlecodeSubmission = {
+    submissionId,
+    playerId: input.playerId,
+    botPackage: input.botPackage,
+    botScriptHash,
+    sourcePath,
+    sourceBytes: Buffer.byteLength(input.source, "utf8"),
+    status: "locked",
+    submittedAt: new Date().toISOString(),
+    policy: {
+      language: "java",
+      entrypoint: "RobotPlayer.java",
+      packageRequired: input.botPackage,
+      maxSourceBytes: BATTLECODE_MAX_SOURCE_BYTES,
+      disallowedPatterns: DISALLOWED_BOT_PATTERNS
+    }
+  };
+  const fairnessManifest = await buildBattlecodeFairnessManifest(repoRoot, env, submission);
+  const ledger = await appendBattlecodeSubmission(repoRoot, submission);
+  return { submission, fairnessManifest, ledger };
+}
+
 export function assertBattlecodeFairnessCommitment(
   registration: BattlecodeRegistrationInput,
-  manifest: BattlecodeFairnessManifest
+  manifest: BattlecodeFairnessManifest,
+  submission?: BattlecodeSubmission
 ): void {
   const mismatches = [];
+  if (submission && registration.submissionId !== submission.submissionId) {
+    mismatches.push(`submissionId expected ${submission.submissionId} got ${registration.submissionId}`);
+  }
+  if (submission && registration.botScriptHash !== submission.botScriptHash) {
+    mismatches.push(`botScriptHash expected locked submission ${submission.botScriptHash} got ${registration.botScriptHash}`);
+  }
   if (registration.botPackage !== manifest.botPackage) {
     mismatches.push(`botPackage expected ${manifest.botPackage} got ${registration.botPackage}`);
   }
@@ -263,16 +380,34 @@ export function battlecodeLedgerPath(repoRoot: string): string {
   return resolve(repoRoot, ".tmp/battlecode-tournament-ledger.json");
 }
 
+export async function appendBattlecodeSubmission(repoRoot: string, submission: BattlecodeSubmission): Promise<BattlecodeLedger> {
+  const ledger = await readBattlecodeLedger(repoRoot);
+  ledger.submissions = [...ledger.submissions.filter((item) => item.submissionId !== submission.submissionId), submission];
+  await writeBattlecodeLedger(repoRoot, ledger);
+  return ledger;
+}
+
+export async function findBattlecodeSubmission(repoRoot: string, submissionId: string): Promise<BattlecodeSubmission> {
+  const ledger = await readBattlecodeLedger(repoRoot);
+  const submission = ledger.submissions.find((item) => item.submissionId === submissionId);
+  if (!submission) {
+    throw new Error(`Battlecode submission not found: ${submissionId || "missing"}`);
+  }
+  return submission;
+}
+
 export function issueBattlecodeTicket(input: {
   registration: BattlecodeRegistrationInput;
+  submission: BattlecodeSubmission;
   fairnessManifest: BattlecodeFairnessManifest;
   receiptId: string;
   paymentHash?: string;
 }): BattlecodeTicket {
-  assertBattlecodeFairnessCommitment(input.registration, input.fairnessManifest);
+  assertBattlecodeFairnessCommitment(input.registration, input.fairnessManifest, input.submission);
   return {
     ticketId: `bc_ticket_${randomBytes(8).toString("hex")}`,
     playerId: input.registration.playerId,
+    submissionId: input.submission.submissionId,
     botPackage: input.registration.botPackage,
     botScriptHash: input.registration.botScriptHash,
     clientHash: input.registration.clientHash,
@@ -299,31 +434,54 @@ export async function runBattlecodeTournament(options: RunOptions): Promise<Batt
   const startedAt = new Date().toISOString();
   const env = options.env ?? process.env;
   const engine = await resolveBattlecodeEngine(options.repoRoot, env);
-  const fairnessManifest = await buildBattlecodeFairnessManifest(options.repoRoot, env);
-  assertBattlecodeFairnessCommitment(options.registration, fairnessManifest);
-  assertTicketFairnessCommitment(options.ticket, fairnessManifest);
-  const workDir = resolve(options.repoRoot, ".tmp/battlecode-tournament");
+  const fairnessManifest = await buildBattlecodeFairnessManifest(options.repoRoot, env, options.submission);
+  assertBattlecodeFairnessCommitment(options.registration, fairnessManifest, options.submission);
+  await assertSubmissionLocked(options.submission, options.ticket);
+  assertTicketFairnessCommitment(options.ticket, fairnessManifest, options.submission);
+  const runStamp = `${options.ticket.ticketId}-${Date.now()}`;
+  const workDir = resolve(options.repoRoot, ".tmp/battlecode-tournament/runs", runStamp);
   const classesDir = resolve(workDir, "classes");
   const srcDir = resolve(workDir, "src");
-  const replayDir = resolve(workDir, "matches");
-  const replayPath = resolve(replayDir, `${options.ticket.ticketId}-${Date.now()}.bc25`);
+  const replayDir = resolve(options.repoRoot, ".tmp/battlecode-tournament/matches");
+  const replayPath = resolve(replayDir, `${runStamp}.bc25`);
   await mkdir(srcDir, { recursive: true });
   await mkdir(classesDir, { recursive: true });
   await mkdir(replayDir, { recursive: true });
-  await writeBotSources(srcDir);
-  const observedBotScriptHash = await hashFile(resolve(srcDir, "fiberchamp/RobotPlayer.java"));
+  await writeBotSources(srcDir, options.submission);
+  const observedBotScriptHash = await hashFile(resolve(srcDir, `${options.submission.botPackage}/RobotPlayer.java`));
   if (observedBotScriptHash !== options.ticket.botScriptHash) {
     throw new Error(`materialized bot script hash mismatch: expected ${options.ticket.botScriptHash} got ${observedBotScriptHash}`);
   }
 
+  const timeoutMs = positiveInt(env.BATTLECODE_MATCH_TIMEOUT_MS, 120_000);
+  const sandboxMode = resolveSandboxMode(env);
+  const sandboxMemoryBytes = positiveInt(env.BATTLECODE_SANDBOX_MEMORY_BYTES, 8_589_934_592);
+  const sandboxCpuSeconds = positiveInt(env.BATTLECODE_SANDBOX_CPU_SECONDS, Math.ceil(timeoutMs / 1000) + 5);
   const javaFiles = await listFiles(srcDir, ".java");
-  await runProcess(resolve(engine.jdkHome, "bin/javac"), ["-cp", engine.engineJar, "-d", classesDir, ...javaFiles], {
+  await runProcess(resolve(engine.jdkHome, "bin/javac"), [
+    "-J-Xmx512m",
+    "-J-XX:MaxMetaspaceSize=256m",
+    "-J-XX:CompressedClassSpaceSize=128m",
+    "-cp",
+    engine.engineJar,
+    "-d",
+    classesDir,
+    ...javaFiles
+  ], {
     cwd: workDir,
-    timeoutMs: 30_000
+    timeoutMs: 30_000,
+    sandboxHome: resolve(workDir, "home"),
+    jdkHome: engine.jdkHome,
+    sandboxMode,
+    cpuSeconds: Math.min(sandboxCpuSeconds, 35),
+    addressSpaceBytes: sandboxMemoryBytes
   });
 
   const matchId = `bc_match_${randomBytes(8).toString("hex")}`;
   const javaArgs = [
+    "-Xmx512m",
+    "-XX:MaxMetaspaceSize=256m",
+    "-XX:CompressedClassSpaceSize=128m",
     "--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED",
     "--add-opens=java.base/jdk.internal.math=ALL-UNNAMED",
     "--add-opens=java.base/jdk.internal.util=ALL-UNNAMED",
@@ -337,11 +495,11 @@ export async function runBattlecodeTournament(options: RunOptions): Promise<Batt
     "-Dbc.engine.debug-methods=false",
     "-Dbc.engine.enable-profiler=false",
     "-Dbc.engine.show-indicators=false",
-    "-Dbc.game.team-a=fiberchamp",
+    `-Dbc.game.team-a=${options.submission.botPackage}`,
     "-Dbc.game.team-b=baselinebot",
     `-Dbc.game.team-a.url=${classesDir}`,
     `-Dbc.game.team-b.url=${classesDir}`,
-    "-Dbc.game.team-a.package=fiberchamp",
+    `-Dbc.game.team-a.package=${options.submission.botPackage}`,
     "-Dbc.game.team-b.package=baselinebot",
     `-Dbc.game.maps=${options.registration.map}`,
     "-Dbc.server.validate-maps=true",
@@ -352,9 +510,32 @@ export async function runBattlecodeTournament(options: RunOptions): Promise<Batt
     "battlecode.server.Main",
     "-c=-"
   ];
+  const sandbox: BattlecodeSandboxEvidence = {
+    mode: sandboxMode,
+    runDir: workDir,
+    sourceDir: srcDir,
+    classesDir,
+    replayDir,
+    timeoutMs,
+    jdkHome: engine.jdkHome,
+    engineJar: engine.engineJar,
+    environmentKeys: ["HOME", "JAVA_HOME", "LANG", "PATH", "TMPDIR"],
+    limits: {
+      network: sandboxMode === "bubblewrap-prlimit" ? "unshared" : "not-granted",
+      filesystem: sandboxMode === "bubblewrap-prlimit" ? "bubblewrap-ro-root-run-dir-rw" : "run-dir-only-by-convention",
+      processTimeoutMs: timeoutMs,
+      cpuSeconds: sandboxCpuSeconds,
+      addressSpaceBytes: sandboxMemoryBytes
+    }
+  };
   const run = await runProcess(resolve(engine.jdkHome, "bin/java"), javaArgs, {
     cwd: workDir,
-    timeoutMs: positiveInt(env.BATTLECODE_MATCH_TIMEOUT_MS, 120_000)
+    timeoutMs,
+    sandboxHome: resolve(workDir, "home"),
+    jdkHome: engine.jdkHome,
+    sandboxMode,
+    cpuSeconds: sandboxCpuSeconds,
+    addressSpaceBytes: sandboxMemoryBytes
   });
   const parsed = parseMatchOutput(run.stdout);
   const replayHashInput = existsSync(replayPath) ? await readFile(replayPath) : Buffer.alloc(0);
@@ -381,7 +562,7 @@ export async function runBattlecodeTournament(options: RunOptions): Promise<Batt
   const match: BattlecodeMatchResult = {
     matchId,
     map: options.registration.map,
-    teamA: "fiberchamp",
+    teamA: options.submission.botPackage,
     teamB: "baselinebot",
     winner: parsed.winner,
     winnerSide: parsed.side,
@@ -396,6 +577,7 @@ export async function runBattlecodeTournament(options: RunOptions): Promise<Batt
     engineHash: fairnessManifest.engineHash,
     runnerHash: fairnessManifest.runnerHash,
     fairness,
+    sandbox,
     jdkHome: engine.jdkHome,
     startedAt,
     finishedAt: new Date().toISOString()
@@ -412,6 +594,7 @@ export async function runBattlecodeTournament(options: RunOptions): Promise<Batt
   return {
     generatedAt: new Date().toISOString(),
     registration: options.registration,
+    submission: options.submission,
     ticket: options.ticket,
     match,
     award,
@@ -438,6 +621,7 @@ export async function battlecodeStatus(repoRoot: string, env: NodeJS.ProcessEnv 
     fairnessManifest,
     awardSettlement: battlecodeAwardSettlementPlan(env),
     tickets: ledger.tickets.length,
+    submissions: ledger.submissions.length,
     matches: ledger.matches.length,
     awards: ledger.awards.length,
     latestAward: ledger.awards.at(-1) ?? null
@@ -630,8 +814,24 @@ function extractFiberPubkey(input: unknown): string | undefined {
   return isRecord(input) && typeof input.pubkey === "string" ? input.pubkey : undefined;
 }
 
-function assertTicketFairnessCommitment(ticket: BattlecodeTicket, manifest: BattlecodeFairnessManifest): void {
+async function assertSubmissionLocked(submission: BattlecodeSubmission, ticket: BattlecodeTicket): Promise<void> {
+  if (submission.status !== "locked") {
+    throw new Error(`Battlecode submission is not locked: ${submission.submissionId}`);
+  }
+  if (ticket.submissionId !== submission.submissionId) {
+    throw new Error(`ticket submissionId expected ${submission.submissionId} got ${ticket.submissionId}`);
+  }
+  const sourceHash = await hashFile(submission.sourcePath);
+  if (sourceHash !== submission.botScriptHash || sourceHash !== ticket.botScriptHash) {
+    throw new Error(`locked submission source hash mismatch: source=${sourceHash} submission=${submission.botScriptHash} ticket=${ticket.botScriptHash}`);
+  }
+}
+
+function assertTicketFairnessCommitment(ticket: BattlecodeTicket, manifest: BattlecodeFairnessManifest, submission: BattlecodeSubmission): void {
   const mismatches = [];
+  if (ticket.submissionId !== submission.submissionId) {
+    mismatches.push(`ticket submissionId expected ${submission.submissionId} got ${ticket.submissionId}`);
+  }
   if (ticket.botScriptHash !== manifest.botScriptHash) {
     mismatches.push(`ticket botScriptHash expected ${manifest.botScriptHash} got ${ticket.botScriptHash}`);
   }
@@ -685,9 +885,9 @@ async function findCachedBattlecodeJar(version: string): Promise<string | null> 
   }
 }
 
-async function writeBotSources(srcDir: string): Promise<void> {
+async function writeBotSources(srcDir: string, submission: BattlecodeSubmission): Promise<void> {
   const bots = [
-    { name: "fiberchamp", source: FIBER_CHAMP_SOURCE },
+    { name: submission.botPackage, source: await readFile(submission.sourcePath, "utf8") },
     { name: "baselinebot", source: BASELINE_BOT_SOURCE }
   ];
   for (const bot of bots) {
@@ -714,10 +914,33 @@ async function listFiles(root: string, suffix: string): Promise<string[]> {
   return result.sort();
 }
 
-async function runProcess(command: string, args: string[], options: { cwd: string; timeoutMs: number }): Promise<{ stdout: string; stderr: string }> {
+async function runProcess(command: string, args: string[], options: {
+  cwd: string;
+  timeoutMs: number;
+  sandboxHome?: string;
+  jdkHome?: string;
+  sandboxMode?: BattlecodeSandboxEvidence["mode"];
+  cpuSeconds?: number;
+  addressSpaceBytes?: number;
+}): Promise<{ stdout: string; stderr: string }> {
+  const sandboxHome = options.sandboxHome ?? resolve(options.cwd, "home");
+  await mkdir(sandboxHome, { recursive: true });
+  const env = {
+    HOME: sandboxHome,
+    JAVA_HOME: options.jdkHome ?? dirname(dirname(command)),
+    LANG: "C.UTF-8",
+    PATH: `${dirname(command)}:/usr/bin:/bin`,
+    TMPDIR: options.cwd
+  };
+  const sandboxed = buildSandboxCommand(command, args, {
+    ...options,
+    sandboxHome,
+    env
+  });
   return new Promise((resolveProcess, reject) => {
-    const child = spawn(command, args, {
+    const child = spawn(sandboxed.command, sandboxed.args, {
       cwd: options.cwd,
+      env,
       stdio: ["ignore", "pipe", "pipe"]
     });
     let stdout = "";
@@ -743,10 +966,83 @@ async function runProcess(command: string, args: string[], options: { cwd: strin
       if (code === 0) {
         resolveProcess({ stdout, stderr });
       } else {
-        reject(new Error(`${command} exited with ${code}\n${stdout}\n${stderr}`));
+        reject(new Error(`${sandboxed.command} exited with ${code}\n${stdout}\n${stderr}`));
       }
     });
   });
+}
+
+function resolveSandboxMode(env: NodeJS.ProcessEnv): BattlecodeSandboxEvidence["mode"] {
+  if (env.BATTLECODE_SANDBOX_MODE === "bubblewrap-prlimit") {
+    return existsSync("/usr/bin/bwrap") && existsSync("/usr/bin/prlimit") ? "bubblewrap-prlimit" : "local-process";
+  }
+  if (env.BATTLECODE_SANDBOX_MODE === "local-process") {
+    return "local-process";
+  }
+  if (existsSync("/usr/bin/prlimit")) {
+    return "prlimit-local";
+  }
+  return "local-process";
+}
+
+function buildSandboxCommand(
+  command: string,
+  args: string[],
+  options: {
+    cwd: string;
+    sandboxHome: string;
+    sandboxMode?: BattlecodeSandboxEvidence["mode"];
+    cpuSeconds?: number;
+    addressSpaceBytes?: number;
+    env: Record<string, string>;
+  }
+): { command: string; args: string[] } {
+  if (options.sandboxMode !== "bubblewrap-prlimit") {
+    if (options.sandboxMode === "prlimit-local") {
+      return {
+        command: "/usr/bin/prlimit",
+        args: [
+          `--cpu=${options.cpuSeconds ?? 125}`,
+          `--as=${options.addressSpaceBytes ?? 8_589_934_592}`,
+          "--",
+          command,
+          ...args
+        ]
+      };
+    }
+    return { command, args };
+  }
+  const home = options.env.HOME ?? options.sandboxHome;
+  const javaHome = options.env.JAVA_HOME ?? dirname(dirname(command));
+  const lang = options.env.LANG ?? "C.UTF-8";
+  const path = options.env.PATH ?? `${dirname(command)}:/usr/bin:/bin`;
+  const tmpDir = options.env.TMPDIR ?? options.cwd;
+  const prlimitArgs = [
+    `--cpu=${options.cpuSeconds ?? 125}`,
+    `--as=${options.addressSpaceBytes ?? 8_589_934_592}`,
+    "--",
+    command,
+    ...args
+  ];
+  return {
+    command: "/usr/bin/bwrap",
+    args: [
+      "--unshare-net",
+      "--ro-bind", "/", "/",
+      "--bind", options.cwd, options.cwd,
+      "--dev", "/dev",
+      "--proc", "/proc",
+      "--tmpfs", "/tmp",
+      "--chdir", options.cwd,
+      "--setenv", "HOME", home,
+      "--setenv", "JAVA_HOME", javaHome,
+      "--setenv", "LANG", lang,
+      "--setenv", "PATH", path,
+      "--setenv", "TMPDIR", tmpDir,
+      "/usr/bin/prlimit",
+      ...prlimitArgs
+    ]
+  };
 }
 
 function parseMatchOutput(stdout: string): { winner: string; side: "A" | "B"; round: number; reason: string } {
@@ -767,6 +1063,7 @@ function normalizeLedger(input: unknown): BattlecodeLedger {
   const record = isRecord(input) ? input : {};
   return {
     generatedAt: typeof record.generatedAt === "string" ? record.generatedAt : new Date().toISOString(),
+    submissions: Array.isArray(record.submissions) ? record.submissions.filter(isRecord) as BattlecodeSubmission[] : [],
     tickets: Array.isArray(record.tickets) ? record.tickets.filter(isRecord) as BattlecodeTicket[] : [],
     matches: Array.isArray(record.matches) ? record.matches.filter(isRecord) as BattlecodeMatchResult[] : [],
     awards: Array.isArray(record.awards) ? record.awards.filter(isRecord) as BattlecodeAward[] : []
@@ -776,6 +1073,7 @@ function normalizeLedger(input: unknown): BattlecodeLedger {
 function emptyLedger(): BattlecodeLedger {
   return {
     generatedAt: new Date().toISOString(),
+    submissions: [],
     tickets: [],
     matches: [],
     awards: []
@@ -788,6 +1086,39 @@ function cleanId(value: unknown, fallback: string): string {
     return text;
   }
   throw new Error(`invalid id: ${text}`);
+}
+
+function cleanPackage(value: unknown, fallback: string): string {
+  const text = String(value ?? fallback).trim();
+  if (/^[a-z][a-z0-9_]{0,31}$/i.test(text) && text !== "baselinebot") {
+    return text;
+  }
+  throw new Error(`invalid Battlecode Java package: ${text}`);
+}
+
+function validateBattlecodeBotSource(source: string, botPackage: string): void {
+  const byteLength = Buffer.byteLength(source, "utf8");
+  if (byteLength <= 0 || byteLength > BATTLECODE_MAX_SOURCE_BYTES) {
+    throw new Error(`Battlecode bot source must be 1..${BATTLECODE_MAX_SOURCE_BYTES} bytes`);
+  }
+  if (source.includes("\0")) {
+    throw new Error("Battlecode bot source must not contain NUL bytes");
+  }
+  const packagePattern = new RegExp(`\\bpackage\\s+${escapeRegExp(botPackage)}\\s*;`);
+  if (!packagePattern.test(source)) {
+    throw new Error(`Battlecode bot source must declare package ${botPackage};`);
+  }
+  if (!/\bclass\s+RobotPlayer\b/.test(source)) {
+    throw new Error("Battlecode bot source must define class RobotPlayer");
+  }
+  const blocked = DISALLOWED_BOT_PATTERNS.find((pattern) => source.includes(pattern));
+  if (blocked) {
+    throw new Error(`Battlecode bot source uses disallowed API pattern: ${blocked}`);
+  }
+}
+
+function escapeRegExp(input: string): string {
+  return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function cleanAsset(value: unknown, fallback: string): string {

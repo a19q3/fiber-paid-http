@@ -9,7 +9,7 @@ const repoRoot = resolve(here, "..", "..", "..");
 const reportPath = resolve(repoRoot, "reports", "evidence-console-cli-start.json");
 const apiPort = await findFreePort();
 const webPort = await findFreePort(apiPort);
-const expectedApiBase = `http://localhost:${apiPort}`;
+const expectedApiBase = `http://127.0.0.1:${apiPort}`;
 const output = [];
 const child = spawn("pnpm", ["exec", "fiber-mpp", "evidence", "start", "--port", String(apiPort), "--web-port", String(webPort)], {
   cwd: repoRoot,

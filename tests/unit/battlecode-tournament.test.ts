@@ -7,16 +7,37 @@ import {
   assertBattlecodeFairnessCommitment,
   battlecodeAwardSettlementPlan,
   battlecodeBuiltInBotScriptHash,
+  battlecodeBuiltInBotSource,
   battlecodeEntryPrice,
+  createBattlecodeSubmission,
   issueBattlecodeTicket,
   normalizeBattlecodeRegistration,
+  normalizeBattlecodeSubmission,
   readBattlecodeLedger
 } from "../../apps/evidence-api/src/battlecode.js";
 
 const unitClientHash = `sha256:${"12".repeat(32)}`;
+const unitSubmission = {
+  submissionId: "bc_sub_unit",
+  playerId: "alice",
+  botPackage: "fiberchamp",
+  botScriptHash: battlecodeBuiltInBotScriptHash(),
+  sourcePath: "/tmp/unit/RobotPlayer.java",
+  sourceBytes: battlecodeBuiltInBotSource().length,
+  status: "locked" as const,
+  submittedAt: "2026-01-01T00:00:00.000Z",
+  policy: {
+    language: "java" as const,
+    entrypoint: "RobotPlayer.java" as const,
+    packageRequired: "fiberchamp",
+    maxSourceBytes: 128000,
+    disallowedPatterns: []
+  }
+};
 const unitManifest = {
   domain: "fiber-mpp-battlecode-fairness-v1" as const,
-  botPackage: "fiberchamp" as const,
+  botPackage: "fiberchamp",
+  submissionId: unitSubmission.submissionId,
   botScriptHash: battlecodeBuiltInBotScriptHash(),
   clientHash: unitClientHash,
   runnerHash: `sha256:${"34".repeat(32)}`,
@@ -30,6 +51,7 @@ describe("Battlecode tournament helpers", () => {
   it("normalizes a paid xUDT Battlecode registration", () => {
     const registration = normalizeBattlecodeRegistration({
       playerId: "alice",
+      submissionId: unitSubmission.submissionId,
       bot: "fiberchamp",
       botScriptHash: unitManifest.botScriptHash,
       clientHash: unitManifest.clientHash,
@@ -40,6 +62,7 @@ describe("Battlecode tournament helpers", () => {
     });
     expect(registration).toEqual({
       playerId: "alice",
+      submissionId: unitSubmission.submissionId,
       botPackage: "fiberchamp",
       botScriptHash: unitManifest.botScriptHash,
       clientHash: unitManifest.clientHash,
@@ -55,26 +78,62 @@ describe("Battlecode tournament helpers", () => {
     });
   });
 
-  it("rejects unreviewed bot packages", () => {
+  it("normalizes and locks a submitted bot source", async () => {
+    const root = await mkdtemp(join(tmpdir(), "fiber-mpp-battlecode-submission-"));
+    try {
+      const input = normalizeBattlecodeSubmission({
+        playerId: "alice",
+        botPackage: "fiberchamp",
+        source: battlecodeBuiltInBotSource()
+      });
+      const { submission, fairnessManifest } = await createBattlecodeSubmission(root, input, {
+        BATTLECODE_JDK_HOME: "/home/arthur/a19q3/.toolchains/jdk-21.0.11+10",
+        BATTLECODE_ENGINE_JAR: "/home/arthur/a19q3/.toolchains/battlecode25/battlecode25-java-3.1.0.jar",
+        BATTLECODE_ENGINE_VERSION: "3.1.0"
+      });
+      const ledger = await readBattlecodeLedger(root);
+      expect(submission.submissionId).toMatch(/^bc_sub_/);
+      expect(submission.botScriptHash).toBe(battlecodeBuiltInBotScriptHash());
+      expect(fairnessManifest.submissionId).toBe(submission.submissionId);
+      expect(ledger.submissions).toHaveLength(1);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects invalid bot packages", () => {
     expect(() => normalizeBattlecodeRegistration({
-      bot: "randomplayer",
+      submissionId: unitSubmission.submissionId,
+      bot: "baselinebot",
       botScriptHash: unitManifest.botScriptHash,
       clientHash: unitManifest.clientHash
-    })).toThrow(/only the built-in fiberchamp/);
+    })).toThrow(/invalid Battlecode Java package/);
   });
 
   it("requires committed bot and client hashes", () => {
-    expect(() => normalizeBattlecodeRegistration({ bot: "fiberchamp" })).toThrow(/invalid sha256 hash commitment/);
+    expect(() => normalizeBattlecodeRegistration({
+      submissionId: unitSubmission.submissionId,
+      bot: "fiberchamp"
+    })).toThrow(/invalid sha256 hash commitment/);
+  });
+
+  it("requires a locked submission id before registration", () => {
+    expect(() => normalizeBattlecodeRegistration({
+      bot: "fiberchamp",
+      botScriptHash: unitManifest.botScriptHash,
+      clientHash: unitManifest.clientHash
+    })).toThrow(/invalid id/);
   });
 
   it("rejects mismatched fairness commitments", () => {
     const registration = normalizeBattlecodeRegistration({
       playerId: "alice",
+      submissionId: unitSubmission.submissionId,
       bot: "fiberchamp",
       botScriptHash: unitManifest.botScriptHash,
       clientHash: `sha256:${"ab".repeat(32)}`
     });
-    expect(() => assertBattlecodeFairnessCommitment(registration, unitManifest)).toThrow(/clientHash expected/);
+    expect(() => assertBattlecodeFairnessCommitment(registration, unitManifest, unitSubmission)).toThrow(/clientHash expected/);
   });
 
   it("records paid tickets in the local tournament ledger", async () => {
@@ -82,12 +141,14 @@ describe("Battlecode tournament helpers", () => {
     try {
       const registration = normalizeBattlecodeRegistration({
         playerId: "bob",
+        submissionId: unitSubmission.submissionId,
         botPackage: "fiberchamp",
         botScriptHash: unitManifest.botScriptHash,
         clientHash: unitManifest.clientHash
       });
       const ticket = issueBattlecodeTicket({
         registration,
+        submission: unitSubmission,
         fairnessManifest: unitManifest,
         receiptId: "rcpt_unit",
         paymentHash: `0x${"ab".repeat(32)}`
