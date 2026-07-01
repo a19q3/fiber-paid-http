@@ -52,3 +52,17 @@ WWW-Authenticate: Payment id="...", method="fiber", intent="charge", challenge="
 Content-Type: application/problem+json
 Cache-Control: no-store
 ```
+
+When F-L402 is enabled, the same response also includes an L402 challenge and an `fl402` body:
+
+```text
+WWW-Authenticate: L402 macaroon="...", invoice="...", payment_hash="...", amount="...", currency="..."
+```
+
+Clients can retry with:
+
+```text
+Authorization: L402 <macaroon>:<preimage>
+```
+
+The gateway verifies the F-L402 caveats and preimage, converts the proof to a `PaymentCredential`, and then applies the same resource binding, replay, Fiber settlement, and receipt checks used by `Authorization: Payment`.

@@ -26,6 +26,15 @@ import {
   f402ChallengeToMpp,
   f402ProofToCredential
 } from "@fiber-mpp/f402-compat";
+import {
+  FL402ChallengeSchema,
+  FL402ProofSchema,
+  fl402ChallengeToMpp,
+  fl402ProofToCredential,
+  hashPaymentPreimage,
+  issueFl402Challenge,
+  verifyFl402Proof
+} from "@fiber-mpp/fl402-compat";
 import { createFiberMppMiddleware } from "@fiber-mpp/server-middleware";
 import { SqliteStore } from "@fiber-mpp/storage";
 
@@ -55,6 +64,7 @@ type SecurityMatrixRow = {
 const VECTOR_DIR = "test-vectors";
 const SUCCESS_REPORT_PATH = "reports/fiber-local-e2e-success.json";
 const SECRET = "fiber-mpp-conformance-secret";
+const FL402_ROOT_KEY = "fiber-paid-http-fl402-conformance-root-key";
 const SERVER_ID = "fiber-mpp-ts-conformance";
 const FIXED_NOW = "2026-06-24T00:00:00.000Z";
 const VALID_EXPIRES = "2030-01-01T00:00:00.000Z";
@@ -62,6 +72,8 @@ const EXPIRED_AT = "2020-01-01T00:00:00.000Z";
 const CHALLENGE_ID = "chal_conformance_0001";
 const NONCE = "0123456789abcdef0123456789abcdef";
 const PAYMENT_HASH = `0x${"ab".repeat(32)}`;
+const FL402_PREIMAGE = `0x${"11".repeat(32)}`;
+const FL402_PAYMENT_HASH = hashPaymentPreimage(FL402_PREIMAGE, "sha256");
 const INVOICE = "fibd1qconformancepayment0001";
 const AMOUNT_SHANNONS = "1000";
 const RESOURCE: ResourceDescriptor = {
@@ -114,6 +126,20 @@ const SECURITY_MATRIX: SecurityMatrixRow[] = [
     expected_rejection: "bad-receipt-signature",
     implemented_test: "test-vectors/attack.tampered-receipt.json",
     vector_file: "test-vectors/attack.tampered-receipt.json",
+    status: "covered"
+  },
+  {
+    attack: "F-L402 wrong preimage",
+    expected_rejection: "wrong-preimage",
+    implemented_test: "tests/unit/fl402.test.ts and test-vectors/attack.fl402-wrong-preimage.json",
+    vector_file: "test-vectors/attack.fl402-wrong-preimage.json",
+    status: "covered"
+  },
+  {
+    attack: "F-L402 tampered macaroon",
+    expected_rejection: "bad-fl402-macaroon-signature",
+    implemented_test: "tests/unit/fl402.test.ts and test-vectors/attack.fl402-tampered-macaroon.json",
+    vector_file: "test-vectors/attack.fl402-tampered-macaroon.json",
     status: "covered"
   }
 ];
@@ -264,6 +290,49 @@ function buildVectorDocuments(
     resourceHash: artifacts.resourceHash,
     submittedAt: FIXED_NOW
   });
+  const fl402Challenge = issueFl402Challenge({
+    rootKey: FL402_ROOT_KEY,
+    invoice: INVOICE,
+    paymentHash: FL402_PAYMENT_HASH,
+    amount: AMOUNT_SHANNONS,
+    currency: "Fibd",
+    expiresAt: VALID_EXPIRES,
+    resource: RESOURCE,
+    challengeId: CHALLENGE_ID,
+    issuer: SERVER_ID,
+    fiberNodeId: "fiber-node-conformance-payee",
+    hashAlgorithm: "sha256",
+    nonce: NONCE,
+    issuedAt: FIXED_NOW
+  });
+  const fl402Proof = {
+    macaroon: fl402Challenge.macaroon,
+    preimage: FL402_PREIMAGE,
+    invoice: INVOICE,
+    paymentHash: FL402_PAYMENT_HASH,
+    amountShannons: AMOUNT_SHANNONS,
+    mode: "local" as const,
+    status: "settled",
+    observedAt: FIXED_NOW,
+    hashAlgorithm: "sha256" as const,
+    evidence: {
+      conformance: true
+    }
+  };
+  const fl402Credential = fl402ProofToCredential({
+    proof: fl402Proof,
+    challengeId: CHALLENGE_ID,
+    resourceHash: artifacts.resourceHash,
+    submittedAt: FIXED_NOW
+  });
+  const fl402WrongPreimageProof = {
+    ...fl402Proof,
+    preimage: `0x${"22".repeat(32)}`
+  };
+  const fl402TamperedMacaroonProof = {
+    ...fl402Proof,
+    macaroon: `${fl402Proof.macaroon.slice(0, -1)}${fl402Proof.macaroon.endsWith("0") ? "1" : "0"}`
+  };
 
   return {
     "challenge.valid.json": vector(
@@ -339,6 +408,50 @@ function buildVectorDocuments(
       "accepted",
       "F402 proof converted to a FiberMPP payment credential."
     ),
+    "fl402.challenge.valid.json": vector(
+      {
+        case: "fl402.challenge.valid",
+        root_key: FL402_ROOT_KEY,
+        fl402: fl402Challenge,
+        resource: RESOURCE,
+        server_id: SERVER_ID,
+        challenge_id: CHALLENGE_ID,
+        issued_at: FIXED_NOW,
+        expected_mpp_fields: {
+          domain: "fiber-mpp-challenge-v1",
+          challengeId: CHALLENGE_ID,
+          resource: RESOURCE,
+          amount: {
+            value: AMOUNT_SHANNONS,
+            currency: "Fibd"
+          },
+          method: "fiber",
+          paymentHash: FL402_PAYMENT_HASH,
+          invoice: INVOICE,
+          amountShannons: AMOUNT_SHANNONS,
+          serverId: SERVER_ID,
+          audience: SERVER_ID,
+          maxUses: 1,
+          hashAlgorithm: "sha256"
+        }
+      },
+      "accepted",
+      "F-L402 challenge with first-party caveats and a Fiber payment preimage hash."
+    ),
+    "fl402.credential.valid.json": vector(
+      {
+        case: "fl402.credential.valid",
+        root_key: FL402_ROOT_KEY,
+        fl402: fl402Challenge,
+        proof: fl402Proof,
+        challenge_id: CHALLENGE_ID,
+        resource_hash: artifacts.resourceHash,
+        submitted_at: FIXED_NOW,
+        credential: fl402Credential
+      },
+      "accepted",
+      "F-L402 proof converted to a FiberMPP credential after macaroon and preimage verification."
+    ),
     "attack.replay.json": vector(
       {
         ...credentialInput(artifacts.challenge, artifacts.signature, artifacts.credential, RESOURCE),
@@ -388,6 +501,39 @@ function buildVectorDocuments(
       "rejected",
       "Receipt body is changed without recomputing the receipt signature.",
       "bad-receipt-signature"
+    ),
+    "attack.fl402-wrong-preimage.json": vector(
+      {
+        case: "attack.fl402-wrong-preimage",
+        root_key: FL402_ROOT_KEY,
+        fl402: fl402Challenge,
+        proof: fl402WrongPreimageProof,
+        challenge_id: CHALLENGE_ID,
+        resource_hash: artifacts.resourceHash,
+        submitted_at: FIXED_NOW,
+        credential: fl402Credential
+      },
+      "rejected",
+      "F-L402 proof submits a preimage that does not hash to the macaroon payment hash caveat.",
+      "wrong-preimage"
+    ),
+    "attack.fl402-tampered-macaroon.json": vector(
+      {
+        case: "attack.fl402-tampered-macaroon",
+        root_key: FL402_ROOT_KEY,
+        fl402: {
+          ...fl402Challenge,
+          macaroon: fl402TamperedMacaroonProof.macaroon
+        },
+        proof: fl402TamperedMacaroonProof,
+        challenge_id: CHALLENGE_ID,
+        resource_hash: artifacts.resourceHash,
+        submitted_at: FIXED_NOW,
+        credential: fl402Credential
+      },
+      "rejected",
+      "F-L402 macaroon signature is changed without recomputing the root-key HMAC.",
+      "bad-fl402-macaroon-signature"
     ),
     "fiber.local-e2e.receipt.json": vector(
       liveEvidence.receiptInput,
@@ -543,6 +689,12 @@ async function verifyVectorInput(file: string, input: Record<string, unknown>): 
       return verifyF402ChallengeVector(input);
     case "f402.credential.valid":
       return verifyF402CredentialVector(input);
+    case "fl402.challenge.valid":
+      return verifyFL402ChallengeVector(input);
+    case "fl402.credential.valid":
+    case "attack.fl402-wrong-preimage":
+    case "attack.fl402-tampered-macaroon":
+      return verifyFL402CredentialVector(input);
     case "fiber.local-e2e.receipt":
       return verifyLiveReceiptEvidence(input);
     case "fiber.local-e2e.report":
@@ -694,6 +846,81 @@ function verifyF402CredentialVector(input: Record<string, unknown>): Verificatio
     : { result: "rejected", errorCode: "f402-credential-mismatch" };
 }
 
+function verifyFL402ChallengeVector(input: Record<string, unknown>): VerificationOutcome {
+  const fl402 = FL402ChallengeSchema.parse(input.fl402);
+  const resource = resourceField(input, "resource");
+  const expected = recordField(input, "expected_mpp_fields");
+  try {
+    verifyFl402Proof({
+      challenge: fl402,
+      proof: {
+        macaroon: fl402.macaroon,
+        preimage: FL402_PREIMAGE,
+        invoice: fl402.invoice,
+        paymentHash: fl402.paymentHash,
+        amountShannons: fl402.amount,
+        mode: "local",
+        status: "settled",
+        hashAlgorithm: fl402.hashAlgorithm
+      },
+      rootKey: stringField(input, "root_key"),
+      now: FIXED_NOW
+    });
+  } catch (error) {
+    return { result: "rejected", errorCode: errorMessage(error) };
+  }
+  const challenge = fl402ChallengeToMpp({
+    fl402,
+    resource,
+    serverId: stringField(input, "server_id"),
+    challengeId: stringField(input, "challenge_id"),
+    issuedAt: stringField(input, "issued_at")
+  });
+  const fiber = challenge.methods.find((method) => method.method === "fiber");
+  if (!fiber) {
+    return { result: "rejected", errorCode: "fl402-challenge-mismatch" };
+  }
+  const accepted =
+    challenge.domain === expected.domain &&
+    challenge.challengeId === expected.challengeId &&
+    challenge.serverId === expected.serverId &&
+    challenge.audience === expected.audience &&
+    challenge.maxUses === expected.maxUses &&
+    canonicalJson(challenge.resource) === canonicalJson(expected.resource) &&
+    challenge.amount.value === recordField(expected, "amount").value &&
+    challenge.amount.currency === recordField(expected, "amount").currency &&
+    fiber.method === expected.method &&
+    fiber.paymentHash === expected.paymentHash &&
+    fiber.invoice === expected.invoice &&
+    fiber.amountShannons === expected.amountShannons;
+  return accepted ? { result: "accepted" } : { result: "rejected", errorCode: "fl402-challenge-mismatch" };
+}
+
+function verifyFL402CredentialVector(input: Record<string, unknown>): VerificationOutcome {
+  const fl402 = FL402ChallengeSchema.parse(input.fl402);
+  const proof = FL402ProofSchema.parse(input.proof);
+  try {
+    verifyFl402Proof({
+      challenge: fl402,
+      proof,
+      rootKey: stringField(input, "root_key"),
+      now: FIXED_NOW
+    });
+  } catch (error) {
+    return { result: "rejected", errorCode: errorMessage(error) };
+  }
+  const expected = PaymentCredentialSchema.parse(input.credential);
+  const actual = fl402ProofToCredential({
+    proof,
+    challengeId: stringField(input, "challenge_id"),
+    resourceHash: stringField(input, "resource_hash"),
+    submittedAt: stringField(input, "submitted_at")
+  });
+  return canonicalJson(actual) === canonicalJson(expected)
+    ? { result: "accepted" }
+    : { result: "rejected", errorCode: "fl402-credential-mismatch" };
+}
+
 function verifyLiveReportEvidence(input: Record<string, unknown>): VerificationOutcome {
   const report = recordField(input, "report");
   return report.fiber_e2e_status === "passed" &&
@@ -838,6 +1065,13 @@ function recordField(source: Record<string, unknown>, field: string): Record<str
     throw new Error(`Vector field ${field} must be an object`);
   }
   return value as Record<string, unknown>;
+}
+
+function errorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return String(error);
 }
 
 function resourceField(source: Record<string, unknown>, field: string): ResourceDescriptor {

@@ -1,9 +1,9 @@
 {
   "engine": "typescript",
-  "verified": 14,
+  "verified": 18,
   "failed": 0,
-  "shared_vectors_total": 14,
-  "shared_vectors_passed": 14,
+  "shared_vectors_total": 18,
+  "shared_vectors_passed": 18,
   "results": [
     {
       "file": "attack.expired-challenge.json",
@@ -13,6 +13,24 @@
       "expected_error_code": "expired-challenge",
       "actual_error_code": "expired-challenge",
       "canonical_hash": "0fa39f393bdfd6fbb12a28ca496b0ea1de3a7cac6921da14a256b7856571d289"
+    },
+    {
+      "file": "attack.fl402-tampered-macaroon.json",
+      "passed": true,
+      "expected": "rejected",
+      "actual": "rejected",
+      "expected_error_code": "bad-fl402-macaroon-signature",
+      "actual_error_code": "bad-fl402-macaroon-signature",
+      "canonical_hash": "7b56eb7c093d064ab998079a4982b56bf68bb45d31b09d0a788ec660eaca4276"
+    },
+    {
+      "file": "attack.fl402-wrong-preimage.json",
+      "passed": true,
+      "expected": "rejected",
+      "actual": "rejected",
+      "expected_error_code": "wrong-preimage",
+      "actual_error_code": "wrong-preimage",
+      "canonical_hash": "2364bf2f3c23611824b9d5b3a6e1ea6ac71cb27e23be234aa87ca040d0ee87b1"
     },
     {
       "file": "attack.replay.json",
@@ -92,14 +110,28 @@
       "passed": true,
       "expected": "accepted",
       "actual": "accepted",
-      "canonical_hash": "1d53d983209fcd917fb77e00071d0af32580e0bd441802c4e594285e5e2b887e"
+      "canonical_hash": "6baca672579b17f04ef23537bde8d3a2b908e50ea59c371b0660d77d126689d2"
     },
     {
       "file": "fiber.local-e2e.report.json",
       "passed": true,
       "expected": "accepted",
       "actual": "accepted",
-      "canonical_hash": "5ebcebb7bfcbb2d40ccd84e82e57e9710679355e7e18017d2a64108376369919"
+      "canonical_hash": "bd1eff6e144b305788fb42b72e613c9d662a9bf648d01a82fcb02c1513bbeb0e"
+    },
+    {
+      "file": "fl402.challenge.valid.json",
+      "passed": true,
+      "expected": "accepted",
+      "actual": "accepted",
+      "canonical_hash": "c4f8777c15a006d8c0ea70448a3102c5b6a580778e0ab7a1ea8e65137b57d3a2"
+    },
+    {
+      "file": "fl402.credential.valid.json",
+      "passed": true,
+      "expected": "accepted",
+      "actual": "accepted",
+      "canonical_hash": "0a242e68c0f9ad0901f846de3eb8edf43a14d68fdc14a9394dd97e5838affe63"
     },
     {
       "file": "receipt.valid.json",

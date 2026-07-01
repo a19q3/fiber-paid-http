@@ -60,6 +60,10 @@ export type GatewayConfig = {
     settlement_timeout_ms?: number;
     settlement_poll_ms?: number;
   };
+  fl402?: {
+    root_key_env?: string;
+    hash_algorithm?: "ckb_hash" | "sha256";
+  };
 };
 
 type GatewayPrice = NonNullable<GatewayConfig["price"]>;
@@ -111,6 +115,11 @@ export type ResolvedGatewayConfig = {
   previousSecretEnvs: string[];
   previousSecrets: string[];
   fiberEnv: NodeJS.ProcessEnv;
+  fl402?: {
+    rootKey: string;
+    rootKeyEnv: string;
+    hashAlgorithm: "ckb_hash" | "sha256";
+  };
   cors: GatewayCorsPolicy;
   operations: GatewayOperations;
 };
@@ -222,6 +231,10 @@ export function resolveGatewayConfig(options: GatewayCliOptions, env: NodeJS.Pro
   const secretEnv = config?.secret_env ?? "FIBER_MPP_SECRET";
   const secret = env[secretEnv];
   const previousSecretResolution = previousSecretsFromGatewayConfig(config, env);
+  const fl402Configured = Boolean(config?.fl402);
+  const fl402RootKeyEnv = config?.fl402?.root_key_env ?? "FIBER_MPP_FL402_ROOT_KEY";
+  const fl402RootKey = fl402Configured ? env[fl402RootKeyEnv] : undefined;
+  const fl402HashAlgorithm = config?.fl402?.hash_algorithm ?? "ckb_hash";
   const cors = resolveGatewayCorsPolicy(config);
   const operations = resolveGatewayOperations(config);
 
@@ -238,6 +251,10 @@ export function resolveGatewayConfig(options: GatewayCliOptions, env: NodeJS.Pro
     shortPreviousSecretEnvs: previousSecretResolution.short,
     literalRpcAuth: gatewayConfigHasLiteralRpcAuth(config),
     price,
+    fl402Configured,
+    fl402RootKeyEnv,
+    fl402RootKey,
+    fl402HashAlgorithm,
     cors,
     operations
   });
@@ -256,6 +273,13 @@ export function resolveGatewayConfig(options: GatewayCliOptions, env: NodeJS.Pro
     previousSecretEnvs: previousSecretResolution.secretEnvs,
     previousSecrets: previousSecretResolution.secrets,
     fiberEnv,
+    fl402: fl402Configured
+      ? {
+          rootKey: fl402RootKey!,
+          rootKeyEnv: fl402RootKeyEnv,
+          hashAlgorithm: fl402HashAlgorithm
+        }
+      : undefined,
     cors,
     operations
   };
@@ -276,6 +300,10 @@ export function buildBootstrapReport(
     shortPreviousSecretEnvs?: string[];
     literalRpcAuth?: boolean;
     price?: GatewayPrice;
+    fl402Configured?: boolean;
+    fl402RootKeyEnv?: string;
+    fl402RootKey?: string;
+    fl402HashAlgorithm?: string;
     cors?: GatewayCorsPolicy;
     operations?: GatewayOperations;
   } = {}
@@ -316,6 +344,9 @@ export function buildBootstrapReport(
     checks.rpc_auth_from_env = !input.literalRpcAuth;
     checks.methods_fiber_only = input.methods?.every((method) => method === "fiber") ?? true;
     checks.price_currency = input.price?.currency ?? null;
+    checks.fl402_enabled = input.fl402Configured ?? false;
+    checks.fl402_root_key_env = input.fl402Configured ? input.fl402RootKeyEnv ?? "FIBER_MPP_FL402_ROOT_KEY" : null;
+    checks.fl402_hash_algorithm = input.fl402Configured ? input.fl402HashAlgorithm ?? "ckb_hash" : null;
     checks.cors_wildcard_disabled = !(input.cors?.allowedOrigins.includes("*") ?? false);
     checks.rate_limit_enabled = Boolean(input.operations && input.operations.rateLimit.maxRequests > 0 && input.operations.rateLimit.windowMs > 0);
     checks.log_redaction_enabled = input.operations?.logRedaction.enabled ?? false;
@@ -343,6 +374,14 @@ export function buildBootstrapReport(
     }
     if (input.price && input.price.currency !== "CKB") {
       blockers.push("gateway price currency must be CKB");
+    }
+    if (input.fl402Configured) {
+      if (!input.fl402RootKey || input.fl402RootKey.length < 16) {
+        blockers.push(`set ${input.fl402RootKeyEnv ?? "FIBER_MPP_FL402_ROOT_KEY"} to an F-L402 root key of at least 16 characters`);
+      }
+      if (input.fl402HashAlgorithm !== "ckb_hash" && input.fl402HashAlgorithm !== "sha256") {
+        blockers.push("gateway fl402.hash_algorithm must be ckb_hash or sha256");
+      }
     }
     if (input.cors?.allowedOrigins.includes("*")) {
       blockers.push("gateway CORS allowed_origins must not include *");

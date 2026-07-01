@@ -24,6 +24,7 @@
     "@fiber-mpp/evidence-web": "workspace:*",
     "@fiber-mpp/f402-compat": "workspace:*",
     "@fiber-mpp/fiber-method": "workspace:*",
+    "@fiber-mpp/fl402-compat": "workspace:*",
     "@fiber-mpp/server-middleware": "workspace:*",
     "@fiber-mpp/storage": "workspace:*",
     "commander": "^12.1.0"

@@ -71,6 +71,17 @@ Edit the template:
 }
 ```
 
+To also issue F-L402 challenges from the gateway, add:
+
+```json
+{
+  "fl402": {
+    "root_key_env": "FIBER_MPP_FL402_ROOT_KEY",
+    "hash_algorithm": "sha256"
+  }
+}
+```
+
 Check readiness before serving traffic:
 
 ```bash
@@ -88,6 +99,7 @@ pnpm exec fiber-mpp serve --config fiber-mpp.gateway.json
 The gateway requires:
 
 - `FIBER_MPP_SECRET` with at least 32 characters,
+- optional `FIBER_MPP_FL402_ROOT_KEY` with at least 16 characters when `fl402` is configured,
 - optional `previous_secret_envs` entries only for active signing-secret rotation windows,
 - `storage` as `sqlite://path`; CLI `--storage /path/to/file.sqlite` is normalized to `sqlite:///path/to/file.sqlite`,
 - `upstream`,

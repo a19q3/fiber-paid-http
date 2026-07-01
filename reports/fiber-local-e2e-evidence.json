@@ -1,9 +1,11 @@
 {
   "evidence": true,
-  "source_report": "reports/fiber-mpp-gate.local.json",
+  "source_report": "reports/fiber-mpp-gate.json",
+  "receipt_source": "reports/fiber-mpp-gate.json",
   "payment_hash": "0x4de4574f1f2dd2ec47933506822860d3af3decbe4651de3f861ff81b9d61effc",
   "receipt_id": "rcpt_d6368f6113b2a81e262fdf1c79a4e44d",
-  "fiber_commit": "3c25bcf16200e5d641dcd9b79f086f391e976172",
   "production_ready_for_fiber_method": false,
-  "blockers": []
+  "blockers": [
+    "testnet Fiber E2E evidence still pending"
+  ]
 }

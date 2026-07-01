@@ -43,6 +43,20 @@
       "implemented_test": "test-vectors/attack.tampered-receipt.json",
       "vector_file": "test-vectors/attack.tampered-receipt.json",
       "status": "covered"
+    },
+    {
+      "attack": "F-L402 wrong preimage",
+      "expected_rejection": "wrong-preimage",
+      "implemented_test": "tests/unit/fl402.test.ts and test-vectors/attack.fl402-wrong-preimage.json",
+      "vector_file": "test-vectors/attack.fl402-wrong-preimage.json",
+      "status": "covered"
+    },
+    {
+      "attack": "F-L402 tampered macaroon",
+      "expected_rejection": "bad-fl402-macaroon-signature",
+      "implemented_test": "tests/unit/fl402.test.ts and test-vectors/attack.fl402-tampered-macaroon.json",
+      "vector_file": "test-vectors/attack.fl402-tampered-macaroon.json",
+      "status": "covered"
     }
   ]
 }

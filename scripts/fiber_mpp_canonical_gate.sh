@@ -65,6 +65,13 @@ const fiberMethods = ["new_invoice", "send_payment", "get_payment", "get_invoice
 const fiberRpcSemanticsParity = fiberMethods.every((method) => tsSource.includes(`\"${method}\"`) && rustSource.includes(`\"${method}\"`));
 const receiptVectors = ["receipt.valid.json", "fiber.local-e2e.receipt.json"];
 const f402Vectors = ["f402.challenge.valid.json", "f402.credential.valid.json"];
+const fl402Vectors = [
+  "fl402.challenge.valid.json",
+  "fl402.credential.valid.json",
+  "attack.fl402-wrong-preimage.json",
+  "attack.fl402-tampered-macaroon.json"
+];
+const expectedSharedVectorTotal = 18;
 const vectorPassed = (report, file) => report.results.some((result) => result.file === file && result.passed);
 const currentFiberCommit = readFiberCommit();
 const testnetEvidenceRecordedAt = readTestnetEvidenceRecordedAt(testnetEvidenceReport);
@@ -96,6 +103,7 @@ const report = {
   canonical_hash_parity: mismatches.length === 0,
   receipt_format_parity: receiptVectors.every((file) => vectorPassed(ts, file) && vectorPassed(rust, file)),
   f402_parity: f402Vectors.every((file) => vectorPassed(ts, file) && vectorPassed(rust, file)),
+  fl402_parity: fl402Vectors.every((file) => vectorPassed(ts, file) && vectorPassed(rust, file)),
   fiber_rpc_semantics_parity: fiberRpcSemanticsParity,
   production_operations: ops.production_ops_ready === true,
   production_operations_report: "reports/production-operations-matrix.json",
@@ -125,13 +133,14 @@ if (
   !report.rust_canonical_verifier ||
   !report.typescript_vector_harness ||
   report.typescript_trusted_boundary !== false ||
-  report.shared_vectors_total !== 14 ||
-  report.shared_vectors_passed_rust !== 14 ||
-  report.shared_vectors_passed_typescript_harness !== 14 ||
+  report.shared_vectors_total !== expectedSharedVectorTotal ||
+  report.shared_vectors_passed_rust !== expectedSharedVectorTotal ||
+  report.shared_vectors_passed_typescript_harness !== expectedSharedVectorTotal ||
   !report.error_code_parity ||
   !report.canonical_hash_parity ||
   !report.receipt_format_parity ||
   !report.f402_parity ||
+  !report.fl402_parity ||
   !report.fiber_rpc_semantics_parity ||
   !report.production_operations ||
   report.canonical_engine !== "rust" ||
@@ -142,13 +151,25 @@ if (
 }
 
 function readFiberCommit() {
-  try {
-    return execFileSync("git", ["-C", "/home/arthur/a19q3/fiber", "rev-parse", "HEAD"], {
-      encoding: "utf8"
-    }).trim();
-  } catch {
-    return null;
+  for (const repo of fiberRepoCandidates()) {
+    try {
+      if (!fs.existsSync(repo)) continue;
+      return execFileSync("git", ["-C", repo, "rev-parse", "HEAD"], {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"]
+      }).trim();
+    } catch {
+      // Try the next configured Fiber checkout.
+    }
   }
+  return null;
+}
+
+function fiberRepoCandidates() {
+  return Array.from(new Set([
+    process.env.FIBER_REPO,
+    "/home/arthur/a19q3/fiber"
+  ].filter(Boolean)));
 }
 
 function readTestnetEvidenceRecordedAt(report) {

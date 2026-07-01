@@ -437,7 +437,16 @@ async function findFreePort() {
 }
 
 async function findChrome() {
-  const candidates = ["google-chrome-stable", "google-chrome", "chromium", "chromium-browser"];
+  const candidates = [
+    "google-chrome-stable",
+    "google-chrome",
+    "chromium",
+    "chromium-browser",
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "/Applications/Chromium.app/Contents/MacOS/Chromium",
+    "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+    "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge"
+  ];
   for (const candidate of candidates) {
     if (await commandExists(candidate)) return candidate;
   }
@@ -446,7 +455,7 @@ async function findChrome() {
 
 function commandExists(command) {
   return new Promise((resolve) => {
-    const child = spawn("sh", ["-lc", `command -v ${command}`], { stdio: "ignore" });
+    const child = spawn("sh", ["-lc", "command -v \"$1\" >/dev/null 2>&1 || [ -x \"$1\" ]", "sh", command], { stdio: "ignore" });
     child.on("exit", (code) => resolve(code === 0));
     child.on("error", () => resolve(false));
   });

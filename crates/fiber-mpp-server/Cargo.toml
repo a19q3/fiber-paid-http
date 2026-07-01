@@ -11,6 +11,7 @@ base64.workspace = true
 chrono.workspace = true
 fiber-mpp-core = { path = "../fiber-mpp-core" }
 fiber-mpp-fiber = { path = "../fiber-mpp-fiber" }
+fiber-mpp-fl402 = { path = "../fiber-mpp-fl402" }
 fiber-mpp-storage = { path = "../fiber-mpp-storage" }
 hex.workspace = true
 rand.workspace = true

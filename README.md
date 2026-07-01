@@ -1,8 +1,17 @@
 # FiberMPP
 
-FiberMPP is a production-targeted Fiber payment method for Machine Payments Protocol, with F402 compatibility for Fiber-native HTTP 402 applications. It has local Fiber E2E evidence, separate testnet Fiber E2E evidence, a Rust HTTP gateway path, production operations runbooks, and canonical Rust/TypeScript conformance gates.
+FiberMPP is the current repo, package, and CLI name for Fiber Paid HTTP infrastructure: a Rust-first gateway and TypeScript SDK/tooling stack for charging HTTP APIs with Fiber. The primary envelope is MPP-style `WWW-Authenticate: Payment`, and the project now ships F402 and F-L402 adapters for Fiber-native paid HTTP applications.
 
-FiberMPP lets services accept Fiber through one HTTP 402 challenge, credential, and receipt flow.
+FiberMPP lets services accept Fiber through HTTP 402 challenge, credential, settlement, replay protection, and receipt flows. It has local Fiber E2E evidence, separate testnet Fiber E2E evidence, a Rust HTTP gateway path, production operations runbooks, and canonical Rust/TypeScript conformance gates.
+
+## Adapter surface
+
+| Surface | Status | HTTP/auth shape | Role |
+| --- | --- | --- | --- |
+| MPP + Fiber | Primary | `WWW-Authenticate: Payment`, `Authorization: Payment`, `Payment-Receipt` | Stable gateway envelope and receipt model. |
+| F402 | Compatible | Fiber invoice/payment-hash JSON challenge and proof conversion | Bridge for Infern-style Fiber 402 applications. |
+| F-L402 | First-class adapter | `WWW-Authenticate: L402`, `Authorization: L402 macaroon:preimage` | Application-level macaroon/preimage compatibility backed by the same Fiber invoice and receipt verifier. |
+| x402 | Future boundary | Native x402 headers / verify / settle | Not implemented until Fiber node x402 support is available as a stable integration target. |
 
 ## What it is not
 
@@ -85,6 +94,7 @@ FIBER_MPP_SECRET=<32+ character random signing secret>
 FIBER_RPC_AUTH=<optional shared Authorization header value>
 FIBER_PAYEE_NODE_ID=<optional payee node id/pubkey>
 FIBER_PAYER_NODE_ID=<optional payer node id/pubkey>
+FIBER_MPP_FL402_ROOT_KEY=<optional F-L402 root key, 16+ characters>
 ```
 
 Use `FIBER_MODE=testnet` for testnet. Receipts are marked `settled` only after Fiber RPC reports a settled invoice/payment status.
@@ -95,7 +105,11 @@ Infern is an AI model compute marketplace using F402 over Fiber. FiberMPP is reu
 
 ## How it differs from L402
 
-L402 is Lightning-specific and uses macaroons/preimage proofs. FiberMPP uses Fiber invoices/payment hashes through JSON-RPC and signs MPP challenge/receipt payloads with canonical HMAC.
+Lightning L402 is Lightning-specific. FiberMPP implements an application-level F-L402 adapter for Fiber invoices: it issues `fl402-macaroon-v1` HMAC caveat tokens, verifies `macaroon:preimage` proofs, and then converts the proof into the same internal Fiber credential path used by MPP. It does not claim byte-level compatibility with Lightning Labs macaroons.
+
+## How it relates to x402
+
+x402 is the likely long-term native paid HTTP shape for many ecosystems. FiberMPP keeps x402 as a future adapter boundary rather than renaming the project or rewriting the gateway around unstable Fiber node APIs. When Fiber node verify/settle support is stable, x402 should plug into the same challenge, replay, settlement, and receipt model.
 
 ## How it relates to MPP
 
@@ -121,6 +135,9 @@ fiber-mpp storage restore --config fiber-mpp.gateway.json --from backups/fiber-m
 fiber-mpp storage export-receipts --config fiber-mpp.gateway.json --out exports/receipts.jsonl
 fiber-mpp storage audit-receipts --config fiber-mpp.gateway.json
 fiber-mpp f402 convert f402-challenge.json
+fiber-mpp fl402 issue fl402-input.json --root-key "$FIBER_MPP_FL402_ROOT_KEY"
+fiber-mpp fl402 verify fl402-proof.json --root-key "$FIBER_MPP_FL402_ROOT_KEY"
+fiber-mpp fl402 convert fl402-proof.json --server-id fiber-mpp-cli
 fiber-mpp receipt verify receipt.json --secret <secret>
 fiber-mpp doctor --role payer
 fiber-mpp evidence start --port 8787 --web-port 8788

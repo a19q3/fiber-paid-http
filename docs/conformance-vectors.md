@@ -1,6 +1,6 @@
 # Conformance Vectors
 
-The TypeScript implementation is the current FiberMPP conformance oracle. The vector suite under `test-vectors/` freezes the canonical JSON inputs, hashes, accepted/rejected outcomes, and rejection codes that the Rust migration must preserve.
+The vector suite under `test-vectors/` freezes the canonical JSON inputs, hashes, accepted/rejected outcomes, and rejection codes that Rust and TypeScript must preserve.
 
 ## Commands
 
@@ -45,15 +45,19 @@ receipt.valid.json
 resource.hash.valid.json
 f402.challenge.valid.json
 f402.credential.valid.json
+fl402.challenge.valid.json
+fl402.credential.valid.json
 attack.replay.json
 attack.wrong-resource.json
 attack.wrong-amount.json
 attack.wrong-method.json
 attack.expired-challenge.json
 attack.tampered-receipt.json
+attack.fl402-wrong-preimage.json
+attack.fl402-tampered-macaroon.json
 ```
 
-The verifier exercises the same TypeScript parsing, signing, resource hashing, middleware verification, F402 conversion, replay storage, and receipt signature checks that production code uses.
+The verifier exercises the same TypeScript parsing, signing, resource hashing, middleware verification, F402 conversion, F-L402 preimage/macaroon verification, replay storage, and receipt signature checks that production code uses. The Rust verifier must agree on all 18 shared vectors.
 
 ## Live Fiber Evidence
 

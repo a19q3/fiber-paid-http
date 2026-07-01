@@ -7,6 +7,7 @@ import {
   resourceHashFromRequest,
   verifyReceiptSignature
 } from "@fiber-mpp/core";
+import { buildAuthorizationL402Header, hashPaymentPreimage } from "@fiber-mpp/fl402-compat";
 import { createFiberMppMiddleware } from "@fiber-mpp/server-middleware";
 import { createFiberFixtureAdapters, createSqliteTestStore } from "../helpers/fiber-fixture.js";
 
@@ -22,6 +23,46 @@ describe("FiberMPP middleware security", () => {
     expect(response.headers.get("www-authenticate")).toContain("Payment ");
     const body = (await response.json()) as { methods: unknown[] };
     expect(body.methods).toHaveLength(1);
+  });
+
+  it("accepts Authorization: L402 macaroon preimage when F-L402 is enabled", async () => {
+    const rootKey = "middleware-fl402-root-key-at-least-16";
+    const preimage = `0x${"11".repeat(32)}`;
+    const paymentHash = hashPaymentPreimage(preimage, "sha256");
+    const { handler } = makeHandler(
+      {
+        fl402: {
+          rootKey,
+          hashAlgorithm: "sha256"
+        }
+      },
+      () => Response.json({ fl402: true }),
+      { paymentHash }
+    );
+    const unpaid = await handler(new Request(url));
+    expect(unpaid.status).toBe(402);
+    expect(unpaid.headers.get("www-authenticate")).toContain("L402 ");
+    const body = (await unpaid.json()) as {
+      challengeId: string;
+      fl402: { challengeId?: string; macaroon: string; paymentHash: string; hashAlgorithm: "sha256" };
+    };
+    expect(body.fl402.challengeId).toBe(body.challengeId);
+    expect(body.fl402.paymentHash).toBe(paymentHash);
+
+    const paid = await handler(
+      new Request(url, {
+        headers: {
+          authorization: buildAuthorizationL402Header({
+            macaroon: body.fl402.macaroon,
+            preimage
+          })
+        }
+      })
+    );
+    expect(paid.status).toBe(200);
+    expect(await paid.json()).toEqual({ fl402: true });
+    const receipt = decodeReceipt(paid.headers.get(PAYMENT_RECEIPT_HEADER)!);
+    expect(receipt.settlement.paymentHash).toBe(paymentHash);
   });
 
   it("paid retry returns resource and Payment-Receipt", async () => {
@@ -151,9 +192,10 @@ describe("FiberMPP middleware security", () => {
 
 function makeHandler(
   overrides: Partial<Parameters<typeof createFiberMppMiddleware>[0]> = {},
-  routeHandler: () => Response = () => Response.json({ ok: true })
+  routeHandler: () => Response = () => Response.json({ ok: true }),
+  fixtureOptions: { paymentHash?: string } = {}
 ) {
-  const { payeeFiber } = createFiberFixtureAdapters();
+  const { payeeFiber } = createFiberFixtureAdapters(fixtureOptions);
   const middleware = createFiberMppMiddleware({
     secret,
     serverId: "unit-server",

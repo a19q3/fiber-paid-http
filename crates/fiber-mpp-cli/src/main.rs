@@ -1,12 +1,19 @@
 use anyhow::{bail, Context, Result};
 use clap::{Args, Parser, Subcommand};
-use fiber_mpp_core::{canonical_json, resource_hash, sha256_hex, verify_receipt, verify_vectors_dir, ConformanceReport};
+use fiber_mpp_core::{
+    canonical_json, resource_hash, sha256_hex, verify_receipt, verify_vectors_dir,
+    ConformanceReport,
+};
 use serde_json::{json, Value};
 use std::fs;
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Parser)]
-#[command(name = "fiber-mpp-rs", version, about = "Rust primary stack for FiberMPP")]
+#[command(
+    name = "fiber-mpp-rs",
+    version,
+    about = "Rust primary stack for FiberMPP"
+)]
 struct Cli {
     #[command(subcommand)]
     command: Commands,
@@ -59,10 +66,18 @@ struct ServerArgs {
 #[tokio::main]
 async fn main() -> Result<()> {
     match Cli::parse().command {
-        Commands::Vectors { command: VectorCommands::Verify } => vectors_verify(),
-        Commands::Receipt { command: ReceiptCommands::Verify { file, secret } } => receipt_verify(&file, secret),
-        Commands::Challenge { command: ChallengeCommands::Inspect { file } } => challenge_inspect(&file),
-        Commands::Server(args) => fiber_mpp_server::serve_config(args.config).await.map_err(Into::into),
+        Commands::Vectors {
+            command: VectorCommands::Verify,
+        } => vectors_verify(),
+        Commands::Receipt {
+            command: ReceiptCommands::Verify { file, secret },
+        } => receipt_verify(&file, secret),
+        Commands::Challenge {
+            command: ChallengeCommands::Inspect { file },
+        } => challenge_inspect(&file),
+        Commands::Server(args) => fiber_mpp_server::serve_config(args.config)
+            .await
+            .map_err(Into::into),
         Commands::Doctor => {
             println!(
                 "{}",
@@ -106,11 +121,17 @@ fn vectors_verify() -> Result<()> {
 fn receipt_verify(file: &Path, secret: Option<String>) -> Result<()> {
     let value: Value = serde_json::from_str(&fs::read_to_string(file)?)?;
     let receipt = if value.get("input").is_some() {
-        value.get("input").and_then(|input| input.get("receipt")).context("vector input does not contain receipt")?.clone()
+        value
+            .get("input")
+            .and_then(|input| input.get("receipt"))
+            .context("vector input does not contain receipt")?
+            .clone()
     } else {
         value
     };
-    let secret = secret.or_else(|| std::env::var("FIBER_MPP_SECRET").ok()).context("provide --secret or FIBER_MPP_SECRET")?;
+    let secret = secret
+        .or_else(|| std::env::var("FIBER_MPP_SECRET").ok())
+        .context("provide --secret or FIBER_MPP_SECRET")?;
     let valid = verify_receipt(&receipt, &secret)?;
     println!(
         "{}",
@@ -132,7 +153,9 @@ fn challenge_inspect(file: &Path) -> Result<()> {
     let signature = input.get("signature").and_then(Value::as_str);
     let secret = input.get("secret").and_then(Value::as_str);
     let signature_valid = match (signature, secret) {
-        (Some(signature), Some(secret)) => Some(fiber_mpp_core::sign_value(challenge, secret)? == signature),
+        (Some(signature), Some(secret)) => {
+            Some(fiber_mpp_core::sign_value(challenge, secret)? == signature)
+        }
         _ => None,
     };
     let resource = challenge.get("resource");

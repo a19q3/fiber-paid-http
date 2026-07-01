@@ -1,8 +1,8 @@
 {
-  "name": "@fiber-mpp/server-middleware",
+  "name": "@fiber-mpp/fl402-compat",
   "version": "0.1.0",
   "type": "module",
-  "description": "Fetch/Hono-compatible FiberMPP paid API middleware.",
+  "description": "F-L402 compatibility adapters for Fiber Paid HTTP.",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -16,8 +16,7 @@
   },
   "dependencies": {
     "@fiber-mpp/core": "workspace:*",
-    "@fiber-mpp/fiber-method": "workspace:*",
-    "@fiber-mpp/fl402-compat": "workspace:*",
-    "@fiber-mpp/storage": "workspace:*"
+    "@noble/hashes": "^2.2.0",
+    "zod": "^3.25.0"
   }
 }

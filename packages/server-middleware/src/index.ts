@@ -28,6 +28,17 @@ import {
 } from "@fiber-mpp/core";
 import { FiberMethodAdapter } from "@fiber-mpp/fiber-method";
 import {
+  FL402ChallengeSchema,
+  FL402ProofSchema,
+  buildWwwAuthenticateL402Header,
+  decodeFl402Macaroon,
+  fl402ProofToCredential,
+  parseAuthorizationL402Header,
+  signedChallengeToFl402Body,
+  verifyFl402Proof,
+  type FL402HashAlgorithm
+} from "@fiber-mpp/fl402-compat";
+import {
   assertProductionStore,
   type ChallengeRecord,
   type FiberMppStore
@@ -50,9 +61,15 @@ export type FiberMppMiddlewareConfig = {
   serverId: string;
   store: FiberMppStore;
   fiber?: FiberMethodAdapter;
+  fl402?: Fl402MiddlewareConfig;
   defaultFiberAmountShannons?: string;
   challengeTtlSeconds?: number;
   clockSkewSeconds?: number;
+};
+
+export type Fl402MiddlewareConfig = {
+  rootKey: string;
+  hashAlgorithm?: FL402HashAlgorithm;
 };
 
 export type FiberMppMiddleware = {
@@ -74,6 +91,9 @@ export function createFiberMppMiddleware(config: FiberMppMiddlewareConfig): Fibe
   }
   if (config.previousSecrets?.some((secret) => !secret || secret.length < 16)) {
     throw new Error("FiberMPP middleware previous secrets must be at least 16 characters");
+  }
+  if (config.fl402 && config.fl402.rootKey.length < 16) {
+    throw new Error("FiberMPP F-L402 root key must be at least 16 characters");
   }
   if (!config.store) {
     throw new Error("FiberMPP middleware requires a durable store");
@@ -138,13 +158,26 @@ export function createFiberMppMiddleware(config: FiberMppMiddlewareConfig): Fibe
     };
     await store.saveChallenge(record);
 
-    return new Response(JSON.stringify(paymentProblemBody(challenge, signature), null, 2), {
+    const signed = { challenge, signature };
+    const body = paymentProblemBody(challenge, signature);
+    const headers = new Headers({
+      "content-type": "application/problem+json",
+      "cache-control": "no-store"
+    });
+    headers.append("www-authenticate", buildWwwAuthenticatePaymentHeader(signed));
+    if (config.fl402) {
+      const fl402 = signedChallengeToFl402Body({
+        signed,
+        rootKey: config.fl402.rootKey,
+        hashAlgorithm: config.fl402.hashAlgorithm
+      });
+      body.fl402 = fl402;
+      headers.append("www-authenticate", buildWwwAuthenticateL402Header(fl402));
+    }
+
+    return new Response(JSON.stringify(body, null, 2), {
       status: 402,
-      headers: {
-        "content-type": "application/problem+json",
-        "cache-control": "no-store",
-        "www-authenticate": buildWwwAuthenticatePaymentHeader({ challenge, signature })
-      }
+      headers
     });
   }
 
@@ -231,7 +264,8 @@ export function createFiberMppMiddleware(config: FiberMppMiddlewareConfig): Fibe
   function protect(route: PaidRouteConfig): (request: Request) => Promise<Response> {
     return async (request: Request) => {
       try {
-        const credential = parseAuthorizationPaymentHeader(request.headers.get("authorization"));
+        const authorization = request.headers.get("authorization");
+        const credential = parseAuthorizationPaymentHeader(authorization) ?? credentialFromFl402Authorization(authorization);
         if (!credential) {
           return await issueChallenge(request, route);
         }
@@ -288,6 +322,58 @@ export function createFiberMppMiddleware(config: FiberMppMiddlewareConfig): Fibe
     };
   }
 
+  function credentialFromFl402Authorization(header: string | null): PaymentCredential | null {
+    if (!config.fl402) {
+      return null;
+    }
+    try {
+      const parsed = parseAuthorizationL402Header(header);
+      if (!parsed) {
+        return null;
+      }
+      const decoded = decodeFl402Macaroon(parsed.macaroon);
+      const caveats = decoded.payload.caveats;
+      if (!caveats.challengeId) {
+        throw new Error("invalid-fl402-macaroon");
+      }
+      const challenge = FL402ChallengeSchema.parse({
+        challengeId: caveats.challengeId,
+        macaroon: parsed.macaroon,
+        invoice: caveats.invoice,
+        paymentHash: caveats.paymentHash,
+        amount: caveats.amount,
+        currency: caveats.currency,
+        expiresAt: caveats.expiresAt,
+        resource: caveats.url,
+        resourceHash: caveats.resourceHash,
+        issuer: caveats.issuer,
+        fiberNodeId: caveats.fiberNodeId,
+        hashAlgorithm: caveats.hashAlgorithm
+      });
+      const submittedAt = new Date().toISOString();
+      const proof = FL402ProofSchema.parse({
+        macaroon: parsed.macaroon,
+        preimage: parsed.preimage,
+        invoice: caveats.invoice,
+        paymentHash: caveats.paymentHash,
+        amountShannons: caveats.amount,
+        mode: fiber.mode,
+        status: "settled",
+        observedAt: submittedAt,
+        hashAlgorithm: caveats.hashAlgorithm
+      });
+      verifyFl402Proof({ challenge, proof, rootKey: config.fl402.rootKey });
+      return fl402ProofToCredential({
+        proof,
+        challengeId: caveats.challengeId,
+        resourceHash: caveats.resourceHash,
+        submittedAt
+      });
+    } catch (error) {
+      throw fl402PaymentError(error);
+    }
+  }
+
   return {
     protect,
     protectRoute: protect,
@@ -295,6 +381,12 @@ export function createFiberMppMiddleware(config: FiberMppMiddlewareConfig): Fibe
     verifyCredential,
     store
   };
+}
+
+function fl402PaymentError(error: unknown): FiberMppError {
+  const message = errorMessage(error);
+  const code = /^[a-z0-9-]+$/.test(message) ? message : "invalid-fl402-proof";
+  return new FiberMppError(code, "F-L402 proof is invalid", 402);
 }
 
 function errorMessage(error: unknown): string {

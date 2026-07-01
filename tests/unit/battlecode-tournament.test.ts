@@ -50,6 +50,20 @@ const unitManifest = {
   notes: []
 };
 
+async function createBattlecodeToolchainFixture(root: string): Promise<{
+  jdkHome: string;
+  engineJar: string;
+  engineVersion: string;
+}> {
+  const jdkHome = join(root, ".tmp", "battlecode-toolchain", "jdk-21");
+  const engineJar = join(root, ".tmp", "battlecode-toolchain", "battlecode25-java-unit.jar");
+  await mkdir(join(jdkHome, "bin"), { recursive: true });
+  await writeFile(join(jdkHome, "bin", "java"), "#!/bin/sh\n");
+  await writeFile(join(jdkHome, "bin", "javac"), "#!/bin/sh\n");
+  await writeFile(engineJar, "unit battlecode engine jar\n");
+  return { jdkHome, engineJar, engineVersion: "unit" };
+}
+
 describe("Battlecode tournament helpers", () => {
   it("normalizes a paid xUDT Battlecode registration", () => {
     const registration = normalizeBattlecodeRegistration({
@@ -89,10 +103,11 @@ describe("Battlecode tournament helpers", () => {
         botPackage: "fiberchamp",
         source: battlecodeBuiltInBotSource()
       });
+      const toolchain = await createBattlecodeToolchainFixture(root);
       const { submission, fairnessManifest } = await createBattlecodeSubmission(root, input, {
-        BATTLECODE_JDK_HOME: "/home/arthur/a19q3/.toolchains/jdk-21.0.11+10",
-        BATTLECODE_ENGINE_JAR: "/home/arthur/a19q3/.toolchains/battlecode25/battlecode25-java-3.1.0.jar",
-        BATTLECODE_ENGINE_VERSION: "3.1.0"
+        BATTLECODE_JDK_HOME: toolchain.jdkHome,
+        BATTLECODE_ENGINE_JAR: toolchain.engineJar,
+        BATTLECODE_ENGINE_VERSION: toolchain.engineVersion
       });
       const ledger = await readBattlecodeLedger(root);
       const health = await battlecodeLedgerHealth(root);

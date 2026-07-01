@@ -46,11 +46,17 @@ pub fn live_proven_semantics() -> FiberRpcSemantics {
 }
 
 pub fn to_fiber_hex_quantity(value: &str) -> Result<String, FiberRpcError> {
-    let parsed = value.parse::<u128>().map_err(|_| FiberRpcError::InvalidQuantity)?;
+    let parsed = value
+        .parse::<u128>()
+        .map_err(|_| FiberRpcError::InvalidQuantity)?;
     Ok(format!("0x{parsed:x}"))
 }
 
-pub fn new_invoice_params(amount: &str, currency: &str, expiry_seconds: Option<u64>) -> Result<Value, FiberRpcError> {
+pub fn new_invoice_params(
+    amount: &str,
+    currency: &str,
+    expiry_seconds: Option<u64>,
+) -> Result<Value, FiberRpcError> {
     let mut params = json!({
         "amount": to_fiber_hex_quantity(amount)?,
         "currency": currency
@@ -108,7 +114,10 @@ impl FiberRpcClient {
         Self {
             url: url.into(),
             auth,
-            client: reqwest::Client::builder().timeout(Duration::from_secs(30)).build().expect("reqwest client"),
+            client: reqwest::Client::builder()
+                .timeout(Duration::from_secs(30))
+                .build()
+                .expect("reqwest client"),
         }
     }
 
@@ -126,26 +135,54 @@ impl FiberRpcClient {
         if let Some(error) = payload.get("error") {
             return Err(FiberRpcError::Rpc {
                 method: method.to_string(),
-                message: error.get("message").and_then(Value::as_str).map(ToString::to_string).unwrap_or_else(|| error.to_string()),
+                message: error
+                    .get("message")
+                    .and_then(Value::as_str)
+                    .map(ToString::to_string)
+                    .unwrap_or_else(|| error.to_string()),
             });
         }
-        payload.get("result").cloned().ok_or_else(|| FiberRpcError::MissingResult { method: method.to_string() })
+        payload
+            .get("result")
+            .cloned()
+            .ok_or_else(|| FiberRpcError::MissingResult {
+                method: method.to_string(),
+            })
     }
 
-    pub async fn new_invoice(&self, amount: &str, currency: &str, expiry_seconds: Option<u64>) -> Result<Value, FiberRpcError> {
-        self.request(NEW_INVOICE_METHOD, vec![new_invoice_params(amount, currency, expiry_seconds)?]).await
+    pub async fn new_invoice(
+        &self,
+        amount: &str,
+        currency: &str,
+        expiry_seconds: Option<u64>,
+    ) -> Result<Value, FiberRpcError> {
+        self.request(
+            NEW_INVOICE_METHOD,
+            vec![new_invoice_params(amount, currency, expiry_seconds)?],
+        )
+        .await
     }
 
     pub async fn get_invoice(&self, payment_hash: &str) -> Result<Value, FiberRpcError> {
-        self.request(GET_INVOICE_METHOD, vec![get_invoice_params(payment_hash)]).await
+        self.request(GET_INVOICE_METHOD, vec![get_invoice_params(payment_hash)])
+            .await
     }
 
-    pub async fn send_payment(&self, invoice: &str, timeout_seconds: Option<u64>) -> Result<Value, FiberRpcError> {
-        self.request(SEND_PAYMENT_METHOD, vec![send_payment_params(invoice, timeout_seconds)]).await
+    pub async fn send_payment(
+        &self,
+        invoice: &str,
+        timeout_seconds: Option<u64>,
+    ) -> Result<Value, FiberRpcError> {
+        self.request(
+            SEND_PAYMENT_METHOD,
+            vec![send_payment_params(invoice, timeout_seconds)],
+        )
+        .await
     }
 
     pub async fn get_payment(&self, payment_hash: &str) -> Result<Value, FiberRpcError> {
-        self.request(GET_PAYMENT_METHOD, vec![get_payment_params(payment_hash)]).await
+        self.request(GET_PAYMENT_METHOD, vec![get_payment_params(payment_hash)])
+            .await
     }
 }
 

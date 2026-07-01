@@ -160,6 +160,7 @@ describe("FiberMPP bootstrap helpers", () => {
     expect(resolved.secret).toBe("a".repeat(64));
     expect(resolved.fiberEnv.FIBER_MODE).toBe("local");
     expect(resolved.fiberEnv.FIBER_PAYEE_RPC_URL).toBe("http://127.0.0.1:21716");
+    expect(resolved.fl402).toBeUndefined();
     expect(resolved.cors.allowedOrigins).toEqual([]);
     expect(resolved.cors.allowedHeaders).toEqual(["authorization", "content-type"]);
     expect(resolved.cors.allowedMethods).toEqual(["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]);
@@ -173,6 +174,45 @@ describe("FiberMPP bootstrap helpers", () => {
     expect(resolved.operations.shutdownGraceMs).toBe(10_000);
     expect(resolved.operations.logRedaction).toEqual({ enabled: true, extraKeys: [] });
     expect(resolved.operations.rateLimit).toEqual({ windowMs: 60_000, maxRequests: 300 });
+  });
+
+  it("resolves optional F-L402 gateway config from env", () => {
+    const config = {
+      ...gatewayConfigTemplate(),
+      fl402: {
+        root_key_env: "FIBER_MPP_FL402_ROOT_KEY",
+        hash_algorithm: "sha256" as const
+      }
+    };
+    const resolved = resolveGatewayConfig({ config }, {
+      FIBER_MPP_SECRET: "a".repeat(64),
+      FIBER_MPP_FL402_ROOT_KEY: "fl402-root-key-at-least-16"
+    });
+    expect(resolved.fl402).toEqual({
+      rootKey: "fl402-root-key-at-least-16",
+      rootKeyEnv: "FIBER_MPP_FL402_ROOT_KEY",
+      hashAlgorithm: "sha256"
+    });
+  });
+
+  it("blocks F-L402 gateway config without a root key", () => {
+    const report = buildBootstrapReport("gateway", {
+      env: {
+        FIBER_MODE: "local",
+        FIBER_PAYEE_RPC_URL: "http://127.0.0.1:21716"
+      },
+      upstream: "http://localhost:8080",
+      storage: "sqlite://./fiber-mpp.sqlite",
+      secret: "a".repeat(64),
+      methods: ["fiber"],
+      price: { value: "1", currency: "CKB", display: "1 CKB" },
+      fl402Configured: true,
+      fl402RootKeyEnv: "FIBER_MPP_FL402_ROOT_KEY",
+      fl402HashAlgorithm: "sha256"
+    });
+    expect(report.status).toBe("blocked");
+    expect(report.checks.fl402_enabled).toBe(true);
+    expect(report.blockers).toContain("set FIBER_MPP_FL402_ROOT_KEY to an F-L402 root key of at least 16 characters");
   });
 
   it("resolves Fiber RPC auth from configured env names", () => {

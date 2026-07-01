@@ -7,11 +7,12 @@ import { SqliteStore } from "@fiber-mpp/storage";
 export const FIXTURE_PAYMENT_HASH = `0x${"cd".repeat(32)}`;
 export const FIXTURE_INVOICE = "fibd1qproductionfixture0001";
 
-export function createFiberFixtureAdapters(): {
+export function createFiberFixtureAdapters(options: { paymentHash?: string } = {}): {
   payeeFiber: FiberMethodAdapter;
   payerFiber: FiberMethodAdapter;
   calls: Array<{ method: string; params: unknown[] }>;
 } {
+  const paymentHash = options.paymentHash ?? FIXTURE_PAYMENT_HASH;
   const calls: Array<{ method: string; params: unknown[] }> = [];
   const fetchImpl = (async (_input: RequestInfo | URL, init?: RequestInit) => {
     const payload = JSON.parse(String(init?.body)) as { id: number; method: string; params?: unknown[] };
@@ -19,7 +20,7 @@ export function createFiberFixtureAdapters(): {
     return Response.json({
       jsonrpc: "2.0",
       id: payload.id,
-      result: fiberResult(payload.method)
+      result: fiberResult(payload.method, paymentHash)
     });
   }) as typeof fetch;
   const payeeRpc = new FiberRpcClient({ url: "http://fiber.local/payee", fetchImpl, label: "local-payee" });
@@ -36,21 +37,21 @@ export function createSqliteTestStore(prefix = "fiber-mpp-test-"): SqliteStore {
   return new SqliteStore(join(dir, "store.sqlite"));
 }
 
-function fiberResult(method: string): unknown {
+function fiberResult(method: string, paymentHash: string): unknown {
   if (method === "new_invoice" || method === "get_invoice") {
     return {
       invoice_address: FIXTURE_INVOICE,
       status: method === "get_invoice" ? "Paid" : undefined,
       invoice: {
         data: {
-          payment_hash: FIXTURE_PAYMENT_HASH
+          payment_hash: paymentHash
         }
       }
     };
   }
   if (method === "send_payment" || method === "get_payment") {
     return {
-      payment_hash: FIXTURE_PAYMENT_HASH,
+      payment_hash: paymentHash,
       status: "Success"
     };
   }

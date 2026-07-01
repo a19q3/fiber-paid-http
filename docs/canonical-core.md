@@ -4,7 +4,7 @@ FiberMPP is migrating toward a single production trusted boundary:
 
 ```text
 Rust = canonical protocol engine and verifier
-TypeScript = SDK, demos, examples, F402/MPP JS integration, vector tooling
+TypeScript = SDK, middleware, demos, examples, F402/F-L402/MPP JS integration, vector tooling
 test-vectors = shared protocol truth
 ```
 
@@ -28,7 +28,7 @@ pnpm exec fiber-mpp --engine typescript vectors verify
 
 A future Node wrapper should call the Rust engine for trusted verification rather than silently falling back to a TypeScript verifier. If an engine selector is added, it must report `FIBER_MPP_ENGINE=rust|typescript` and log any fallback clearly.
 
-The Rust HTTP server crate is not yet the production gateway. It currently proves the visible `402 Payment Required` boundary only; signed challenge issuance, durable replay storage, Fiber method adapter calls, and receipt issuance still need to be implemented in Rust before server traffic is part of the production trusted path.
+The Rust HTTP server crate now covers signed challenge issuance, durable replay storage, Fiber method adapter calls, receipt issuance, and optional F-L402 `Authorization: L402` retries.
 
 ## Gates
 
@@ -50,4 +50,4 @@ Canonical parity gate:
 bash scripts/fiber_mpp_canonical_gate.sh
 ```
 
-The canonical gate writes `reports/canonical-core-parity.json` and fails if Rust and the TypeScript vector harness disagree on vector result, canonical hash, receipt shape, F402 compatibility, Fiber RPC method semantics, or error code.
+The canonical gate writes `reports/canonical-core-parity.json` and fails if Rust and the TypeScript vector harness disagree on vector result, canonical hash, receipt shape, F402 compatibility, F-L402 compatibility, Fiber RPC method semantics, or error code.

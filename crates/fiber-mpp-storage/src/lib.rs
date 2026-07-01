@@ -80,7 +80,11 @@ impl SqliteStore {
         Ok(Self { connection })
     }
 
-    pub fn save_challenge(&self, challenge_id: &str, record: &ChallengeRecord) -> Result<(), StorageError> {
+    pub fn save_challenge(
+        &self,
+        challenge_id: &str,
+        record: &ChallengeRecord,
+    ) -> Result<(), StorageError> {
         self.connection.execute(
             "INSERT OR REPLACE INTO challenges (id, challenge, signature, resource_hash, created_at, expires_at, used_at)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, (SELECT used_at FROM challenges WHERE id = ?1))",
@@ -96,7 +100,10 @@ impl SqliteStore {
         Ok(())
     }
 
-    pub fn get_challenge(&self, challenge_id: &str) -> Result<Option<ChallengeRecord>, StorageError> {
+    pub fn get_challenge(
+        &self,
+        challenge_id: &str,
+    ) -> Result<Option<ChallengeRecord>, StorageError> {
         let mut statement = self
             .connection
             .prepare("SELECT challenge, signature, resource_hash, created_at, expires_at FROM challenges WHERE id = ?1")?;
@@ -114,10 +121,15 @@ impl SqliteStore {
         Ok(None)
     }
 
-    pub fn mark_challenge_used(&self, challenge_id: &str, used_at: &str) -> Result<bool, StorageError> {
-        let changed = self
-            .connection
-            .execute("UPDATE challenges SET used_at = ?2 WHERE id = ?1 AND used_at IS NULL", params![challenge_id, used_at])?;
+    pub fn mark_challenge_used(
+        &self,
+        challenge_id: &str,
+        used_at: &str,
+    ) -> Result<bool, StorageError> {
+        let changed = self.connection.execute(
+            "UPDATE challenges SET used_at = ?2 WHERE id = ?1 AND used_at IS NULL",
+            params![challenge_id, used_at],
+        )?;
         Ok(changed == 1)
     }
 
@@ -130,7 +142,9 @@ impl SqliteStore {
     }
 
     pub fn get_receipt(&self, receipt_id: &str) -> Result<Option<Value>, StorageError> {
-        let mut statement = self.connection.prepare("SELECT receipt FROM receipts WHERE id = ?1")?;
+        let mut statement = self
+            .connection
+            .prepare("SELECT receipt FROM receipts WHERE id = ?1")?;
         let mut rows = statement.query(params![receipt_id])?;
         if let Some(row) = rows.next()? {
             let raw: String = row.get(0)?;
@@ -161,19 +175,27 @@ impl SqliteStore {
 
 impl ReplayStore for SqliteStore {
     fn mark_used(&mut self, key: &str, value: &Value) -> Result<bool, StorageError> {
-        let result = self
-            .connection
-            .execute("INSERT INTO credential_uses (hash, credential) VALUES (?1, ?2)", params![key, serde_json::to_string(value)?]);
+        let result = self.connection.execute(
+            "INSERT INTO credential_uses (hash, credential) VALUES (?1, ?2)",
+            params![key, serde_json::to_string(value)?],
+        );
         match result {
             Ok(_) => Ok(true),
-            Err(rusqlite::Error::SqliteFailure(error, _)) if error.code == rusqlite::ErrorCode::ConstraintViolation => Ok(false),
+            Err(rusqlite::Error::SqliteFailure(error, _))
+                if error.code == rusqlite::ErrorCode::ConstraintViolation =>
+            {
+                Ok(false)
+            }
             Err(error) => Err(StorageError::Sqlite(error)),
         }
     }
 
     fn was_used(&self, key: &str) -> Result<bool, StorageError> {
-        let count: i64 =
-            self.connection.query_row("SELECT COUNT(*) FROM credential_uses WHERE hash = ?1", params![key], |row| row.get(0))?;
+        let count: i64 = self.connection.query_row(
+            "SELECT COUNT(*) FROM credential_uses WHERE hash = ?1",
+            params![key],
+            |row| row.get(0),
+        )?;
         Ok(count > 0)
     }
 }

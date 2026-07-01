@@ -4,6 +4,7 @@ members = [
   "crates/fiber-mpp-storage",
   "crates/fiber-mpp-fiber",
   "crates/fiber-mpp-f402",
+  "crates/fiber-mpp-fl402",
   "crates/fiber-mpp-server",
   "crates/fiber-mpp-cli"
 ]
@@ -19,6 +20,7 @@ repository = "https://example.invalid/fiber-mpp"
 anyhow = "1.0"
 axum = "0.7"
 base64 = "0.22"
+blake2b_simd = "1.0"
 chrono = { version = "0.4", default-features = false, features = ["clock", "serde"] }
 clap = { version = "4.5", features = ["derive"] }
 hex = "0.4"

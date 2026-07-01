@@ -25,7 +25,8 @@ The canonical gate compares those reports for:
 - canonical hash,
 - rejection error code,
 - receipt vector pass status,
-- F402 vector pass status.
+- F402 vector pass status,
+- F-L402 vector and attack-vector pass status.
 
 Rust is the canonical verifier. The TypeScript report is a compatibility/vector-harness check, not a second production trusted boundary.
 

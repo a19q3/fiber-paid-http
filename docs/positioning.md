@@ -1,23 +1,35 @@
 # Positioning
 
-FiberMPP is an MPP/F402 infrastructure layer for paid HTTP APIs that want Fiber as an MPP payment method.
+FiberMPP is the current name for a Fiber Paid HTTP protocol-family implementation. The repo name stays stable, while the product surface is broader than one protocol acronym:
 
 ```text
-Rust       = canonical protocol core and verifier target
-TypeScript = SDK, demos, examples, F402/MPP JS integration, vector tooling
-test-vectors = shared protocol truth
+Rust       = canonical protocol core, vector verifier, and production gateway path
+TypeScript = SDK, middleware, compatibility adapters, demos, evidence console, vector tooling
+test-vectors = shared protocol truth across Rust and TypeScript
 ```
 
-## Nearby projects
+## Protocol Family
+
+| Surface | Implementation | Boundary |
+| --- | --- | --- |
+| MPP + Fiber | `packages/core`, `packages/server-middleware`, `crates/fiber-mpp-core`, `crates/fiber-mpp-server` | Primary paid HTTP envelope and receipt format. |
+| F402 | `packages/f402-compat`, `crates/fiber-mpp-f402` | Compatibility conversion for Fiber invoice/payment-hash 402 applications. |
+| F-L402 | `packages/fl402-compat`, `crates/fiber-mpp-fl402`, TS middleware, Rust gateway | Application-level `L402 macaroon:preimage` adapter backed by Fiber invoice settlement. |
+| x402 | Future adapter | Wait for stable Fiber node verify/settle support before adding native x402 headers. |
+
+## Nearby Projects
 
 - Infern: an AI model compute marketplace using F402 over Fiber.
 - fiber-pay: AI-friendly CLI and payment UX for Fiber.
-- fiber-l402: Fiber L402 / paid HTTP access precedent.
+- fiber-l402: application-level Fiber L402 precedent.
+- fiber-x402-blog: native x402 direction once Fiber node support is available.
 - Fiber-checkout: React checkout/payment component.
-- FiberMPP: protocol and middleware infrastructure: Fiber as an MPP payment method plus F402 compatibility.
+- FiberMPP: reusable paid HTTP infrastructure for APIs, agents, and metered services.
 
 ## Boundary
 
-FiberMPP should serve Infern-like projects. It should not duplicate their product surfaces. It does not provide model discovery, inference routing, wallet UX, checkout UX, slashing, staking, or a marketplace.
+FiberMPP should serve Infern-like projects and other paid API developers. It should not duplicate their product surfaces. It does not provide model discovery, inference routing, wallet UX, checkout UX, slashing, staking, or a marketplace.
 
-The TypeScript stack is not throwaway demo code, but it is also not a production verifier. Future trusted verification flows go through Rust. TypeScript remains valuable as the JS ecosystem layer and historical conformance-vector harness. The current Rust HTTP server is still a gateway prototype until signed challenge issuance, durable storage, Fiber adapter calls, and receipt issuance are implemented there.
+The TypeScript stack is maintained integration code, but it is not the production trusted verifier. Trusted verification flows go through Rust. TypeScript remains valuable as the JS ecosystem layer, middleware surface, compatibility adapter layer, evidence console, and historical conformance-vector harness.
+
+The Rust HTTP server now issues signed challenges, stores replay/receipt state, verifies Fiber settlement, and accepts optional F-L402 `Authorization: L402` retries. It is still deliberately scoped as a paid HTTP gateway, not a wallet, checkout product, Fiber node dashboard, or x402 node implementation.

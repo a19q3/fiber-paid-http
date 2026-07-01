@@ -71,7 +71,7 @@ This index records the external sources inspected before implementation. Referen
 - URL: https://github.com/lightninglabs/l402
 - Local repo path: `/home/arthur/a19q3/l402`
 - Why it matters: precedent for combining HTTP 402, invoices, and bearer credentials.
-- FiberMPP behavior learned: challenge tokens should bind resource, amount, payment hash, expiration, and issuer. Replay must be tracked when credentials are bearer-like.
+- FiberMPP behavior learned: challenge tokens should bind challenge id, resource, amount, payment hash, expiration, and issuer. Replay must be tracked when credentials are bearer-like.
 - What not to copy: do not use Lightning-specific macaroon or BOLT11 assumptions as Fiber requirements.
 
 ## Fewsats awesome-L402
@@ -79,8 +79,8 @@ This index records the external sources inspected before implementation. Referen
 - URL: https://github.com/Fewsats/awesome-L402
 - Local repo path: `/home/arthur/a19q3/awesome-L402`
 - Why it matters: ecosystem map for L402 tooling and patterns.
-- FiberMPP behavior learned: middleware, clients, and CLI tools are the right reusable surfaces.
-- What not to copy: do not imply FiberMPP is a Lightning L402 implementation.
+- FiberMPP behavior learned: middleware, clients, CLI tools, and HTTP gateway adapters are the right reusable surfaces.
+- What not to copy: do not imply FiberMPP is a Lightning L402 byte-format implementation; its F-L402 token is application-level Fiber compatibility.
 
 ## Five Attacks on x402 Agentic Payment Protocol
 

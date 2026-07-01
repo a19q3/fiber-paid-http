@@ -96,13 +96,25 @@ fs.writeFileSync("reports/fiber-mpp-rust-gate.json", `${JSON.stringify(report, n
 console.log(JSON.stringify(report, null, 2));
 
 function readFiberCommit() {
-  try {
-    return execFileSync("git", ["-C", "/home/arthur/a19q3/fiber", "rev-parse", "HEAD"], {
-      encoding: "utf8"
-    }).trim();
-  } catch {
-    return null;
+  for (const repo of fiberRepoCandidates()) {
+    try {
+      if (!fs.existsSync(repo)) continue;
+      return execFileSync("git", ["-C", repo, "rev-parse", "HEAD"], {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"]
+      }).trim();
+    } catch {
+      // Try the next configured Fiber checkout.
+    }
   }
+  return null;
+}
+
+function fiberRepoCandidates() {
+  return Array.from(new Set([
+    process.env.FIBER_REPO,
+    "/home/arthur/a19q3/fiber"
+  ].filter(Boolean)));
 }
 
 function readTestnetEvidenceRecordedAt(report) {

@@ -191,6 +191,7 @@ if [[ -f reports/security-matrix.json ]]; then
 fi
 bash scripts/fiber_mpp_ops_gate.sh
 
+set +u
 production_blockers_text="$(printf '%s\n' "${production_blockers[@]}")"
 fiber_e2e_blockers_text="$(printf '%s\n' "${fiber_e2e_blockers[@]}")"
 evidence_console_layout_blockers_text="$(printf '%s\n' "${evidence_console_layout_blockers[@]}")"
@@ -198,6 +199,7 @@ evidence_console_action_coverage_blockers_text="$(printf '%s\n' "${evidence_cons
 evidence_console_server_hardening_blockers_text="$(printf '%s\n' "${evidence_console_server_hardening_blockers[@]}")"
 evidence_console_cli_start_blockers_text="$(printf '%s\n' "${evidence_console_cli_start_blockers[@]}")"
 evidence_console_browser_smoke_blockers_text="$(printf '%s\n' "${evidence_console_browser_smoke_blockers[@]}")"
+set -u
 
 UNIT_TESTS="${unit_tests}" \
 INTEGRATION_TESTS="${integration_tests}" \
@@ -481,13 +483,25 @@ function completedBrowserSmokeEvidence(evidence) {
 }
 
 function readFiberCommit() {
-  try {
-    return execFileSync("git", ["-C", "/home/arthur/a19q3/fiber", "rev-parse", "HEAD"], {
-      encoding: "utf8"
-    }).trim();
-  } catch {
-    return previousReport.fiber_commit || null;
+  for (const repo of fiberRepoCandidates()) {
+    try {
+      if (!fs.existsSync(repo)) continue;
+      return execFileSync("git", ["-C", repo, "rev-parse", "HEAD"], {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"]
+      }).trim();
+    } catch {
+      // Try the next configured Fiber checkout.
+    }
   }
+  return null;
+}
+
+function fiberRepoCandidates() {
+  return Array.from(new Set([
+    process.env.FIBER_REPO,
+    "/home/arthur/a19q3/fiber"
+  ].filter(Boolean)));
 }
 
 const report = {

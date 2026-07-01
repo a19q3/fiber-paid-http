@@ -2,7 +2,7 @@
 
 ## Current status
 
-FiberMPP uses Rust as the canonical protocol core and verifier target. TypeScript remains a maintained JS ecosystem integration layer for SDKs, demos, examples, F402/MPP compatibility, and vector tooling. The project has local Fiber E2E evidence, separate testnet Fiber E2E evidence, shared conformance vectors, a security matrix, and canonical parity gates.
+FiberMPP uses Rust as the canonical protocol core and verifier target. TypeScript remains a maintained JS ecosystem integration layer for SDKs, middleware, demos, examples, F402/F-L402/MPP compatibility, and vector tooling. The project has local Fiber E2E evidence, separate testnet Fiber E2E evidence, shared conformance vectors, a security matrix, and canonical parity gates.
 
 The Rust HTTP gateway production path implements signed `402 Payment Required` challenge issuance, durable SQLite storage, Fiber method adapter wiring, receipt issuance, and replay rejection. Production readiness is now gated by recorded testnet Fiber E2E evidence, production operations evidence, and production bootstrap E2E readiness evidence.
 
@@ -30,6 +30,8 @@ The Rust HTTP gateway production path implements signed `402 Payment Required` c
 - Resource/method/amount binding tests.
 - Explicit local/testnet Fiber settlement status.
 - F402 compatibility adapter.
+- F-L402 compatibility adapter in TypeScript and Rust.
+- Optional `Authorization: L402 macaroon:preimage` support in TypeScript middleware and Rust gateway.
 - TypeScript CLI and Rust `fiber-mpp-rs` CLI.
 - Local Fiber E2E evidence from the 3-node network.
 - Testnet Fiber E2E evidence through funded `v0.9.0-rc4` FNN payer/payee nodes.

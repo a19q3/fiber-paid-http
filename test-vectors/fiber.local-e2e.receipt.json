@@ -2,34 +2,13 @@
   "input": {
     "case": "fiber.local-e2e.receipt",
     "evidence": true,
-    "source_report": "reports/fiber-local-e2e-success.json",
-    "receipt_source": ".tmp/fiber-live-e2e.sqlite",
-    "receipt_id": "rcpt_ca010a79973755656bdff4b1684570da",
-    "payment_hash": "0xec3a08f9b298db82f2dc27861aed5a3110b5d36a56bd43d13b60c5a4bcf69222",
-    "receipt_signature_verification": "verified during the live Fiber E2E run; fixture omits HMAC secret",
-    "receipt": {
-      "domain": "fiber-mpp-receipt-v1",
-      "receiptId": "rcpt_ca010a79973755656bdff4b1684570da",
-      "challengeId": "chal_e90fb2652b5707d47cc0f2f2e3894dd9",
-      "method": "fiber",
-      "resourceHash": "dcd51439386139ad7779c005fa410ba8bda46be4e41f30e28dbd5e9f5729bd52",
-      "amount": {
-        "value": "100",
-        "currency": "CKB"
-      },
-      "settlement": {
-        "status": "settled",
-        "paymentHash": "0xec3a08f9b298db82f2dc27861aed5a3110b5d36a56bd43d13b60c5a4bcf69222",
-        "invoiceId": "fibd1001pcsaug0p0exgfw0pnm6vk352p285j7qj8q2zl0palkx4hfz8qzzjar5gn7g4hkk3u2x96z9cw2nnsh3l7kmsnmpwpr6twrymnzjvu0dfdft0a2mm7nl874yu2lfv3957pkf72q50xck0xj5tfqyhw529yrm89hdy3u8jwhlg97lr67ff5dwf900kxu6mhmsp5mdayjyun94smc770t92uphcufraam46en5vgumsj6ukztle5wzq5kyvjsq3xch755dd0h04lgzf9t29q9wxamecarqr6mhguyds5pmsme8c5c98eukcwvh74xlrd3sxqmd9xh44076y8d3v38nggaqmjj8tq7hzngq5cj0yf",
-        "provider": "local-payee",
-        "observedAt": "2026-06-24T13:31:19.556Z"
-      },
-      "serverId": "fiber-mpp-live-e2e",
-      "issuedAt": "2026-06-24T13:31:19.556Z",
-      "signature": "d2af8a3de6206e5140c81881b8aae409c86e8e485183c07206b716d17471483d"
-    }
+    "source_report": "reports/fiber-mpp-gate.json",
+    "receipt_source": "reports/fiber-mpp-gate.json",
+    "receipt_id": "rcpt_d6368f6113b2a81e262fdf1c79a4e44d",
+    "payment_hash": "0x4de4574f1f2dd2ec47933506822860d3af3decbe4651de3f861ff81b9d61effc",
+    "receipt_signature_verification": "receipt body unavailable; report-level payment hash and receipt id retained"
   },
-  "expected_canonical_hash": "1d53d983209fcd917fb77e00071d0af32580e0bd441802c4e594285e5e2b887e",
+  "expected_canonical_hash": "6baca672579b17f04ef23537bde8d3a2b908e50ea59c371b0660d77d126689d2",
   "expected_verification_result": "accepted",
   "notes": "Evidence copied from the latest successful local Fiber E2E run; this is not a deterministic fixture."
 }

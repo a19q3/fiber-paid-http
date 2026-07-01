@@ -6,11 +6,20 @@ import { Command } from "commander";
 import {
   resourceHash,
   verifyReceiptSignatureWithAnySecret,
-  type PaymentReceipt
+  type PaymentReceipt,
+  type ResourceDescriptor
 } from "@fiber-mpp/core";
 import { paidFetch, inspectChallenge } from "@fiber-mpp/client";
 import { FiberMethodAdapter } from "@fiber-mpp/fiber-method";
 import { F402ChallengeSchema, f402ChallengeToMpp, f402ProofToCredential } from "@fiber-mpp/f402-compat";
+import {
+  FL402ChallengeSchema,
+  FL402ProofSchema,
+  fl402ChallengeToMpp,
+  fl402ProofToCredential,
+  issueFl402Challenge,
+  verifyFl402Proof
+} from "@fiber-mpp/fl402-compat";
 import { createFiberMppMiddleware, createReverseProxyHandler } from "@fiber-mpp/server-middleware";
 import {
   SqliteStore,
@@ -208,6 +217,70 @@ program
   });
 
 program
+  .command("fl402")
+  .argument("<action>", "issue|verify|convert")
+  .argument("<file>")
+  .option("--root-key <key>", "F-L402 root key; defaults to FIBER_MPP_FL402_ROOT_KEY")
+  .option("--server-id <id>", "server id for MPP conversion", "fiber-mpp-cli")
+  .description("Issue, verify, or convert F-L402 challenge/proof JSON")
+  .action(async (action: string, file: string, opts: { rootKey?: string; serverId: string }) => {
+    const input = unwrapVectorInput(await readJson(file));
+    const rootKey = opts.rootKey ?? process.env.FIBER_MPP_FL402_ROOT_KEY;
+    if (action === "issue") {
+      if (!rootKey) {
+        throw new Error("fiber-mpp fl402 issue requires --root-key or FIBER_MPP_FL402_ROOT_KEY");
+      }
+      const resource = fl402Resource(input);
+      const challenge = issueFl402Challenge({
+        rootKey,
+        invoice: stringInput(input, "invoice"),
+        paymentHash: stringInput(input, "paymentHash"),
+        amount: stringInput(input, "amount"),
+        currency: typeof input.currency === "string" ? input.currency : "CKB",
+        expiresAt: stringInput(input, "expiresAt"),
+        resource,
+        challengeId: typeof input.challengeId === "string" ? input.challengeId : undefined,
+        issuer: typeof input.issuer === "string" ? input.issuer : opts.serverId,
+        fiberNodeId: typeof input.fiberNodeId === "string" ? input.fiberNodeId : undefined,
+        hashAlgorithm: input.hashAlgorithm === "sha256" ? "sha256" : "ckb_hash"
+      });
+      console.log(JSON.stringify({ fl402: challenge }, null, 2));
+      return;
+    }
+    const fl402 = FL402ChallengeSchema.parse(input.fl402 ?? input);
+    const proofSource = input.proof && typeof input.proof === "object" ? input.proof : input;
+    if (action === "verify") {
+      if (!rootKey) {
+        throw new Error("fiber-mpp fl402 verify requires --root-key or FIBER_MPP_FL402_ROOT_KEY");
+      }
+      const proof = FL402ProofSchema.parse(proofSource);
+      const payload = verifyFl402Proof({ challenge: fl402, proof, rootKey });
+      console.log(JSON.stringify({ valid: true, payload }, null, 2));
+      return;
+    }
+    if (action === "convert") {
+      const resource = fl402Resource(input, fl402.resource);
+      const challenge = fl402ChallengeToMpp({
+        fl402,
+        resource,
+        serverId: opts.serverId,
+        challengeId: fl402.challengeId
+      });
+      const proof = input.proof && typeof input.proof === "object" ? FL402ProofSchema.parse(input.proof) : null;
+      const credential = proof
+        ? fl402ProofToCredential({
+            proof,
+            challengeId: fl402.challengeId ?? challenge.challengeId,
+            resourceHash: resourceHash(resource)
+          })
+        : undefined;
+      console.log(JSON.stringify({ challenge, ...(credential ? { credential } : {}) }, null, 2));
+      return;
+    }
+    throw new Error("Use `fiber-mpp fl402 issue`, `fiber-mpp fl402 verify`, or `fiber-mpp fl402 convert`");
+  });
+
+program
   .command("receipt")
   .argument("<action>", "verify")
   .argument("<file>")
@@ -377,6 +450,50 @@ async function readJson(path: string): Promise<Record<string, unknown>> {
   return JSON.parse(await readFile(resolve(path), "utf8")) as Record<string, unknown>;
 }
 
+function stringInput(input: Record<string, unknown>, field: string): string {
+  const value = input[field];
+  if (typeof value !== "string" || value.length === 0) {
+    throw new Error(`Expected ${field} in input JSON`);
+  }
+  return value;
+}
+
+function unwrapVectorInput(input: Record<string, unknown>): Record<string, unknown> {
+  const nested = input.input;
+  if (nested && typeof nested === "object" && !Array.isArray(nested)) {
+    return nested as Record<string, unknown>;
+  }
+  return input;
+}
+
+function fl402Resource(input: Record<string, unknown>, fallbackUrl = "http://fl402.local/compat"): ResourceDescriptor {
+  const resource = input.resource;
+  if (resource && typeof resource === "object" && !Array.isArray(resource)) {
+    const method = (resource as { method?: unknown }).method;
+    const url = (resource as { url?: unknown }).url;
+    if (typeof method === "string" && typeof url === "string") {
+      return {
+        method,
+        url,
+        ...(
+          typeof (resource as { bodyHash?: unknown }).bodyHash === "string"
+            ? { bodyHash: (resource as { bodyHash: string }).bodyHash }
+            : {}
+        ),
+        ...(
+          typeof (resource as { contentType?: unknown }).contentType === "string"
+            ? { contentType: (resource as { contentType: string }).contentType }
+            : {}
+        )
+      };
+    }
+  }
+  return {
+    method: typeof input.method === "string" ? input.method : "GET",
+    url: typeof resource === "string" ? resource : fallbackUrl
+  };
+}
+
 function startGateway(config: ResolvedGatewayConfig): void {
   if (!config.storage.startsWith("sqlite://")) {
     throw new Error("fiber-mpp gateway requires storage sqlite://path");
@@ -397,7 +514,13 @@ function startGateway(config: ResolvedGatewayConfig): void {
     previousSecrets: config.previousSecrets,
     serverId: config.serverId,
     store,
-    fiber: FiberMethodAdapter.fromEnv(config.fiberEnv, "payee")
+    fiber: FiberMethodAdapter.fromEnv(config.fiberEnv, "payee"),
+    fl402: config.fl402
+      ? {
+          rootKey: config.fl402.rootKey,
+          hashAlgorithm: config.fl402.hashAlgorithm
+        }
+      : undefined
   });
   const handler = createReverseProxyHandler(middleware, {
     upstream: config.upstream,
