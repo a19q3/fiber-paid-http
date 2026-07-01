@@ -1,11 +1,11 @@
 {
   "ok": true,
-  "command": "fiber-mpp evidence start",
-  "api_port": 52172,
-  "web_port": 52173,
+  "command": "fiber-paid-http evidence start",
+  "api_port": 62023,
+  "web_port": 62024,
   "api_health_status": "healthy",
-  "api_service": "fiber-mpp-evidence-api",
-  "injected_api_base": "http://127.0.0.1:52172",
+  "api_service": "fiber-paid-http-evidence-api",
+  "injected_api_base": "http://127.0.0.1:62023",
   "web_served_console": true,
   "api_and_web_started_by_single_cli_command": true
 }

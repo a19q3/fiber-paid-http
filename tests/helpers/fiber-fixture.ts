@@ -1,8 +1,8 @@
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { FiberMethodAdapter, FiberRpcClient } from "@fiber-mpp/fiber-method";
-import { SqliteStore } from "@fiber-mpp/storage";
+import { FiberMethodAdapter, FiberRpcClient } from "@fiber-paid-http/fiber-method";
+import { SqliteStore } from "@fiber-paid-http/storage";
 
 export const FIXTURE_PAYMENT_HASH = `0x${"cd".repeat(32)}`;
 export const FIXTURE_INVOICE = "fibd1qproductionfixture0001";
@@ -32,7 +32,7 @@ export function createFiberFixtureAdapters(options: { paymentHash?: string } = {
   };
 }
 
-export function createSqliteTestStore(prefix = "fiber-mpp-test-"): SqliteStore {
+export function createSqliteTestStore(prefix = "fiber-paid-http-test-"): SqliteStore {
   const dir = mkdtempSync(join(tmpdir(), prefix));
   return new SqliteStore(join(dir, "store.sqlite"));
 }

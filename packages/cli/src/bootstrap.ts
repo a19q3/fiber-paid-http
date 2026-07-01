@@ -2,6 +2,11 @@ import { writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { mkdir } from "node:fs/promises";
 
+export const DEFAULT_SECRET_ENV = "FIBER_PAID_HTTP_SECRET";
+export const LEGACY_SECRET_ENV = "FIBER_MPP_SECRET";
+export const DEFAULT_FL402_ROOT_KEY_ENV = "FIBER_PAID_HTTP_FL402_ROOT_KEY";
+export const LEGACY_FL402_ROOT_KEY_ENV = "FIBER_MPP_FL402_ROOT_KEY";
+
 export type BootstrapRole = "payer" | "payee" | "gateway";
 
 export type GatewayConfig = {
@@ -144,7 +149,7 @@ export class BootstrapError extends Error {
   public readonly report: BootstrapReport;
 
   public constructor(report: BootstrapReport) {
-    super(`FiberMPP ${report.role} bootstrap blocked`);
+    super(`Fiber Paid HTTP ${report.role} bootstrap blocked`);
     this.report = report;
   }
 }
@@ -153,16 +158,16 @@ export function gatewayConfigTemplate(): GatewayConfig {
   return {
     role: "gateway",
     listen: "127.0.0.1:8790",
-    server_id: "fiber-mpp-gateway",
+    server_id: "fiber-paid-http-gateway",
     upstream: "http://localhost:8080",
-    storage: "sqlite://./fiber-mpp.sqlite",
+    storage: "sqlite://./fiber-paid-http.sqlite",
     price: {
       value: "1",
       currency: "CKB",
       display: "1 CKB"
     },
     methods: ["fiber"],
-    secret_env: "FIBER_MPP_SECRET",
+    secret_env: DEFAULT_SECRET_ENV,
     previous_secret_envs: [],
     cors: {
       allowed_origins: [],
@@ -215,11 +220,21 @@ export function parseGatewayConfig(value: unknown): GatewayConfig {
   return config;
 }
 
+export function readPaidHttpEnv(env: NodeJS.ProcessEnv, name: string): string | undefined {
+  if (name === DEFAULT_SECRET_ENV) {
+    return env[DEFAULT_SECRET_ENV] ?? env[LEGACY_SECRET_ENV];
+  }
+  if (name === DEFAULT_FL402_ROOT_KEY_ENV) {
+    return env[DEFAULT_FL402_ROOT_KEY_ENV] ?? env[LEGACY_FL402_ROOT_KEY_ENV];
+  }
+  return env[name];
+}
+
 export function resolveGatewayConfig(options: GatewayCliOptions, env: NodeJS.ProcessEnv = process.env): ResolvedGatewayConfig {
   const config = options.config;
   const fiberEnv = fiberEnvFromGatewayConfig(config, env);
-  const storage = normalizeStorageUri(options.storage ?? config?.storage ?? "sqlite://./fiber-mpp.sqlite");
-  const serverId = options.serverId ?? config?.server_id ?? "fiber-mpp-gateway";
+  const storage = normalizeStorageUri(options.storage ?? config?.storage ?? "sqlite://./fiber-paid-http.sqlite");
+  const serverId = options.serverId ?? config?.server_id ?? "fiber-paid-http-gateway";
   const price = options.priceCkb
     ? { value: options.priceCkb, currency: "CKB", display: `${options.priceCkb} CKB` }
     : config?.price ?? { value: "1", currency: "CKB", display: "1 CKB" };
@@ -228,12 +243,12 @@ export function resolveGatewayConfig(options: GatewayCliOptions, env: NodeJS.Pro
     : config?.methods ?? ["fiber"];
   const upstream = options.upstream ?? config?.upstream;
   const port = parsePort(options.port, config);
-  const secretEnv = config?.secret_env ?? "FIBER_MPP_SECRET";
-  const secret = env[secretEnv];
+  const secretEnv = config?.secret_env ?? DEFAULT_SECRET_ENV;
+  const secret = readPaidHttpEnv(env, secretEnv);
   const previousSecretResolution = previousSecretsFromGatewayConfig(config, env);
   const fl402Configured = Boolean(config?.fl402);
-  const fl402RootKeyEnv = config?.fl402?.root_key_env ?? "FIBER_MPP_FL402_ROOT_KEY";
-  const fl402RootKey = fl402Configured ? env[fl402RootKeyEnv] : undefined;
+  const fl402RootKeyEnv = config?.fl402?.root_key_env ?? DEFAULT_FL402_ROOT_KEY_ENV;
+  const fl402RootKey = fl402Configured ? readPaidHttpEnv(env, fl402RootKeyEnv) : undefined;
   const fl402HashAlgorithm = config?.fl402?.hash_algorithm ?? "ckb_hash";
   const cors = resolveGatewayCorsPolicy(config);
   const operations = resolveGatewayOperations(config);
@@ -337,7 +352,7 @@ export function buildBootstrapReport(
   if (role === "gateway") {
     checks.upstream = input.upstream ?? null;
     checks.storage = input.storage ?? null;
-    checks.secret_env = input.secretEnv ?? "FIBER_MPP_SECRET";
+    checks.secret_env = input.secretEnv ?? DEFAULT_SECRET_ENV;
     checks.secret_present = Boolean(input.secret);
     checks.secret_previous_env_count = input.previousSecretEnvs?.length ?? 0;
     checks.secret_previous_present_count = input.previousSecrets?.length ?? 0;
@@ -345,7 +360,7 @@ export function buildBootstrapReport(
     checks.methods_fiber_only = input.methods?.every((method) => method === "fiber") ?? true;
     checks.price_currency = input.price?.currency ?? null;
     checks.fl402_enabled = input.fl402Configured ?? false;
-    checks.fl402_root_key_env = input.fl402Configured ? input.fl402RootKeyEnv ?? "FIBER_MPP_FL402_ROOT_KEY" : null;
+    checks.fl402_root_key_env = input.fl402Configured ? input.fl402RootKeyEnv ?? DEFAULT_FL402_ROOT_KEY_ENV : null;
     checks.fl402_hash_algorithm = input.fl402Configured ? input.fl402HashAlgorithm ?? "ckb_hash" : null;
     checks.cors_wildcard_disabled = !(input.cors?.allowedOrigins.includes("*") ?? false);
     checks.rate_limit_enabled = Boolean(input.operations && input.operations.rateLimit.maxRequests > 0 && input.operations.rateLimit.windowMs > 0);
@@ -358,7 +373,7 @@ export function buildBootstrapReport(
       blockers.push("set storage to sqlite://path");
     }
     if (!input.secret || input.secret.length < 32) {
-      blockers.push(`set ${input.secretEnv ?? "FIBER_MPP_SECRET"} to a random secret of at least 32 characters`);
+      blockers.push(`set ${input.secretEnv ?? DEFAULT_SECRET_ENV} to a random secret of at least 32 characters`);
     }
     for (const envName of input.missingPreviousSecretEnvs ?? []) {
       blockers.push(`set previous secret env ${envName} or remove it from previous_secret_envs`);
@@ -377,7 +392,7 @@ export function buildBootstrapReport(
     }
     if (input.fl402Configured) {
       if (!input.fl402RootKey || input.fl402RootKey.length < 16) {
-        blockers.push(`set ${input.fl402RootKeyEnv ?? "FIBER_MPP_FL402_ROOT_KEY"} to an F-L402 root key of at least 16 characters`);
+        blockers.push(`set ${input.fl402RootKeyEnv ?? DEFAULT_FL402_ROOT_KEY_ENV} to an F-L402 root key of at least 16 characters`);
       }
       if (input.fl402HashAlgorithm !== "ckb_hash" && input.fl402HashAlgorithm !== "sha256") {
         blockers.push("gateway fl402.hash_algorithm must be ckb_hash or sha256");
@@ -579,7 +594,7 @@ export async function probeFiberRpcReadiness(input: {
     checks.rpc_ready_channel_count = readyChannelCount;
     checks.rpc_channel_states = summarizeChannelStates(channels);
     if (channelCount === 0) {
-      blockers.push(`${input.role} Fiber node has no channels; open and fund a channel before live FiberMPP payments`);
+      blockers.push(`${input.role} Fiber node has no channels; open and fund a channel before live Fiber Paid HTTP payments`);
     } else if (readyChannelCount === 0) {
       blockers.push(`${input.role} Fiber node has no ChannelReady channels; wait for channel funding and readiness`);
     }
@@ -638,28 +653,28 @@ function envValue(envName: string | undefined, env: NodeJS.ProcessEnv): string |
 function nextSteps(role: BootstrapRole, blockers: string[]): string[] {
   if (blockers.length === 0) {
     return role === "gateway"
-      ? ["start with fiber-mpp serve --config fiber-mpp.gateway.json"]
+      ? ["start with fiber-paid-http serve --config fiber-paid-http.gateway.json"]
       : ["run a paid request or role-specific RPC check"];
   }
   if (role === "gateway") {
     return [
-      "generate a gateway template with fiber-mpp init --role gateway --out fiber-mpp.gateway.json",
-      "export FIBER_MPP_SECRET=$(openssl rand -hex 32)",
+      "generate a gateway template with fiber-paid-http init --role gateway --out fiber-paid-http.gateway.json",
+      "export FIBER_PAID_HTTP_SECRET=$(openssl rand -hex 32)",
       "start or point at a payee Fiber node and set FIBER_MODE plus FIBER_PAYEE_RPC_URL",
-      "run fiber-mpp doctor --role gateway --config fiber-mpp.gateway.json"
+      "run fiber-paid-http doctor --role gateway --config fiber-paid-http.gateway.json"
     ];
   }
   if (role === "payer") {
     return [
       "start or point at a funded payer Fiber node",
       "set FIBER_MODE and FIBER_PAYER_RPC_URL",
-      "run fiber-mpp doctor --role payer"
+      "run fiber-paid-http doctor --role payer"
     ];
   }
   return [
     "start or point at an invoice/payee Fiber node",
     "set FIBER_MODE and FIBER_PAYEE_RPC_URL",
-    "run fiber-mpp doctor --role payee"
+    "run fiber-paid-http doctor --role payee"
   ];
 }
 
@@ -684,7 +699,7 @@ async function fiberRpcRequest<T>(input: {
       signal: controller.signal,
       body: JSON.stringify({
         jsonrpc: "2.0",
-        id: `fiber-mpp-doctor-${input.method}`,
+        id: `fiber-paid-http-doctor-${input.method}`,
         method: input.method,
         params: input.params
       })

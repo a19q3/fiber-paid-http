@@ -1,6 +1,6 @@
 # Positioning
 
-FiberMPP is the current name for a Fiber Paid HTTP protocol-family implementation. The repo name stays stable, while the product surface is broader than one protocol acronym:
+Fiber Paid HTTP is the current name for a Fiber Paid HTTP protocol-family implementation. The repo name stays stable, while the product surface is broader than one protocol acronym:
 
 ```text
 Rust       = canonical protocol core, vector verifier, and production gateway path
@@ -12,9 +12,9 @@ test-vectors = shared protocol truth across Rust and TypeScript
 
 | Surface | Implementation | Boundary |
 | --- | --- | --- |
-| MPP + Fiber | `packages/core`, `packages/server-middleware`, `crates/fiber-mpp-core`, `crates/fiber-mpp-server` | Primary paid HTTP envelope and receipt format. |
-| F402 | `packages/f402-compat`, `crates/fiber-mpp-f402` | Compatibility conversion for Fiber invoice/payment-hash 402 applications. |
-| F-L402 | `packages/fl402-compat`, `crates/fiber-mpp-fl402`, TS middleware, Rust gateway | Application-level `L402 macaroon:preimage` adapter backed by Fiber invoice settlement. |
+| MPP + Fiber | `packages/core`, `packages/server-middleware`, `crates/fiber-paid-http-core`, `crates/fiber-paid-http-server` | Primary paid HTTP envelope and receipt format. |
+| F402 | `packages/f402-compat`, `crates/fiber-paid-http-f402` | Compatibility conversion for Fiber invoice/payment-hash 402 applications. |
+| F-L402 | `packages/fl402-compat`, `crates/fiber-paid-http-fl402`, TS middleware, Rust gateway | Application-level `L402 macaroon:preimage` adapter backed by Fiber invoice settlement. |
 | x402 | Future adapter | Wait for stable Fiber node verify/settle support before adding native x402 headers. |
 
 ## Nearby Projects
@@ -24,11 +24,11 @@ test-vectors = shared protocol truth across Rust and TypeScript
 - fiber-l402: application-level Fiber L402 precedent.
 - fiber-x402-blog: native x402 direction once Fiber node support is available.
 - Fiber-checkout: React checkout/payment component.
-- FiberMPP: reusable paid HTTP infrastructure for APIs, agents, and metered services.
+- Fiber Paid HTTP: reusable paid HTTP infrastructure for APIs, agents, and metered services.
 
 ## Boundary
 
-FiberMPP should serve Infern-like projects and other paid API developers. It should not duplicate their product surfaces. It does not provide model discovery, inference routing, wallet UX, checkout UX, slashing, staking, or a marketplace.
+Fiber Paid HTTP should serve Infern-like projects and other paid API developers. It should not duplicate their product surfaces. It does not provide model discovery, inference routing, wallet UX, checkout UX, slashing, staking, or a marketplace.
 
 The TypeScript stack is maintained integration code, but it is not the production trusted verifier. Trusted verification flows go through Rust. TypeScript remains valuable as the JS ecosystem layer, middleware surface, compatibility adapter layer, evidence console, and historical conformance-vector harness.
 

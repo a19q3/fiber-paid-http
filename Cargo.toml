@@ -1,12 +1,12 @@
 [workspace]
 members = [
-  "crates/fiber-mpp-core",
-  "crates/fiber-mpp-storage",
-  "crates/fiber-mpp-fiber",
-  "crates/fiber-mpp-f402",
-  "crates/fiber-mpp-fl402",
-  "crates/fiber-mpp-server",
-  "crates/fiber-mpp-cli"
+  "crates/fiber-paid-http-core",
+  "crates/fiber-paid-http-storage",
+  "crates/fiber-paid-http-fiber",
+  "crates/fiber-paid-http-f402",
+  "crates/fiber-paid-http-fl402",
+  "crates/fiber-paid-http-server",
+  "crates/fiber-paid-http-cli"
 ]
 resolver = "2"
 
@@ -14,7 +14,7 @@ resolver = "2"
 version = "0.1.0"
 edition = "2021"
 license = "MIT"
-repository = "https://example.invalid/fiber-mpp"
+repository = "https://github.com/a19q3/fiber-paid-http"
 
 [workspace.dependencies]
 anyhow = "1.0"

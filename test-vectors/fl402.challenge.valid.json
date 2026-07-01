@@ -4,7 +4,7 @@
     "root_key": "fiber-paid-http-fl402-conformance-root-key",
     "fl402": {
       "challengeId": "chal_conformance_0001",
-      "macaroon": "fl402-macaroon-v1.eyJjYXZlYXRzIjp7ImFtb3VudCI6IjEwMDAiLCJjaGFsbGVuZ2VJZCI6ImNoYWxfY29uZm9ybWFuY2VfMDAwMSIsImN1cnJlbmN5IjoiRmliZCIsImV4cGlyZXNBdCI6IjIwMzAtMDEtMDFUMDA6MDA6MDAuMDAwWiIsImZpYmVyTm9kZUlkIjoiZmliZXItbm9kZS1jb25mb3JtYW5jZS1wYXllZSIsImhhc2hBbGdvcml0aG0iOiJzaGEyNTYiLCJpbnZvaWNlIjoiZmliZDFxY29uZm9ybWFuY2VwYXltZW50MDAwMSIsImlzc3VlciI6ImZpYmVyLW1wcC10cy1jb25mb3JtYW5jZSIsIm1ldGhvZCI6IkdFVCIsInBheW1lbnRIYXNoIjoiMHgwMmQ0NDlhMzFmYmIyNjdjOGYzNTJlOTk2OGE3OWUzZTVmYzk1YzFiYmVhYTUwMmZkNjQ1NGViZGU1YTRiZWRjIiwicmVzb3VyY2VIYXNoIjoiZTZhZTY0NDliY2JmNTg4MjAxMmEwMGM0ZGNmMzIwNDNjNjczNTVlZTc3OWRiYWFjNDg5ZmVjM2I0YzJiODU0NiIsInVybCI6Imh0dHA6Ly9jb25mb3JtYW5jZS5sb2NhbC9wYWlkL3dlYXRoZXIifSwiZG9tYWluIjoiZmw0MDItbWFjYXJvb24tdjEiLCJpc3N1ZWRBdCI6IjIwMjYtMDYtMjRUMDA6MDA6MDAuMDAwWiIsIm5vbmNlIjoiMDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWYifQ.025852a23ac53ae1835576b4ce45ea4610cf81413dadad0f6540f762d26b0010",
+      "macaroon": "fl402-macaroon-v1.eyJjYXZlYXRzIjp7ImFtb3VudCI6IjEwMDAiLCJjaGFsbGVuZ2VJZCI6ImNoYWxfY29uZm9ybWFuY2VfMDAwMSIsImN1cnJlbmN5IjoiRmliZCIsImV4cGlyZXNBdCI6IjIwMzAtMDEtMDFUMDA6MDA6MDAuMDAwWiIsImZpYmVyTm9kZUlkIjoiZmliZXItbm9kZS1jb25mb3JtYW5jZS1wYXllZSIsImhhc2hBbGdvcml0aG0iOiJzaGEyNTYiLCJpbnZvaWNlIjoiZmliZDFxY29uZm9ybWFuY2VwYXltZW50MDAwMSIsImlzc3VlciI6ImZpYmVyLXBhaWQtaHR0cC10cy1jb25mb3JtYW5jZSIsIm1ldGhvZCI6IkdFVCIsInBheW1lbnRIYXNoIjoiMHgwMmQ0NDlhMzFmYmIyNjdjOGYzNTJlOTk2OGE3OWUzZTVmYzk1YzFiYmVhYTUwMmZkNjQ1NGViZGU1YTRiZWRjIiwicmVzb3VyY2VIYXNoIjoiZTZhZTY0NDliY2JmNTg4MjAxMmEwMGM0ZGNmMzIwNDNjNjczNTVlZTc3OWRiYWFjNDg5ZmVjM2I0YzJiODU0NiIsInVybCI6Imh0dHA6Ly9jb25mb3JtYW5jZS5sb2NhbC9wYWlkL3dlYXRoZXIifSwiZG9tYWluIjoiZmw0MDItbWFjYXJvb24tdjEiLCJpc3N1ZWRBdCI6IjIwMjYtMDYtMjRUMDA6MDA6MDAuMDAwWiIsIm5vbmNlIjoiMDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWYifQ.42c1e24f40489bbc7fd154dc8f9cb75c208442a8ac2431691b60174586f9f380",
       "invoice": "fibd1qconformancepayment0001",
       "paymentHash": "0x02d449a31fbb267c8f352e9968a79e3e5fc95c1bbeaa502fd6454ebde5a4bedc",
       "amount": "1000",
@@ -12,7 +12,7 @@
       "expiresAt": "2030-01-01T00:00:00.000Z",
       "resource": "http://conformance.local/paid/weather",
       "resourceHash": "e6ae6449bcbf5882012a00c4dcf32043c67355ee779dbaac489fec3b4c2b8546",
-      "issuer": "fiber-mpp-ts-conformance",
+      "issuer": "fiber-paid-http-ts-conformance",
       "fiberNodeId": "fiber-node-conformance-payee",
       "hashAlgorithm": "sha256"
     },
@@ -20,11 +20,11 @@
       "method": "GET",
       "url": "http://conformance.local/paid/weather"
     },
-    "server_id": "fiber-mpp-ts-conformance",
+    "server_id": "fiber-paid-http-ts-conformance",
     "challenge_id": "chal_conformance_0001",
     "issued_at": "2026-06-24T00:00:00.000Z",
     "expected_mpp_fields": {
-      "domain": "fiber-mpp-challenge-v1",
+      "domain": "fiber-paid-http-challenge-v1",
       "challengeId": "chal_conformance_0001",
       "resource": {
         "method": "GET",
@@ -38,13 +38,13 @@
       "paymentHash": "0x02d449a31fbb267c8f352e9968a79e3e5fc95c1bbeaa502fd6454ebde5a4bedc",
       "invoice": "fibd1qconformancepayment0001",
       "amountShannons": "1000",
-      "serverId": "fiber-mpp-ts-conformance",
-      "audience": "fiber-mpp-ts-conformance",
+      "serverId": "fiber-paid-http-ts-conformance",
+      "audience": "fiber-paid-http-ts-conformance",
       "maxUses": 1,
       "hashAlgorithm": "sha256"
     }
   },
-  "expected_canonical_hash": "c4f8777c15a006d8c0ea70448a3102c5b6a580778e0ab7a1ea8e65137b57d3a2",
+  "expected_canonical_hash": "905c7c0e5120561641d67615c1962ff381362e9239afde5e3500c447b971f908",
   "expected_verification_result": "accepted",
   "notes": "F-L402 challenge with first-party caveats and a Fiber payment preimage hash."
 }

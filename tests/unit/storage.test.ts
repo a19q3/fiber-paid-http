@@ -2,7 +2,7 @@ import { mkdtemp, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { describe, expect, it } from "vitest";
-import { attachReceiptSignature } from "@fiber-mpp/core";
+import { attachReceiptSignature } from "@fiber-paid-http/core";
 import {
   SQLITE_SCHEMA_VERSION,
   SqliteStore,
@@ -12,11 +12,11 @@ import {
   exportSqliteReceipts,
   listSqliteDeliveryOutcomes,
   restoreSqliteStore
-} from "@fiber-mpp/storage";
+} from "@fiber-paid-http/storage";
 
 describe("SQLite storage operations", () => {
-  it("backs up and restores committed FiberMPP observations", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "fiber-mpp-storage-"));
+  it("backs up and restores committed Fiber Paid HTTP observations", async () => {
+    const dir = await mkdtemp(join(tmpdir(), "fiber-paid-http-storage-"));
     const sourcePath = join(dir, "source.sqlite");
     const backupPath = join(dir, "backup.sqlite");
     const restoredPath = join(dir, "restored.sqlite");
@@ -49,7 +49,7 @@ describe("SQLite storage operations", () => {
   });
 
   it("requires force before overwriting a restore destination", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "fiber-mpp-storage-"));
+    const dir = await mkdtemp(join(tmpdir(), "fiber-paid-http-storage-"));
     const sourcePath = join(dir, "source.sqlite");
     const backupPath = join(dir, "backup.sqlite");
     const destinationPath = join(dir, "destination.sqlite");
@@ -61,7 +61,7 @@ describe("SQLite storage operations", () => {
   });
 
   it("reports SQLite schema health and stores delivery outcomes", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "fiber-mpp-storage-"));
+    const dir = await mkdtemp(join(tmpdir(), "fiber-paid-http-storage-"));
     const sourcePath = join(dir, "source.sqlite");
     const store = new SqliteStore(sourcePath);
 
@@ -105,13 +105,13 @@ describe("SQLite storage operations", () => {
   });
 
   it("exports and audits stored receipts", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "fiber-mpp-storage-"));
+    const dir = await mkdtemp(join(tmpdir(), "fiber-paid-http-storage-"));
     const sourcePath = join(dir, "source.sqlite");
     const exportPath = join(dir, "receipts.jsonl");
     const secret = "storage-receipt-audit-secret-at-least-32";
     const previousSecret = "storage-previous-receipt-secret-at-least-32";
     const receiptInput = {
-      domain: "fiber-mpp-receipt-v1" as const,
+      domain: "fiber-paid-http-receipt-v1" as const,
       receiptId: "rcpt_storage_audit_current",
       challengeId: "chal_storage_audit",
       method: "fiber" as const,

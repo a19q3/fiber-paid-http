@@ -1,8 +1,8 @@
 {
-  "name": "@fiber-mpp/evidence-web",
+  "name": "@fiber-paid-http/evidence-web",
   "version": "0.2.0",
   "type": "module",
-  "description": "FiberMPP evidence console UI (React + Vite).",
+  "description": "Fiber Paid HTTP evidence console UI (React + Vite).",
   "exports": {
     ".": {
       "types": "./server.d.ts",

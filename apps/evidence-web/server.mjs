@@ -19,7 +19,12 @@ const types = new Map([
 ]);
 
 export function startEvidenceWeb(port = Number(process.env.PORT || "8788"), options = {}) {
-  const apiBase = normalizeApiBase(options.apiBase || process.env.FIBER_MPP_EVIDENCE_API_BASE || defaultApiBase);
+  const apiBase = normalizeApiBase(
+    options.apiBase ||
+      process.env.FIBER_PAID_HTTP_EVIDENCE_API_BASE ||
+      process.env.FIBER_MPP_EVIDENCE_API_BASE ||
+      defaultApiBase
+  );
   const headers = securityHeaders(apiBase);
   const server = createServer(async (req, res) => {
     if (req.method !== "GET" && req.method !== "HEAD") {
@@ -80,8 +85,8 @@ export function startEvidenceWeb(port = Number(process.env.PORT || "8788"), opti
     }
   });
   server.listen(port, () => {
-    console.log(`FiberMPP evidence console listening on http://localhost:${port}`);
-    console.log(`FiberMPP evidence console API base ${apiBase}`);
+    console.log(`Fiber Paid HTTP evidence console listening on http://localhost:${port}`);
+    console.log(`Fiber Paid HTTP evidence console API base ${apiBase}`);
   });
   return server;
 }

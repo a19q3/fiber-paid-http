@@ -4,7 +4,7 @@ import {
   type PaymentReceipt,
   type PaymentCredential,
   type Settlement
-} from "@fiber-mpp/core";
+} from "@fiber-paid-http/core";
 import { constants } from "node:fs";
 import { access, copyFile, mkdir, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
@@ -40,7 +40,7 @@ export type DeliveryOutcome = {
   recordedAt: string;
 };
 
-export interface FiberMppStore {
+export interface FiberPaidHttpStore {
   readonly kind: StoreKind;
   readonly durable: boolean;
   saveChallenge(record: ChallengeRecord): Promise<void>;
@@ -56,6 +56,11 @@ export interface FiberMppStore {
   saveDeliveryOutcome(outcome: DeliveryOutcome): Promise<void>;
   listDeliveryOutcomes(): Promise<DeliveryOutcome[]>;
 }
+
+/**
+ * @deprecated Use `FiberPaidHttpStore`.
+ */
+export type FiberMppStore = FiberPaidHttpStore;
 
 export const SQLITE_SCHEMA_VERSION = 1;
 
@@ -79,7 +84,7 @@ export type SqliteStoreHealthReport = {
   integrityCheck: string;
 };
 
-export class SqliteStore implements FiberMppStore {
+export class SqliteStore implements FiberPaidHttpStore {
   public readonly kind = "sqlite" as const;
   public readonly durable = true;
   private readonly db: SqliteDatabase;
@@ -201,14 +206,14 @@ export class SqliteStore implements FiberMppStore {
   }
 }
 
-export type RedisCompatibleStore = FiberMppStore & {
+export type RedisCompatibleStore = FiberPaidHttpStore & {
   readonly kind: "redis-compatible";
 };
 
-export function assertProductionStore(store: FiberMppStore): void {
+export function assertProductionStore(store: FiberPaidHttpStore): void {
   if (!store.durable) {
     throw new Error(
-      "Durable FiberMPP storage is required. Use SQLite or a Redis-compatible production store."
+      "Durable Fiber Paid HTTP storage is required. Use SQLite or a Redis-compatible production store."
     );
   }
 }
@@ -359,7 +364,7 @@ function applySqliteMigrations(db: SqliteDatabase): void {
     PRAGMA synchronous = NORMAL;
     PRAGMA busy_timeout = 5000;
     PRAGMA foreign_keys = ON;
-    CREATE TABLE IF NOT EXISTS fiber_mpp_meta (
+    CREATE TABLE IF NOT EXISTS fiber_paid_http_meta (
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
     );
@@ -391,7 +396,7 @@ function applySqliteMigrations(db: SqliteDatabase): void {
     );
     PRAGMA user_version = ${SQLITE_SCHEMA_VERSION};
   `);
-  db.prepare("INSERT OR REPLACE INTO fiber_mpp_meta (key, value) VALUES (?, ?)").run(
+  db.prepare("INSERT OR REPLACE INTO fiber_paid_http_meta (key, value) VALUES (?, ?)").run(
     "schema_version",
     String(SQLITE_SCHEMA_VERSION)
   );

@@ -12,7 +12,7 @@ usage() {
   cat <<'USAGE'
 usage: scripts/fiber_testnet_e2e.sh
 
-Runs the real FiberMPP testnet evidence lane against already-provisioned Fiber
+Runs the real Fiber Paid HTTP testnet evidence lane against already-provisioned Fiber
 testnet nodes. This script does not create wallets, request faucet funds, or
 open channels. Prepare funded payer/payee FNN nodes first, then set:
 
@@ -23,7 +23,7 @@ Optional:
 
   FIBER_PAYER_RPC_AUTH='Bearer ...'
   FIBER_PAYEE_RPC_AUTH='Bearer ...'
-  FIBER_MPP_SECRET='<32+ char random secret>'
+  FIBER_PAID_HTTP_SECRET='<32+ char random secret>'
   FIBER_E2E_AMOUNT_SHANNONS=100
   FIBER_SETTLEMENT_TIMEOUT_MS=60000
   FIBER_SETTLEMENT_POLL_MS=500
@@ -51,8 +51,11 @@ if [[ -z "${FIBER_PAYEE_RPC_URL:-}" && -n "${FIBER_RPC_URL:-}" ]]; then
 fi
 
 secret_generated=false
-if [[ -z "${FIBER_MPP_SECRET:-}" ]]; then
-  export FIBER_MPP_SECRET="$(node -e 'process.stdout.write(require("node:crypto").randomBytes(32).toString("hex"))')"
+if [[ -z "${FIBER_PAID_HTTP_SECRET:-}" && -n "${FIBER_MPP_SECRET:-}" ]]; then
+  export FIBER_PAID_HTTP_SECRET="${FIBER_MPP_SECRET}"
+fi
+if [[ -z "${FIBER_PAID_HTTP_SECRET:-}" ]]; then
+  export FIBER_PAID_HTTP_SECRET="$(node -e 'process.stdout.write(require("node:crypto").randomBytes(32).toString("hex"))')"
   secret_generated=true
 fi
 
@@ -68,7 +71,7 @@ const report = {
   payee_rpc_url: process.env.FIBER_PAYEE_RPC_URL || process.env.FIBER_RPC_URL || null,
   payer_rpc_auth_present: Boolean(process.env.FIBER_PAYER_RPC_AUTH || process.env.FIBER_RPC_AUTH),
   payee_rpc_auth_present: Boolean(process.env.FIBER_PAYEE_RPC_AUTH || process.env.FIBER_RPC_AUTH),
-  secret_present: Boolean(process.env.FIBER_MPP_SECRET),
+  secret_present: Boolean(process.env.FIBER_PAID_HTTP_SECRET),
   secret_generated: process.env.SECRET_GENERATED === "true",
   amount_shannons: process.env.FIBER_E2E_AMOUNT_SHANNONS,
   settlement_timeout_ms: process.env.FIBER_SETTLEMENT_TIMEOUT_MS,
@@ -99,7 +102,7 @@ run_doctor() {
   local role="$1"
   local out="$2"
   set +e
-  pnpm exec fiber-mpp doctor --role "${role}" 2>&1 | tee "${out}"
+  pnpm exec fiber-paid-http doctor --role "${role}" 2>&1 | tee "${out}"
   local status="${PIPESTATUS[0]}"
   set -e
   if [[ "${status}" -ne 0 ]]; then
@@ -122,7 +125,7 @@ run_doctor payee "${PAYEE_DOCTOR_JSON}"
 
 rm -f reports/fiber-e2e-result.json
 set +e
-bash scripts/fiber_mpp_canonical_gate.sh 2>&1 | tee "${CANONICAL_LOG}"
+bash scripts/fiber_paid_http_canonical_gate.sh 2>&1 | tee "${CANONICAL_LOG}"
 gate_exit="${PIPESTATUS[0]}"
 set -e
 
@@ -133,7 +136,7 @@ function readJson(path) {
   return fs.existsSync(path) ? JSON.parse(fs.readFileSync(path, "utf8")) : null;
 }
 
-const gate = readJson("reports/fiber-mpp-gate.json");
+const gate = readJson("reports/fiber-paid-http-gate.json");
 const canonical = readJson("reports/canonical-core-parity.json");
 const fiber = readJson("reports/fiber-e2e-result.json");
 const gateExit = Number.parseInt(process.env.GATE_EXIT || "1", 10);
@@ -157,8 +160,8 @@ const summary = {
   testnet_evidence_digest: gate?.testnet_evidence_digest ?? null,
   testnet_fiber_e2e_evidence_verified: gate?.testnet_fiber_e2e_evidence_verified === true,
   testnet_fiber_e2e_evidence_source: gate?.testnet_fiber_e2e_evidence_source ?? null,
-  fiber_mpp_gate_ready: gate?.fiber_mpp_gate_ready ?? false,
-  fiber_mpp_gate_blockers: gate?.fiber_mpp_gate_blockers ?? [],
+  fiber_paid_http_gate_ready: gate?.fiber_paid_http_gate_ready ?? false,
+  fiber_paid_http_gate_blockers: gate?.fiber_paid_http_gate_blockers ?? [],
   fiber_e2e_result: fiber,
   gate_report: gate,
   canonical_report: canonical,
@@ -167,7 +170,7 @@ const summary = {
     payer_doctor: process.env.PAYER_DOCTOR_JSON,
     payee_doctor: process.env.PAYEE_DOCTOR_JSON,
     canonical_gate_log: process.env.CANONICAL_LOG,
-    fiber_mpp_gate: "reports/fiber-mpp-gate.json",
+    fiber_paid_http_gate: "reports/fiber-paid-http-gate.json",
     canonical_core_parity: "reports/canonical-core-parity.json",
     testnet_success: "reports/fiber-testnet-e2e-success.json",
     testnet_evidence: "reports/fiber-testnet-e2e-evidence.json"
@@ -181,7 +184,7 @@ if (!passed) {
 }
 NODE
 
-cp reports/fiber-mpp-gate.json "${REPORT_DIR}/fiber-mpp-gate.testnet.json"
+cp reports/fiber-paid-http-gate.json "${REPORT_DIR}/fiber-paid-http-gate.testnet.json"
 cp reports/canonical-core-parity.json "${REPORT_DIR}/canonical-core-parity.testnet.json"
 
-echo "FiberMPP testnet E2E evidence passed. Summary: ${SUMMARY_JSON}"
+echo "Fiber Paid HTTP testnet E2E evidence passed. Summary: ${SUMMARY_JSON}"

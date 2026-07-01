@@ -2,25 +2,25 @@
   "input": {
     "case": "f402.challenge.valid",
     "f402": {
-      "token": "d906e92b33e8de55376c9ceb4ea173af4c01ff8fe4ff75414f691f1580918cc5",
+      "token": "3c24d7c4122d7892c469f17b0695cd914661451db344832e2be4940341f890db",
       "invoice": "fibd1qconformancepayment0001",
       "paymentHash": "0xabababababababababababababababababababababababababababababababab",
       "amount": "1000",
       "currency": "Fibd",
       "expiresAt": "2030-01-01T00:00:00.000Z",
       "resource": "http://conformance.local/paid/weather",
-      "issuer": "fiber-mpp-ts-conformance",
+      "issuer": "fiber-paid-http-ts-conformance",
       "fiberNodeId": "fiber-node-conformance-payee"
     },
     "resource": {
       "method": "GET",
       "url": "http://conformance.local/paid/weather"
     },
-    "server_id": "fiber-mpp-ts-conformance",
+    "server_id": "fiber-paid-http-ts-conformance",
     "challenge_id": "chal_conformance_0001",
     "issued_at": "2026-06-24T00:00:00.000Z",
     "expected_mpp_fields": {
-      "domain": "fiber-mpp-challenge-v1",
+      "domain": "fiber-paid-http-challenge-v1",
       "challengeId": "chal_conformance_0001",
       "resource": {
         "method": "GET",
@@ -34,12 +34,12 @@
       "paymentHash": "0xabababababababababababababababababababababababababababababababab",
       "invoice": "fibd1qconformancepayment0001",
       "amountShannons": "1000",
-      "serverId": "fiber-mpp-ts-conformance",
-      "audience": "fiber-mpp-ts-conformance",
+      "serverId": "fiber-paid-http-ts-conformance",
+      "audience": "fiber-paid-http-ts-conformance",
       "maxUses": 1
     }
   },
-  "expected_canonical_hash": "2344ee66dbb2b3a1c126314758e54035ed8f8710b4e3999d9517768a9c15c90e",
+  "expected_canonical_hash": "24680e201fce4e106157a8c47f9fe8785ea6e196598eaba4e130edec3ddd249a",
   "expected_verification_result": "accepted",
   "notes": "F402 challenge fields as accepted by the TypeScript F402 compatibility adapter."
 }

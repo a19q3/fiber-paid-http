@@ -1,0 +1,18 @@
+[package]
+name = "fiber-paid-http-fl402"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+base64.workspace = true
+blake2b_simd.workspace = true
+chrono.workspace = true
+fiber-paid-http-core = { path = "../fiber-paid-http-core" }
+hex.workspace = true
+hmac.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha2.workspace = true
+thiserror.workspace = true

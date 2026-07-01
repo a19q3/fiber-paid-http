@@ -9,7 +9,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "..", "..", "..");
 const serverPath = resolve(repoRoot, "apps", "evidence-web", "server.mjs");
 const reportPath = resolve(repoRoot, "reports", "evidence-console-browser-smoke.json");
-const screenshotDir = resolve(tmpdir(), "fiber-mpp-browser-smoke");
+const screenshotDir = resolve(tmpdir(), "fiber-paid-http-browser-smoke");
 const chromeBin = process.env.CHROME_BIN || await findChrome();
 const smokeApiLabel = "temporary-local-api";
 const smokeWebOrigin = "served-local-web-server";
@@ -21,7 +21,7 @@ if (!chromeBin) {
 const apiPort = await findFreePort();
 const webPort = await findFreePort();
 const cdpPort = await findFreePort();
-const profileDir = await mkdtemp(resolve(tmpdir(), "fiber-mpp-smoke-profile-"));
+const profileDir = await mkdtemp(resolve(tmpdir(), "fiber-paid-http-smoke-profile-"));
 const apiBase = `http://127.0.0.1:${apiPort}`;
 const webUrl = `http://127.0.0.1:${webPort}/`;
 const apiProcess = spawn("pnpm", ["exec", "tsx", "--eval", fixtureApiSource()], {
@@ -34,7 +34,7 @@ apiProcess.stdout.on("data", (chunk) => apiOutput.push(String(chunk)));
 apiProcess.stderr.on("data", (chunk) => apiOutput.push(String(chunk)));
 const webProcess = spawn(process.execPath, [serverPath], {
   cwd: repoRoot,
-  env: { ...process.env, PORT: String(webPort), FIBER_MPP_EVIDENCE_API_BASE: apiBase },
+  env: { ...process.env, PORT: String(webPort), FIBER_PAID_HTTP_EVIDENCE_API_BASE: apiBase },
   stdio: ["ignore", "pipe", "pipe"]
 });
 const webOutput = [];
@@ -178,7 +178,7 @@ async function runSmoke(client, apiBase, webUrl) {
 
   return {
     evidence_console_browser_smoke: true,
-    report_schema: "fiber-mpp-evidence-console-browser-smoke-v1",
+    report_schema: "fiber-paid-http-evidence-console-browser-smoke-v1",
     api_base: smokeApiLabel,
     web_origin: smokeWebOrigin,
     console_url: webUrl.replace(/:\d+\//, ":<port>/"),
@@ -321,7 +321,7 @@ function deterministicApiEnv(port) {
     "FIBER_RPC_AUTH",
     "FIBER_PAYEE_RPC_AUTH",
     "FIBER_PAYER_RPC_AUTH",
-    "FIBER_MPP_SECRET"
+    "FIBER_PAID_HTTP_SECRET"
   ]) {
     delete env[key];
   }
@@ -338,11 +338,11 @@ function fixtureApiSource() {
     const app = createEvidenceApi({
       fiber: payeeFiber,
       payerFiber,
-      store: createSqliteTestStore("fiber-mpp-browser-smoke-"),
+      store: createSqliteTestStore("fiber-paid-http-browser-smoke-"),
       secret: "browser-smoke-secret-at-least-32-chars"
     });
     const server = serve({ fetch: app.fetch, port: Number(process.env.PORT) });
-    console.log("FiberMPP browser smoke API listening on http://127.0.0.1:" + process.env.PORT);
+    console.log("Fiber Paid HTTP browser smoke API listening on http://127.0.0.1:" + process.env.PORT);
     process.on("SIGTERM", () => server.close(() => process.exit(0)));
   `;
 }

@@ -10,7 +10,7 @@ import { readFile } from "node:fs/promises";
 const here = dirname(fileURLToPath(import.meta.url));
 const distPath = resolve(here, "..", "dist");
 const htmlPath = resolve(distPath, "index.html");
-const screenshotDir = resolve(tmpdir(), "fiber-mpp-layout-check");
+const screenshotDir = resolve(tmpdir(), "fiber-paid-http-layout-check");
 const viewports = [
   { width: 1440, height: 1100 },
   { width: 1280, height: 1100 },
@@ -60,7 +60,7 @@ const httpServer = createHttpServer(async (req, res) => {
 });
 await new Promise((resolveListen) => httpServer.listen(serverPort, resolveListen));
 const htmlUrl = `http://127.0.0.1:${serverPort}/`;
-const profileDir = await mkdtemp(resolve(tmpdir(), "fiber-mpp-layout-profile-"));
+const profileDir = await mkdtemp(resolve(tmpdir(), "fiber-paid-http-layout-profile-"));
 const chrome = spawn(chromeBin, [
   "--headless=new",
   `--remote-debugging-port=${port}`,

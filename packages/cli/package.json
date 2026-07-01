@@ -1,9 +1,10 @@
 {
-  "name": "@fiber-mpp/cli",
+  "name": "@fiber-paid-http/cli",
   "version": "0.1.0",
   "type": "module",
-  "description": "FiberMPP gateway, bootstrap, payment, and evidence tooling.",
+  "description": "Fiber Paid HTTP gateway, bootstrap, payment, and evidence tooling.",
   "bin": {
+    "fiber-paid-http": "./dist/index.js",
     "fiber-mpp": "./dist/index.js"
   },
   "exports": {
@@ -18,15 +19,15 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@fiber-mpp/client": "workspace:*",
-    "@fiber-mpp/core": "workspace:*",
-    "@fiber-mpp/evidence-api": "workspace:*",
-    "@fiber-mpp/evidence-web": "workspace:*",
-    "@fiber-mpp/f402-compat": "workspace:*",
-    "@fiber-mpp/fiber-method": "workspace:*",
-    "@fiber-mpp/fl402-compat": "workspace:*",
-    "@fiber-mpp/server-middleware": "workspace:*",
-    "@fiber-mpp/storage": "workspace:*",
+    "@fiber-paid-http/client": "workspace:*",
+    "@fiber-paid-http/core": "workspace:*",
+    "@fiber-paid-http/evidence-api": "workspace:*",
+    "@fiber-paid-http/evidence-web": "workspace:*",
+    "@fiber-paid-http/f402-compat": "workspace:*",
+    "@fiber-paid-http/fiber-method": "workspace:*",
+    "@fiber-paid-http/fl402-compat": "workspace:*",
+    "@fiber-paid-http/server-middleware": "workspace:*",
+    "@fiber-paid-http/storage": "workspace:*",
     "commander": "^12.1.0"
   }
 }

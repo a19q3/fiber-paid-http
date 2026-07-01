@@ -7,16 +7,16 @@ The vector suite under `test-vectors/` freezes the canonical JSON inputs, hashes
 Regenerate deterministic vectors and refresh local Fiber evidence vectors:
 
 ```bash
-pnpm exec fiber-mpp vectors generate
+pnpm exec fiber-paid-http vectors generate
 ```
 
 Verify all vectors against the current TypeScript implementation:
 
 ```bash
-pnpm exec fiber-mpp vectors verify
+pnpm exec fiber-paid-http vectors verify
 ```
 
-The CLI binary is built output, so after source edits run `pnpm --filter @fiber-mpp/cli build` before invoking these commands directly.
+The CLI binary is built output, so after source edits run `pnpm --filter @fiber-paid-http/cli build` before invoking these commands directly.
 
 ## Vector Schema
 
@@ -68,4 +68,4 @@ fiber.local-e2e.receipt.json
 fiber.local-e2e.report.json
 ```
 
-`vectors generate` copies the latest successful local Fiber E2E report. It first uses a currently passed `reports/fiber-mpp-gate.json`; otherwise it uses the preserved `reports/fiber-local-e2e-success.json` snapshot. The gate refreshes that snapshot only when the live local Fiber E2E actually passes. When available, vector generation also reads the live receipt from `.tmp/fiber-live-e2e.sqlite`; the fixture omits HMAC signing secrets and treats the live run as the receipt-signature verification boundary. Regenerating after a new live Fiber payment will change these evidence hashes.
+`vectors generate` copies the latest successful local Fiber E2E report. It first uses a currently passed `reports/fiber-paid-http-gate.json`; otherwise it uses the preserved `reports/fiber-local-e2e-success.json` snapshot. The gate refreshes that snapshot only when the live local Fiber E2E actually passes. When available, vector generation also reads the live receipt from `.tmp/fiber-live-e2e.sqlite`; the fixture omits HMAC signing secrets and treats the live run as the receipt-signature verification boundary. Regenerating after a new live Fiber payment will change these evidence hashes.

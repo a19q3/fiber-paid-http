@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deriveProductionEvidence, type ReportReadResult } from "@fiber-mpp/evidence-api";
+import { deriveProductionEvidence, type ReportReadResult } from "@fiber-paid-http/evidence-api";
 
 describe("evidence API production evidence derivation", () => {
   it("uses direct preserved testnet evidence even when aggregate gate claims are stale", () => {
@@ -7,9 +7,9 @@ describe("evidence API production evidence derivation", () => {
       fiberTestnet: validTestnetEvidence(),
       gate: {
         testnet_fiber_e2e: false,
-        fiber_mpp_gate_ready: false,
+        fiber_paid_http_gate_ready: false,
         production_bootstrap_e2e: true,
-        fiber_mpp_gate_blockers: []
+        fiber_paid_http_gate_blockers: []
       }
     });
 
@@ -85,29 +85,29 @@ function productionReports(overrides: Partial<Record<keyof ProductionReports, Re
       ...validTestnetEvidence(),
       ...overrides.fiberTestnet
     }),
-    gate: report("gate", "reports/fiber-mpp-gate.json", {
-      fiber_mpp_gate_ready: true,
+    gate: report("gate", "reports/fiber-paid-http-gate.json", {
+      fiber_paid_http_gate_ready: true,
       production_bootstrap_e2e: true,
       production_ready_for_fiber_method: true,
-      fiber_mpp_gate_blockers: [],
+      fiber_paid_http_gate_blockers: [],
       ...overrides.gate
     }),
-    gateDefault: report("gateDefault", "reports/fiber-mpp-gate.default.json", {
-      fiber_mpp_gate_ready: true,
+    gateDefault: report("gateDefault", "reports/fiber-paid-http-gate.default.json", {
+      fiber_paid_http_gate_ready: true,
       production_bootstrap_e2e: true,
       production_ready_for_fiber_method: true,
       ...overrides.gateDefault
     }),
-    gateLocal: report("gateLocal", "reports/fiber-mpp-gate.local.json", {
+    gateLocal: report("gateLocal", "reports/fiber-paid-http-gate.local.json", {
       live_fiber_local_e2e: true
     }),
-    rustGate: report("rustGate", "reports/fiber-mpp-rust-gate.json", {
+    rustGate: report("rustGate", "reports/fiber-paid-http-rust-gate.json", {
       production_bootstrap_e2e: true,
       production_ready_for_fiber_method: true,
       ...overrides.rustGate
     }),
-    tsGate: report("tsGate", "reports/fiber-mpp-ts-gate.json", {
-      fiber_mpp_gate_ready: true,
+    tsGate: report("tsGate", "reports/fiber-paid-http-ts-gate.json", {
+      fiber_paid_http_gate_ready: true,
       production_bootstrap_e2e: true,
       production_ready_for_fiber_method: true,
       ...overrides.tsGate
@@ -152,10 +152,10 @@ function validTestnetEvidence(): Record<string, unknown> {
 function aggregateReadyReport(): Record<string, unknown> {
   return {
     testnet_fiber_e2e: true,
-    fiber_mpp_gate_ready: true,
+    fiber_paid_http_gate_ready: true,
     production_bootstrap_e2e: true,
     production_ready_for_fiber_method: true,
-    fiber_mpp_gate_blockers: []
+    fiber_paid_http_gate_blockers: []
   };
 }
 

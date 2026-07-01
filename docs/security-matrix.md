@@ -1,6 +1,6 @@
 # Security Matrix
 
-This matrix is generated as JSON by `pnpm exec fiber-mpp vectors generate` at `reports/security-matrix.json`. The Markdown copy is the human review surface for the TypeScript conformance oracle.
+This matrix is generated as JSON by `pnpm exec fiber-paid-http vectors generate` at `reports/security-matrix.json`. The Markdown copy is the human review surface for the TypeScript conformance oracle.
 
 | attack | expected rejection | implemented test | vector file | status |
 | --- | --- | --- | --- | --- |

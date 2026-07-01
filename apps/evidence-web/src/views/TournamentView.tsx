@@ -168,7 +168,7 @@ export function TournamentView() {
     setBusyStep("export");
     try {
       const bundle = await ev.api.getJson("/api/tournament/battlecode/export");
-      downloadJson("battlecode-fmpp-tournament-export.json", bundle);
+      downloadJson("battlecode-paid-http-tournament-export.json", bundle);
       setMessage("export ready");
     } catch (error) {
       setMessage((error as Error).message);

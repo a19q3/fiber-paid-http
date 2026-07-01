@@ -1,10 +1,10 @@
 import {
-  FiberMppError,
+  FiberPaidHttpError,
   FiberMethodChallengeSchema,
   type FiberMethodChallenge,
   type FiberUdtTypeScript,
   type Settlement
-} from "@fiber-mpp/core";
+} from "@fiber-paid-http/core";
 
 export type FiberMode = "local" | "testnet";
 export type FiberEnvRole = "payee" | "payer";
@@ -74,11 +74,11 @@ export class FiberRpcClient {
       })
     });
     if (!response.ok) {
-      throw new FiberMppError("fiber-rpc-http-error", `Fiber RPC returned HTTP ${response.status}`, 502);
+      throw new FiberPaidHttpError("fiber-rpc-http-error", `Fiber RPC returned HTTP ${response.status}`, 502);
     }
     const payload = (await response.json()) as JsonRpcResponse<T>;
     if (payload.error) {
-      throw new FiberMppError(
+      throw new FiberPaidHttpError(
         "fiber-rpc-error",
         `Fiber RPC ${method} failed: ${payload.error.message ?? JSON.stringify(payload.error)}`,
         502
@@ -240,7 +240,7 @@ export class FiberMethodAdapter {
     );
     const invoice = await this.rpc!.newInvoice({
       amount: input.amountShannons,
-      description: input.description ?? `FiberMPP challenge ${input.challengeId}`,
+      description: input.description ?? `Fiber Paid HTTP challenge ${input.challengeId}`,
       currency: this.currency,
       udtTypeScript: input.udtTypeScript ?? this.udtTypeScript,
       expirySeconds
@@ -292,20 +292,20 @@ export class FiberMethodAdapter {
   ): Promise<FiberReceiptEvidence> {
     const normalized = normalizeProof(proof);
     if (normalized.paymentHash !== challenge.paymentHash) {
-      throw new FiberMppError("wrong-payment-hash", "Fiber payment hash does not match the challenge", 402);
+      throw new FiberPaidHttpError("wrong-payment-hash", "Fiber payment hash does not match the challenge", 402);
     }
     if (challenge.amountShannons && normalized.amountShannons && normalized.amountShannons !== challenge.amountShannons) {
-      throw new FiberMppError("wrong-amount", "Fiber payment amount does not match the challenge", 402);
+      throw new FiberPaidHttpError("wrong-amount", "Fiber payment amount does not match the challenge", 402);
     }
     if (normalized.mode !== this.mode) {
-      throw new FiberMppError(
+      throw new FiberPaidHttpError(
         "wrong-fiber-mode",
         `Fiber payment proof mode ${normalized.mode} does not match configured ${this.mode} mode`,
         402
       );
     }
     if (JSON.stringify(normalized.udtTypeScript ?? null) !== JSON.stringify(challenge.udtTypeScript ?? null)) {
-      throw new FiberMppError("wrong-fiber-udt", "Fiber UDT type script does not match the challenge", 402);
+      throw new FiberPaidHttpError("wrong-fiber-udt", "Fiber UDT type script does not match the challenge", 402);
     }
 
     const invoiceRecord = await waitForFiberInvoicePaid(this.rpc!, challenge.paymentHash, {
@@ -314,7 +314,7 @@ export class FiberMethodAdapter {
     });
     const invoiceStatus = invoiceRecord.status;
     if (!isInvoicePaidStatus(invoiceStatus)) {
-      throw new FiberMppError(
+      throw new FiberPaidHttpError(
         "fiber-payment-not-settled",
         `Fiber invoice is not paid; invoice status is ${invoiceStatus ?? "unknown"}`,
         402
@@ -383,7 +383,7 @@ export async function waitForFiberPaymentSuccess(
       return last;
     }
     if (typeof last.status === "string" && last.status.toLowerCase() === "failed") {
-      throw new FiberMppError(
+      throw new FiberPaidHttpError(
         "fiber-payment-failed",
         `Fiber payment ${paymentHash} failed: ${last.failed_error ?? "unknown error"}`,
         502
@@ -391,7 +391,7 @@ export async function waitForFiberPaymentSuccess(
     }
     await sleep(pollMs);
   }
-  throw new FiberMppError(
+  throw new FiberPaidHttpError(
     "fiber-payment-timeout",
     `Timed out waiting for Fiber payment ${paymentHash} to reach Success; last status ${last?.status ?? "unknown"}`,
     504
@@ -413,7 +413,7 @@ export async function waitForFiberInvoicePaid(
       return last;
     }
     if (typeof last.status === "string" && ["cancelled", "expired"].includes(last.status.toLowerCase())) {
-      throw new FiberMppError(
+      throw new FiberPaidHttpError(
         "fiber-invoice-not-payable",
         `Fiber invoice ${paymentHash} reached terminal status ${last.status}`,
         402
@@ -421,7 +421,7 @@ export async function waitForFiberInvoicePaid(
     }
     await sleep(pollMs);
   }
-  throw new FiberMppError(
+  throw new FiberPaidHttpError(
     "fiber-invoice-timeout",
     `Timed out waiting for Fiber invoice ${paymentHash} to reach Paid; last status ${last?.status ?? "unknown"}`,
     504
@@ -517,14 +517,14 @@ type JsonRpcResponse<T> = {
 
 function normalizeProof(proof: unknown): FiberPaymentProof {
   if (!proof || typeof proof !== "object") {
-    throw new FiberMppError("invalid-fiber-proof", "Fiber payment proof must be an object", 402);
+    throw new FiberPaidHttpError("invalid-fiber-proof", "Fiber payment proof must be an object", 402);
   }
   const candidate = proof as Partial<FiberPaymentProof>;
   if (candidate.kind !== "fiber-payment-proof-v1" || !candidate.paymentHash || !candidate.observedAt) {
-    throw new FiberMppError("invalid-fiber-proof", "Fiber payment proof is missing required fields", 402);
+    throw new FiberPaidHttpError("invalid-fiber-proof", "Fiber payment proof is missing required fields", 402);
   }
   if (candidate.mode !== "local" && candidate.mode !== "testnet") {
-    throw new FiberMppError("invalid-fiber-proof", "Fiber payment proof mode must be local or testnet", 402);
+    throw new FiberPaidHttpError("invalid-fiber-proof", "Fiber payment proof mode must be local or testnet", 402);
   }
   return {
     kind: "fiber-payment-proof-v1",
@@ -542,7 +542,7 @@ function normalizeProof(proof: unknown): FiberPaymentProof {
 export function extractInvoicePaymentHash(invoice: FiberInvoiceResult): string {
   const paymentHash = invoice.invoice?.data?.payment_hash;
   if (!paymentHash) {
-    throw new FiberMppError("fiber-invoice-missing-payment-hash", "Fiber new_invoice did not return a payment hash", 502);
+    throw new FiberPaidHttpError("fiber-invoice-missing-payment-hash", "Fiber new_invoice did not return a payment hash", 502);
   }
   return paymentHash;
 }

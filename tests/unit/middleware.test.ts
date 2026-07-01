@@ -6,15 +6,15 @@ import {
   parseAuthorizationPaymentHeader,
   resourceHashFromRequest,
   verifyReceiptSignature
-} from "@fiber-mpp/core";
-import { buildAuthorizationL402Header, hashPaymentPreimage } from "@fiber-mpp/fl402-compat";
-import { createFiberMppMiddleware } from "@fiber-mpp/server-middleware";
+} from "@fiber-paid-http/core";
+import { buildAuthorizationL402Header, hashPaymentPreimage } from "@fiber-paid-http/fl402-compat";
+import { createFiberPaidHttpMiddleware } from "@fiber-paid-http/server-middleware";
 import { createFiberFixtureAdapters, createSqliteTestStore } from "../helpers/fiber-fixture.js";
 
 const secret = "middleware-secret-at-least-16";
 const url = "http://localhost/paid/weather";
 
-describe("FiberMPP middleware security", () => {
+describe("Fiber Paid HTTP middleware security", () => {
   it("unpaid request returns 402 with no-store and Payment challenge", async () => {
     const { handler } = makeHandler();
     const response = await handler(new Request(url));
@@ -191,12 +191,12 @@ describe("FiberMPP middleware security", () => {
 });
 
 function makeHandler(
-  overrides: Partial<Parameters<typeof createFiberMppMiddleware>[0]> = {},
+  overrides: Partial<Parameters<typeof createFiberPaidHttpMiddleware>[0]> = {},
   routeHandler: () => Response = () => Response.json({ ok: true }),
   fixtureOptions: { paymentHash?: string } = {}
 ) {
   const { payeeFiber } = createFiberFixtureAdapters(fixtureOptions);
-  const middleware = createFiberMppMiddleware({
+  const middleware = createFiberPaidHttpMiddleware({
     secret,
     serverId: "unit-server",
     store: createSqliteTestStore(),
@@ -236,7 +236,7 @@ async function authFromBody(
   };
   const fiber = body.challenge.methods.find((method) => method.method === "fiber")!;
   return buildAuthorizationPaymentHeader({
-    domain: "fiber-mpp-credential-v1",
+    domain: "fiber-paid-http-credential-v1",
     challengeId,
     method: "fiber",
     resourceHash: await resourceHashFromRequest(new Request(targetUrl)),

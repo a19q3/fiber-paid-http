@@ -201,11 +201,11 @@ function fallbackConfiguration(error?: Error): ConfigurationData {
     executionRoleCapabilities: {
       payer: fc("payer", "Payer client", "payer-client", "FIBER_PAYER_RPC_URL"),
       payee: fc("payee", "Payee FNN", "payee-fnn", "FIBER_PAYEE_RPC_URL"),
-      gateway: fc("gateway", "Rust gateway", "rust-gateway", "FIBER_MPP_SECRET"),
+      gateway: fc("gateway", "Rust gateway", "rust-gateway", "FIBER_PAID_HTTP_SECRET"),
     },
     defaults: { endpoint: fallbackEndpoints[0]!.path, amountCkb: "100", amountShannons: "100", payerProfileId: "env-payer", payeeProfileId: "env-payee", gatewayProfileId: "env-gateway" },
     parameters: { resources: fallbackEndpoints, challengeTtlSeconds: 120, settlementTimeoutMs: 30000, amountLimits: { minCkb: "0.00000001", maxCkb: "1000000000", minShannons: "1", maxShannons: "100000000000000000" } },
-    envTemplate: ["RUN_FIBER_E2E=1", "FIBER_MODE=testnet", "FIBER_PAYER_RPC_URL=<payer-fnn-rpc-url>", "FIBER_PAYEE_RPC_URL=<payee-fnn-rpc-url>", "FIBER_MPP_SECRET=<32+ character random secret>", "FIBER_E2E_AMOUNT_SHANNONS=100"].join("\n"),
+    envTemplate: ["RUN_FIBER_E2E=1", "FIBER_MODE=testnet", "FIBER_PAYER_RPC_URL=<payer-fnn-rpc-url>", "FIBER_PAYEE_RPC_URL=<payee-fnn-rpc-url>", "FIBER_PAID_HTTP_SECRET=<32+ character random secret>", "FIBER_E2E_AMOUNT_SHANNONS=100"].join("\n"),
     warnings: [error?.message || "configuration API unavailable"],
   };
 }
@@ -526,7 +526,7 @@ export function EvidenceProvider({
     update({ busy: true, activeAction: "export" });
     try {
       const bundle = await api.postJson<{ generatedAt?: string }>("/api/evidence/export", evidenceActionBody());
-      downloadJson(`fiber-mpp-evidence-${new Date().toISOString().replace(/[:.]/g, "-")}.json`, bundle);
+      downloadJson(`fiber-paid-http-evidence-${new Date().toISOString().replace(/[:.]/g, "-")}.json`, bundle);
       addLocalLog("INFO", "evidence", "exported evidence bundle", bundle.generatedAt || "downloaded");
     } catch (error) {
       addLocalLog("ERROR", "evidence", "export failed", (error as Error).message);
@@ -542,7 +542,7 @@ export function EvidenceProvider({
       const base = state.configuration?.envTemplate || [
         "RUN_FIBER_E2E=1", "FIBER_MODE=testnet",
         "FIBER_PAYER_RPC_URL=<payer-fnn-rpc-url>", "FIBER_PAYEE_RPC_URL=<payee-fnn-rpc-url>",
-        "FIBER_MPP_SECRET=<32+ character random secret>", "FIBER_E2E_AMOUNT_SHANNONS=100",
+        "FIBER_PAID_HTTP_SECRET=<32+ character random secret>", "FIBER_E2E_AMOUNT_SHANNONS=100",
       ].join("\n");
       const patched = base.replace(/FIBER_E2E_AMOUNT_SHANNONS=.*/g, `FIBER_E2E_AMOUNT_SHANNONS=${state.parameters.amountShannons || "100"}`);
       const copied = await copyTextToClipboard(patched);

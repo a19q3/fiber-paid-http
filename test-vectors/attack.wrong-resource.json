@@ -1,13 +1,13 @@
 {
   "input": {
     "case": "attack.wrong-resource",
-    "secret": "fiber-mpp-conformance-secret",
+    "secret": "fiber-paid-http-conformance-secret",
     "request": {
       "method": "GET",
       "url": "http://conformance.local/paid/file"
     },
     "challenge": {
-      "domain": "fiber-mpp-challenge-v1",
+      "domain": "fiber-paid-http-challenge-v1",
       "challengeId": "chal_conformance_0001",
       "resource": {
         "method": "GET",
@@ -33,12 +33,12 @@
       "nonce": "0123456789abcdef0123456789abcdef",
       "issuedAt": "2026-06-24T00:00:00.000Z",
       "expiresAt": "2030-01-01T00:00:00.000Z",
-      "serverId": "fiber-mpp-ts-conformance",
+      "serverId": "fiber-paid-http-ts-conformance",
       "maxUses": 1
     },
-    "signature": "d906e92b33e8de55376c9ceb4ea173af4c01ff8fe4ff75414f691f1580918cc5",
+    "signature": "3c24d7c4122d7892c469f17b0695cd914661451db344832e2be4940341f890db",
     "credential": {
-      "domain": "fiber-mpp-credential-v1",
+      "domain": "fiber-paid-http-credential-v1",
       "challengeId": "chal_conformance_0001",
       "method": "fiber",
       "resourceHash": "e6ae6449bcbf5882012a00c4dcf32043c67355ee779dbaac489fec3b4c2b8546",
@@ -57,7 +57,7 @@
       "submittedAt": "2026-06-24T00:00:00.000Z"
     }
   },
-  "expected_canonical_hash": "68872997f8da9e81166455966379c913aad5e91d2fbee6b0c236c0c3d248668b",
+  "expected_canonical_hash": "5b0504376e9d5d41afcb9193b42310591b2bca912b5eb3a7872c1817d0d90f2d",
   "expected_verification_result": "rejected",
   "expected_error_code": "wrong-resource",
   "notes": "Credential is valid for the original resource but submitted to a different resource URL."

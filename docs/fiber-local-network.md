@@ -1,6 +1,6 @@
 # Local Fiber Network
 
-This is the reproducible local Fiber network used by FiberMPP live E2E. It wraps the current supported Fiber development flow from `/home/arthur/a19q3/fiber` without modifying Fiber internals.
+This is the reproducible local Fiber network used by Fiber Paid HTTP live E2E. It wraps the current supported Fiber development flow from `/home/arthur/a19q3/fiber` without modifying Fiber internals.
 
 ## Source Of Truth
 
@@ -25,7 +25,7 @@ node2 router RPC:http://127.0.0.1:21715
 node3 payee RPC: http://127.0.0.1:21716
 ```
 
-FiberMPP uses node1 as payer and node3 as payee:
+Fiber Paid HTTP uses node1 as payer and node3 as payee:
 
 ```bash
 export FIBER_MODE=local
@@ -33,15 +33,15 @@ export FIBER_PAYER_RPC_URL=http://127.0.0.1:21714
 export FIBER_PAYEE_RPC_URL=http://127.0.0.1:21716
 export FIBER_CURRENCY=Fibd
 export FIBER_E2E_AMOUNT_SHANNONS=100
-export FIBER_MPP_SECRET="$(openssl rand -hex 32)"
+export FIBER_PAID_HTTP_SECRET="$(openssl rand -hex 32)"
 ```
 
 ## Automated Setup
 
-From FiberMPP:
+From Fiber Paid HTTP:
 
 ```bash
-cd /home/arthur/a19q3/fiber-mpp
+cd /home/arthur/a19q3/fiber-paid-http
 scripts/fiber_local_network.sh up
 ```
 
@@ -85,7 +85,7 @@ This uses Fiber's `e2e/udt-router-pay` local testcase, opens `node1 -> node2 -> 
 }
 ```
 
-Use the same script in FiberMPP runtime env as `FIBER_XUDT_TYPE_SCRIPT` when testing xUDT entry or tournament prize payouts.
+Use the same script in Fiber Paid HTTP runtime env as `FIBER_XUDT_TYPE_SCRIPT` when testing xUDT entry or tournament prize payouts.
 
 Logs are written under:
 
@@ -157,18 +157,18 @@ curl -sS http://127.0.0.1:21715 \
   -d '{"id":"7","jsonrpc":"2.0","method":"graph_channels","params":[{}]}'
 ```
 
-The result should include two graph channels before running FiberMPP live E2E.
+The result should include two graph channels before running Fiber Paid HTTP live E2E.
 
-## Run FiberMPP Live E2E
+## Run Fiber Paid HTTP Live E2E
 
 ```bash
-cd /home/arthur/a19q3/fiber-mpp
+cd /home/arthur/a19q3/fiber-paid-http
 RUN_FIBER_E2E=1 \
 FIBER_MODE=local \
 FIBER_PAYEE_RPC_URL=http://127.0.0.1:21716 \
 FIBER_PAYER_RPC_URL=http://127.0.0.1:21714 \
 FIBER_CURRENCY=Fibd \
 FIBER_E2E_AMOUNT_SHANNONS=100 \
-FIBER_MPP_SECRET="$(openssl rand -hex 32)" \
+FIBER_PAID_HTTP_SECRET="$(openssl rand -hex 32)" \
 pnpm test:fiber
 ```

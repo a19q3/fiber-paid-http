@@ -1,8 +1,8 @@
 # F402 and F-L402 Compatibility
 
-F402 compatibility is an adapter, not the primary FiberMPP protocol.
+F402 compatibility is an adapter, not the primary Fiber Paid HTTP protocol.
 
-FiberMPP accepts F402-like challenge bodies with:
+Fiber Paid HTTP accepts F402-like challenge bodies with:
 
 ```json
 {
@@ -19,11 +19,11 @@ The adapter converts that shape to an internal MPP `PaymentChallenge` with a Fib
 
 ## Infern compatibility note
 
-Infern uses F402 for paid AI inference over Fiber. FiberMPP deliberately avoids Infern-specific fields. The adapter focuses on common Fiber invoice, amount, payment hash, expiry, and token fields.
+Infern uses F402 for paid AI inference over Fiber. Fiber Paid HTTP deliberately avoids Infern-specific fields. The adapter focuses on common Fiber invoice, amount, payment hash, expiry, and token fields.
 
 ## Difference from primary MPP mode
 
-Primary FiberMPP mode is payment-method agnostic and returns `WWW-Authenticate: Payment`, `Authorization: Payment`, and `Payment-Receipt`. F402 mode exists so Fiber-native 402 applications can bridge into that internal model.
+Primary Fiber Paid HTTP mode is payment-method agnostic and returns `WWW-Authenticate: Payment`, `Authorization: Payment`, and `Payment-Receipt`. F402 mode exists so Fiber-native 402 applications can bridge into that internal model.
 
 ## F-L402 Adapter
 
@@ -34,7 +34,7 @@ WWW-Authenticate: L402 macaroon="...", invoice="..."
 Authorization: L402 <macaroon>:<preimage>
 ```
 
-FiberMPP issues an application-level token with this format:
+Fiber Paid HTTP issues an application-level token with this format:
 
 ```text
 fl402-macaroon-v1.<canonical-json-base64url>.<hmac-sha256>

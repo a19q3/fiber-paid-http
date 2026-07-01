@@ -1,6 +1,6 @@
 # Fiber RPC
 
-FiberMPP does not link against Fiber internals. It speaks to Fiber Network Node through JSON-RPC.
+Fiber Paid HTTP does not link against Fiber internals. It speaks to Fiber Network Node through JSON-RPC.
 
 ## Environment
 
@@ -26,13 +26,13 @@ Numeric fields are hex JSON quantities, for example `100` is sent as `0x64`.
 
 ## Settlement statuses
 
-- Local/testnet mode: `get_payment` must reach `Success` and `get_invoice` must reach `Paid` before FiberMPP emits a settled receipt.
+- Local/testnet mode: `get_payment` must reach `Success` and `get_invoice` must reach `Paid` before Fiber Paid HTTP emits a settled receipt.
 
 The Rust parity surface is documented in [rust-fiber-rpc.md](rust-fiber-rpc.md).
 
 ## Doctor readiness
 
-`fiber-mpp doctor --role payer|payee|gateway` probes the configured Fiber RPC endpoint with:
+`fiber-paid-http doctor --role payer|payee|gateway` probes the configured Fiber RPC endpoint with:
 
 ```text
 node_info
@@ -44,4 +44,4 @@ list_channels
 
 ## Security
 
-Do not expose Fiber RPC to untrusted networks. FiberMPP should run near the Fiber node and hold any RPC auth material server-side only.
+Do not expose Fiber RPC to untrusted networks. Fiber Paid HTTP should run near the Fiber node and hold any RPC auth material server-side only.

@@ -1,4 +1,4 @@
-# FiberMPP Evidence Console Performance Audit
+# Fiber Paid HTTP Evidence Console Performance Audit
 
 Generated: 2026-06-25
 
@@ -106,7 +106,7 @@ Fix:
 Commands run:
 
 ```bash
-pnpm --filter @fiber-mpp/demo-web typecheck
+pnpm --filter @fiber-paid-http/demo-web typecheck
 pnpm typecheck
 pnpm test
 pnpm test:integration

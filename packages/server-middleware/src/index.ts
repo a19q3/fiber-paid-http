@@ -1,5 +1,5 @@
 import {
-  FiberMppError,
+  FiberPaidHttpError,
   PAYMENT_RECEIPT_HEADER,
   PaymentChallengeSchema,
   PaymentCredentialSchema,
@@ -25,8 +25,8 @@ import {
   type PaymentCredential,
   type PaymentMethodName,
   type PaymentReceipt
-} from "@fiber-mpp/core";
-import { FiberMethodAdapter } from "@fiber-mpp/fiber-method";
+} from "@fiber-paid-http/core";
+import { FiberMethodAdapter } from "@fiber-paid-http/fiber-method";
 import {
   FL402ChallengeSchema,
   FL402ProofSchema,
@@ -37,12 +37,12 @@ import {
   signedChallengeToFl402Body,
   verifyFl402Proof,
   type FL402HashAlgorithm
-} from "@fiber-mpp/fl402-compat";
+} from "@fiber-paid-http/fl402-compat";
 import {
   assertProductionStore,
   type ChallengeRecord,
-  type FiberMppStore
-} from "@fiber-mpp/storage";
+  type FiberPaidHttpStore
+} from "@fiber-paid-http/storage";
 
 export type PaidRouteConfig = {
   price: Amount;
@@ -55,11 +55,11 @@ export type PaidRouteConfig = {
   handler: (request: Request) => Promise<Response> | Response;
 };
 
-export type FiberMppMiddlewareConfig = {
+export type FiberPaidHttpMiddlewareConfig = {
   secret: string;
   previousSecrets?: string[];
   serverId: string;
-  store: FiberMppStore;
+  store: FiberPaidHttpStore;
   fiber?: FiberMethodAdapter;
   fl402?: Fl402MiddlewareConfig;
   defaultFiberAmountShannons?: string;
@@ -67,36 +67,46 @@ export type FiberMppMiddlewareConfig = {
   clockSkewSeconds?: number;
 };
 
+/**
+ * @deprecated Use `FiberPaidHttpMiddlewareConfig`.
+ */
+export type FiberMppMiddlewareConfig = FiberPaidHttpMiddlewareConfig;
+
 export type Fl402MiddlewareConfig = {
   rootKey: string;
   hashAlgorithm?: FL402HashAlgorithm;
 };
 
-export type FiberMppMiddleware = {
+export type FiberPaidHttpMiddleware = {
   protect: (route: PaidRouteConfig) => (request: Request) => Promise<Response>;
   protectRoute: (route: PaidRouteConfig) => (request: Request) => Promise<Response>;
   issueChallenge: (request: Request, route: PaidRouteConfig) => Promise<Response>;
   verifyCredential: (request: Request, credential: PaymentCredential) => Promise<PaymentReceipt>;
-  store: FiberMppStore;
+  store: FiberPaidHttpStore;
 };
+
+/**
+ * @deprecated Use `FiberPaidHttpMiddleware`.
+ */
+export type FiberMppMiddleware = FiberPaidHttpMiddleware;
 
 export type ReverseProxyConfig = Omit<PaidRouteConfig, "handler"> & {
   upstream: string;
   fetchImpl?: typeof fetch;
 };
 
-export function createFiberMppMiddleware(config: FiberMppMiddlewareConfig): FiberMppMiddleware {
+export function createFiberPaidHttpMiddleware(config: FiberPaidHttpMiddlewareConfig): FiberPaidHttpMiddleware {
   if (!config.secret || config.secret.length < 16) {
-    throw new Error("FiberMPP middleware requires a secret of at least 16 characters");
+    throw new Error("Fiber Paid HTTP middleware requires a secret of at least 16 characters");
   }
   if (config.previousSecrets?.some((secret) => !secret || secret.length < 16)) {
-    throw new Error("FiberMPP middleware previous secrets must be at least 16 characters");
+    throw new Error("Fiber Paid HTTP middleware previous secrets must be at least 16 characters");
   }
   if (config.fl402 && config.fl402.rootKey.length < 16) {
-    throw new Error("FiberMPP F-L402 root key must be at least 16 characters");
+    throw new Error("Fiber Paid HTTP F-L402 root key must be at least 16 characters");
   }
   if (!config.store) {
-    throw new Error("FiberMPP middleware requires a durable store");
+    throw new Error("Fiber Paid HTTP middleware requires a durable store");
   }
   const store = config.store;
   assertProductionStore(store);
@@ -120,22 +130,22 @@ export function createFiberMppMiddleware(config: FiberMppMiddlewareConfig): Fibe
           amountShannons: route.fiberAmountShannons ?? config.defaultFiberAmountShannons ?? "1000",
           expiresAt,
           udtTypeScript: route.fiberUdtTypeScript,
-          description: `FiberMPP ${request.method.toUpperCase()} ${new URL(request.url).pathname}`
+          description: `Fiber Paid HTTP ${request.method.toUpperCase()} ${new URL(request.url).pathname}`
         })
       );
     }
 
     const unsupported = enabledMethods.filter((method) => method !== "fiber");
     if (unsupported.length > 0) {
-      throw new FiberMppError("unsupported-method", `Unsupported payment method(s): ${unsupported.join(", ")}`, 500);
+      throw new FiberPaidHttpError("unsupported-method", `Unsupported payment method(s): ${unsupported.join(", ")}`, 500);
     }
 
     if (methods.length === 0) {
-      throw new FiberMppError("no-payment-method", "No configured payment method can serve this route", 500);
+      throw new FiberPaidHttpError("no-payment-method", "No configured payment method can serve this route", 500);
     }
 
     const challenge = PaymentChallengeSchema.parse({
-      domain: "fiber-mpp-challenge-v1",
+      domain: "fiber-paid-http-challenge-v1",
       challengeId,
       resource: descriptor,
       amount: route.price,
@@ -185,39 +195,39 @@ export function createFiberMppMiddleware(config: FiberMppMiddlewareConfig): Fibe
     const parsed = PaymentCredentialSchema.parse(credential);
     const record = await store.getChallenge(parsed.challengeId);
     if (!record) {
-      throw new FiberMppError("unknown-challenge", "Payment challenge is unknown or expired", 402);
+      throw new FiberPaidHttpError("unknown-challenge", "Payment challenge is unknown or expired", 402);
     }
     const challenge = PaymentChallengeSchema.parse(record.challenge);
     if (!verifyChallengeSignatureWithAnySecret(challenge, record.signature, verificationSecrets)) {
-      throw new FiberMppError("bad-challenge-signature", "Payment challenge signature is invalid", 402);
+      throw new FiberPaidHttpError("bad-challenge-signature", "Payment challenge signature is invalid", 402);
     }
     assertNotExpired(challenge, clockSkewSeconds);
 
     const currentResource = await resourceDescriptorFromRequest(request);
     const currentResourceHash = resourceHash(currentResource);
     if (parsed.resourceHash !== record.resourceHash || currentResourceHash !== record.resourceHash) {
-      throw new FiberMppError("wrong-resource", "Payment credential is not bound to this resource", 402);
+      throw new FiberPaidHttpError("wrong-resource", "Payment credential is not bound to this resource", 402);
     }
 
     const methodChallenge = challenge.methods.find((method) => method.method === parsed.method);
     if (!methodChallenge) {
-      throw new FiberMppError("wrong-method", "Payment credential method does not match the challenge", 402);
+      throw new FiberPaidHttpError("wrong-method", "Payment credential method does not match the challenge", 402);
     }
 
     const hash = credentialHash(parsed);
     if (await store.hasCredentialUse(hash)) {
-      throw new FiberMppError("replay", "Payment credential was already used", 402);
+      throw new FiberPaidHttpError("replay", "Payment credential was already used", 402);
     }
 
     const evidence = await verifyMethodProof(methodChallenge, parsed);
     const now = new Date().toISOString();
     const marked = await store.markChallengeUsed(challenge.challengeId, now);
     if (!marked) {
-      throw new FiberMppError("replay", "Payment challenge was already redeemed", 402);
+      throw new FiberPaidHttpError("replay", "Payment challenge was already redeemed", 402);
     }
     const saved = await store.saveCredentialUse(hash, parsed, now);
     if (!saved) {
-      throw new FiberMppError("replay", "Payment credential was already used", 402);
+      throw new FiberPaidHttpError("replay", "Payment credential was already used", 402);
     }
 
     if (evidence.settlement.paymentHash) {
@@ -232,7 +242,7 @@ export function createFiberMppMiddleware(config: FiberMppMiddlewareConfig): Fibe
 
     const receipt = attachReceiptSignature(
       {
-        domain: "fiber-mpp-receipt-v1",
+        domain: "fiber-paid-http-receipt-v1",
         receiptId: randomId("rcpt"),
         challengeId: challenge.challengeId,
         method: parsed.method,
@@ -258,7 +268,7 @@ export function createFiberMppMiddleware(config: FiberMppMiddlewareConfig): Fibe
     if (methodChallenge.method === "fiber") {
       return fiber.verifyProof(methodChallenge as FiberMethodChallenge, credential.paymentProof);
     }
-    throw new FiberMppError("unsupported-method", `${methodChallenge.method} verification is not implemented`, 402);
+    throw new FiberPaidHttpError("unsupported-method", `${methodChallenge.method} verification is not implemented`, 402);
   }
 
   function protect(route: PaidRouteConfig): (request: Request) => Promise<Response> {
@@ -383,10 +393,15 @@ export function createFiberMppMiddleware(config: FiberMppMiddlewareConfig): Fibe
   };
 }
 
-function fl402PaymentError(error: unknown): FiberMppError {
+/**
+ * @deprecated Use `createFiberPaidHttpMiddleware`.
+ */
+export const createFiberMppMiddleware = createFiberPaidHttpMiddleware;
+
+function fl402PaymentError(error: unknown): FiberPaidHttpError {
   const message = errorMessage(error);
   const code = /^[a-z0-9-]+$/.test(message) ? message : "invalid-fl402-proof";
-  return new FiberMppError(code, "F-L402 proof is invalid", 402);
+  return new FiberPaidHttpError(code, "F-L402 proof is invalid", 402);
 }
 
 function errorMessage(error: unknown): string {
@@ -403,7 +418,7 @@ function errorMessage(error: unknown): string {
 }
 
 export function createReverseProxyHandler(
-  middleware: FiberMppMiddleware,
+  middleware: FiberPaidHttpMiddleware,
   config: ReverseProxyConfig
 ): (request: Request) => Promise<Response> {
   const upstream = new URL(config.upstream);
@@ -431,6 +446,6 @@ function assertNotExpired(challenge: PaymentChallenge, clockSkewSeconds: number)
   const now = Date.now();
   const expiresAt = new Date(challenge.expiresAt).getTime();
   if (Number.isNaN(expiresAt) || now - clockSkewSeconds * 1000 > expiresAt) {
-    throw new FiberMppError("expired-challenge", "Payment challenge is expired", 402);
+    throw new FiberPaidHttpError("expired-challenge", "Payment challenge is expired", 402);
   }
 }

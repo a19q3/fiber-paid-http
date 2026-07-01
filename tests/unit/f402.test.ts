@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { resourceHash } from "@fiber-mpp/core";
-import { f402ChallengeToMpp, f402ProofToCredential } from "@fiber-mpp/f402-compat";
+import { resourceHash } from "@fiber-paid-http/core";
+import { f402ChallengeToMpp, f402ProofToCredential } from "@fiber-paid-http/f402-compat";
 
 describe("F402 compatibility", () => {
   it("converts an F402 challenge to an MPP challenge", () => {

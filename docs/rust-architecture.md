@@ -3,13 +3,13 @@
 The Rust workspace under `crates/` is the canonical protocol core and verifier target. The core, storage traits, Fiber RPC method-shape parity, F402/F-L402 helpers, Axum gateway, and CLI vector/receipt verification are the current trusted Rust surfaces.
 
 ```text
-crates/fiber-mpp-core     canonical hashes, signatures, vector verification
-crates/fiber-mpp-storage  replay storage trait and SQLite durable store
-crates/fiber-mpp-fiber    Fiber JSON-RPC method names, hex quantities, status semantics
-crates/fiber-mpp-f402     F402 proof/credential compatibility helpers
-crates/fiber-mpp-fl402    F-L402 macaroon/preimage verification helpers
-crates/fiber-mpp-server   Axum/Tower HTTP 402 gateway with optional L402 authorization
-crates/fiber-mpp-cli      fiber-mpp-rs binary
+crates/fiber-paid-http-core     canonical hashes, signatures, vector verification
+crates/fiber-paid-http-storage  replay storage trait and SQLite durable store
+crates/fiber-paid-http-fiber    Fiber JSON-RPC method names, hex quantities, status semantics
+crates/fiber-paid-http-f402     F402 proof/credential compatibility helpers
+crates/fiber-paid-http-fl402    F-L402 macaroon/preimage verification helpers
+crates/fiber-paid-http-server   Axum/Tower HTTP 402 gateway with optional L402 authorization
+crates/fiber-paid-http-cli      fiber-paid-http-rs binary
 ```
 
 ## Trusted Boundary

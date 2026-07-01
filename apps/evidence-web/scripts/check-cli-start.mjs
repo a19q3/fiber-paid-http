@@ -11,7 +11,7 @@ const apiPort = await findFreePort();
 const webPort = await findFreePort(apiPort);
 const expectedApiBase = `http://127.0.0.1:${apiPort}`;
 const output = [];
-const child = spawn("pnpm", ["exec", "fiber-mpp", "evidence", "start", "--port", String(apiPort), "--web-port", String(webPort)], {
+const child = spawn("pnpm", ["exec", "fiber-paid-http", "evidence", "start", "--port", String(apiPort), "--web-port", String(webPort)], {
   cwd: repoRoot,
   stdio: ["ignore", "pipe", "pipe"]
 });
@@ -27,17 +27,17 @@ try {
   const htmlResponse = await fetch(`http://127.0.0.1:${webPort}/`);
   const html = await htmlResponse.text();
   assert(healthResponse.status === 200, `/healthz returned ${healthResponse.status}`);
-  assert(health.service === "fiber-mpp-evidence-api", "/healthz did not identify the Evidence API");
+  assert(health.service === "fiber-paid-http-evidence-api", "/healthz did not identify the Evidence API");
   assert(htmlResponse.status === 200, `GET / returned ${htmlResponse.status}`);
-  assert(html.includes("FiberMPP Evidence Console"), "web server did not serve the Evidence Console");
+  assert(html.includes("Fiber Paid HTTP Evidence Console"), "web server did not serve the Evidence Console");
   assert(html.includes(expectedApiBase), "web HTML did not inject the CLI API port");
   assert(!html.includes("http://localhost:8787"), "web HTML kept the default API base after CLI startup");
-  assert(output.join("").includes(`FiberMPP evidence API listening on http://localhost:${apiPort}`), "CLI did not log API startup");
-  assert(output.join("").includes(`FiberMPP evidence console listening on http://localhost:${webPort}`), "CLI did not log web startup");
+  assert(output.join("").includes(`Fiber Paid HTTP evidence API listening on http://localhost:${apiPort}`), "CLI did not log API startup");
+  assert(output.join("").includes(`Fiber Paid HTTP evidence console listening on http://localhost:${webPort}`), "CLI did not log web startup");
 
   const report = {
     ok: true,
-    command: "fiber-mpp evidence start",
+    command: "fiber-paid-http evidence start",
     api_port: apiPort,
     web_port: webPort,
     api_health_status: health.status,

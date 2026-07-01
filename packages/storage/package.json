@@ -1,8 +1,8 @@
 {
-  "name": "@fiber-mpp/storage",
+  "name": "@fiber-paid-http/storage",
   "version": "0.1.0",
   "type": "module",
-  "description": "FiberMPP storage interfaces and durable SQLite implementation.",
+  "description": "Fiber Paid HTTP storage interfaces and durable SQLite implementation.",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -15,6 +15,6 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@fiber-mpp/core": "workspace:*"
+    "@fiber-paid-http/core": "workspace:*"
   }
 }

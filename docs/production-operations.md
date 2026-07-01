@@ -9,15 +9,15 @@ Production readiness requires this operations evidence, separate testnet Fiber E
 Use the native Fiber Network Node (FNN) as the production payment executor:
 
 ```text
-FiberMPP gateway -> payee FNN JSON-RPC
+Fiber Paid HTTP gateway -> payee FNN JSON-RPC
 payer client     -> payer FNN JSON-RPC or a user-owned Fiber WASM node
 ```
 
-The default production payer/payee path is direct FNN JSON-RPC with the FNN built-in wallet. `fiber-pay`, browser WASM, CCC, and WalletConnect are client/ops integration layers, not FiberMPP trusted verifier dependencies.
+The default production payer/payee path is direct FNN JSON-RPC with the FNN built-in wallet. `fiber-pay`, browser WASM, CCC, and WalletConnect are client/ops integration layers, not Fiber Paid HTTP trusted verifier dependencies.
 
 ## Alerting
 
-FiberMPP exposes Prometheus text metrics at the configured metrics path, usually `/metrics`:
+Fiber Paid HTTP exposes Prometheus text metrics at the configured metrics path, usually `/metrics`:
 
 ```bash
 curl http://127.0.0.1:8790/healthz
@@ -28,26 +28,26 @@ curl http://127.0.0.1:8790/metrics
 Load the alert rules from:
 
 ```text
-deploy/prometheus/fiber-mpp-alerts.yml
+deploy/prometheus/fiber-paid-http-alerts.yml
 ```
 
 Required alerts:
 
 | Alert | Source metric | Action |
 | --- | --- | --- |
-| `FiberMppGatewayReadinessFailing` | `fiber_mpp_gateway_readiness_failures_total` | Run gateway doctor, inspect Fiber RPC auth, peers, and `ChannelReady` channels. |
-| `FiberMppGatewayHigh5xxRate` | `fiber_mpp_gateway_responses_total{status=~"5.."}` | Treat as possible paid-but-denied; inspect delivery outcomes. |
-| `FiberMppGatewayRateLimited` | `fiber_mpp_gateway_rate_limit_rejections_total` | Check abuse signals, caller identity, and configured rate limit. |
-| `FiberMppGatewayNoTraffic` | `fiber_mpp_gateway_requests_total` | Check scrape config, process health, and network binding. |
+| `FiberPaidHttpGatewayReadinessFailing` | `fiber_paid_http_gateway_readiness_failures_total` | Run gateway doctor, inspect Fiber RPC auth, peers, and `ChannelReady` channels. |
+| `FiberPaidHttpGatewayHigh5xxRate` | `fiber_paid_http_gateway_responses_total{status=~"5.."}` | Treat as possible paid-but-denied; inspect delivery outcomes. |
+| `FiberPaidHttpGatewayRateLimited` | `fiber_paid_http_gateway_rate_limit_rejections_total` | Check abuse signals, caller identity, and configured rate limit. |
+| `FiberPaidHttpGatewayNoTraffic` | `fiber_paid_http_gateway_requests_total` | Check scrape config, process health, and network binding. |
 
 ## Fiber Node Readiness
 
 Run these before serving or after an alert:
 
 ```bash
-pnpm exec fiber-mpp doctor --role gateway --config fiber-mpp.gateway.json
-pnpm exec fiber-mpp doctor --role payee
-pnpm exec fiber-mpp doctor --role payer
+pnpm exec fiber-paid-http doctor --role gateway --config fiber-paid-http.gateway.json
+pnpm exec fiber-paid-http doctor --role payee
+pnpm exec fiber-paid-http doctor --role payer
 ```
 
 Expected readiness:
@@ -79,14 +79,14 @@ Required binding policy:
 - Browser clients never receive privileged FNN RPC auth.
 - Gateway config must use `fiber.payee_rpc_auth_env`, `fiber.payer_rpc_auth_env`, or process env variables; literal RPC auth in config is rejected.
 - Restrict `/healthz`, `/readyz`, and `/metrics` to operators or private monitoring networks when deployed behind a public reverse proxy.
-- Serve the Evidence Console over loopback/private HTTP(S); `Origin: null` / `file://` access is disabled by default and should only be enabled with `FIBER_MPP_ALLOW_FILE_ORIGIN=1` for local debugging.
+- Serve the Evidence Console over loopback/private HTTP(S); `Origin: null` / `file://` access is disabled by default and should only be enabled with `FIBER_PAID_HTTP_ALLOW_FILE_ORIGIN=1` for local debugging.
 - Use firewall/security-group rules to reject inbound traffic to FNN RPC from untrusted networks.
 
 Quick checks:
 
 ```bash
 ss -ltnp | grep -E ':(8227|21714|21716)\b'
-pnpm exec fiber-mpp doctor --role gateway --config fiber-mpp.gateway.json
+pnpm exec fiber-paid-http doctor --role gateway --config fiber-paid-http.gateway.json
 ```
 
 The listener should show loopback or a private interface. A public `0.0.0.0` binding is only acceptable behind a private firewall/security group and must not be reachable from the public internet.
@@ -119,7 +119,7 @@ Example backup:
 sudo systemctl stop fnn-payee
 tar --numeric-owner -czf backups/fnn-payee-$(date +%Y%m%d-%H%M%S).tar.gz /var/lib/fnn-payee
 sudo systemctl start fnn-payee
-pnpm exec fiber-mpp doctor --role payee
+pnpm exec fiber-paid-http doctor --role payee
 ```
 
 Example restore drill:
@@ -131,30 +131,30 @@ mkdir -p /var/lib/fnn-payee
 tar -xzf backups/fnn-payee-20260101-120000.tar.gz -C /
 export FIBER_SECRET_KEY_PASSWORD='<from secret manager>'
 sudo systemctl start fnn-payee
-pnpm exec fiber-mpp doctor --role payee
+pnpm exec fiber-paid-http doctor --role payee
 ```
 
 If the Fiber release requires a store migration, run the upstream `fnn-migrate` tool against the Fiber data directory before starting the upgraded node.
 
-## FiberMPP Store Backup
+## Fiber Paid HTTP Store Backup
 
 Back up the gateway SQLite store separately from FNN:
 
 ```bash
-pnpm exec fiber-mpp storage backup \
-  --config fiber-mpp.gateway.json \
-  --out backups/fiber-mpp-$(date +%Y%m%d-%H%M%S).sqlite
+pnpm exec fiber-paid-http storage backup \
+  --config fiber-paid-http.gateway.json \
+  --out backups/fiber-paid-http-$(date +%Y%m%d-%H%M%S).sqlite
 
-pnpm exec fiber-mpp storage check --config fiber-mpp.gateway.json
-pnpm exec fiber-mpp storage audit-receipts --config fiber-mpp.gateway.json
+pnpm exec fiber-paid-http storage check --config fiber-paid-http.gateway.json
+pnpm exec fiber-paid-http storage audit-receipts --config fiber-paid-http.gateway.json
 ```
 
 Restore requires `--force` and the gateway should be stopped first:
 
 ```bash
-pnpm exec fiber-mpp storage restore \
-  --config fiber-mpp.gateway.json \
-  --from backups/fiber-mpp-20260101-120000.sqlite \
+pnpm exec fiber-paid-http storage restore \
+  --config fiber-paid-http.gateway.json \
+  --from backups/fiber-paid-http-20260101-120000.sqlite \
   --force
 ```
 
@@ -162,10 +162,10 @@ pnpm exec fiber-mpp storage restore \
 
 Paid-but-denied means the credential was redeemed and payment verified, but the upstream protected service failed after redemption.
 
-FiberMPP records this as a delivery outcome instead of accepting replay or reissuing a second receipt:
+Fiber Paid HTTP records this as a delivery outcome instead of accepting replay or reissuing a second receipt:
 
 ```bash
-pnpm exec fiber-mpp storage list-deliveries --config fiber-mpp.gateway.json
+pnpm exec fiber-paid-http storage list-deliveries --config fiber-paid-http.gateway.json
 ```
 
 Policy:
@@ -175,7 +175,7 @@ Policy:
 3. Do not mark the credential reusable.
 4. Do not reissue a receipt for the same credential.
 5. Reconcile commercially by one of:
-   - refund/credit outside FiberMPP,
+   - refund/credit outside Fiber Paid HTTP,
    - manual service fulfillment,
    - operator-issued one-time replacement challenge after confirming the original credential hash cannot replay.
 6. Attach the `receiptId`, `challengeId`, `credentialHash`, `responseStatus`, and `failureCode` from the delivery outcome to the incident.

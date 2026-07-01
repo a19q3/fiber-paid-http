@@ -18,7 +18,7 @@
       "status": 200,
       "body": {
         "ok": true,
-        "service": "fiber-mpp-evidence-api",
+        "service": "fiber-paid-http-evidence-api",
         "status": "ready",
         "livePaymentEnabled": true,
         "mode": "local",

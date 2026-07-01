@@ -1,10 +1,10 @@
 # Protocol
 
-FiberMPP implements an MPP-style HTTP 402 flow.
+Fiber Paid HTTP implements an MPP-style HTTP 402 flow.
 
 ## PaymentChallenge
 
-The challenge domain is `fiber-mpp-challenge-v1`. It binds:
+The challenge domain is `fiber-paid-http-challenge-v1`. It binds:
 
 - HTTP method, URL, optional body hash, and content type,
 - amount and currency,
@@ -18,7 +18,7 @@ The server signs the canonical JSON challenge with HMAC-SHA256.
 
 ## PaymentCredential
 
-The credential domain is `fiber-mpp-credential-v1`. It binds:
+The credential domain is `fiber-paid-http-credential-v1`. It binds:
 
 - challenge id,
 - selected method,
@@ -34,7 +34,7 @@ Authorization: Payment <base64url JSON credential>
 
 ## PaymentReceipt
 
-The receipt domain is `fiber-mpp-receipt-v1`. It includes challenge id, method, resource hash, amount, settlement evidence, server id, issue timestamp, and HMAC signature.
+The receipt domain is `fiber-paid-http-receipt-v1`. It includes challenge id, method, resource hash, amount, settlement evidence, server id, issue timestamp, and HMAC signature.
 
 Servers return receipts as:
 

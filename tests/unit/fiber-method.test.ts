@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { FiberRpcClient, toFiberHexQuantity } from "@fiber-mpp/fiber-method";
+import { FiberRpcClient, toFiberHexQuantity } from "@fiber-paid-http/fiber-method";
 import { createFiberFixtureAdapters, FIXTURE_PAYMENT_HASH } from "../helpers/fiber-fixture.js";
 
 describe("Fiber RPC client payloads", () => {

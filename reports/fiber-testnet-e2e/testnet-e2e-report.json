@@ -58,8 +58,8 @@
     "evidence_console_layout": true,
     "evidence_console_layout_report": "reports/evidence-console-layout.log",
     "evidence_console_layout_blockers": [],
-    "fiber_mpp_gate_ready": true,
-    "fiber_mpp_gate_blockers": [],
+    "fiber_paid_http_gate_ready": true,
+    "fiber_paid_http_gate_blockers": [],
     "evidence_console_action_coverage": true,
     "evidence_console_action_coverage_report": "reports/evidence-console-action-coverage.json",
     "evidence_console_action_coverage_blockers": [],
@@ -100,7 +100,7 @@
     "payer_doctor": "reports/fiber-testnet-e2e/doctor-payer.json",
     "payee_doctor": "reports/fiber-testnet-e2e/doctor-payee.json",
     "canonical_gate_log": "reports/fiber-testnet-e2e/canonical-gate.log",
-    "fiber_mpp_gate": "reports/fiber-mpp-gate.json",
+    "fiber_paid_http_gate": "reports/fiber-paid-http-gate.json",
     "canonical_core_parity": "reports/canonical-core-parity.json",
     "testnet_success": "reports/fiber-testnet-e2e-success.json",
     "testnet_evidence": "reports/fiber-testnet-e2e-evidence.json"
@@ -110,6 +110,6 @@
   "production_bootstrap_e2e": true,
   "production_bootstrap_report": "reports/production-bootstrap-e2e.json",
   "production_bootstrap_e2e_blockers": [],
-  "fiber_mpp_gate_ready": true,
-  "fiber_mpp_gate_blockers": []
+  "fiber_paid_http_gate_ready": true,
+  "fiber_paid_http_gate_blockers": []
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resourceHash } from "@fiber-mpp/core";
+import { resourceHash } from "@fiber-paid-http/core";
 import {
   buildAuthorizationL402Header,
   buildWwwAuthenticateL402Header,
@@ -9,7 +9,7 @@ import {
   issueFl402Challenge,
   parseAuthorizationL402Header,
   verifyFl402Proof
-} from "@fiber-mpp/fl402-compat";
+} from "@fiber-paid-http/fl402-compat";
 
 describe("F-L402 compatibility", () => {
   const rootKey = "fl402-unit-root-key-at-least-16";

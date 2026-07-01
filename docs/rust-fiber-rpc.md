@@ -28,7 +28,7 @@ get_payment status Success
 get_invoice status Paid
 ```
 
-Rust exposes the same constants and helpers in `crates/fiber-mpp-fiber`.
+Rust exposes the same constants and helpers in `crates/fiber-paid-http-fiber`.
 
 ## Gateway Path
 

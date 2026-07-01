@@ -39,7 +39,7 @@ export class ApiClient {
     try {
       const headers: Record<string, string> = {
         ...((init.headers as Record<string, string>) || {}),
-        "x-fiber-mpp-session": this.sessionId,
+        "x-fiber-paid-http-session": this.sessionId,
       };
       return await fetch(`${this.apiBase}${path}`, {
         ...init,

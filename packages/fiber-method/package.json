@@ -1,8 +1,8 @@
 {
-  "name": "@fiber-mpp/fiber-method",
+  "name": "@fiber-paid-http/fiber-method",
   "version": "0.1.0",
   "type": "module",
-  "description": "Fiber JSON-RPC payment method adapter for FiberMPP.",
+  "description": "Fiber JSON-RPC payment method adapter for Fiber Paid HTTP.",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -15,6 +15,6 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@fiber-mpp/core": "workspace:*"
+    "@fiber-paid-http/core": "workspace:*"
   }
 }

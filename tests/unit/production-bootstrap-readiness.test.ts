@@ -102,7 +102,7 @@ function validReport() {
     },
     gateway_bootstrap: {
       status: "ready",
-      server_id: "fiber-mpp-production-bootstrap-e2e",
+      server_id: "fiber-paid-http-production-bootstrap-e2e",
       rpc_auth_from_env: true,
       log_redaction_enabled: true,
       rate_limit_enabled: true

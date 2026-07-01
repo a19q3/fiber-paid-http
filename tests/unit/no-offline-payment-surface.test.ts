@@ -1,8 +1,9 @@
 import { readdir, readFile, stat } from "node:fs/promises";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
-const repoRoot = "/home/arthur/a19q3/fiber-mpp";
+const repoRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const blockedTerm = `${"mo"}${"ck"}`;
 const scanRoots = [
   "AGENTS.md",

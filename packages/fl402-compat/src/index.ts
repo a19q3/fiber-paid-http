@@ -1,4 +1,4 @@
-import { hmacHex } from "@fiber-mpp/core";
+import { hmacHex } from "@fiber-paid-http/core";
 import {
   PaymentChallengeSchema,
   PaymentCredentialSchema,
@@ -14,7 +14,7 @@ import {
   type PaymentCredential,
   type ResourceDescriptor,
   type SignedPaymentChallenge
-} from "@fiber-mpp/core";
+} from "@fiber-paid-http/core";
 import { blake2b } from "@noble/hashes/blake2.js";
 import { z } from "zod";
 
@@ -235,7 +235,7 @@ export function fl402ChallengeToMpp(input: {
   const fl402 = FL402ChallengeSchema.parse(input.fl402);
   const issuedAt = input.issuedAt ?? new Date().toISOString();
   return PaymentChallengeSchema.parse({
-    domain: "fiber-mpp-challenge-v1",
+    domain: "fiber-paid-http-challenge-v1",
     challengeId: input.challengeId ?? randomId("chal"),
     resource: input.resource,
     amount: {
@@ -272,7 +272,7 @@ export function fl402ProofToCredential(input: {
 }): PaymentCredential {
   const proof = FL402ProofSchema.parse(input.proof);
   return PaymentCredentialSchema.parse({
-    domain: "fiber-mpp-credential-v1",
+    domain: "fiber-paid-http-credential-v1",
     challengeId: input.challengeId,
     method: "fiber",
     resourceHash: input.resourceHash,

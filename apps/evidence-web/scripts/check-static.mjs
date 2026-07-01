@@ -12,7 +12,7 @@ const webPackagePath = resolve(repoRoot, "apps", "evidence-web", "package.json")
 const webServerPath = resolve(repoRoot, "apps", "evidence-web", "server.mjs");
 const cliPackagePath = resolve(repoRoot, "packages", "cli", "package.json");
 const cliSourcePath = resolve(repoRoot, "packages", "cli", "src", "index.ts");
-const gateScriptPath = resolve(repoRoot, "scripts", "fiber_mpp_gate.sh");
+const gateScriptPath = resolve(repoRoot, "scripts", "fiber_paid_http_gate.sh");
 const tsconfigBasePath = resolve(repoRoot, "tsconfig.base.json");
 
 async function safeRead(path) {
@@ -42,12 +42,12 @@ const [html, rootPackageJson, apiPackageJson, webPackageJson, webServer, cliPack
 ]);
 
 if (!html) {
-  console.error(`dist/index.html not found at ${distHtmlPath}. Run: pnpm --filter @fiber-mpp/evidence-web build`);
+  console.error(`dist/index.html not found at ${distHtmlPath}. Run: pnpm --filter @fiber-paid-http/evidence-web build`);
   process.exit(1);
 }
 
 await access(distDir).catch(() => {
-  console.error(`dist/ directory not found. Run: pnpm --filter @fiber-mpp/evidence-web build`);
+  console.error(`dist/ directory not found. Run: pnpm --filter @fiber-paid-http/evidence-web build`);
   process.exit(1);
 });
 
@@ -74,7 +74,7 @@ const requiredCommandFragments = [
   'evidence/export',
   'bootstrap/runtime',
   'bootstrap/runtime/reset',
-  'x-fiber-mpp-session',
+  'x-fiber-paid-http-session',
   'sessionId',
   'pollMs',
   'unpaid',

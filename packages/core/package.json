@@ -1,8 +1,8 @@
 {
-  "name": "@fiber-mpp/core",
+  "name": "@fiber-paid-http/core",
   "version": "0.1.0",
   "type": "module",
-  "description": "Core FiberMPP protocol types, signing, serialization, and HTTP helpers.",
+  "description": "Core Fiber Paid HTTP protocol types, signing, serialization, and HTTP helpers.",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",

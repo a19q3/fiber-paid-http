@@ -1,6 +1,6 @@
 # Security
 
-FiberMPP is built around explicit challenge, credential, payment, and receipt binding.
+Fiber Paid HTTP is built around explicit challenge, credential, payment, and receipt binding.
 
 Implemented checks:
 

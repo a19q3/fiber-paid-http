@@ -12,18 +12,18 @@ import {
   writeGatewayConfigTemplate
 } from "../../packages/cli/src/bootstrap.js";
 
-describe("FiberMPP bootstrap helpers", () => {
+describe("Fiber Paid HTTP bootstrap helpers", () => {
   it("reports gateway blockers instead of a single adapter error", () => {
     const report = buildBootstrapReport("gateway", {
       env: {},
-      storage: "sqlite://./fiber-mpp.sqlite",
+      storage: "sqlite://./fiber-paid-http.sqlite",
       methods: ["fiber"]
     });
     expect(report.status).toBe("blocked");
     expect(report.blockers).toContain("set FIBER_MODE=local or FIBER_MODE=testnet");
     expect(report.blockers).toContain("set FIBER_PAYEE_RPC_URL or FIBER_RPC_URL for the invoice/payee node");
     expect(report.blockers).toContain("set an upstream URL with --upstream or gateway config upstream");
-    expect(report.blockers.join("\n")).toContain("FIBER_MPP_SECRET");
+    expect(report.blockers.join("\n")).toContain("FIBER_PAID_HTTP_SECRET");
   });
 
   it("reports payer-specific blockers", () => {
@@ -39,7 +39,7 @@ describe("FiberMPP bootstrap helpers", () => {
         FIBER_PAYEE_RPC_URL: "http://127.0.0.1:21716"
       },
       upstream: "http://localhost:8080",
-      storage: "sqlite://./fiber-mpp.sqlite",
+      storage: "sqlite://./fiber-paid-http.sqlite",
       secret: "a".repeat(64),
       methods: ["fiber"],
       price: { value: "0.01", currency: "USD", display: "$0.01" }
@@ -55,7 +55,7 @@ describe("FiberMPP bootstrap helpers", () => {
         FIBER_PAYEE_RPC_URL: "http://127.0.0.1:21716"
       },
       upstream: "http://localhost:8080",
-      storage: "sqlite://./fiber-mpp.sqlite",
+      storage: "sqlite://./fiber-paid-http.sqlite",
       secret: "a".repeat(64),
       methods: ["fiber"],
       price: { value: "1", currency: "CKB", display: "1 CKB" },
@@ -79,7 +79,7 @@ describe("FiberMPP bootstrap helpers", () => {
         FIBER_PAYEE_RPC_URL: "http://127.0.0.1:21716"
       },
       upstream: "http://localhost:8080",
-      storage: "sqlite://./fiber-mpp.sqlite",
+      storage: "sqlite://./fiber-paid-http.sqlite",
       secret: "a".repeat(64),
       methods: ["fiber"],
       price: { value: "1", currency: "CKB", display: "1 CKB" },
@@ -114,21 +114,21 @@ describe("FiberMPP bootstrap helpers", () => {
         FIBER_PAYEE_RPC_URL: "http://127.0.0.1:21716"
       },
       upstream: "http://localhost:8080",
-      storage: "sqlite://./fiber-mpp.sqlite",
+      storage: "sqlite://./fiber-paid-http.sqlite",
       secret: "a".repeat(64),
-      secretEnv: "FIBER_MPP_SECRET",
-      previousSecretEnvs: ["FIBER_MPP_PREVIOUS_SECRET", "FIBER_MPP_SHORT_PREVIOUS_SECRET"],
+      secretEnv: "FIBER_PAID_HTTP_SECRET",
+      previousSecretEnvs: ["FIBER_PAID_HTTP_PREVIOUS_SECRET", "FIBER_PAID_HTTP_SHORT_PREVIOUS_SECRET"],
       previousSecrets: [],
-      missingPreviousSecretEnvs: ["FIBER_MPP_PREVIOUS_SECRET"],
-      shortPreviousSecretEnvs: ["FIBER_MPP_SHORT_PREVIOUS_SECRET"],
+      missingPreviousSecretEnvs: ["FIBER_PAID_HTTP_PREVIOUS_SECRET"],
+      shortPreviousSecretEnvs: ["FIBER_PAID_HTTP_SHORT_PREVIOUS_SECRET"],
       methods: ["fiber"],
       price: { value: "1", currency: "CKB", display: "1 CKB" }
     });
     expect(report.status).toBe("blocked");
     expect(report.checks.secret_previous_env_count).toBe(2);
     expect(report.checks.secret_previous_present_count).toBe(0);
-    expect(report.blockers).toContain("set previous secret env FIBER_MPP_PREVIOUS_SECRET or remove it from previous_secret_envs");
-    expect(report.blockers).toContain("previous secret env FIBER_MPP_SHORT_PREVIOUS_SECRET must be at least 32 characters");
+    expect(report.blockers).toContain("set previous secret env FIBER_PAID_HTTP_PREVIOUS_SECRET or remove it from previous_secret_envs");
+    expect(report.blockers).toContain("previous secret env FIBER_PAID_HTTP_SHORT_PREVIOUS_SECRET must be at least 32 characters");
   });
 
   it("blocks literal Fiber RPC auth in gateway config", () => {
@@ -138,7 +138,7 @@ describe("FiberMPP bootstrap helpers", () => {
         FIBER_PAYEE_RPC_URL: "http://127.0.0.1:21716"
       },
       upstream: "http://localhost:8080",
-      storage: "sqlite://./fiber-mpp.sqlite",
+      storage: "sqlite://./fiber-paid-http.sqlite",
       secret: "a".repeat(64),
       literalRpcAuth: true,
       methods: ["fiber"],
@@ -152,7 +152,7 @@ describe("FiberMPP bootstrap helpers", () => {
   it("resolves a gateway config into runtime settings without embedding secrets in the config", () => {
     const config = gatewayConfigTemplate();
     const resolved = resolveGatewayConfig({ config }, {
-      FIBER_MPP_SECRET: "a".repeat(64)
+      FIBER_PAID_HTTP_SECRET: "a".repeat(64)
     });
     expect(resolved.upstream).toBe("http://localhost:8080");
     expect(resolved.price).toEqual({ value: "1", currency: "CKB", display: "1 CKB" });
@@ -180,17 +180,17 @@ describe("FiberMPP bootstrap helpers", () => {
     const config = {
       ...gatewayConfigTemplate(),
       fl402: {
-        root_key_env: "FIBER_MPP_FL402_ROOT_KEY",
+        root_key_env: "FIBER_PAID_HTTP_FL402_ROOT_KEY",
         hash_algorithm: "sha256" as const
       }
     };
     const resolved = resolveGatewayConfig({ config }, {
-      FIBER_MPP_SECRET: "a".repeat(64),
-      FIBER_MPP_FL402_ROOT_KEY: "fl402-root-key-at-least-16"
+      FIBER_PAID_HTTP_SECRET: "a".repeat(64),
+      FIBER_PAID_HTTP_FL402_ROOT_KEY: "fl402-root-key-at-least-16"
     });
     expect(resolved.fl402).toEqual({
       rootKey: "fl402-root-key-at-least-16",
-      rootKeyEnv: "FIBER_MPP_FL402_ROOT_KEY",
+      rootKeyEnv: "FIBER_PAID_HTTP_FL402_ROOT_KEY",
       hashAlgorithm: "sha256"
     });
   });
@@ -202,17 +202,17 @@ describe("FiberMPP bootstrap helpers", () => {
         FIBER_PAYEE_RPC_URL: "http://127.0.0.1:21716"
       },
       upstream: "http://localhost:8080",
-      storage: "sqlite://./fiber-mpp.sqlite",
+      storage: "sqlite://./fiber-paid-http.sqlite",
       secret: "a".repeat(64),
       methods: ["fiber"],
       price: { value: "1", currency: "CKB", display: "1 CKB" },
       fl402Configured: true,
-      fl402RootKeyEnv: "FIBER_MPP_FL402_ROOT_KEY",
+      fl402RootKeyEnv: "FIBER_PAID_HTTP_FL402_ROOT_KEY",
       fl402HashAlgorithm: "sha256"
     });
     expect(report.status).toBe("blocked");
     expect(report.checks.fl402_enabled).toBe(true);
-    expect(report.blockers).toContain("set FIBER_MPP_FL402_ROOT_KEY to an F-L402 root key of at least 16 characters");
+    expect(report.blockers).toContain("set FIBER_PAID_HTTP_FL402_ROOT_KEY to an F-L402 root key of at least 16 characters");
   });
 
   it("resolves Fiber RPC auth from configured env names", () => {
@@ -232,22 +232,22 @@ describe("FiberMPP bootstrap helpers", () => {
   it("resolves previous gateway secrets from env names without embedding values in config", () => {
     const config = {
       ...gatewayConfigTemplate(),
-      previous_secret_envs: ["FIBER_MPP_PREVIOUS_SECRET"]
+      previous_secret_envs: ["FIBER_PAID_HTTP_PREVIOUS_SECRET"]
     };
     const previousSecret = "p".repeat(64);
     const resolved = resolveGatewayConfig({ config }, {
-      FIBER_MPP_SECRET: "a".repeat(64),
-      FIBER_MPP_PREVIOUS_SECRET: previousSecret
+      FIBER_PAID_HTTP_SECRET: "a".repeat(64),
+      FIBER_PAID_HTTP_PREVIOUS_SECRET: previousSecret
     });
     expect(previousSecretsFromGatewayConfig(config, {
-      FIBER_MPP_PREVIOUS_SECRET: previousSecret
+      FIBER_PAID_HTTP_PREVIOUS_SECRET: previousSecret
     })).toEqual({
-      secretEnvs: ["FIBER_MPP_PREVIOUS_SECRET"],
+      secretEnvs: ["FIBER_PAID_HTTP_PREVIOUS_SECRET"],
       secrets: [previousSecret],
       missing: [],
       short: []
     });
-    expect(resolved.previousSecretEnvs).toEqual(["FIBER_MPP_PREVIOUS_SECRET"]);
+    expect(resolved.previousSecretEnvs).toEqual(["FIBER_PAID_HTTP_PREVIOUS_SECRET"]);
     expect(resolved.previousSecrets).toEqual([previousSecret]);
   });
 
@@ -256,21 +256,21 @@ describe("FiberMPP bootstrap helpers", () => {
     const resolved = resolveGatewayConfig(
       {
         config,
-        storage: "/tmp/fiber-mpp.sqlite"
+        storage: "/tmp/fiber-paid-http.sqlite"
       },
       {
-        FIBER_MPP_SECRET: "a".repeat(64)
+        FIBER_PAID_HTTP_SECRET: "a".repeat(64)
       }
     );
-    expect(resolved.storage).toBe("sqlite:///tmp/fiber-mpp.sqlite");
+    expect(resolved.storage).toBe("sqlite:///tmp/fiber-paid-http.sqlite");
   });
 
   it("writes a gateway template without a literal secret", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "fiber-mpp-bootstrap-"));
+    const dir = await mkdtemp(join(tmpdir(), "fiber-paid-http-bootstrap-"));
     const path = join(dir, "gateway.json");
     await writeGatewayConfigTemplate(path);
     const contents = await readFile(path, "utf8");
-    expect(contents).toContain("\"secret_env\": \"FIBER_MPP_SECRET\"");
+    expect(contents).toContain("\"secret_env\": \"FIBER_PAID_HTTP_SECRET\"");
     expect(contents).toContain("\"previous_secret_envs\": []");
     expect(contents).toContain("\"allowed_origins\": []");
     expect(contents).toContain("\"allowed_headers\": [");
@@ -282,8 +282,8 @@ describe("FiberMPP bootstrap helpers", () => {
     expect(contents).toContain("\"enabled\": true");
     expect(contents).toContain("\"rate_limit\": {");
     expect(contents).toContain("\"max_requests\": 300");
-    expect(contents).not.toContain("fiber-mpp-proxy-secret");
-    expect(contents).not.toContain("fiber-mpp-live-e2e-secret");
+    expect(contents).not.toContain("fiber-paid-http-proxy-secret");
+    expect(contents).not.toContain("fiber-paid-http-live-e2e-secret");
   });
 
   it("probes Fiber peer and channel readiness for live bootstrap", async () => {
@@ -351,7 +351,7 @@ describe("FiberMPP bootstrap helpers", () => {
     });
     expect(probe.ok).toBe(false);
     expect(probe.blockers).toContain("payer Fiber node has no connected peers; connect it to a local or testnet Fiber peer");
-    expect(probe.blockers).toContain("payer Fiber node has no channels; open and fund a channel before live FiberMPP payments");
+    expect(probe.blockers).toContain("payer Fiber node has no channels; open and fund a channel before live Fiber Paid HTTP payments");
   });
 });
 

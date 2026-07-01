@@ -2,7 +2,7 @@
   "input": {
     "case": "fiber.local-e2e.report",
     "evidence": true,
-    "source_report": "reports/fiber-mpp-gate.json",
+    "source_report": "reports/fiber-local-e2e-success.json",
     "report": {
       "unit_tests": true,
       "integration_tests": true,
@@ -64,13 +64,13 @@
       ],
       "production_ready_for_fiber_method": true,
       "production_blockers": [],
-      "fiber_mpp_gate_ready": true,
-      "fiber_mpp_gate_blockers": [],
+      "fiber_paid_http_gate_ready": true,
+      "fiber_paid_http_gate_blockers": [],
       "fiber_e2e_payment_hash": "0x4de4574f1f2dd2ec47933506822860d3af3decbe4651de3f861ff81b9d61effc",
       "fiber_e2e_receipt_id": "rcpt_d6368f6113b2a81e262fdf1c79a4e44d"
     }
   },
-  "expected_canonical_hash": "bd1eff6e144b305788fb42b72e613c9d662a9bf648d01a82fcb02c1513bbeb0e",
+  "expected_canonical_hash": "98b137e8e8227ff2547e4691cd9be558c3c879677bcd2ebe0410e4d127093aad",
   "expected_verification_result": "accepted",
   "notes": "Gate report evidence copied from the latest successful local Fiber E2E run."
 }

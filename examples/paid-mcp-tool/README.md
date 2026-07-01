@@ -1,6 +1,6 @@
 # Paid MCP Tool Example
 
-Expose an HTTP endpoint for a tool call and wrap it with FiberMPP:
+Expose an HTTP endpoint for a tool call and wrap it with Fiber Paid HTTP:
 
 ```ts
 const paidTool = fiberMpp.protect({

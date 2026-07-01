@@ -97,7 +97,7 @@ function computeTestnetEvidenceDigest(report, options = {}) {
 function testnetEvidenceDigestMaterial(report, options = {}) {
   const facts = extractTestnetEvidenceFacts(report || {}, options);
   return {
-    schema: "fiber-mpp-testnet-evidence-digest-v1",
+    schema: "fiber-paid-http-testnet-evidence-digest-v1",
     fiber_commit: facts.fiberCommit || null,
     testnet_evidence_recorded_at: facts.recordedAt || null,
     fiber_preflight_test_loaded: facts.result.fiber_preflight_test_loaded === true || facts.gate.fiber_preflight_test_loaded === true,

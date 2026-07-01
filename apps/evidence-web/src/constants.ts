@@ -48,9 +48,9 @@ export const reportDisplayList = [
   { file: "fiber-local-e2e-evidence.json", key: "fiber" as const },
   { file: "production-operations-matrix.json", key: "productionOps" as const },
   { file: "production-bootstrap-e2e.json", key: "productionBootstrap" as const },
-  { file: "fiber-mpp-gate.json", key: "gate" as const },
-  { file: "fiber-mpp-gate.local.json", key: "gateLocal" as const },
-  { file: "fiber-mpp-gate.default.json", key: "gateDefault" as const },
+  { file: "fiber-paid-http-gate.json", key: "gate" as const },
+  { file: "fiber-paid-http-gate.local.json", key: "gateLocal" as const },
+  { file: "fiber-paid-http-gate.default.json", key: "gateDefault" as const },
   { file: "security-matrix.json", key: "security" as const },
 ];
 

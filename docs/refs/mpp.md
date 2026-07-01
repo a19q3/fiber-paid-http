@@ -2,7 +2,7 @@
 
 Machine Payments Protocol standardizes paid HTTP resources around the dormant `402 Payment Required` status code.
 
-Lifecycle implemented in FiberMPP:
+Lifecycle implemented in Fiber Paid HTTP:
 
 1. Client requests a protected resource.
 2. Server returns `402` with `WWW-Authenticate: Payment` and a problem JSON body.
@@ -10,7 +10,7 @@ Lifecycle implemented in FiberMPP:
 4. Client retries with `Authorization: Payment <base64url credential>`.
 5. Server verifies payment, serves the resource, and returns `Payment-Receipt`.
 
-FiberMPP keeps the core MPP model focused on Fiber as the production payment method.
+Fiber Paid HTTP keeps the core MPP model focused on Fiber as the production payment method.
 
 Important interface choices:
 

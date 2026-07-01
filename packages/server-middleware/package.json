@@ -1,8 +1,8 @@
 {
-  "name": "@fiber-mpp/server-middleware",
+  "name": "@fiber-paid-http/server-middleware",
   "version": "0.1.0",
   "type": "module",
-  "description": "Fetch/Hono-compatible FiberMPP paid API middleware.",
+  "description": "Fetch/Hono-compatible Fiber Paid HTTP paid API middleware.",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -15,9 +15,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@fiber-mpp/core": "workspace:*",
-    "@fiber-mpp/fiber-method": "workspace:*",
-    "@fiber-mpp/fl402-compat": "workspace:*",
-    "@fiber-mpp/storage": "workspace:*"
+    "@fiber-paid-http/core": "workspace:*",
+    "@fiber-paid-http/fiber-method": "workspace:*",
+    "@fiber-paid-http/fl402-compat": "workspace:*",
+    "@fiber-paid-http/storage": "workspace:*"
   }
 }

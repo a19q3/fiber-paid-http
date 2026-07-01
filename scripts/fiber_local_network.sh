@@ -302,7 +302,7 @@ rpc_call() {
   local params="$3"
   curl -sS --fail-with-body "$url" \
     -H 'content-type: application/json' \
-    -d "{\"id\":\"fiber-mpp-local-network\",\"jsonrpc\":\"2.0\",\"method\":\"${method}\",\"params\":${params}}"
+    -d "{\"id\":\"fiber-paid-http-local-network\",\"jsonrpc\":\"2.0\",\"method\":\"${method}\",\"params\":${params}}"
 }
 
 log_step() {

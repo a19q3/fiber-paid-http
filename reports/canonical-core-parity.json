@@ -21,7 +21,7 @@
   "testnet_fiber_e2e_evidence": true,
   "testnet_fiber_e2e_evidence_report": "reports/fiber-testnet-e2e-success.json",
   "testnet_evidence_recorded_at": "2026-06-25T03:14:53.023Z",
-  "testnet_evidence_digest": "sha256:f15a59555878336820fa5def252a05f336951bb9c615b49f1eef065e58c7d92d",
+  "testnet_evidence_digest": "sha256:9b353342ec232458e48ab0a39f66828180935de17fbbda08db4804090f26d5ed",
   "testnet_fiber_e2e_evidence_verified": true,
   "testnet_fiber_e2e_evidence_blockers": [],
   "fiber_commit": null,

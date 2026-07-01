@@ -1,0 +1,53 @@
+{
+  "engine": "rust",
+  "canonical_engine": true,
+  "trusted_boundary": "rust",
+  "cargo_fmt": true,
+  "cargo_clippy": true,
+  "cargo_tests": true,
+  "rust_vectors": true,
+  "shared_vectors_total": 18,
+  "shared_vectors_passed_rust": 18,
+  "fiber_rpc_semantics": {
+    "methods": [
+      "new_invoice",
+      "send_payment",
+      "get_payment",
+      "get_invoice"
+    ],
+    "numeric_encoding": "hex JSON quantities",
+    "settlement_statuses": {
+      "payment": "Success",
+      "invoice": "Paid"
+    }
+  },
+  "production_operations": true,
+  "production_operations_report": "reports/production-operations-matrix.json",
+  "production_bootstrap_e2e": true,
+  "production_bootstrap_report": "reports/production-bootstrap-e2e.json",
+  "production_bootstrap_e2e_blockers": [],
+  "testnet_fiber_e2e": true,
+  "testnet_fiber_e2e_evidence": true,
+  "testnet_fiber_e2e_evidence_report": "reports/fiber-testnet-e2e-success.json",
+  "testnet_evidence_recorded_at": "2026-06-25T03:14:53.023Z",
+  "testnet_evidence_digest": "sha256:9b353342ec232458e48ab0a39f66828180935de17fbbda08db4804090f26d5ed",
+  "testnet_fiber_e2e_evidence_verified": true,
+  "testnet_fiber_e2e_evidence_blockers": [],
+  "fiber_commit": null,
+  "rust_gateway_production_path": true,
+  "rust_gateway_evidence": {
+    "server_crate_tests": true,
+    "cli_server_command_starts_gateway": true,
+    "features": [
+      "signed 402 challenge issuance",
+      "Fiber invoice creation through FNN JSON-RPC",
+      "Fiber settlement inspection through FNN JSON-RPC",
+      "Authorization: Payment verification",
+      "durable SQLite challenge/credential/receipt storage",
+      "Payment-Receipt issuance",
+      "replay rejection"
+    ]
+  },
+  "production_ready_for_fiber_method": true,
+  "production_blockers": []
+}

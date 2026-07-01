@@ -8,7 +8,7 @@ const serverPath = resolve(here, "..", "server.mjs");
 const port = await findFreePort();
 const baseUrl = `http://127.0.0.1:${port}`;
 const server = spawn(process.execPath, [serverPath], {
-  env: { ...process.env, PORT: String(port), FIBER_MPP_EVIDENCE_API_BASE: "http://127.0.0.1:9876" },
+  env: { ...process.env, PORT: String(port), FIBER_PAID_HTTP_EVIDENCE_API_BASE: "http://127.0.0.1:9876" },
   stdio: ["ignore", "pipe", "pipe"]
 });
 let stderr = "";
@@ -25,7 +25,7 @@ try {
   assert(index.headers.get("cache-control") === "no-store", "Evidence console HTML must be no-store");
   assert((index.headers.get("content-security-policy") || "").includes("default-src 'self'"), "CSP must restrict default-src to self");
   const indexHtml = await index.text();
-  assert(indexHtml.includes("FiberMPP Evidence Console"), "GET / must serve the evidence console");
+  assert(indexHtml.includes("Fiber Paid HTTP Evidence Console"), "GET / must serve the evidence console");
   assert(indexHtml.includes("http://127.0.0.1:9876"), "Evidence console HTML must receive the configured API base");
   assert(!indexHtml.includes("http://localhost:8787"), "Evidence console HTML must not keep the default API base after injection");
   const csp = index.headers.get("content-security-policy") || "";

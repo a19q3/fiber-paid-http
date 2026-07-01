@@ -21,7 +21,7 @@ export function Header({ onToggleSidebar, sidebarCollapsed, onOpenPrefs }: Heade
       <div className="header-brand">
         <div className="header-mark" />
         <div>
-          <h1>FiberMPP Evidence Console <span className="header-version">MPP</span></h1>
+          <h1>Fiber Paid HTTP Evidence Console <span className="header-version">MPP</span></h1>
           <p>Machine Payments Protocol over Fiber</p>
         </div>
       </div>

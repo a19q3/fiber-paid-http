@@ -5,19 +5,19 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const args = parseArgs(process.argv.slice(2));
-const apiBase = stripTrailingSlash(args["api-base"] || process.env.FIBER_MPP_EVIDENCE_API_BASE || "http://127.0.0.1:8787");
-const webUrl = stripTrailingSlash(args["web-url"] || process.env.FIBER_MPP_EVIDENCE_WEB_URL || "http://127.0.0.1:8788");
-const sessionId = normalizeSessionId(args.session || process.env.FIBER_MPP_DEMO_SESSION || "live-demo");
-const endpoint = args.endpoint || process.env.FIBER_MPP_DEMO_ENDPOINT || "/paid/protocol-service";
-const amountCkb = args["amount-ckb"] || process.env.FIBER_MPP_DEMO_AMOUNT_CKB || "100";
-const amountShannons = args["amount-shannons"] || process.env.FIBER_MPP_DEMO_AMOUNT_SHANNONS || process.env.FIBER_E2E_AMOUNT_SHANNONS || "100";
-const stepDelayMs = boundedInteger(args["delay-ms"] || process.env.FIBER_MPP_DEMO_STEP_DELAY_MS, 0, 120000, 3500);
-const reportPath = resolve(repoRoot, args.report || process.env.FIBER_MPP_DEMO_REPORT || "reports/evidence-live-demo-flow.json");
+const apiBase = stripTrailingSlash(args["api-base"] || process.env.FIBER_PAID_HTTP_EVIDENCE_API_BASE || "http://127.0.0.1:8787");
+const webUrl = stripTrailingSlash(args["web-url"] || process.env.FIBER_PAID_HTTP_EVIDENCE_WEB_URL || "http://127.0.0.1:8788");
+const sessionId = normalizeSessionId(args.session || process.env.FIBER_PAID_HTTP_DEMO_SESSION || "live-demo");
+const endpoint = args.endpoint || process.env.FIBER_PAID_HTTP_DEMO_ENDPOINT || "/paid/protocol-service";
+const amountCkb = args["amount-ckb"] || process.env.FIBER_PAID_HTTP_DEMO_AMOUNT_CKB || "100";
+const amountShannons = args["amount-shannons"] || process.env.FIBER_PAID_HTTP_DEMO_AMOUNT_SHANNONS || process.env.FIBER_E2E_AMOUNT_SHANNONS || "100";
+const stepDelayMs = boundedInteger(args["delay-ms"] || process.env.FIBER_PAID_HTTP_DEMO_STEP_DELAY_MS, 0, 120000, 3500);
+const reportPath = resolve(repoRoot, args.report || process.env.FIBER_PAID_HTTP_DEMO_REPORT || "reports/evidence-live-demo-flow.json");
 const startedAt = new Date().toISOString();
 const steps = [];
 
 try {
-  console.log(`FiberMPP live evidence demo`);
+  console.log(`Fiber Paid HTTP live evidence demo`);
   console.log(`api_base=${apiBase}`);
   console.log(`session=${sessionId}`);
   console.log(`endpoint=${endpoint}`);
@@ -138,7 +138,7 @@ async function requestJson(path, init, options = {}) {
     ...init,
     headers: {
       ...(init.headers || {}),
-      "x-fiber-mpp-session": sessionId
+      "x-fiber-paid-http-session": sessionId
     }
   });
   const payload = await response.json().catch(() => ({}));

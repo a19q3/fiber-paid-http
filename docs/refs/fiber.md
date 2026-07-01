@@ -1,6 +1,6 @@
 # Fiber Reference Notes
 
-FiberMPP uses Fiber through JSON-RPC only. The RPC README warns that exposing the RPC port to arbitrary machines is dangerous, so production deployments should bind it to trusted local networks or loopback and put FiberMPP in front.
+Fiber Paid HTTP uses Fiber through JSON-RPC only. The RPC README warns that exposing the RPC port to arbitrary machines is dangerous, so production deployments should bind it to trusted local networks or loopback and put Fiber Paid HTTP in front.
 
 Relevant RPC methods from `/home/arthur/a19q3/fiber/crates/fiber-lib/src/rpc/README.md`:
 

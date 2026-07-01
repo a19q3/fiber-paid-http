@@ -1,5 +1,5 @@
 {
-  "name": "@fiber-mpp/fl402-compat",
+  "name": "@fiber-paid-http/fl402-compat",
   "version": "0.1.0",
   "type": "module",
   "description": "F-L402 compatibility adapters for Fiber Paid HTTP.",
@@ -15,7 +15,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@fiber-mpp/core": "workspace:*",
+    "@fiber-paid-http/core": "workspace:*",
     "@noble/hashes": "^2.2.0",
     "zod": "^3.25.0"
   }

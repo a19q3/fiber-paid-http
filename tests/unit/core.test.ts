@@ -9,7 +9,7 @@ import {
   verifyChallengeSignature,
   verifyReceiptSignature,
   type PaymentChallenge
-} from "@fiber-mpp/core";
+} from "@fiber-paid-http/core";
 
 const secret = "unit-test-secret-at-least-16";
 
@@ -36,7 +36,7 @@ describe("core protocol primitives", () => {
   it("receipt signature verifies", () => {
     const receipt = attachReceiptSignature(
       {
-        domain: "fiber-mpp-receipt-v1",
+        domain: "fiber-paid-http-receipt-v1",
         receiptId: randomId("rcpt"),
         challengeId: "chal_1234567890abcdef",
         method: "fiber",
@@ -62,7 +62,7 @@ function makeChallenge(): PaymentChallenge {
   const issuedAt = new Date().toISOString();
   const expiresAt = new Date(Date.now() + 60_000).toISOString();
   return {
-    domain: "fiber-mpp-challenge-v1",
+    domain: "fiber-paid-http-challenge-v1",
     challengeId: "chal_1234567890abcdef",
     resource: { method: "GET", url: "https://example.test/paid" },
     amount: { value: "1", currency: "CKB" },

@@ -1,11 +1,11 @@
 # Live Fiber E2E
 
-`pnpm test:fiber` always loads the Fiber E2E preflight test. When `RUN_FIBER_E2E=1` and the required Fiber RPC variables are present, it also loads the live evidence path for FiberMPP. The live path requires a payer Fiber node with a funded route to a payee Fiber node.
+`pnpm test:fiber` always loads the Fiber E2E preflight test. When `RUN_FIBER_E2E=1` and the required Fiber RPC variables are present, it also loads the live evidence path for Fiber Paid HTTP. The live path requires a payer Fiber node with a funded route to a payee Fiber node.
 
 Use [fiber-local-network.md](fiber-local-network.md) for the current reproducible local network setup. The short form is:
 
 ```bash
-cd /home/arthur/a19q3/fiber-mpp
+cd /home/arthur/a19q3/fiber-paid-http
 scripts/fiber_local_network.sh up
 ```
 
@@ -44,7 +44,7 @@ export FIBER_MODE=local              # or testnet
 export FIBER_RPC_URL=http://127.0.0.1:21716
 export FIBER_PAYEE_RPC_URL=http://127.0.0.1:21716
 export FIBER_PAYER_RPC_URL=http://127.0.0.1:21714
-export FIBER_MPP_SECRET="$(openssl rand -hex 32)"
+export FIBER_PAID_HTTP_SECRET="$(openssl rand -hex 32)"
 ```
 
 Optional:
@@ -125,17 +125,17 @@ curl -sS http://127.0.0.1:21714 \
   -d '{"id":"7","jsonrpc":"2.0","method":"list_channels","params":[{}]}'
 ```
 
-Then run FiberMPP:
+Then run Fiber Paid HTTP:
 
 ```bash
-cd /home/arthur/a19q3/fiber-mpp
+cd /home/arthur/a19q3/fiber-paid-http
 export RUN_FIBER_E2E=1
 export FIBER_MODE=local
 export FIBER_RPC_URL=http://127.0.0.1:21716
 export FIBER_PAYEE_RPC_URL=http://127.0.0.1:21716
 export FIBER_PAYER_RPC_URL=http://127.0.0.1:21714
 export FIBER_CURRENCY=Fibd
-export FIBER_MPP_SECRET="$(openssl rand -hex 32)"
+export FIBER_PAID_HTTP_SECRET="$(openssl rand -hex 32)"
 export FIBER_E2E_AMOUNT_SHANNONS=100
 pnpm test:fiber
 ```
@@ -151,7 +151,7 @@ export FIBER_CURRENCY=Fibt
 export FIBER_RPC_URL=<payee rpc url>
 export FIBER_PAYEE_RPC_URL=<payee rpc url>
 export FIBER_PAYER_RPC_URL=<payer rpc url>
-export FIBER_MPP_SECRET="$(openssl rand -hex 32)"
+export FIBER_PAID_HTTP_SECRET="$(openssl rand -hex 32)"
 export FIBER_PAYEE_RPC_AUTH='<payee auth if required>'
 export FIBER_PAYER_RPC_AUTH='<payer auth if required>'
 pnpm test:fiber

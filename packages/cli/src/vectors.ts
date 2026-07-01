@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readFile, readdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import {
-  FiberMppError,
+  FiberPaidHttpError,
   PaymentChallengeSchema,
   PaymentCredentialSchema,
   PaymentReceiptSchema,
@@ -18,14 +18,14 @@ import {
   type PaymentCredential,
   type PaymentReceipt,
   type ResourceDescriptor
-} from "@fiber-mpp/core";
-import { FiberMethodAdapter, FiberRpcClient } from "@fiber-mpp/fiber-method";
+} from "@fiber-paid-http/core";
+import { FiberMethodAdapter, FiberRpcClient } from "@fiber-paid-http/fiber-method";
 import {
   F402ChallengeSchema,
   F402ProofSchema,
   f402ChallengeToMpp,
   f402ProofToCredential
-} from "@fiber-mpp/f402-compat";
+} from "@fiber-paid-http/f402-compat";
 import {
   FL402ChallengeSchema,
   FL402ProofSchema,
@@ -34,9 +34,9 @@ import {
   hashPaymentPreimage,
   issueFl402Challenge,
   verifyFl402Proof
-} from "@fiber-mpp/fl402-compat";
-import { createFiberMppMiddleware } from "@fiber-mpp/server-middleware";
-import { SqliteStore } from "@fiber-mpp/storage";
+} from "@fiber-paid-http/fl402-compat";
+import { createFiberPaidHttpMiddleware } from "@fiber-paid-http/server-middleware";
+import { SqliteStore } from "@fiber-paid-http/storage";
 
 type VerificationResult = "accepted" | "rejected";
 
@@ -63,9 +63,9 @@ type SecurityMatrixRow = {
 
 const VECTOR_DIR = "test-vectors";
 const SUCCESS_REPORT_PATH = "reports/fiber-local-e2e-success.json";
-const SECRET = "fiber-mpp-conformance-secret";
+const SECRET = "fiber-paid-http-conformance-secret";
 const FL402_ROOT_KEY = "fiber-paid-http-fl402-conformance-root-key";
-const SERVER_ID = "fiber-mpp-ts-conformance";
+const SERVER_ID = "fiber-paid-http-ts-conformance";
 const FIXED_NOW = "2026-06-24T00:00:00.000Z";
 const VALID_EXPIRES = "2030-01-01T00:00:00.000Z";
 const EXPIRED_AT = "2020-01-01T00:00:00.000Z";
@@ -158,7 +158,7 @@ export async function generateVectors(cwd = process.cwd()): Promise<void> {
   }
 
   await writeJson(resolve(cwd, "reports/security-matrix.json"), {
-    generated_by: "pnpm exec fiber-mpp vectors generate",
+    generated_by: "pnpm exec fiber-paid-http vectors generate",
     generated_at: FIXED_NOW,
     attacks: SECURITY_MATRIX
   });
@@ -343,7 +343,7 @@ function buildVectorDocuments(
         signature: artifacts.signature
       },
       "accepted",
-      "Signed FiberMPP challenge with a deterministic Fiber method and HMAC signature."
+      "Signed Fiber Paid HTTP challenge with a deterministic Fiber method and HMAC signature."
     ),
     "credential.valid.json": vector(
       credentialInput(artifacts.challenge, artifacts.signature, artifacts.credential, RESOURCE),
@@ -377,7 +377,7 @@ function buildVectorDocuments(
         challenge_id: CHALLENGE_ID,
         issued_at: FIXED_NOW,
         expected_mpp_fields: {
-          domain: "fiber-mpp-challenge-v1",
+          domain: "fiber-paid-http-challenge-v1",
           challengeId: CHALLENGE_ID,
           resource: RESOURCE,
           amount: {
@@ -406,7 +406,7 @@ function buildVectorDocuments(
         credential: f402Credential
       },
       "accepted",
-      "F402 proof converted to a FiberMPP payment credential."
+      "F402 proof converted to a Fiber Paid HTTP payment credential."
     ),
     "fl402.challenge.valid.json": vector(
       {
@@ -418,7 +418,7 @@ function buildVectorDocuments(
         challenge_id: CHALLENGE_ID,
         issued_at: FIXED_NOW,
         expected_mpp_fields: {
-          domain: "fiber-mpp-challenge-v1",
+          domain: "fiber-paid-http-challenge-v1",
           challengeId: CHALLENGE_ID,
           resource: RESOURCE,
           amount: {
@@ -450,7 +450,7 @@ function buildVectorDocuments(
         credential: fl402Credential
       },
       "accepted",
-      "F-L402 proof converted to a FiberMPP credential after macaroon and preimage verification."
+      "F-L402 proof converted to a Fiber Paid HTTP credential after macaroon and preimage verification."
     ),
     "attack.replay.json": vector(
       {
@@ -557,7 +557,7 @@ function buildDeterministicArtifacts(options: { expiresAt?: string } = {}): {
 } {
   const expiresAt = options.expiresAt ?? VALID_EXPIRES;
   const challenge = PaymentChallengeSchema.parse({
-    domain: "fiber-mpp-challenge-v1",
+    domain: "fiber-paid-http-challenge-v1",
     challengeId: CHALLENGE_ID,
     resource: RESOURCE,
     amount: {
@@ -586,7 +586,7 @@ function buildDeterministicArtifacts(options: { expiresAt?: string } = {}): {
   const signature = signChallenge(challenge, SECRET);
   const hashedResource = resourceHash(RESOURCE);
   const credential = PaymentCredentialSchema.parse({
-    domain: "fiber-mpp-credential-v1",
+    domain: "fiber-paid-http-credential-v1",
     challengeId: CHALLENGE_ID,
     method: "fiber",
     resourceHash: hashedResource,
@@ -606,7 +606,7 @@ function buildDeterministicArtifacts(options: { expiresAt?: string } = {}): {
   });
   const receipt = attachReceiptSignature(
     {
-      domain: "fiber-mpp-receipt-v1",
+      domain: "fiber-paid-http-receipt-v1",
       receiptId: "rcpt_conformance_0001",
       challengeId: CHALLENGE_ID,
       method: "fiber",
@@ -722,7 +722,7 @@ async function verifyCredentialVector(input: Record<string, unknown>, replay: bo
   const request = resourceField(input, "request");
   const secret = stringField(input, "secret");
   const signature = stringField(input, "signature");
-  const store = new SqliteStore(join(await mkdtemp(join(tmpdir(), "fiber-mpp-vector-")), "store.sqlite"));
+  const store = new SqliteStore(join(await mkdtemp(join(tmpdir(), "fiber-paid-http-vector-")), "store.sqlite"));
   await store.saveChallenge({
     challenge,
     signature,
@@ -730,7 +730,7 @@ async function verifyCredentialVector(input: Record<string, unknown>, replay: bo
     createdAt: challenge.issuedAt,
     expiresAt: challenge.expiresAt
   });
-  const middleware = createFiberMppMiddleware({
+  const middleware = createFiberPaidHttpMiddleware({
     secret,
     serverId: challenge.serverId,
     store,
@@ -755,7 +755,7 @@ async function verifyCredentialVector(input: Record<string, unknown>, replay: bo
     }
     return { result: "accepted" };
   } catch (error) {
-    if (error instanceof FiberMppError) {
+    if (error instanceof FiberPaidHttpError) {
       return {
         result: "rejected",
         errorCode: error.code
@@ -958,7 +958,7 @@ type LiveEvidence = {
 };
 
 async function readLiveEvidence(cwd: string): Promise<LiveEvidence> {
-  const currentReport = await readJsonIfExists(resolve(cwd, "reports/fiber-mpp-gate.json"));
+  const currentReport = await readJsonIfExists(resolve(cwd, "reports/fiber-paid-http-gate.json"));
   const successReport = await readJsonIfExists(resolve(cwd, SUCCESS_REPORT_PATH));
   const existingVector = await readJsonIfExists(resolve(cwd, VECTOR_DIR, "fiber.local-e2e.report.json"));
   const existingVectorReport =
@@ -967,7 +967,7 @@ async function readLiveEvidence(cwd: string): Promise<LiveEvidence> {
       : null;
 
   const selected = selectSuccessfulReport([
-    { path: "reports/fiber-mpp-gate.json", report: currentReport },
+    { path: "reports/fiber-paid-http-gate.json", report: currentReport },
     { path: SUCCESS_REPORT_PATH, report: successReport },
     { path: "test-vectors/fiber.local-e2e.report.json", report: existingVectorReport }
   ]);

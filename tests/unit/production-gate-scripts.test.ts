@@ -4,10 +4,10 @@ import { describe, expect, it } from "vitest";
 describe("production gate scripts", () => {
   it("requires preserved testnet evidence verification in production gates", () => {
     for (const script of [
-      "scripts/fiber_mpp_gate.sh",
-      "scripts/fiber_mpp_ops_gate.sh",
-      "scripts/fiber_mpp_canonical_gate.sh",
-      "scripts/fiber_mpp_rust_gate.sh"
+      "scripts/fiber_paid_http_gate.sh",
+      "scripts/fiber_paid_http_ops_gate.sh",
+      "scripts/fiber_paid_http_canonical_gate.sh",
+      "scripts/fiber_paid_http_rust_gate.sh"
     ]) {
       const source = readFileSync(script, "utf8");
 
@@ -37,7 +37,7 @@ describe("production gate scripts", () => {
   });
 
   it("keeps evidence web server hardening in the main gate", () => {
-    const source = readFileSync("scripts/fiber_mpp_gate.sh", "utf8");
+    const source = readFileSync("scripts/fiber_paid_http_gate.sh", "utf8");
 
     expect(source).toContain("check-server");
     expect(source).toContain("evidence-console-server-hardening.log");
@@ -47,7 +47,7 @@ describe("production gate scripts", () => {
   });
 
   it("keeps one-command Evidence Console startup in the main gate", () => {
-    const source = readFileSync("scripts/fiber_mpp_gate.sh", "utf8");
+    const source = readFileSync("scripts/fiber_paid_http_gate.sh", "utf8");
 
     expect(source).toContain("check-cli-start");
     expect(source).toContain("evidence-console-cli-start.log");
@@ -59,7 +59,7 @@ describe("production gate scripts", () => {
   });
 
   it("requires the browser smoke to use the served Evidence Console", () => {
-    const source = readFileSync("scripts/fiber_mpp_gate.sh", "utf8");
+    const source = readFileSync("scripts/fiber_paid_http_gate.sh", "utf8");
 
     expect(source).toContain('report.web_origin !== "served-local-web-server"');
     expect(source).toContain('report.api_base_source !== "served HTML injected by evidence web server"');

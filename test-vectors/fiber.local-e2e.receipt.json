@@ -2,13 +2,13 @@
   "input": {
     "case": "fiber.local-e2e.receipt",
     "evidence": true,
-    "source_report": "reports/fiber-mpp-gate.json",
-    "receipt_source": "reports/fiber-mpp-gate.json",
+    "source_report": "reports/fiber-local-e2e-success.json",
+    "receipt_source": "reports/fiber-local-e2e-success.json",
     "receipt_id": "rcpt_d6368f6113b2a81e262fdf1c79a4e44d",
     "payment_hash": "0x4de4574f1f2dd2ec47933506822860d3af3decbe4651de3f861ff81b9d61effc",
     "receipt_signature_verification": "receipt body unavailable; report-level payment hash and receipt id retained"
   },
-  "expected_canonical_hash": "6baca672579b17f04ef23537bde8d3a2b908e50ea59c371b0660d77d126689d2",
+  "expected_canonical_hash": "c3c864da2b11a57ec0ea14663fc5f3c25d1255985d7d79c0ff33ecf2425377aa",
   "expected_verification_result": "accepted",
   "notes": "Evidence copied from the latest successful local Fiber E2E run; this is not a deterministic fixture."
 }

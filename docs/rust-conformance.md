@@ -3,7 +3,7 @@
 Rust verifies the same `test-vectors/` suite as TypeScript.
 
 ```bash
-cargo run -p fiber-mpp-cli -- vectors verify
+cargo run -p fiber-paid-http-cli -- vectors verify
 ```
 
 The command writes:

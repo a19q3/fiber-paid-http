@@ -1,5 +1,5 @@
 import {
-  FiberMppError,
+  FiberPaidHttpError,
   PAYMENT_RECEIPT_HEADER,
   PaymentChallengeSchema,
   SignedPaymentChallengeSchema,
@@ -11,8 +11,8 @@ import {
   type PaymentChallenge,
   type PaymentReceipt,
   type SignedPaymentChallenge
-} from "@fiber-mpp/core";
-import { FiberMethodAdapter } from "@fiber-mpp/fiber-method";
+} from "@fiber-paid-http/core";
+import { FiberMethodAdapter } from "@fiber-paid-http/fiber-method";
 
 export type PaidFetchOptions = {
   fetchImpl?: typeof fetch;
@@ -49,12 +49,12 @@ export async function paidFetch(
     | FiberMethodChallenge
     | undefined;
   if (!fiberChallenge) {
-    throw new FiberMppError("fiber-method-unavailable", "Challenge did not include a Fiber payment method", 402);
+    throw new FiberPaidHttpError("fiber-method-unavailable", "Challenge did not include a Fiber payment method", 402);
   }
 
   const proof = await fiber.payChallenge(fiberChallenge);
   const credential = {
-    domain: "fiber-mpp-credential-v1" as const,
+    domain: "fiber-paid-http-credential-v1" as const,
     challengeId: challenge.challengeId,
     method: "fiber" as const,
     resourceHash: await resourceHashFromRequest(retryTemplate.clone()),
@@ -100,7 +100,7 @@ export async function parseSignedChallenge(response: Response): Promise<SignedPa
   const auth = response.headers.get("www-authenticate");
   const match = auth?.match(/challenge="([^"]+)"/);
   if (!match?.[1]) {
-    throw new FiberMppError("missing-challenge", "402 response did not contain a Payment challenge", 402);
+    throw new FiberPaidHttpError("missing-challenge", "402 response did not contain a Payment challenge", 402);
   }
   return decodeSignedChallenge(match[1]);
 }

@@ -1,12 +1,12 @@
 # Fiber Testnet E2E
 
-This page is the FiberMPP testnet evidence path. It follows the Fiber onboarding model:
+This page is the Fiber Paid HTTP testnet evidence path. It follows the Fiber onboarding model:
 
 1. run or point at two Fiber Network Node (`fnn`) instances,
 2. fund both CKB testnet accounts,
 3. connect peers,
 4. open and wait for `ChannelReady` channels,
-5. run FiberMPP's live `402 -> Fiber payment -> Payment-Receipt -> replay rejection` test.
+5. run Fiber Paid HTTP's live `402 -> Fiber payment -> Payment-Receipt -> replay rejection` test.
 
 Local 3-node evidence is documented in [fiber-local-network.md](fiber-local-network.md). Testnet evidence must be collected separately before `production_ready_for_fiber_method` can become `true`, and the gate also requires production operations plus production bootstrap E2E readiness evidence.
 
@@ -96,21 +96,21 @@ The channel state must include:
 state_name: ChannelReady
 ```
 
-## FiberMPP Doctor
+## Fiber Paid HTTP Doctor
 
-Run FiberMPP role checks before the live test:
+Run Fiber Paid HTTP role checks before the live test:
 
 ```bash
-cd /home/arthur/a19q3/fiber-mpp
+cd /home/arthur/a19q3/fiber-paid-http
 
 export FIBER_MODE=testnet
 export FIBER_CURRENCY=Fibt
 export FIBER_PAYER_RPC_URL=http://127.0.0.1:8227
 export FIBER_PAYEE_RPC_URL=http://127.0.0.1:8237
-export FIBER_MPP_SECRET="$(openssl rand -hex 32)"
+export FIBER_PAID_HTTP_SECRET="$(openssl rand -hex 32)"
 
-pnpm exec fiber-mpp doctor --role payer
-pnpm exec fiber-mpp doctor --role payee
+pnpm exec fiber-paid-http doctor --role payer
+pnpm exec fiber-paid-http doctor --role payee
 ```
 
 The doctor output must show:
@@ -128,7 +128,7 @@ If it reports no peers or no `ChannelReady` channels, fix Fiber connectivity bef
 ## Run Live Testnet E2E
 
 ```bash
-cd /home/arthur/a19q3/fiber-mpp
+cd /home/arthur/a19q3/fiber-paid-http
 
 export RUN_FIBER_E2E=1
 export FIBER_MODE=testnet
@@ -136,7 +136,7 @@ export FIBER_CURRENCY=Fibt
 export FIBER_PAYER_RPC_URL=http://127.0.0.1:8227
 export FIBER_PAYEE_RPC_URL=http://127.0.0.1:8237
 export FIBER_RPC_URL=http://127.0.0.1:8237
-export FIBER_MPP_SECRET="$(openssl rand -hex 32)"
+export FIBER_PAID_HTTP_SECRET="$(openssl rand -hex 32)"
 export FIBER_E2E_AMOUNT_SHANNONS=100
 export FIBER_SETTLEMENT_TIMEOUT_MS=60000
 export FIBER_SETTLEMENT_POLL_MS=500
@@ -147,7 +147,7 @@ pnpm test:fiber
 The reproducible evidence runner wraps the same env, role doctors, live Fiber test, and canonical gate:
 
 ```bash
-cd /home/arthur/a19q3/fiber-mpp
+cd /home/arthur/a19q3/fiber-paid-http
 
 export FIBER_PAYER_RPC_URL=http://127.0.0.1:8227
 export FIBER_PAYEE_RPC_URL=http://127.0.0.1:8237

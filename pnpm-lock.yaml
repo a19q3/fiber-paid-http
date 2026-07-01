@@ -8,7 +8,7 @@ importers:
 
   .:
     dependencies:
-      '@fiber-mpp/cli':
+      '@fiber-paid-http/cli':
         specifier: workspace:*
         version: link:packages/cli
     devDependencies:
@@ -27,16 +27,16 @@ importers:
 
   apps/evidence-api:
     dependencies:
-      '@fiber-mpp/core':
+      '@fiber-paid-http/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@fiber-mpp/fiber-method':
+      '@fiber-paid-http/fiber-method':
         specifier: workspace:*
         version: link:../../packages/fiber-method
-      '@fiber-mpp/server-middleware':
+      '@fiber-paid-http/server-middleware':
         specifier: workspace:*
         version: link:../../packages/server-middleware
-      '@fiber-mpp/storage':
+      '@fiber-paid-http/storage':
         specifier: workspace:*
         version: link:../../packages/storage
       '@hono/node-server':
@@ -70,31 +70,31 @@ importers:
 
   packages/cli:
     dependencies:
-      '@fiber-mpp/client':
+      '@fiber-paid-http/client':
         specifier: workspace:*
         version: link:../client
-      '@fiber-mpp/core':
+      '@fiber-paid-http/core':
         specifier: workspace:*
         version: link:../core
-      '@fiber-mpp/evidence-api':
+      '@fiber-paid-http/evidence-api':
         specifier: workspace:*
         version: link:../../apps/evidence-api
-      '@fiber-mpp/evidence-web':
+      '@fiber-paid-http/evidence-web':
         specifier: workspace:*
         version: link:../../apps/evidence-web
-      '@fiber-mpp/f402-compat':
+      '@fiber-paid-http/f402-compat':
         specifier: workspace:*
         version: link:../f402-compat
-      '@fiber-mpp/fiber-method':
+      '@fiber-paid-http/fiber-method':
         specifier: workspace:*
         version: link:../fiber-method
-      '@fiber-mpp/fl402-compat':
+      '@fiber-paid-http/fl402-compat':
         specifier: workspace:*
         version: link:../fl402-compat
-      '@fiber-mpp/server-middleware':
+      '@fiber-paid-http/server-middleware':
         specifier: workspace:*
         version: link:../server-middleware
-      '@fiber-mpp/storage':
+      '@fiber-paid-http/storage':
         specifier: workspace:*
         version: link:../storage
       commander:
@@ -103,10 +103,10 @@ importers:
 
   packages/client:
     dependencies:
-      '@fiber-mpp/core':
+      '@fiber-paid-http/core':
         specifier: workspace:*
         version: link:../core
-      '@fiber-mpp/fiber-method':
+      '@fiber-paid-http/fiber-method':
         specifier: workspace:*
         version: link:../fiber-method
 
@@ -118,7 +118,7 @@ importers:
 
   packages/f402-compat:
     dependencies:
-      '@fiber-mpp/core':
+      '@fiber-paid-http/core':
         specifier: workspace:*
         version: link:../core
       zod:
@@ -127,13 +127,13 @@ importers:
 
   packages/fiber-method:
     dependencies:
-      '@fiber-mpp/core':
+      '@fiber-paid-http/core':
         specifier: workspace:*
         version: link:../core
 
   packages/fl402-compat:
     dependencies:
-      '@fiber-mpp/core':
+      '@fiber-paid-http/core':
         specifier: workspace:*
         version: link:../core
       '@noble/hashes':
@@ -145,22 +145,22 @@ importers:
 
   packages/server-middleware:
     dependencies:
-      '@fiber-mpp/core':
+      '@fiber-paid-http/core':
         specifier: workspace:*
         version: link:../core
-      '@fiber-mpp/fiber-method':
+      '@fiber-paid-http/fiber-method':
         specifier: workspace:*
         version: link:../fiber-method
-      '@fiber-mpp/fl402-compat':
+      '@fiber-paid-http/fl402-compat':
         specifier: workspace:*
         version: link:../fl402-compat
-      '@fiber-mpp/storage':
+      '@fiber-paid-http/storage':
         specifier: workspace:*
         version: link:../storage
 
   packages/storage:
     dependencies:
-      '@fiber-mpp/core':
+      '@fiber-paid-http/core':
         specifier: workspace:*
         version: link:../core
 

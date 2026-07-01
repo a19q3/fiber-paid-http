@@ -1,13 +1,13 @@
 {
   "input": {
     "case": "attack.expired-challenge",
-    "secret": "fiber-mpp-conformance-secret",
+    "secret": "fiber-paid-http-conformance-secret",
     "request": {
       "method": "GET",
       "url": "http://conformance.local/paid/weather"
     },
     "challenge": {
-      "domain": "fiber-mpp-challenge-v1",
+      "domain": "fiber-paid-http-challenge-v1",
       "challengeId": "chal_conformance_0001",
       "resource": {
         "method": "GET",
@@ -33,12 +33,12 @@
       "nonce": "0123456789abcdef0123456789abcdef",
       "issuedAt": "2026-06-24T00:00:00.000Z",
       "expiresAt": "2020-01-01T00:00:00.000Z",
-      "serverId": "fiber-mpp-ts-conformance",
+      "serverId": "fiber-paid-http-ts-conformance",
       "maxUses": 1
     },
-    "signature": "f9ef37860def7793aafe86b994d26f2fd4d30d184e6228c92dc3cc7a9d831aed",
+    "signature": "5b35ba6892ce49a9281fb4e681fb9a2d959ff60c86528e5d0ee1bf75f1be30ad",
     "credential": {
-      "domain": "fiber-mpp-credential-v1",
+      "domain": "fiber-paid-http-credential-v1",
       "challengeId": "chal_conformance_0001",
       "method": "fiber",
       "resourceHash": "e6ae6449bcbf5882012a00c4dcf32043c67355ee779dbaac489fec3b4c2b8546",
@@ -57,7 +57,7 @@
       "submittedAt": "2026-06-24T00:00:00.000Z"
     }
   },
-  "expected_canonical_hash": "0fa39f393bdfd6fbb12a28ca496b0ea1de3a7cac6921da14a256b7856571d289",
+  "expected_canonical_hash": "8089afe25f5744364e5dfb5b03b923559ef50d8d4e9ad55fd3aec41db8f20718",
   "expected_verification_result": "rejected",
   "expected_error_code": "expired-challenge",
   "notes": "Signed challenge has an expiry in the past and must be rejected before proof verification."

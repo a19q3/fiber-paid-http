@@ -13,10 +13,10 @@ import {
   type FiberMethodChallenge,
   type PaymentCredential,
   type PaymentReceipt
-} from "@fiber-mpp/core";
-import { FiberMethodAdapter, FiberRpcClient, parseFiberMode } from "@fiber-mpp/fiber-method";
-import { createFiberMppMiddleware, type FiberMppMiddleware, type FiberMppMiddlewareConfig } from "@fiber-mpp/server-middleware";
-import { SqliteStore } from "@fiber-mpp/storage";
+} from "@fiber-paid-http/core";
+import { FiberMethodAdapter, FiberRpcClient, parseFiberMode } from "@fiber-paid-http/fiber-method";
+import { createFiberPaidHttpMiddleware, type FiberPaidHttpMiddleware, type FiberPaidHttpMiddlewareConfig } from "@fiber-paid-http/server-middleware";
+import { SqliteStore } from "@fiber-paid-http/storage";
 import {
   appendBattlecodeTicket,
   assertBattlecodeFairnessCommitment,
@@ -37,10 +37,10 @@ import {
   type BattlecodeTournamentReport
 } from "./battlecode.js";
 
-const FLOW_SESSION_HEADER = "x-fiber-mpp-session";
+const FLOW_SESSION_HEADER = "x-fiber-paid-http-session";
 const CORS_ALLOWED_HEADERS = `authorization, content-type, ${FLOW_SESSION_HEADER}`;
 
-export type EvidenceApiOptions = Partial<FiberMppMiddlewareConfig> & {
+export type EvidenceApiOptions = Partial<FiberPaidHttpMiddlewareConfig> & {
   price?: { value: string; currency: string; display?: string };
   fiberAmountShannons?: string;
   payerFiber?: FiberMethodAdapter;
@@ -274,15 +274,15 @@ type EvidenceFlowState = {
 };
 
 const repoRoot = fileURLToPath(new URL("../../..", import.meta.url));
-const evidenceDbPath = resolve(repoRoot, ".tmp/fiber-mpp-evidence-api.sqlite");
+const evidenceDbPath = resolve(repoRoot, ".tmp/fiber-paid-http-evidence-api.sqlite");
 const reportFiles = {
   canonical: "reports/canonical-core-parity.json",
   fiberLocal: "reports/fiber-local-e2e-evidence.json",
-  gateLocal: "reports/fiber-mpp-gate.local.json",
-  gate: "reports/fiber-mpp-gate.json",
-  gateDefault: "reports/fiber-mpp-gate.default.json",
-  rustGate: "reports/fiber-mpp-rust-gate.json",
-  tsGate: "reports/fiber-mpp-ts-gate.json",
+  gateLocal: "reports/fiber-paid-http-gate.local.json",
+  gate: "reports/fiber-paid-http-gate.json",
+  gateDefault: "reports/fiber-paid-http-gate.default.json",
+  rustGate: "reports/fiber-paid-http-rust-gate.json",
+  tsGate: "reports/fiber-paid-http-ts-gate.json",
   fiberTestnet: "reports/fiber-testnet-e2e-success.json",
   productionBootstrap: "reports/production-bootstrap-e2e.json",
   productionOps: "reports/production-operations-matrix.json",
@@ -319,7 +319,7 @@ const defaultResources: EvidenceResource[] = [
     price: { value: "50", currency: "CKB", display: "50 CKB" },
     fiberAmountShannons: "50",
     response: {
-      tool: "fiber_mpp.echo",
+      tool: "fiber_paid_http.echo",
       result: { text: "paid MCP tool result" }
     }
   },
@@ -378,7 +378,7 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
     c.header("cache-control", "no-store");
     return c.json({
       ok: true,
-      service: "fiber-mpp-evidence-api",
+      service: "fiber-paid-http-evidence-api",
       status: "healthy",
       generatedAt: new Date().toISOString()
     });
@@ -393,7 +393,7 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
     c.header("cache-control", "no-store");
     return c.json({
       ok: ready,
-      service: "fiber-mpp-evidence-api",
+      service: "fiber-paid-http-evidence-api",
       status: ready ? "ready" : "blocked",
       livePaymentEnabled: ready,
       mode: bootstrap.liveReady ? bootstrap.mode : "unconfigured",
@@ -412,7 +412,7 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
   app.get("/free", (c) =>
     c.json({
       ok: true,
-      message: "free FiberMPP evidence route"
+      message: "free Fiber Paid HTTP evidence route"
     })
   );
 
@@ -452,7 +452,7 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
     const routeContext = buildRouteContext(mode.liveReady, localEvidence, networkStatus, env);
     c.header("cache-control", "no-store");
     return c.json({
-      name: "FiberMPP Evidence Console",
+      name: "Fiber Paid HTTP Evidence Console",
       mode: mode.liveReady ? mode.mode : "unconfigured",
       livePaymentEnabled: mode.liveReady,
       blockers: mode.blockers,
@@ -638,7 +638,7 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
     const proof = await runtime.payerFiber.payChallenge(challenge);
     flow.proof = proof;
     flow.credential = {
-      domain: "fiber-mpp-credential-v1",
+      domain: "fiber-paid-http-credential-v1",
       challengeId: flow.challengeId!,
       method: "fiber",
       resourceHash: await resourceHashFromRequest(new Request(flow.resourceUrl!)),
@@ -848,7 +848,7 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
     appendEvent(flow, "INFO", "payer", "pay Battlecode xUDT ticket over Fiber", `payment_hash=${tournament.fiberChallenge.paymentHash}`);
     const proof = await runtime.payerFiber.payChallenge(tournament.fiberChallenge);
     const credential: PaymentCredential = {
-      domain: "fiber-mpp-credential-v1",
+      domain: "fiber-paid-http-credential-v1",
       challengeId: tournament.challengeId,
       method: "fiber",
       resourceHash: await resourceHashFromRequest(new Request(tournament.resourceUrl, {
@@ -997,7 +997,7 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
     });
   }
 
-  function protectWithRuntime(route: Parameters<FiberMppMiddleware["protect"]>[0]): (request: Request) => Promise<Response> {
+  function protectWithRuntime(route: Parameters<FiberPaidHttpMiddleware["protect"]>[0]): (request: Request) => Promise<Response> {
     if (!runtime) {
       return async () => liveFiberNotConfiguredResponse(getEvidenceMode(effectiveEnv()).blockers);
     }
@@ -1011,7 +1011,7 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
       fiberAmountShannons: registration.entryAmount,
       fiberUdtTypeScript: runtime ? battlecodeXudtTypeScript(effectiveEnv()) : undefined,
       metadata: {
-        application: "fiber-mpp-battlecode-tournament",
+        application: "fiber-paid-http-battlecode-tournament",
         playerId: registration.playerId,
         submissionId: registration.submissionId,
         botPackage: registration.botPackage,
@@ -1066,7 +1066,7 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
     );
     return {
       generatedAt: new Date().toISOString(),
-      console: "FiberMPP Evidence Console",
+      console: "Fiber Paid HTTP Evidence Console",
       requestedRun: {
         endpoint: stringValue(request.endpoint) ?? flow.endpoint ?? configuration.defaults.endpoint,
         profileSelection: normalizeProfileSelection(request, defaultProfileSelection()),
@@ -1152,7 +1152,7 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
 export function startEvidenceApi(port = Number(process.env.PORT ?? "8787")) {
   const app = createEvidenceApi();
   const server = serve({ fetch: app.fetch, port });
-  console.log(`FiberMPP evidence API listening on http://localhost:${port}`);
+  console.log(`Fiber Paid HTTP evidence API listening on http://localhost:${port}`);
   return server;
 }
 
@@ -1160,7 +1160,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   startEvidenceApi();
 }
 
-function createFiberRuntime(options: EvidenceApiOptions, env: NodeJS.ProcessEnv = process.env): { middleware: FiberMppMiddleware; payerFiber: FiberMethodAdapter } | null {
+function createFiberRuntime(options: EvidenceApiOptions, env: NodeJS.ProcessEnv = process.env): { middleware: FiberPaidHttpMiddleware; payerFiber: FiberMethodAdapter } | null {
   const readiness = getEvidenceMode(env);
   const hasInjectedAdapters = Boolean(options.fiber && options.payerFiber);
   if (!readiness.liveReady && !hasInjectedAdapters) {
@@ -1169,17 +1169,17 @@ function createFiberRuntime(options: EvidenceApiOptions, env: NodeJS.ProcessEnv 
   mkdirSync(dirname(evidenceDbPath), { recursive: true });
   const fiber = options.fiber ?? FiberMethodAdapter.fromEnv(env, "payee");
   const payerFiber = options.payerFiber ?? FiberMethodAdapter.fromEnv(env, "payer");
-  const secret = options.secret ?? env.FIBER_MPP_SECRET;
+  const secret = options.secret ?? paidHttpSecret(env);
   if (!secret) {
-    throw new Error("FiberMPP evidence runtime requires FIBER_MPP_SECRET or options.secret");
+    throw new Error("Fiber Paid HTTP evidence runtime requires FIBER_PAID_HTTP_SECRET or options.secret");
   }
-  const middleware = createFiberMppMiddleware({
+  const middleware = createFiberPaidHttpMiddleware({
     secret,
-    serverId: options.serverId ?? "fiber-mpp-evidence-api",
+    serverId: options.serverId ?? "fiber-paid-http-evidence-api",
     store: options.store ?? new SqliteStore(evidenceDbPath),
     fiber,
     defaultFiberAmountShannons: options.fiberAmountShannons ?? env.FIBER_E2E_AMOUNT_SHANNONS ?? "1000",
-    challengeTtlSeconds: options.challengeTtlSeconds ?? positiveInteger(env.FIBER_MPP_CHALLENGE_TTL_SECONDS, 120),
+    challengeTtlSeconds: options.challengeTtlSeconds ?? positiveInteger(paidHttpChallengeTtlSeconds(env), 120),
     clockSkewSeconds: options.clockSkewSeconds ?? 2
   });
   return { middleware, payerFiber };
@@ -1203,8 +1203,9 @@ function getEvidenceMode(env: NodeJS.ProcessEnv = process.env): { mode: "local" 
   if (!env.FIBER_PAYER_RPC_URL) {
     blockers.push("Live Fiber mode inactive: set FIBER_PAYER_RPC_URL");
   }
-  if (!env.FIBER_MPP_SECRET || env.FIBER_MPP_SECRET.length < 32) {
-    blockers.push("Live Fiber mode inactive: set FIBER_MPP_SECRET to a random secret of at least 32 characters");
+  const secret = paidHttpSecret(env);
+  if (!secret || secret.length < 32) {
+    blockers.push("Live Fiber mode inactive: set FIBER_PAID_HTTP_SECRET to a random secret of at least 32 characters");
   }
   const liveReady = blockers.length === 0;
   return { mode, liveReady, blockers };
@@ -1310,7 +1311,7 @@ async function buildEvidenceConfiguration(
     defaults,
     parameters: {
       resources: resources.map(summarizeResource),
-      challengeTtlSeconds: positiveInteger(options.challengeTtlSeconds ?? env.FIBER_MPP_CHALLENGE_TTL_SECONDS, 120),
+      challengeTtlSeconds: positiveInteger(options.challengeTtlSeconds ?? paidHttpChallengeTtlSeconds(env), 120),
       settlementTimeoutMs: positiveInteger(env.FIBER_SETTLEMENT_TIMEOUT_MS ?? env.FIBER_E2E_SETTLEMENT_TIMEOUT_MS, 30_000),
       amountLimits: {
         minCkb: "0.00000001",
@@ -1407,7 +1408,7 @@ function buildExecutionRoleCapabilities(
       canInspectSettlement: ready("payee"),
       canProtectResource: ready("gateway"),
       canIssueReceipt: ready("gateway"),
-      rpcEnv: ["FIBER_MPP_SECRET", "FIBER_PAYEE_RPC_URL"],
+      rpcEnv: ["FIBER_PAID_HTTP_SECRET", "FIBER_PAYEE_RPC_URL"],
       blockers: blockers("gateway"),
       notes: [
         "Owns the HTTP trusted boundary: challenge signing, replay store, and Payment-Receipt issuance.",
@@ -1495,7 +1496,7 @@ function buildEnvTemplate(resource: EvidenceResource, env: NodeJS.ProcessEnv = p
     `FIBER_MODE=${env.FIBER_MODE === "local" ? "local" : "testnet"}`,
     `FIBER_PAYER_RPC_URL=${env.FIBER_PAYER_RPC_URL ?? "<payer-fnn-rpc-url>"}`,
     `FIBER_PAYEE_RPC_URL=${env.FIBER_PAYEE_RPC_URL ?? env.FIBER_RPC_URL ?? "<payee-fnn-rpc-url>"}`,
-    `FIBER_MPP_SECRET=${env.FIBER_MPP_SECRET ? "<present; not exported>" : "<32+ character random secret>"}`,
+    `FIBER_PAID_HTTP_SECRET=${paidHttpSecret(env) ? "<present; not exported>" : "<32+ character random secret>"}`,
     `FIBER_E2E_AMOUNT_SHANNONS=${resource.fiberAmountShannons}`
   ];
   if (env.FIBER_ROUTER_RPC_URL) {
@@ -1571,7 +1572,7 @@ function buildGatewayBootstrapRole(
   source: "env" | "runtime" = "env"
 ): BootstrapRoleStatus {
   const canonical = canonicalData as Record<string, unknown> | undefined;
-  const secretPresent = Boolean(env.FIBER_MPP_SECRET && env.FIBER_MPP_SECRET.length >= 32);
+  const secretPresent = Boolean(paidHttpSecret(env) && paidHttpSecret(env)!.length >= 32);
   const payeeRpcUrl = env.FIBER_PAYEE_RPC_URL ?? env.FIBER_RPC_URL;
   const checkSource = source === "runtime" ? "runtime" : "env";
   const checks: BootstrapCheck[] = [
@@ -1585,7 +1586,7 @@ function buildGatewayBootstrapRole(
   ];
   const blockers = [
     ...(liveReady ? [] : ["configure live Fiber env for this gateway process"]),
-    ...(secretPresent ? [] : ["set FIBER_MPP_SECRET to a random secret of at least 32 characters"]),
+    ...(secretPresent ? [] : ["set FIBER_PAID_HTTP_SECRET to a random secret of at least 32 characters"]),
     ...(evidence.productionOperationsReady ? [] : ["run production operations gate"]),
     ...(evidence.testnetFiberE2e ? [] : ["run testnet Fiber E2E evidence"]),
     ...(evidence.productionReady ? [] : ["production readiness gate has not passed"])
@@ -1710,7 +1711,7 @@ function authCheck(
 
 function bootstrapNextSteps(role: BootstrapRoleStatus["role"], blockers: string[]): string[] {
   if (blockers.length === 0) {
-    return role === "gateway" ? ["run the paid HTTP flow"] : ["run the FiberMPP live payment step"];
+    return role === "gateway" ? ["run the paid HTTP flow"] : ["run the Fiber Paid HTTP live payment step"];
   }
   if (role === "payer") {
     return ["start or point at a funded payer FNN", "connect peers and wait for ChannelReady", "set FIBER_PAYER_RPC_URL"];
@@ -1718,7 +1719,7 @@ function bootstrapNextSteps(role: BootstrapRoleStatus["role"], blockers: string[
   if (role === "payee") {
     return ["start or point at an invoice/payee FNN", "connect peers and wait for ChannelReady", "set FIBER_PAYEE_RPC_URL"];
   }
-  return ["set FIBER_MPP_SECRET", "set payee Fiber RPC env", "keep testnet E2E and operations gates green"];
+  return ["set FIBER_PAID_HTTP_SECRET", "set payee Fiber RPC env", "keep testnet E2E and operations gates green"];
 }
 
 function timeoutFetch(timeoutMs: number): typeof fetch {
@@ -1752,18 +1753,36 @@ function isLoopbackHost(hostname: string): boolean {
   return host === "localhost" || host === "127.0.0.1" || host === "::1";
 }
 
+function envWithLegacy(env: NodeJS.ProcessEnv, primary: string, legacy: string): string | undefined {
+  return env[primary] ?? env[legacy];
+}
+
+function paidHttpSecret(env: NodeJS.ProcessEnv = process.env): string | undefined {
+  return envWithLegacy(env, "FIBER_PAID_HTTP_SECRET", "FIBER_MPP_SECRET");
+}
+
+function paidHttpChallengeTtlSeconds(env: NodeJS.ProcessEnv = process.env): string | undefined {
+  return envWithLegacy(env, "FIBER_PAID_HTTP_CHALLENGE_TTL_SECONDS", "FIBER_MPP_CHALLENGE_TTL_SECONDS");
+}
+
 function allowedConsoleOrigin(origin: string | undefined, env: NodeJS.ProcessEnv = process.env): string | undefined {
   if (!origin) {
     return undefined;
   }
-  const configured = (env.FIBER_MPP_CONSOLE_ORIGINS ?? env.FIBER_MPP_CONSOLE_ORIGIN ?? "")
+  const configured = (
+    env.FIBER_PAID_HTTP_CONSOLE_ORIGINS ??
+    env.FIBER_PAID_HTTP_CONSOLE_ORIGIN ??
+    env.FIBER_MPP_CONSOLE_ORIGINS ??
+    env.FIBER_MPP_CONSOLE_ORIGIN ??
+    ""
+  )
     .split(",")
     .map((item) => item.trim())
     .filter(Boolean);
   if (configured.includes(origin)) {
     return origin;
   }
-  if (origin === "null" && env.FIBER_MPP_ALLOW_FILE_ORIGIN === "1") {
+  if (origin === "null" && envWithLegacy(env, "FIBER_PAID_HTTP_ALLOW_FILE_ORIGIN", "FIBER_MPP_ALLOW_FILE_ORIGIN") === "1") {
     return origin;
   }
   try {
@@ -1858,8 +1877,8 @@ function assertRuntimeBootstrapAllowed(
   env: NodeJS.ProcessEnv = process.env
 ): void {
   const requestHost = new URL(request.url).hostname;
-  if (!isLoopbackHost(requestHost) && env.FIBER_MPP_ALLOW_RUNTIME_BOOTSTRAP !== "1") {
-    throw new RuntimeBootstrapPolicyError("UI runtime bootstrap is disabled on non-loopback API hosts; start the gateway with process env or set FIBER_MPP_ALLOW_RUNTIME_BOOTSTRAP=1 intentionally");
+  if (!isLoopbackHost(requestHost) && envWithLegacy(env, "FIBER_PAID_HTTP_ALLOW_RUNTIME_BOOTSTRAP", "FIBER_MPP_ALLOW_RUNTIME_BOOTSTRAP") !== "1") {
+    throw new RuntimeBootstrapPolicyError("UI runtime bootstrap is disabled on non-loopback API hosts; start the gateway with process env or set FIBER_PAID_HTTP_ALLOW_RUNTIME_BOOTSTRAP=1 intentionally");
   }
   const origin = request.headers.get("origin") ?? undefined;
   if (origin && !allowedConsoleOrigin(origin, env)) {
@@ -1874,7 +1893,7 @@ function assertRuntimeBootstrapAllowed(
     optionalRuntimeSecret(input.payeeRpcAuth) ||
     optionalRuntimeSecret(input.rpcAuth)
   );
-  if (authProvided && env.FIBER_MPP_ALLOW_REMOTE_RUNTIME_RPC_AUTH !== "1") {
+  if (authProvided && envWithLegacy(env, "FIBER_PAID_HTTP_ALLOW_REMOTE_RUNTIME_RPC_AUTH", "FIBER_MPP_ALLOW_REMOTE_RUNTIME_RPC_AUTH") !== "1") {
     const rpcUrls = [
       stringValue(input.payerRpcUrl),
       stringValue(input.payeeRpcUrl),
@@ -1882,7 +1901,7 @@ function assertRuntimeBootstrapAllowed(
     ].filter((value): value is string => Boolean(value));
     const remote = rpcUrls.find((value) => !isPrivateRpcUrl(value));
     if (remote) {
-      throw new RuntimeBootstrapPolicyError("UI runtime bootstrap refuses to send RPC auth to non-private Fiber RPC URLs; use process env or set FIBER_MPP_ALLOW_REMOTE_RUNTIME_RPC_AUTH=1 intentionally");
+      throw new RuntimeBootstrapPolicyError("UI runtime bootstrap refuses to send RPC auth to non-private Fiber RPC URLs; use process env or set FIBER_PAID_HTTP_ALLOW_REMOTE_RUNTIME_RPC_AUTH=1 intentionally");
     }
   }
 }
@@ -1896,16 +1915,17 @@ function buildRuntimeBootstrapSession(input: RuntimeBootstrapInput): RuntimeBoot
   const payeeRpcAuth = optionalRuntimeSecret(input.payeeRpcAuth);
   const rpcAuth = optionalRuntimeSecret(input.rpcAuth);
   const amountShannons = normalizeAmountShannons(input.amountShannons ?? process.env.FIBER_E2E_AMOUNT_SHANNONS) ?? "100";
-  const challengeTtlSeconds = positiveInteger(input.challengeTtlSeconds ?? process.env.FIBER_MPP_CHALLENGE_TTL_SECONDS, 120);
+  const challengeTtlSeconds = positiveInteger(input.challengeTtlSeconds ?? paidHttpChallengeTtlSeconds(process.env), 120);
   const settlementTimeoutMs = positiveInteger(input.settlementTimeoutMs ?? process.env.FIBER_SETTLEMENT_TIMEOUT_MS, 30_000);
   const currency = normalizeFiberCurrency(input.currency) ?? process.env.FIBER_CURRENCY ?? (mode === "testnet" ? "Fibt" : "Fibd");
-  const envSecret = process.env.FIBER_MPP_SECRET && process.env.FIBER_MPP_SECRET.length >= 32
-    ? process.env.FIBER_MPP_SECRET
+  const existingSecret = paidHttpSecret(process.env);
+  const envSecret = existingSecret && existingSecret.length >= 32
+    ? existingSecret
     : undefined;
   const generateRuntimeSecret = booleanValue(input.generateRuntimeSecret, false);
   const secret = envSecret ?? (generateRuntimeSecret ? randomBytes(32).toString("hex") : undefined);
   if (!secret) {
-    throw new Error("FIBER_MPP_SECRET is missing; enable runtime secret generation or set a durable gateway secret in the API process env");
+    throw new Error("FIBER_PAID_HTTP_SECRET is missing; enable runtime secret generation or set a durable gateway secret in the API process env");
   }
   const enableLive = booleanValue(input.enableLive, true);
   const env: NodeJS.ProcessEnv = {
@@ -1914,11 +1934,11 @@ function buildRuntimeBootstrapSession(input: RuntimeBootstrapInput): RuntimeBoot
     FIBER_PAYER_RPC_URL: payerRpcUrl,
     FIBER_PAYEE_RPC_URL: payeeRpcUrl,
     FIBER_E2E_AMOUNT_SHANNONS: amountShannons,
-    FIBER_MPP_CHALLENGE_TTL_SECONDS: String(challengeTtlSeconds),
+    FIBER_PAID_HTTP_CHALLENGE_TTL_SECONDS: String(challengeTtlSeconds),
     FIBER_SETTLEMENT_TIMEOUT_MS: String(settlementTimeoutMs),
     FIBER_CURRENCY: currency,
     FIBER_ASSET: "CKB",
-    FIBER_MPP_SECRET: secret
+    FIBER_PAID_HTTP_SECRET: secret
   };
   if (routerRpcUrl) env.FIBER_ROUTER_RPC_URL = routerRpcUrl;
   if (rpcAuth) env.FIBER_RPC_AUTH = rpcAuth;
@@ -1949,7 +1969,7 @@ function runtimeBootstrapSummary(
     routerRpcUrl: env.FIBER_ROUTER_RPC_URL,
     currency: env.FIBER_CURRENCY,
     amountShannons: env.FIBER_E2E_AMOUNT_SHANNONS,
-    secret: env.FIBER_MPP_SECRET
+    secret: paidHttpSecret(env)
       ? session?.secretGenerated
         ? "runtime-generated"
         : "env"
@@ -2226,7 +2246,7 @@ function exposeHeaders(response: Response): Record<string, string> {
 function liveFiberNotConfiguredResponse(blockers: string[]): Response {
   return Response.json(
     {
-      type: "https://github.com/a19q3/fiber-mpp/blob/main/docs/fiber-local-e2e.md#live-fiber-not-configured",
+      type: "https://github.com/a19q3/fiber-paid-http/blob/main/docs/fiber-local-e2e.md#live-fiber-not-configured",
       title: "live-fiber-not-configured",
       status: 503,
       blockers
@@ -2301,20 +2321,20 @@ export function deriveProductionEvidence(reports: {
     reports.gate,
     reports.gateDefault,
     reports.tsGate
-  ], "fiber_mpp_gate_ready");
+  ], "fiber_paid_http_gate_ready");
   const productionOpsReady = booleanField(reports.productionOps, "production_ops_ready") === true;
   const conflicts = [
     ...claimConflictMessages("live_fiber_local_e2e", localClaims),
     ...claimConflictMessages("testnet_fiber_e2e", testnetClaims),
     ...claimConflictMessages("production_ready_for_fiber_method", productionClaims),
     ...claimConflictMessages("production_bootstrap_e2e", productionBootstrapClaims),
-    ...claimConflictMessages("fiber_mpp_gate_ready", gateReadyClaims)
+    ...claimConflictMessages("fiber_paid_http_gate_ready", gateReadyClaims)
   ];
   const localFiberE2e = anyTrue(localClaims) && !hasBooleanConflict(localClaims);
   const preservedTestnetEvidence = fiberTestnetEvidence(reports.fiberTestnet);
   const testnetFiberE2e = preservedTestnetEvidence.passed;
   const productionBootstrapReady = anyTrue(productionBootstrapClaims) && !hasBooleanConflict(productionBootstrapClaims);
-  const gateBlockers = stringArrayField(reports.gate, "fiber_mpp_gate_blockers");
+  const gateBlockers = stringArrayField(reports.gate, "fiber_paid_http_gate_blockers");
   const productionReady = testnetFiberE2e && productionOpsReady && productionBootstrapReady;
   const gateReady = productionReady || (anyTrue(gateReadyClaims) && !hasBooleanConflict(gateReadyClaims));
   return {
@@ -2422,8 +2442,8 @@ function summarizeReport(data: unknown): Record<string, unknown> | null {
   const report = data as Record<string, unknown>;
   return {
     production_ready_for_fiber_method: report.production_ready_for_fiber_method,
-    fiber_mpp_gate_ready: report.fiber_mpp_gate_ready,
-    fiber_mpp_gate_blockers: report.fiber_mpp_gate_blockers,
+    fiber_paid_http_gate_ready: report.fiber_paid_http_gate_ready,
+    fiber_paid_http_gate_blockers: report.fiber_paid_http_gate_blockers,
     evidence_console_layout: report.evidence_console_layout,
     evidence_console_layout_blockers: report.evidence_console_layout_blockers,
     production_bootstrap_e2e: report.production_bootstrap_e2e,

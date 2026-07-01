@@ -7,18 +7,18 @@ import {
   decodeReceipt,
   resourceHashFromRequest,
   type FiberMethodChallenge
-} from "@fiber-mpp/core";
+} from "@fiber-paid-http/core";
 import {
   FiberMethodAdapter,
   FiberRpcClient,
   isInvoicePaidStatus,
   waitForFiberInvoicePaid
-} from "@fiber-mpp/fiber-method";
-import { createFiberMppMiddleware } from "@fiber-mpp/server-middleware";
-import { SqliteStore } from "@fiber-mpp/storage";
+} from "@fiber-paid-http/fiber-method";
+import { createFiberPaidHttpMiddleware } from "@fiber-paid-http/server-middleware";
+import { SqliteStore } from "@fiber-paid-http/storage";
 import { formatError, readLiveFiberEnv, writeFiberE2eResult } from "./fiber-e2e-env.js";
 
-describe("live Fiber MPP payment flow", () => {
+describe("live Fiber Paid HTTP payment flow", () => {
   it("settles through local/testnet Fiber RPC, returns a receipt, and rejects replay", async () => {
     const env = readLiveFiberEnv();
     let observedPaymentHash: string | undefined;
@@ -68,9 +68,9 @@ describe("live Fiber MPP payment flow", () => {
         settlementPollMs: env.pollMs
       });
 
-      const middleware = createFiberMppMiddleware({
+      const middleware = createFiberPaidHttpMiddleware({
         secret: env.secret,
-        serverId: "fiber-mpp-live-e2e",
+        serverId: "fiber-paid-http-live-e2e",
         store: new SqliteStore(env.storagePath),
         fiber: payeeFiber,
         defaultFiberAmountShannons: env.amountShannons,
@@ -84,7 +84,7 @@ describe("live Fiber MPP payment flow", () => {
         handler: () => Response.json({ paid: true, rail: "fiber" })
       });
 
-      const url = "http://fiber-mpp-live.local/paid/fiber";
+      const url = "http://fiber-paid-http-live.local/paid/fiber";
       const first = await handler(new Request(url));
       expect(first.status).toBe(402);
       expect(first.headers.get("www-authenticate")).toContain("Payment ");
@@ -118,7 +118,7 @@ describe("live Fiber MPP payment flow", () => {
       expect(isInvoicePaidStatus(paidInvoice.status)).toBe(true);
 
       const credential = {
-        domain: "fiber-mpp-credential-v1" as const,
+        domain: "fiber-paid-http-credential-v1" as const,
         challengeId: firstBody.challengeId,
         method: "fiber" as const,
         resourceHash: await resourceHashFromRequest(new Request(url)),

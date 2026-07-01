@@ -34,7 +34,7 @@ if (current === encodedSprite) {
 }
 
 if (mode === "check") {
-  throw new Error("lucide-react icon sprite is stale; run pnpm --filter @fiber-mpp/evidence-web sync-icons");
+  throw new Error("lucide-react icon sprite is stale; run pnpm --filter @fiber-paid-http/evidence-web sync-icons");
 }
 
 await writeFile(htmlPath, `${html.slice(0, startIndex)}${encodedSprite}${html.slice(endIndex + end.length)}`);

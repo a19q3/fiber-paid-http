@@ -17,11 +17,11 @@ Rust and TypeScript must continue to match for:
 
 ## Completed In This Stage
 
-- Rust workspace and `fiber-mpp-rs` CLI.
+- Rust workspace and `fiber-paid-http-rs` CLI.
 - Rust vector verifier against the shared `test-vectors/` suite.
 - Rust Fiber RPC method/quantity/status parity surface.
 - Rust HTTP gateway production path: signed 402 challenges, FNN invoice creation, FNN settlement inspection, durable SQLite challenge/credential/receipt storage, `Authorization: Payment` verification, `Payment-Receipt` issuance, and replay rejection.
-- `fiber-mpp-rs server --config` now starts the Rust gateway instead of only inspecting config.
+- `fiber-paid-http-rs server --config` now starts the Rust gateway instead of only inspecting config.
 - Rust gate and canonical parity gate.
 - TypeScript preserved as maintained SDK/demo/F402 compatibility/vector harness.
 

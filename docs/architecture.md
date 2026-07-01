@@ -1,6 +1,6 @@
 # Architecture
 
-FiberMPP is a dual TypeScript and Rust workspace for Fiber Paid HTTP.
+Fiber Paid HTTP is a dual TypeScript and Rust workspace for Fiber Paid HTTP.
 
 ## TypeScript Layers
 
@@ -17,13 +17,13 @@ FiberMPP is a dual TypeScript and Rust workspace for Fiber Paid HTTP.
 
 ## Rust Layers
 
-- `crates/fiber-mpp-core`: canonical hashes, signatures, vector verification.
-- `crates/fiber-mpp-storage`: replay storage trait and SQLite durable store.
-- `crates/fiber-mpp-fiber`: Fiber JSON-RPC method names, hex quantities, and settlement status semantics.
-- `crates/fiber-mpp-f402`: F402 proof/credential compatibility helpers.
-- `crates/fiber-mpp-fl402`: F-L402 macaroon/preimage verification helpers.
-- `crates/fiber-mpp-server`: Axum/Tower paid HTTP gateway with optional `Authorization: L402` support.
-- `crates/fiber-mpp-cli`: `fiber-mpp-rs` binary.
+- `crates/fiber-paid-http-core`: canonical hashes, signatures, vector verification.
+- `crates/fiber-paid-http-storage`: replay storage trait and SQLite durable store.
+- `crates/fiber-paid-http-fiber`: Fiber JSON-RPC method names, hex quantities, and settlement status semantics.
+- `crates/fiber-paid-http-f402`: F402 proof/credential compatibility helpers.
+- `crates/fiber-paid-http-fl402`: F-L402 macaroon/preimage verification helpers.
+- `crates/fiber-paid-http-server`: Axum/Tower paid HTTP gateway with optional `Authorization: L402` support.
+- `crates/fiber-paid-http-cli`: `fiber-paid-http-rs` binary.
 
 ## Adapter Matrix
 
@@ -39,7 +39,7 @@ FiberMPP is a dual TypeScript and Rust workspace for Fiber Paid HTTP.
 ```mermaid
 sequenceDiagram
   participant C as Client
-  participant S as FiberMPP Gateway
+  participant S as Fiber Paid HTTP Gateway
   participant F as Fiber Adapter
   participant A as App Handler
 

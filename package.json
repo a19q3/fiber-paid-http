@@ -1,24 +1,24 @@
 {
-  "name": "fiber-mpp",
+  "name": "fiber-paid-http",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.12.1",
-  "description": "Fiber payment method for Machine Payments Protocol with F402 compatibility.",
+  "description": "Rust-first Fiber paid HTTP gateway with MPP, F402, and F-L402 compatibility envelopes.",
   "scripts": {
     "lint": "pnpm -r --if-present lint",
-    "typecheck": "tsc -p tsconfig.json --noEmit && pnpm --filter @fiber-mpp/evidence-web exec tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit && pnpm --filter @fiber-paid-http/evidence-web exec tsc -p tsconfig.json --noEmit",
     "test": "vitest run --config vitest.unit.config.ts",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:fiber": "vitest run --config vitest.fiber.config.ts",
     "build": "pnpm -r --if-present build",
-    "gate": "bash scripts/fiber_mpp_gate.sh",
-    "evidence:api": "pnpm --filter @fiber-mpp/evidence-api start",
-    "evidence:web": "pnpm --filter @fiber-mpp/evidence-web start",
-    "battlecode:tournament": "node scripts/battlecode_fmpp_tournament.mjs"
+    "gate": "bash scripts/fiber_paid_http_gate.sh",
+    "evidence:api": "pnpm --filter @fiber-paid-http/evidence-api start",
+    "evidence:web": "pnpm --filter @fiber-paid-http/evidence-web start",
+    "battlecode:tournament": "node scripts/battlecode_paid_http_tournament.mjs"
   },
   "dependencies": {
-    "@fiber-mpp/cli": "workspace:*"
+    "@fiber-paid-http/cli": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

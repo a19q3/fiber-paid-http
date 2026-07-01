@@ -1,13 +1,13 @@
 
-> fiber-mpp@0.1.0 typecheck /home/arthur/a19q3/fiber-mpp
+> fiber-paid-http@0.1.0 typecheck /home/arthur/a19q3/fiber-paid-http
 > tsc -p tsconfig.json --noEmit
 
 
-> fiber-mpp@0.1.0 test /home/arthur/a19q3/fiber-mpp
+> fiber-paid-http@0.1.0 test /home/arthur/a19q3/fiber-paid-http
 > vitest run --config vitest.unit.config.ts
 
 
- RUN  v3.2.6 /home/arthur/a19q3/fiber-mpp
+ RUN  v3.2.6 /home/arthur/a19q3/fiber-paid-http
 
  ✓ tests/unit/ops.test.ts (2 tests) 2ms
  ✓ tests/unit/no-offline-payment-surface.test.ts (1 test) 25ms
@@ -24,11 +24,11 @@
    Duration  337ms (transform 229ms, setup 0ms, collect 562ms, tests 118ms, environment 1ms, prepare 452ms)
 
 
-> fiber-mpp@0.1.0 test:integration /home/arthur/a19q3/fiber-mpp
+> fiber-paid-http@0.1.0 test:integration /home/arthur/a19q3/fiber-paid-http
 > vitest run --config vitest.integration.config.ts
 
 
- RUN  v3.2.6 /home/arthur/a19q3/fiber-mpp
+ RUN  v3.2.6 /home/arthur/a19q3/fiber-paid-http
 
  ✓ tests/integration/full-flow.test.ts (5 tests) 26ms
 
@@ -38,18 +38,18 @@
    Duration  327ms (transform 80ms, setup 0ms, collect 102ms, tests 26ms, environment 0ms, prepare 56ms)
 
 
-> fiber-mpp@0.1.0 test:fiber /home/arthur/a19q3/fiber-mpp
+> fiber-paid-http@0.1.0 test:fiber /home/arthur/a19q3/fiber-paid-http
 > vitest run --config vitest.fiber.config.ts
 
 
- RUN  v3.2.6 /home/arthur/a19q3/fiber-mpp
+ RUN  v3.2.6 /home/arthur/a19q3/fiber-paid-http
 
 stdout | tests/integration/fiber-preflight.test.ts > Fiber live E2E preflight > loads the Fiber E2E harness and reports skipped blockers
 [fiber-e2e-preflight] status=ready mode=testnet
 
  ✓ tests/integration/fiber-preflight.test.ts (1 test) 2ms
  ✓ tests/integration/fiber-live.e2e.test.ts (1 test) 1047ms
-   ✓ live Fiber MPP payment flow > settles through local/testnet Fiber RPC, returns a receipt, and rejects replay  1047ms
+   ✓ live Fiber Paid HTTP payment flow > settles through local/testnet Fiber RPC, returns a receipt, and rejects replay  1047ms
 
  Test Files  2 passed (2)
       Tests  2 passed (2)
@@ -57,7 +57,7 @@ stdout | tests/integration/fiber-preflight.test.ts > Fiber live E2E preflight > 
    Duration  1.30s (transform 78ms, setup 0ms, collect 98ms, tests 1.05s, environment 0ms, prepare 103ms)
 
 
-> fiber-mpp@0.1.0 build /home/arthur/a19q3/fiber-mpp
+> fiber-paid-http@0.1.0 build /home/arthur/a19q3/fiber-paid-http
 > pnpm -r --if-present build
 
 Scope: 9 of 10 workspace projects
@@ -214,7 +214,7 @@ Already up to date
 
 Done in 266ms using pnpm v10.12.1
 
-> fiber-mpp@0.1.0 lint /home/arthur/a19q3/fiber-mpp
+> fiber-paid-http@0.1.0 lint /home/arthur/a19q3/fiber-paid-http
 > pnpm -r --if-present lint
 
 Scope: 9 of 10 workspace projects
@@ -239,15 +239,15 @@ apps/demo-api lint: Done
 packages/cli lint$ tsc -p tsconfig.json --noEmit
 packages/cli lint: Done
 
-> fiber-mpp@0.1.0 typecheck /home/arthur/a19q3/fiber-mpp
+> fiber-paid-http@0.1.0 typecheck /home/arthur/a19q3/fiber-paid-http
 > tsc -p tsconfig.json --noEmit
 
 
-> fiber-mpp@0.1.0 test /home/arthur/a19q3/fiber-mpp
+> fiber-paid-http@0.1.0 test /home/arthur/a19q3/fiber-paid-http
 > vitest run --config vitest.unit.config.ts
 
 
- RUN  v3.2.6 /home/arthur/a19q3/fiber-mpp
+ RUN  v3.2.6 /home/arthur/a19q3/fiber-paid-http
 
  ✓ tests/unit/ops.test.ts (2 tests) 2ms
  ✓ tests/unit/no-offline-payment-surface.test.ts (1 test) 22ms
@@ -264,7 +264,7 @@ packages/cli lint: Done
    Duration  331ms (transform 273ms, setup 0ms, collect 571ms, tests 106ms, environment 1ms, prepare 459ms)
 
 
-> fiber-mpp@0.1.0 build /home/arthur/a19q3/fiber-mpp
+> fiber-paid-http@0.1.0 build /home/arthur/a19q3/fiber-paid-http
 > pnpm -r --if-present build
 
 Scope: 9 of 10 workspace projects
@@ -289,11 +289,11 @@ apps/demo-api build: Done
 packages/cli build$ tsc -p tsconfig.json && node -e "require('node:fs').chmodSync('dist/index.js', 0o755)"
 packages/cli build: Done
 
-> fiber-mpp@0.1.0 test:integration /home/arthur/a19q3/fiber-mpp
+> fiber-paid-http@0.1.0 test:integration /home/arthur/a19q3/fiber-paid-http
 > vitest run --config vitest.integration.config.ts
 
 
- RUN  v3.2.6 /home/arthur/a19q3/fiber-mpp
+ RUN  v3.2.6 /home/arthur/a19q3/fiber-paid-http
 
  ✓ tests/integration/full-flow.test.ts (5 tests) 25ms
 
@@ -303,18 +303,18 @@ packages/cli build: Done
    Duration  302ms (transform 74ms, setup 0ms, collect 95ms, tests 25ms, environment 0ms, prepare 59ms)
 
 
-> fiber-mpp@0.1.0 test:fiber /home/arthur/a19q3/fiber-mpp
+> fiber-paid-http@0.1.0 test:fiber /home/arthur/a19q3/fiber-paid-http
 > vitest run --config vitest.fiber.config.ts
 
 
- RUN  v3.2.6 /home/arthur/a19q3/fiber-mpp
+ RUN  v3.2.6 /home/arthur/a19q3/fiber-paid-http
 
 stdout | tests/integration/fiber-preflight.test.ts > Fiber live E2E preflight > loads the Fiber E2E harness and reports skipped blockers
 [fiber-e2e-preflight] status=ready mode=testnet
 
  ✓ tests/integration/fiber-preflight.test.ts (1 test) 2ms
  ✓ tests/integration/fiber-live.e2e.test.ts (1 test) 1046ms
-   ✓ live Fiber MPP payment flow > settles through local/testnet Fiber RPC, returns a receipt, and rejects replay  1046ms
+   ✓ live Fiber Paid HTTP payment flow > settles through local/testnet Fiber RPC, returns a receipt, and rejects replay  1046ms
 
  Test Files  2 passed (2)
       Tests  2 passed (2)
@@ -446,14 +446,14 @@ stdout | tests/integration/fiber-preflight.test.ts > Fiber live E2E preflight > 
   "production_ready_for_fiber_method": true,
   "artifacts": {
     "runbook": "docs/production-operations.md",
-    "alert_rules": "deploy/prometheus/fiber-mpp-alerts.yml",
+    "alert_rules": "deploy/prometheus/fiber-paid-http-alerts.yml",
     "client_wallet_plan": "docs/fiber-client-wallet-integration-plan.md"
   },
   "checks": [
     {
       "id": "prometheus_alert_rules",
       "status": "passed",
-      "evidence": "deploy/prometheus/fiber-mpp-alerts.yml",
+      "evidence": "deploy/prometheus/fiber-paid-http-alerts.yml",
       "missing": []
     },
     {
@@ -532,13 +532,13 @@ stdout | tests/integration/fiber-preflight.test.ts > Fiber live E2E preflight > 
 }
     Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.09s
     Finished `test` profile [unoptimized + debuginfo] target(s) in 0.09s
-     Running unittests src/main.rs (target/debug/deps/fiber_mpp_rs-e7b562adf32401b9)
+     Running unittests src/main.rs (target/debug/deps/fiber_paid_http_rs-e7b562adf32401b9)
 
 running 0 tests
 
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running unittests src/lib.rs (target/debug/deps/fiber_mpp_core-5ddaedbac077bab0)
+     Running unittests src/lib.rs (target/debug/deps/fiber_paid_http_core-5ddaedbac077bab0)
 
 running 2 tests
 test tests::canonical_json_sorts_nested_keys ... ok
@@ -546,13 +546,13 @@ test tests::sha256_matches_empty_string ... ok
 
 test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running unittests src/lib.rs (target/debug/deps/fiber_mpp_f402-3d778e347faf40db)
+     Running unittests src/lib.rs (target/debug/deps/fiber_paid_http_f402-3d778e347faf40db)
 
 running 0 tests
 
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running unittests src/lib.rs (target/debug/deps/fiber_mpp_fiber-321240d1b56beac0)
+     Running unittests src/lib.rs (target/debug/deps/fiber_paid_http_fiber-321240d1b56beac0)
 
 running 2 tests
 test tests::encodes_hex_quantities ... ok
@@ -560,7 +560,7 @@ test tests::exposes_live_proven_method_names ... ok
 
 test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running unittests src/lib.rs (target/debug/deps/fiber_mpp_server-8c0fb2870b74e337)
+     Running unittests src/lib.rs (target/debug/deps/fiber_paid_http_server-8c0fb2870b74e337)
 
 running 2 tests
 test tests::inspect_config_reports_production_gateway_features ... ok
@@ -568,44 +568,44 @@ test tests::rust_gateway_issues_signed_challenge_accepts_payment_and_rejects_rep
 
 test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running unittests src/lib.rs (target/debug/deps/fiber_mpp_storage-fadb31634bf509df)
+     Running unittests src/lib.rs (target/debug/deps/fiber_paid_http_storage-fadb31634bf509df)
 
 running 0 tests
 
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-   Doc-tests fiber_mpp_core
+   Doc-tests fiber_paid_http_core
 
 running 0 tests
 
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-   Doc-tests fiber_mpp_f402
+   Doc-tests fiber_paid_http_f402
 
 running 0 tests
 
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-   Doc-tests fiber_mpp_fiber
+   Doc-tests fiber_paid_http_fiber
 
 running 0 tests
 
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-   Doc-tests fiber_mpp_server
+   Doc-tests fiber_paid_http_server
 
 running 0 tests
 
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-   Doc-tests fiber_mpp_storage
+   Doc-tests fiber_paid_http_storage
 
 running 0 tests
 
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
     Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.05s
-     Running `target/debug/fiber-mpp-rs vectors verify`
+     Running `target/debug/fiber-paid-http-rs vectors verify`
 {
   "engine": "rust",
   "verified": 14,
@@ -727,13 +727,13 @@ test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 }
     Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.09s
     Finished `test` profile [unoptimized + debuginfo] target(s) in 0.09s
-     Running unittests src/main.rs (target/debug/deps/fiber_mpp_rs-e7b562adf32401b9)
+     Running unittests src/main.rs (target/debug/deps/fiber_paid_http_rs-e7b562adf32401b9)
 
 running 0 tests
 
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running unittests src/lib.rs (target/debug/deps/fiber_mpp_core-5ddaedbac077bab0)
+     Running unittests src/lib.rs (target/debug/deps/fiber_paid_http_core-5ddaedbac077bab0)
 
 running 2 tests
 test tests::canonical_json_sorts_nested_keys ... ok
@@ -741,13 +741,13 @@ test tests::sha256_matches_empty_string ... ok
 
 test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running unittests src/lib.rs (target/debug/deps/fiber_mpp_f402-3d778e347faf40db)
+     Running unittests src/lib.rs (target/debug/deps/fiber_paid_http_f402-3d778e347faf40db)
 
 running 0 tests
 
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running unittests src/lib.rs (target/debug/deps/fiber_mpp_fiber-321240d1b56beac0)
+     Running unittests src/lib.rs (target/debug/deps/fiber_paid_http_fiber-321240d1b56beac0)
 
 running 2 tests
 test tests::encodes_hex_quantities ... ok
@@ -755,7 +755,7 @@ test tests::exposes_live_proven_method_names ... ok
 
 test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running unittests src/lib.rs (target/debug/deps/fiber_mpp_server-8c0fb2870b74e337)
+     Running unittests src/lib.rs (target/debug/deps/fiber_paid_http_server-8c0fb2870b74e337)
 
 running 2 tests
 test tests::inspect_config_reports_production_gateway_features ... ok
@@ -763,44 +763,44 @@ test tests::rust_gateway_issues_signed_challenge_accepts_payment_and_rejects_rep
 
 test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-     Running unittests src/lib.rs (target/debug/deps/fiber_mpp_storage-fadb31634bf509df)
+     Running unittests src/lib.rs (target/debug/deps/fiber_paid_http_storage-fadb31634bf509df)
 
 running 0 tests
 
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-   Doc-tests fiber_mpp_core
+   Doc-tests fiber_paid_http_core
 
 running 0 tests
 
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-   Doc-tests fiber_mpp_f402
+   Doc-tests fiber_paid_http_f402
 
 running 0 tests
 
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-   Doc-tests fiber_mpp_fiber
+   Doc-tests fiber_paid_http_fiber
 
 running 0 tests
 
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-   Doc-tests fiber_mpp_server
+   Doc-tests fiber_paid_http_server
 
 running 0 tests
 
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
-   Doc-tests fiber_mpp_storage
+   Doc-tests fiber_paid_http_storage
 
 running 0 tests
 
 test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
 
     Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.05s
-     Running `target/debug/fiber-mpp-rs vectors verify`
+     Running `target/debug/fiber-paid-http-rs vectors verify`
 {
   "engine": "rust",
   "verified": 14,
@@ -926,14 +926,14 @@ test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
   "production_ready_for_fiber_method": true,
   "artifacts": {
     "runbook": "docs/production-operations.md",
-    "alert_rules": "deploy/prometheus/fiber-mpp-alerts.yml",
+    "alert_rules": "deploy/prometheus/fiber-paid-http-alerts.yml",
     "client_wallet_plan": "docs/fiber-client-wallet-integration-plan.md"
   },
   "checks": [
     {
       "id": "prometheus_alert_rules",
       "status": "passed",
-      "evidence": "deploy/prometheus/fiber-mpp-alerts.yml",
+      "evidence": "deploy/prometheus/fiber-paid-http-alerts.yml",
       "missing": []
     },
     {
@@ -1018,14 +1018,14 @@ test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
   "production_ready_for_fiber_method": true,
   "artifacts": {
     "runbook": "docs/production-operations.md",
-    "alert_rules": "deploy/prometheus/fiber-mpp-alerts.yml",
+    "alert_rules": "deploy/prometheus/fiber-paid-http-alerts.yml",
     "client_wallet_plan": "docs/fiber-client-wallet-integration-plan.md"
   },
   "checks": [
     {
       "id": "prometheus_alert_rules",
       "status": "passed",
-      "evidence": "deploy/prometheus/fiber-mpp-alerts.yml",
+      "evidence": "deploy/prometheus/fiber-paid-http-alerts.yml",
       "missing": []
     },
     {

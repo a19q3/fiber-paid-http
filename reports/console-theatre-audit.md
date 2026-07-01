@@ -1,4 +1,4 @@
-# FiberMPP Evidence Console — Theatre / Placeholder / Stub Audit
+# Fiber Paid HTTP Evidence Console — Theatre / Placeholder / Stub Audit
 
 **Scope**: `apps/demo-api/`, `apps/demo-web/`, plus the gate reports they read.
 **Method**: read every source file end-to-end, diff each visible claim against the actual code path, cross-check report JSON files on disk.
@@ -47,7 +47,7 @@ The route list and channel count never change. They only reflect the saved `fibe
 
 **Location**: `apps/demo-api/src/index.ts:183`, `apps/demo-api/src/index.ts:378-392`
 
-The `networkStatus` string is derived from `mode.liveReady`, which only becomes true when `RUN_FIBER_E2E=1` AND `FIBER_MODE∈{local,testnet}` AND both RPC URLs are set. So the widget says "unconfigured" while the underlying middleware happily creates Fiber challenges, accepts mock payments, and issues real HMAC-signed receipts. That is *correct* per the design — FiberMPP mock is a deliberate development mode — but a user staring at the console might think "unconfigured" means broken. The badge says `Live Fiber E2E: N` and the status text says "unconfigured", but the receipt they just received is real (signed, hash-verified) — just not against a live network.
+The `networkStatus` string is derived from `mode.liveReady`, which only becomes true when `RUN_FIBER_E2E=1` AND `FIBER_MODE∈{local,testnet}` AND both RPC URLs are set. So the widget says "unconfigured" while the underlying middleware happily creates Fiber challenges, accepts mock payments, and issues real HMAC-signed receipts. That is *correct* per the design — Fiber Paid HTTP mock is a deliberate development mode — but a user staring at the console might think "unconfigured" means broken. The badge says `Live Fiber E2E: N` and the status text says "unconfigured", but the receipt they just received is real (signed, hash-verified) — just not against a live network.
 
 **Severity**: low / by-design. Worth a doc string. The `static-events` fallback in `apps/demo-web/index.html:1608-1615` already explains this implicitly (`"rust canonical engine: vectors verified"`, `"typescript compatibility tooling: not production boundary"`, `"replay protection: credential single-use"`).
 
@@ -64,13 +64,13 @@ examples/paid-api/README.md
 examples/paid-mcp-tool/README.md
 ```
 
-No `package.json`, no source. Despite `apps/demo-api` exposing `/paid/mpp-tool` with `tool: "fiber_mpp.echo"`, the example claimed in the README does not exist in the repo. The MCP integration is **not implemented**.
+No `package.json`, no source. Despite `apps/demo-api` exposing `/paid/mpp-tool` with `tool: "fiber_paid_http.echo"`, the example claimed in the README does not exist in the repo. The MCP integration is **not implemented**.
 
 ### P2. `packages/stripe-method` and `packages/tempo-method` are mocks only
 
 **Location**: `packages/stripe-method/src/index.ts`, `packages/tempo-method/src/index.ts`
 
-Both classes hard-code `mode = "mock"` and only verify proofs that already declare `status: "settled"`. There is no real Stripe API call, no real Tempo RPC client. The `PaymentMethodChallengeSchema` (`packages/core/src/types.ts:28-53`) accepts `tempo` and `stripe` but the `fiber-mpp pay` CLI only handles `--method fiber` (`packages/cli/src/index.ts:115-118`: `if (opts.method !== "fiber") throw`). Multi-rail is **advertised but not implemented**.
+Both classes hard-code `mode = "mock"` and only verify proofs that already declare `status: "settled"`. There is no real Stripe API call, no real Tempo RPC client. The `PaymentMethodChallengeSchema` (`packages/core/src/types.ts:28-53`) accepts `tempo` and `stripe` but the `fiber-paid-http pay` CLI only handles `--method fiber` (`packages/cli/src/index.ts:115-118`: `if (opts.method !== "fiber") throw`). Multi-rail is **advertised but not implemented**.
 
 ### P3. `apps/demo-web` static console has no actual build step
 
@@ -88,15 +88,15 @@ Both classes hard-code `mode = "mock"` and only verify proofs that already decla
 
 **Location**: `packages/cli/src/index.ts:43-71`, `tests/integration/full-flow.test.ts:69-95`
 
-The integration test mocks the upstream with an inline `fetchImpl` that returns `Response.json({upstream, authForwarded})`. There's no test that runs `fiber-mpp serve --upstream http://localhost:8080` against a real HTTP upstream. The `serve` command has `cors expose headers` for `payment-receipt, www-authenticate` (Hono middleware `apps/demo-api/src/index.ts:147`); the CLI `serve` is plain `node:http` and doesn't set CORS headers at all.
+The integration test mocks the upstream with an inline `fetchImpl` that returns `Response.json({upstream, authForwarded})`. There's no test that runs `fiber-paid-http serve --upstream http://localhost:8080` against a real HTTP upstream. The `serve` command has `cors expose headers` for `payment-receipt, www-authenticate` (Hono middleware `apps/demo-api/src/index.ts:147`); the CLI `serve` is plain `node:http` and doesn't set CORS headers at all.
 
-### P5. `fiber-mpp f402 convert` writes to stdout only; there is no batch F402 issuer, no F402-from-server middleware
+### P5. `fiber-paid-http f402 convert` writes to stdout only; there is no batch F402 issuer, no F402-from-server middleware
 
 **Location**: `packages/cli/src/index.ts:133-164`
 
-The CLI converts an F402 JSON file into a MPP challenge+credential pair and prints JSON. There is no `fiber-mpp f402 serve` command. The README (`README.md:92`) advertises `fiber-mpp f402 convert f402-challenge.json` but the only thing that runs is JSON-to-JSON conversion with no payment, no receipt. That's fine for tooling but it's not "F402 server compatibility".
+The CLI converts an F402 JSON file into a MPP challenge+credential pair and prints JSON. There is no `fiber-paid-http f402 serve` command. The README (`README.md:92`) advertises `fiber-paid-http f402 convert f402-challenge.json` but the only thing that runs is JSON-to-JSON conversion with no payment, no receipt. That's fine for tooling but it's not "F402 server compatibility".
 
-### P6. `fiber-mpp refs init` writes sample reference notes, but the real ones in `docs/refs/` are pre-existing
+### P6. `fiber-paid-http refs init` writes sample reference notes, but the real ones in `docs/refs/` are pre-existing
 
 **Location**: `packages/cli/src/index.ts:73-83`
 
@@ -110,7 +110,7 @@ These are the items the gate reports themselves list as `production_blockers`, p
 
 ### G1. Testnet Fiber E2E evidence still pending
 
-**Evidence in reports**: `reports/fiber-mpp-gate.local.json` shows `fiber_e2e_mode: "local"`, `fiber_e2e_status: "passed"`, `live_fiber_local_e2e: true`, payment_hash `0xec3a08f9b298db82f2dc27861aed5a3110b5d36a56bd43d13b60c5a4bcf69222`, receipt_id `rcpt_ca010a79973755656bdff4b1684570da`.
+**Evidence in reports**: `reports/fiber-paid-http-gate.local.json` shows `fiber_e2e_mode: "local"`, `fiber_e2e_status: "passed"`, `live_fiber_local_e2e: true`, payment_hash `0xec3a08f9b298db82f2dc27861aed5a3110b5d36a56bd43d13b60c5a4bcf69222`, receipt_id `rcpt_ca010a79973755656bdff4b1684570da`.
 
 **Gap**: this is the local e2e network (`scripts/fiber_local_network.sh` spins up `e2e/router-pay` against `tests/nodes/start.sh`). The corresponding **testnet** run has never been executed and recorded. `tests/integration/fiber-live.e2e.test.ts:95` defaults to `currency: env.FIBER_CURRENCY ?? (preflight.mode === "testnet" ? "Fibt" : "Fibd")` — the testnet currency `Fibt` is defined but never proven. There is no testnet fixture channel. To close this: provision real testnet Fiber node, run `RUN_FIBER_E2E=1 FIBER_MODE=testnet FIBER_PAYEE_RPC_URL=... FIBER_PAYER_RPC_URL=... pnpm test:fiber`, capture resulting `reports/fiber-e2e-result.json` into the testnet variant of the gate.
 
@@ -123,10 +123,10 @@ These are the items the gate reports themselves list as `production_blockers`, p
 3. **No graceful shutdown.** Hono `serve()` does not trap `SIGTERM`. `packages/cli/src/index.ts:67` `.listen()` does not either.
 4. **No rate limiting.** Middleware `middleware.protect()` (`packages/server-middleware/src/index.ts:71`) has no per-IP / per-token throttle. Replay protection is per-credential, not per-source.
 5. **No CORS hardening.** `apps/demo-api/src/index.ts:144-148` returns `Access-Control-Allow-Origin: *`. Production should restrict origins.
-6. **No TLS termination documentation.** `crates/fiber-mpp-server/src/lib.rs:42-66` is axum with no TLS config; production needs termination guidance.
+6. **No TLS termination documentation.** `crates/fiber-paid-http-server/src/lib.rs:42-66` is axum with no TLS config; production needs termination guidance.
 7. **Secret rotation.** Middleware takes one `secret`. No rotation window. `signChallenge`/`signReceipt` (`packages/core/src/crypto.ts:39-77`) use a single HMAC secret.
 8. **Clock skew handling.** `clockSkewSeconds: 2` (default) is hard-coded. Production deployments across regions need config.
-9. **`InMemoryStore` is the demo default.** Production mode *refuses* in-memory unless `ALLOW_IN_MEMORY_STORE=1` (`packages/server-middleware/src/index.ts:75-78`), but `fiber-mpp serve` defaults to `memory://`. The CLI default is the wrong default for any "serve" command.
+9. **`InMemoryStore` is the demo default.** Production mode *refuses* in-memory unless `ALLOW_IN_MEMORY_STORE=1` (`packages/server-middleware/src/index.ts:75-78`), but `fiber-paid-http serve` defaults to `memory://`. The CLI default is the wrong default for any "serve" command.
 10. **No store migration / schema versioning.** `SqliteStore` (`packages/storage/src/index.ts:101-200`) creates tables with `CREATE TABLE IF NOT EXISTS`, no version column, no upgrade path.
 11. **No multi-process safety test.** `SqliteStore.saveCredentialUse` relies on `INSERT` primary-key conflict. No WAL mode, no busy_timeout.
 12. **No PII handling.** `evidence: { smoke: true }` from demo-api lands in credential payload. In production the `evidence` field could leak upstream RPC responses.
@@ -137,9 +137,9 @@ These are the items the gate reports themselves list as `production_blockers`, p
 2. **No background reconciliation.** If Fiber RPC disconnects mid-session, no retry queue. `packages/fiber-method/src/index.ts:410-468` waits with timeout but doesn't persist a "pending" state for later retry.
 3. **No receipt revocation.** Once issued, a receipt is forever. No revocation list, no TTL on `getReceipt`.
 4. **Idempotency.** `markChallengeUsed` is single-use, but `paidFetch` (`packages/client/src/index.ts:29-72`) re-issues a challenge on every retry — production idempotency keys would help.
-5. **No migration path for `serverId`.** `apps/demo-api/src/index.ts:127` defaults to `"fiber-mpp-demo-api"`. Receipts bind to `serverId` (`packages/core/src/types.ts:106`); changing it invalidates old receipts.
+5. **No migration path for `serverId`.** `apps/demo-api/src/index.ts:127` defaults to `"fiber-paid-http-demo-api"`. Receipts bind to `serverId` (`packages/core/src/types.ts:106`); changing it invalidates old receipts.
 6. **No backup/restore story for `SqliteStore`.** The DB at `.tmp/fiber-live-e2e.sqlite` (or wherever configured) is the single point of failure for credential replay protection.
-7. **Rust server (`crates/fiber-mpp-server`) is just a 402 placeholder.** It has no challenge issuance, no FiberMethodAdapter, no storage. `gateway_router` returns a hardcoded 402 with a `Cache-Control: no-store` header. The Rust server is **not feature-complete**; the trusted Rust verifier is the CLI (`crates/fiber-mpp-cli`), not a server. This is a major missing surface for "Rust = canonical engine". README/docs imply parity; the code shows partial parity.
+7. **Rust server (`crates/fiber-paid-http-server`) is just a 402 placeholder.** It has no challenge issuance, no FiberMethodAdapter, no storage. `gateway_router` returns a hardcoded 402 with a `Cache-Control: no-store` header. The Rust server is **not feature-complete**; the trusted Rust verifier is the CLI (`crates/fiber-paid-http-cli`), not a server. This is a major missing surface for "Rust = canonical engine". README/docs imply parity; the code shows partial parity.
 
 ### G4. Console-side missing features (not gaps, but listed for completeness)
 
@@ -156,7 +156,7 @@ These are the items the gate reports themselves list as `production_blockers`, p
 | Surface | Claim | Reality | Honest? |
 | --- | --- | --- | --- |
 | `badges.productionReady` | `false` | Hard-coded false in every gate | ✅ Yes |
-| `badges.localFiberE2e` | From `fiber-mpp-gate.local.json` | `live_fiber_local_e2e: true` after one local run | ✅ Yes |
+| `badges.localFiberE2e` | From `fiber-paid-http-gate.local.json` | `live_fiber_local_e2e: true` after one local run | ✅ Yes |
 | `badges.rustCanonicalEngine` | From `canonical-core-parity.json` | `rust_canonical_verifier: true` | ✅ Yes |
 | `badges.tsVectorHarness` | From `canonical-core-parity.json` | `typescript_vector_harness: true` | ✅ Yes |
 | `badges.f402Compatibility` | From `canonical-core-parity.json` | `f402_parity: true` | ✅ Yes |
@@ -182,8 +182,8 @@ These are the items the gate reports themselves list as `production_blockers`, p
 - **Replay protection is real.** `tests/integration/full-flow.test.ts:175` proves same credential returns 402 second time.
 - **Wrong-resource rejection is real.** `apps/demo-api/src/index.ts:285` calls `protectResource` which passes through the middleware; `tests/integration/full-flow.test.ts:173` asserts `/paid/file` with weather credential returns 402.
 - **Expired-challenge rejection is real.** `tests/integration/full-flow.test.ts:177-192` uses `challengeTtlSeconds: -5` and asserts 402.
-- **The 14-vector conformance harness is real.** Both Rust (`crates/fiber-mpp-core/src/lib.rs:159-176`) and TS (`packages/cli/src/vectors.ts`) have explicit `verifyVectorInput` cases for each of: challenge.valid, credential.valid, receipt.valid, attack.* (6), resource.hash.valid, f402.{challenge,credential}.valid, fiber.local-e2e.{receipt,report}. All 14 vectors pass in both engines with identical `canonical_hash`, `actual`, and `actual_error_code` per `reports/rust-conformance.json` and `reports/ts-conformance.json`.
-- **The Rust server's 402 endpoint is real.** `crates/fiber-mpp-server/src/lib.rs:42-87` builds an axum router that returns 402 with `Cache-Control: no-store` and a problem+json body. The integration test in the same file (`crates/fiber-mpp-server/src/lib.rs:75-86`) verifies it.
+- **The 14-vector conformance harness is real.** Both Rust (`crates/fiber-paid-http-core/src/lib.rs:159-176`) and TS (`packages/cli/src/vectors.ts`) have explicit `verifyVectorInput` cases for each of: challenge.valid, credential.valid, receipt.valid, attack.* (6), resource.hash.valid, f402.{challenge,credential}.valid, fiber.local-e2e.{receipt,report}. All 14 vectors pass in both engines with identical `canonical_hash`, `actual`, and `actual_error_code` per `reports/rust-conformance.json` and `reports/ts-conformance.json`.
+- **The Rust server's 402 endpoint is real.** `crates/fiber-paid-http-server/src/lib.rs:42-87` builds an axum router that returns 402 with `Cache-Control: no-store` and a problem+json body. The integration test in the same file (`crates/fiber-paid-http-server/src/lib.rs:75-86`) verifies it.
 
 ---
 
@@ -202,7 +202,7 @@ These are the items the gate reports themselves list as `production_blockers`, p
 
 ## 7. Conclusion
 
-The FiberMPP Evidence Console is **mostly honest**. The mock-vs-live labeling is precise, the gate reports reflect real pass/fail, and the receipts/payment-hashes shown in the UI are genuine cryptographic artifacts. There is **no fabricated "online" status**, no fake receipts, no invented Fiber commit hash.
+The Fiber Paid HTTP Evidence Console is **mostly honest**. The mock-vs-live labeling is precise, the gate reports reflect real pass/fail, and the receipts/payment-hashes shown in the UI are genuine cryptographic artifacts. There is **no fabricated "online" status**, no fake receipts, no invented Fiber commit hash.
 
 The three real theatre defects (T1, T2, T3) are **timing-label issues**, not security/claim issues. T1 is the only one that materially misleads — the timeline shows two extra "node" log lines that don't correspond to real nodes in the default mock-mode flow. T2 is a magic-number latency in the network widget. T3 is by-design.
 

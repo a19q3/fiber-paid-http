@@ -375,20 +375,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9f1f227452a390804cdb637b74a86990f2a7d7ba4b7d5693aac9b4dd6defd8d6"
 
 [[package]]
-name = "fiber-mpp-cli"
+name = "fiber-paid-http-cli"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
- "fiber-mpp-core",
- "fiber-mpp-fiber",
- "fiber-mpp-server",
+ "fiber-paid-http-core",
+ "fiber-paid-http-fiber",
+ "fiber-paid-http-server",
  "serde_json",
  "tokio",
 ]
 
 [[package]]
-name = "fiber-mpp-core"
+name = "fiber-paid-http-core"
 version = "0.1.0"
 dependencies = [
  "base64",
@@ -404,15 +404,15 @@ dependencies = [
 ]
 
 [[package]]
-name = "fiber-mpp-f402"
+name = "fiber-paid-http-f402"
 version = "0.1.0"
 dependencies = [
- "fiber-mpp-core",
+ "fiber-paid-http-core",
  "serde_json",
 ]
 
 [[package]]
-name = "fiber-mpp-fiber"
+name = "fiber-paid-http-fiber"
 version = "0.1.0"
 dependencies = [
  "reqwest",
@@ -422,13 +422,13 @@ dependencies = [
 ]
 
 [[package]]
-name = "fiber-mpp-fl402"
+name = "fiber-paid-http-fl402"
 version = "0.1.0"
 dependencies = [
  "base64",
  "blake2b_simd",
  "chrono",
- "fiber-mpp-core",
+ "fiber-paid-http-core",
  "hex",
  "hmac",
  "serde",
@@ -438,16 +438,16 @@ dependencies = [
 ]
 
 [[package]]
-name = "fiber-mpp-server"
+name = "fiber-paid-http-server"
 version = "0.1.0"
 dependencies = [
  "axum",
  "base64",
  "chrono",
- "fiber-mpp-core",
- "fiber-mpp-fiber",
- "fiber-mpp-fl402",
- "fiber-mpp-storage",
+ "fiber-paid-http-core",
+ "fiber-paid-http-fiber",
+ "fiber-paid-http-fl402",
+ "fiber-paid-http-storage",
  "hex",
  "rand 0.8.6",
  "reqwest",
@@ -461,7 +461,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "fiber-mpp-storage"
+name = "fiber-paid-http-storage"
 version = "0.1.0"
 dependencies = [
  "rusqlite",

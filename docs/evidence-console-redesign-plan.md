@@ -1,4 +1,4 @@
-# FiberMPP Evidence Console 重构方案
+# Fiber Paid HTTP Evidence Console 重构方案
 
 > 目标：**整齐、酷炫、但不过载、不混乱**。通过引入 **左侧 Sidebar** 与 **重组的 Settings 面板** 把信息压力从单屏 cockpit 分流出去。
 > 参考：ThunderHub（`apotdevin/thunderhub`）的 shell 模式 —— 精简顶栏 + 可折叠分区侧栏 + 右侧 Inspector 抽屉 + 轻量 Preferences。
@@ -75,7 +75,7 @@ footer 同时放 Terminal/Event Log 和 Service/Actuator 卡片（`index.html:31
 ```
 ┌──────────────────────────────────────────────────────────────────┐
 │  HEADER  (~48px, sticky)                                          │
-│  [≡] FiberMPP Evidence   Rust⟷TS   ● connected   [⟳][▦ prefs][⚙] │
+│  [≡] Fiber Paid HTTP Evidence   Rust⟷TS   ● connected   [⟳][▦ prefs][⚙] │
 ├───────────┬────────────────────────────────────┬──────────────────┤
 │  SIDEBAR  │  MAIN（聚焦的当前 workspace）       │  INSPECTOR       │
 │  (left)   │                                    │  (right, 可开关)  │
@@ -245,7 +245,7 @@ Attack replay 不再混在这里，移到 Attacks workspace。
 
 ### 8.3 提议的目录结构（`apps/evidence-web`）
 
-照 ThunderHub 的四层分工，落到 FiberMPP 约束（单 app、静态产物、`server.mjs` 服役）：
+照 ThunderHub 的四层分工，落到 Fiber Paid HTTP 约束（单 app、静态产物、`server.mjs` 服役）：
 
 ```
 apps/evidence-web/
@@ -318,7 +318,7 @@ apps/evidence-web/
 
 - Vite `build` 产出 `dist/`（`index.html` + hash 化 `assets/*.js` `*.css`）。
 - `server.mjs` 改为服役 `dist/`（`root` 指向 `dist`），安全头/路径校验逻辑原样保留。
-- 仍可被 `apps/evidence-api` 作为静态中间件嵌入；仍支持 `PORT` / `FIBER_MPP_EVIDENCE_API_BASE` 环境变量。
+- 仍可被 `apps/evidence-api` 作为静态中间件嵌入；仍支持 `PORT` / `FIBER_PAID_HTTP_EVIDENCE_API_BASE` 环境变量。
 - 开发期 `vite dev` 代理 `/api` → evidence-api（对齐 ThunderHub `vite.config.ts:server.proxy`）。
 
 ### 8.6 设计 token 化（替代手写 CSS 变量散落）
@@ -404,7 +404,7 @@ apps/evidence-web/
 
 沿用 `docs/evidence-console-frontend-plan.md` 的 Product Boundary：
 
-- console 只可视化**一个** FiberMPP 证明流程；**不**做 Fiber 节点监控/通道管理/余额图表/钱包/checkout/市场。
+- console 只可视化**一个** Fiber Paid HTTP 证明流程；**不**做 Fiber 节点监控/通道管理/余额图表/钱包/checkout/市场。
 - Network workspace 只展示理解证明所需的最小本地路由，不加通道开闭或拓扑图。
 - TypeScript 不得暗示生产可信边界（`typescript_trusted_boundary: false`）。
 - `production_ready_for_fiber_method` 仍由 gate 报告驱动，UI 不擅自置 true。

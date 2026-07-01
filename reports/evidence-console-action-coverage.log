@@ -1,5 +1,5 @@
 
-> @fiber-mpp/evidence-web@0.2.0 check-action-coverage /Users/arthur/RustroverProjects/fiber-mpp/apps/evidence-web
+> @fiber-paid-http/evidence-web@0.2.0 check-action-coverage /Users/arthur/RustroverProjects/fiber-mpp/apps/evidence-web
 > node scripts/check-action-coverage.mjs
 
 evidence console action coverage passed: 11 controls verified

@@ -49,9 +49,9 @@ if [[ "$(pwd -P)" == "$(cd "$fiber_repo" && pwd -P)" && "${1:-}" == "build" ]]; 
   if [[ "$saw_no_default" == "false" ]]; then
     rewritten+=(--no-default-features)
   fi
-  echo "fiber-mpp cargo shim: ${real_cargo} ${rewritten[*]}" >&2
+  echo "fiber-paid-http cargo shim: ${real_cargo} ${rewritten[*]}" >&2
   exec "$real_cargo" "${rewritten[@]}"
 fi
 
-echo "fiber-mpp cargo shim: ${real_cargo} $*" >&2
+echo "fiber-paid-http cargo shim: ${real_cargo} $*" >&2
 exec "$real_cargo" "$@"

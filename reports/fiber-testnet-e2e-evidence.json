@@ -2,7 +2,7 @@
   "evidence": true,
   "source_report": "reports/fiber-testnet-e2e-success.json",
   "testnet_evidence_recorded_at": "2026-06-25T03:14:53.023Z",
-  "testnet_evidence_digest": "sha256:f15a59555878336820fa5def252a05f336951bb9c615b49f1eef065e58c7d92d",
+  "testnet_evidence_digest": "sha256:9b353342ec232458e48ab0a39f66828180935de17fbbda08db4804090f26d5ed",
   "payment_hash": "0x8adaeeb1c27b698d5a63447588f3de62568f94e23effeda973ff70281a545f9b",
   "receipt_id": "rcpt_9ff3edb34ee30f56d20c3c6bf01fb453",
   "fiber_commit": "3c25bcf16200e5d641dcd9b79f086f391e976172",

@@ -2,7 +2,7 @@
 
 ## Project Summary
 
-FiberMPP is Fiber Paid HTTP infrastructure for metered APIs, agents, and service access. It keeps the existing `fiber-mpp` repo and CLI name, but presents the project as a protocol-family gateway: MPP + Fiber as the primary envelope, F402 conversion for Fiber-native 402 applications, and F-L402 `macaroon:preimage` compatibility for L402-style clients.
+Fiber Paid HTTP is Fiber Paid HTTP infrastructure for metered APIs, agents, and service access. It keeps the existing `fiber-paid-http` repo and CLI name, but presents the project as a protocol-family gateway: MPP + Fiber as the primary envelope, F402 conversion for Fiber-native 402 applications, and F-L402 `macaroon:preimage` compatibility for L402-style clients.
 
 ## Selected Category
 
@@ -10,7 +10,7 @@ Merchant, Liquidity, LSP, and Multi-Asset Infrastructure.
 
 ## Infrastructure Gap Addressed
 
-Fiber has strong micropayment primitives, but developers still need reusable service-metering infrastructure for pay-as-you-go products, subscriptions, API access, and micropayments. FiberMPP supplies middleware, a Rust gateway, client helpers, CLI tooling, conformance vectors, replay protection, receipts, and compatibility adapters without becoming a wallet, checkout product, marketplace, or Fiber node dashboard.
+Fiber has strong micropayment primitives, but developers still need reusable service-metering infrastructure for pay-as-you-go products, subscriptions, API access, and micropayments. Fiber Paid HTTP supplies middleware, a Rust gateway, client helpers, CLI tooling, conformance vectors, replay protection, receipts, and compatibility adapters without becoming a wallet, checkout product, marketplace, or Fiber node dashboard.
 
 ## Fully Working
 
@@ -48,7 +48,7 @@ pnpm evidence:web
 Enable F-L402 challenge issuance by setting a root key and passing the F-L402 config in middleware or Rust gateway config:
 
 ```bash
-export FIBER_MPP_FL402_ROOT_KEY="$(openssl rand -hex 32)"
+export FIBER_PAID_HTTP_FL402_ROOT_KEY="$(openssl rand -hex 32)"
 ```
 
 ## How to Test
@@ -56,9 +56,9 @@ export FIBER_MPP_FL402_ROOT_KEY="$(openssl rand -hex 32)"
 ```bash
 pnpm test
 pnpm test:integration
-pnpm exec fiber-mpp vectors verify
-cargo run -p fiber-mpp-cli -- vectors verify
-bash scripts/fiber_mpp_gate.sh
+pnpm exec fiber-paid-http vectors verify
+cargo run -p fiber-paid-http-cli -- vectors verify
+bash scripts/fiber_paid_http_gate.sh
 ```
 
 ## Roadmap
@@ -66,7 +66,7 @@ bash scripts/fiber_mpp_gate.sh
 - Redis-compatible production store implementation.
 - Stronger paid-but-denied mitigation.
 - Native x402 adapter once Fiber node verify/settle support is stable.
-- More payer-side integrations through Fiber clients or fiber-pay without moving wallet custody into FiberMPP.
+- More payer-side integrations through Fiber clients or fiber-pay without moving wallet custody into Fiber Paid HTTP.
 
 ## Submission Readiness
 

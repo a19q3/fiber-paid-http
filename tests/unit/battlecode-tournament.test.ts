@@ -38,7 +38,7 @@ const unitSubmission = {
   }
 };
 const unitManifest = {
-  domain: "fiber-mpp-battlecode-fairness-v1" as const,
+  domain: "fiber-paid-http-battlecode-fairness-v1" as const,
   botPackage: "fiberchamp",
   submissionId: unitSubmission.submissionId,
   botScriptHash: battlecodeBuiltInBotScriptHash(),
@@ -96,7 +96,7 @@ describe("Battlecode tournament helpers", () => {
   });
 
   it("normalizes and locks a submitted bot source", async () => {
-    const root = await mkdtemp(join(tmpdir(), "fiber-mpp-battlecode-submission-"));
+    const root = await mkdtemp(join(tmpdir(), "fiber-paid-http-battlecode-submission-"));
     try {
       const input = normalizeBattlecodeSubmission({
         playerId: "alice",
@@ -134,7 +134,7 @@ describe("Battlecode tournament helpers", () => {
   });
 
   it("migrates the legacy JSON tournament ledger into SQLite", async () => {
-    const root = await mkdtemp(join(tmpdir(), "fiber-mpp-battlecode-legacy-ledger-"));
+    const root = await mkdtemp(join(tmpdir(), "fiber-paid-http-battlecode-legacy-ledger-"));
     try {
       const legacyPath = legacyBattlecodeLedgerPath(root);
       await mkdir(join(root, ".tmp"), { recursive: true });
@@ -192,7 +192,7 @@ describe("Battlecode tournament helpers", () => {
   });
 
   it("records paid tickets in the local tournament ledger", async () => {
-    const root = await mkdtemp(join(tmpdir(), "fiber-mpp-battlecode-"));
+    const root = await mkdtemp(join(tmpdir(), "fiber-paid-http-battlecode-"));
     try {
       const registration = normalizeBattlecodeRegistration({
         playerId: "bob",

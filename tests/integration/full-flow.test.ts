@@ -5,18 +5,18 @@ import {
   resourceHashFromRequest,
   signChallenge,
   type FiberMethodChallenge
-} from "@fiber-mpp/core";
-import { paidFetch } from "@fiber-mpp/client";
-import { f402ChallengeToMpp, f402ProofToCredential } from "@fiber-mpp/f402-compat";
-import { createFiberMppMiddleware, createReverseProxyHandler } from "@fiber-mpp/server-middleware";
-import { createEvidenceApi } from "@fiber-mpp/evidence-api";
+} from "@fiber-paid-http/core";
+import { paidFetch } from "@fiber-paid-http/client";
+import { f402ChallengeToMpp, f402ProofToCredential } from "@fiber-paid-http/f402-compat";
+import { createFiberPaidHttpMiddleware, createReverseProxyHandler } from "@fiber-paid-http/server-middleware";
+import { createEvidenceApi } from "@fiber-paid-http/evidence-api";
 import {
   createFiberFixtureAdapters,
   createSqliteTestStore,
   FIXTURE_PAYMENT_HASH
 } from "../helpers/fiber-fixture.js";
 
-describe("FiberMPP integration flows", () => {
+describe("Fiber Paid HTTP integration flows", () => {
   const evidenceSecret = "evidence-integration-secret-at-least-32-chars";
 
   it("evidence paid endpoint completes full flow", async () => {
@@ -41,7 +41,7 @@ describe("FiberMPP integration flows", () => {
     };
     expect(healthBody).toMatchObject({
       ok: true,
-      service: "fiber-mpp-evidence-api",
+      service: "fiber-paid-http-evidence-api",
       status: "healthy"
     });
     expect(Date.parse(healthBody.generatedAt)).not.toBeNaN();
@@ -62,7 +62,7 @@ describe("FiberMPP integration flows", () => {
     };
     expect(readinessBody).toMatchObject({
       ok: false,
-      service: "fiber-mpp-evidence-api",
+      service: "fiber-paid-http-evidence-api",
       status: "blocked",
       livePaymentEnabled: false,
       mode: "unconfigured",
@@ -474,38 +474,38 @@ describe("FiberMPP integration flows", () => {
       headers: {
         origin: "http://127.0.0.1:8788",
         "access-control-request-method": "GET",
-        "access-control-request-headers": "x-fiber-mpp-session"
+        "access-control-request-headers": "x-fiber-paid-http-session"
       }
     });
 
     expect(preflight.status).toBe(204);
     expect(preflight.headers.get("access-control-allow-origin")).toBe("http://127.0.0.1:8788");
-    expect(preflight.headers.get("access-control-allow-headers")).toContain("x-fiber-mpp-session");
+    expect(preflight.headers.get("access-control-allow-headers")).toContain("x-fiber-paid-http-session");
   });
 
   it("evidence console API rejects file origins unless explicitly enabled", async () => {
     const app = withoutFiberLiveEnv(() => createEvidenceApi());
 
-    await withTemporaryEnv({ FIBER_MPP_ALLOW_FILE_ORIGIN: undefined }, async () => {
+    await withTemporaryEnv({ FIBER_PAID_HTTP_ALLOW_FILE_ORIGIN: undefined }, async () => {
       const blocked = await app.request("http://localhost/api/status", {
         method: "OPTIONS",
         headers: {
           origin: "null",
           "access-control-request-method": "GET",
-          "access-control-request-headers": "x-fiber-mpp-session"
+          "access-control-request-headers": "x-fiber-paid-http-session"
         }
       });
       expect(blocked.status).toBe(403);
       expect(blocked.headers.get("access-control-allow-origin")).toBeNull();
     });
 
-    await withTemporaryEnv({ FIBER_MPP_ALLOW_FILE_ORIGIN: "1" }, async () => {
+    await withTemporaryEnv({ FIBER_PAID_HTTP_ALLOW_FILE_ORIGIN: "1" }, async () => {
       const allowed = await app.request("http://localhost/api/status", {
         method: "OPTIONS",
         headers: {
           origin: "null",
           "access-control-request-method": "GET",
-          "access-control-request-headers": "x-fiber-mpp-session"
+          "access-control-request-headers": "x-fiber-paid-http-session"
         }
       });
       expect(allowed.status).toBe(204);
@@ -516,8 +516,8 @@ describe("FiberMPP integration flows", () => {
   it("evidence console API isolates flow state per browser session", async () => {
     const { payeeFiber, payerFiber } = createFiberFixtureAdapters();
     const app = createEvidenceApi({ fiber: payeeFiber, payerFiber, store: createSqliteTestStore(), secret: evidenceSecret });
-    const sessionA = { "content-type": "application/json", "x-fiber-mpp-session": "session-a" };
-    const sessionB = { "content-type": "application/json", "x-fiber-mpp-session": "session-b" };
+    const sessionA = { "content-type": "application/json", "x-fiber-paid-http-session": "session-a" };
+    const sessionB = { "content-type": "application/json", "x-fiber-paid-http-session": "session-b" };
 
     const unpaidA = await app.request("http://localhost/api/evidence/unpaid", {
       method: "POST",
@@ -533,27 +533,27 @@ describe("FiberMPP integration flows", () => {
     });
     expect(unpaidB.status).toBe(200);
 
-    const statusA = await app.request("http://localhost/api/status", { headers: { "x-fiber-mpp-session": "session-a" } });
-    const statusB = await app.request("http://localhost/api/status", { headers: { "x-fiber-mpp-session": "session-b" } });
+    const statusA = await app.request("http://localhost/api/status", { headers: { "x-fiber-paid-http-session": "session-a" } });
+    const statusB = await app.request("http://localhost/api/status", { headers: { "x-fiber-paid-http-session": "session-b" } });
     expect((await statusA.json() as { flow: { endpoint: string } }).flow.endpoint).toBe("/paid/weather");
     expect((await statusB.json() as { flow: { endpoint: string } }).flow.endpoint).toBe("/paid/file");
 
-    const payA = await app.request("http://localhost/api/evidence/pay", { method: "POST", headers: { "x-fiber-mpp-session": "session-a" } });
+    const payA = await app.request("http://localhost/api/evidence/pay", { method: "POST", headers: { "x-fiber-paid-http-session": "session-a" } });
     expect(payA.status).toBe(200);
-    const retryA = await app.request("http://localhost/api/evidence/retry", { method: "POST", headers: { "x-fiber-mpp-session": "session-a" } });
+    const retryA = await app.request("http://localhost/api/evidence/retry", { method: "POST", headers: { "x-fiber-paid-http-session": "session-a" } });
     expect(retryA.status).toBe(200);
     expect(await retryA.text()).toContain("Shanghai");
 
-    const payB = await app.request("http://localhost/api/evidence/pay", { method: "POST", headers: { "x-fiber-mpp-session": "session-b" } });
+    const payB = await app.request("http://localhost/api/evidence/pay", { method: "POST", headers: { "x-fiber-paid-http-session": "session-b" } });
     expect(payB.status).toBe(200);
-    const retryB = await app.request("http://localhost/api/evidence/retry", { method: "POST", headers: { "x-fiber-mpp-session": "session-b" } });
+    const retryB = await app.request("http://localhost/api/evidence/retry", { method: "POST", headers: { "x-fiber-paid-http-session": "session-b" } });
     expect(retryB.status).toBe(200);
     expect(await retryB.text()).toContain("paid file contents");
   });
 
   it("reverse proxy completes full flow", async () => {
     const { payeeFiber, payerFiber } = createFiberFixtureAdapters();
-    const middleware = createFiberMppMiddleware({
+    const middleware = createFiberPaidHttpMiddleware({
       secret: "reverse-proxy-secret-at-least-16",
       serverId: "reverse-proxy",
       store: createSqliteTestStore(),
@@ -584,7 +584,7 @@ describe("FiberMPP integration flows", () => {
     const { payeeFiber } = createFiberFixtureAdapters();
     const store = createSqliteTestStore();
     const secret = "f402-flow-secret-at-least-16";
-    const middleware = createFiberMppMiddleware({
+    const middleware = createFiberPaidHttpMiddleware({
       secret,
       serverId: "f402-flow",
       store,
@@ -650,7 +650,7 @@ describe("FiberMPP integration flows", () => {
     const fiber = body.challenge.methods.find((method) => method.method === "fiber")!;
     const proof = await payerFiber.payChallenge(fiber);
     const credential = {
-      domain: "fiber-mpp-credential-v1" as const,
+      domain: "fiber-paid-http-credential-v1" as const,
       challengeId: body.challengeId,
       method: "fiber" as const,
       resourceHash: await resourceHashFromRequest(new Request("http://localhost/paid/weather")),
@@ -692,7 +692,7 @@ function withoutFiberLiveEnv<T>(fn: () => T): T {
     "FIBER_RPC_URL",
     "FIBER_PAYEE_RPC_URL",
     "FIBER_PAYER_RPC_URL",
-    "FIBER_MPP_SECRET"
+    "FIBER_PAID_HTTP_SECRET"
   ];
   const previous = new Map(keys.map((key) => [key, process.env[key]]));
   for (const key of keys) {

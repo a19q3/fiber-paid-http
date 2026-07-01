@@ -1,18 +1,18 @@
-# FiberMPP Evidence Console Frontend Plan
+# Fiber Paid HTTP Evidence Console Frontend Plan
 
 ## Intent
 
-Build a fancy but thin protocol console for showing one verifiable FiberMPP flow:
+Build a fancy but thin protocol console for showing one verifiable Fiber Paid HTTP flow:
 
 ```text
 unpaid HTTP request -> 402 challenge -> Fiber payment -> settlement -> Authorization: Payment retry -> Payment-Receipt -> replay rejection
 ```
 
-The console is not a Fiber product surface. It visualizes FiberMPP evidence. Its job is to make the proof chain legible for judges, developers, and auditors without turning FiberMPP into a wallet, node dashboard, checkout widget, or Fiber CLI.
+The console is not a Fiber product surface. It visualizes Fiber Paid HTTP evidence. Its job is to make the proof chain legible for judges, developers, and auditors without turning Fiber Paid HTTP into a wallet, node dashboard, checkout widget, or Fiber CLI.
 
 ## Product Boundary
 
-FiberMPP Evidence Console owns:
+Fiber Paid HTTP Evidence Console owns:
 
 - Visual proof flow for a single machine-payment scenario.
 - Report and vector evidence presentation.
@@ -20,7 +20,7 @@ FiberMPP Evidence Console owns:
 - Local Fiber route context for the payment used in the evidence.
 - Clear Rust canonical engine positioning.
 
-FiberMPP Evidence Console does not own:
+Fiber Paid HTTP Evidence Console does not own:
 
 - Fiber node monitoring, liquidity analytics, channel management, or network topology dashboards.
 - Wallet management, invoice management, checkout UX, merchant payment widgets, or payer account UX.
@@ -37,7 +37,7 @@ fiber-checkout  = merchant checkout component
 FiberLatch      = paid access control product surface
 Infern          = AI inference marketplace
 
-FiberMPP Console = visualize one machine-payment proof flow
+Fiber Paid HTTP Console = visualize one machine-payment proof flow
 ```
 
 ## Core Message
@@ -45,7 +45,7 @@ FiberMPP Console = visualize one machine-payment proof flow
 The first viewport should communicate:
 
 ```text
-FiberMPP Evidence Console
+Fiber Paid HTTP Evidence Console
 Machine Payments Protocol over Fiber
 ```
 
@@ -105,7 +105,7 @@ The header should establish that the console is about protocol evidence, not pay
 
 Required elements:
 
-- `FiberMPP Evidence Console`
+- `Fiber Paid HTTP Evidence Console`
 - Subtitle: `Machine Payments Protocol over Fiber`
 - Status badges sourced from reports:
   - Rust canonical engine
@@ -260,10 +260,10 @@ Report artifacts to surface:
 ```text
 reports/canonical-core-parity.json
 reports/fiber-local-e2e-evidence.json
-reports/fiber-mpp-gate.local.json
-reports/fiber-mpp-gate.default.json
-reports/fiber-mpp-rust-gate.json
-reports/fiber-mpp-ts-gate.json
+reports/fiber-paid-http-gate.local.json
+reports/fiber-paid-http-gate.default.json
+reports/fiber-paid-http-rust-gate.json
+reports/fiber-paid-http-ts-gate.json
 reports/security-matrix.json
 ```
 
@@ -329,15 +329,15 @@ Fancy comes from evidence motion, timing, state transitions, and verifiable arti
 
 ## Data Sources
 
-The console should prefer existing FiberMPP evidence:
+The console should prefer existing Fiber Paid HTTP evidence:
 
 ```text
 reports/canonical-core-parity.json
 reports/fiber-local-e2e-evidence.json
-reports/fiber-mpp-gate.local.json
-reports/fiber-mpp-gate.default.json
-reports/fiber-mpp-rust-gate.json
-reports/fiber-mpp-ts-gate.json
+reports/fiber-paid-http-gate.local.json
+reports/fiber-paid-http-gate.default.json
+reports/fiber-paid-http-rust-gate.json
+reports/fiber-paid-http-ts-gate.json
 reports/security-matrix.json
 test-vectors/*.json
 ```
@@ -389,18 +389,18 @@ Endpoint responsibilities:
 - `/api/evidence/reset`: clear the current server-side evidence flow so UI reset controls are not local-only theatre.
 - `/api/reports/*`: serve sanitized report summaries plus optional raw JSON.
 
-The API should call FiberMPP directly. Do not route the primary evidence path through `fiber-pay`.
+The API should call Fiber Paid HTTP directly. Do not route the primary evidence path through `fiber-pay`.
 
 Preferred payment path:
 
 ```text
-FiberMPP canonical engine -> Fiber JSON-RPC
+Fiber Paid HTTP canonical engine -> Fiber JSON-RPC
 ```
 
 Future optional client adapter:
 
 ```text
-FiberMPP client -> fiber-pay
+Fiber Paid HTTP client -> fiber-pay
 ```
 
 That future adapter must be visibly labeled as optional and outside the canonical proof path.
@@ -478,7 +478,7 @@ Rules:
 
 - Show `passed` only when report fields say passed.
 - Show `skipped` with exact blockers when live Fiber env vars are missing.
-- Show local Fiber E2E as `passed` only from `reports/fiber-mpp-gate.local.json` or `reports/fiber-local-e2e-evidence.json`.
+- Show local Fiber E2E as `passed` only from `reports/fiber-paid-http-gate.local.json` or `reports/fiber-local-e2e-evidence.json`.
 - Show production ready as `false` unless report explicitly says otherwise and blockers are empty.
 - Show TypeScript as `Compatibility Tooling`, never as backup production verifier.
 - Show Rust as `Canonical Engine`.
@@ -552,7 +552,7 @@ Goal: run the local 3-node Fiber E2E path from the console when configured.
 Tasks:
 
 - Surface local mode from `/api/status`.
-- Run unpaid request, pay, retry, and replay through existing FiberMPP code.
+- Run unpaid request, pay, retry, and replay through existing Fiber Paid HTTP code.
 - Update timeline as events complete.
 - Persist latest local evidence report.
 - Keep `production_ready_for_fiber_method` report-driven; local-only evidence must not set it true.
@@ -573,7 +573,7 @@ Tasks:
 
 The frontend is ready when:
 
-- The first screen clearly says `FiberMPP Evidence Console`.
+- The first screen clearly says `Fiber Paid HTTP Evidence Console`.
 - The primary visual shows the full `402 -> Fiber payment -> receipt -> replay rejection` flow.
 - The evidence drawer surfaces actual report fields.
 - Replay rejection is visible and treated as a security pass.
@@ -583,9 +583,9 @@ The frontend is ready when:
 - No Fiber node dashboard, wallet, checkout, or `fiber-pay` GUI behavior is present.
 - The console can show report-only evidence with no live Fiber nodes, while payment execution remains blocked.
 - The console can run live local mode when env vars are configured.
-- `pnpm --filter @fiber-mpp/evidence-web check-layout` passes across 1440px, 1024px, and 390px viewports with no horizontal overflow or Evidence tab jitter.
+- `pnpm --filter @fiber-paid-http/evidence-web check-layout` passes across 1440px, 1024px, and 390px viewports with no horizontal overflow or Evidence tab jitter.
 - The production gate records `evidence_console_layout: true` and leaves `evidence_console_layout_blockers` empty.
-- The production gate records `fiber_mpp_gate_ready: true`; if layout fails, `fiber_mpp_gate_blockers` names the layout report even if Fiber method readiness remains true.
+- The production gate records `fiber_paid_http_gate_ready: true`; if layout fails, `fiber_paid_http_gate_blockers` names the layout report even if Fiber method readiness remains true.
 - The UI is polished enough to communicate the evidence chain from a screenshot without needing narration.
 
 ## Non-Blocking Future Ideas

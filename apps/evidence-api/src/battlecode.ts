@@ -12,8 +12,8 @@ import {
   parseFiberUdtTypeScript,
   waitForFiberInvoicePaid,
   waitForFiberPaymentSuccess
-} from "@fiber-mpp/fiber-method";
-import type { FiberUdtTypeScript } from "@fiber-mpp/core";
+} from "@fiber-paid-http/fiber-method";
+import type { FiberUdtTypeScript } from "@fiber-paid-http/core";
 
 export type BattlecodeRegistrationInput = {
   playerId: string;
@@ -28,7 +28,7 @@ export type BattlecodeRegistrationInput = {
 };
 
 export type BattlecodeFairnessManifest = {
-  domain: "fiber-mpp-battlecode-fairness-v1";
+  domain: "fiber-paid-http-battlecode-fairness-v1";
   botPackage: string;
   submissionId?: string;
   botScriptHash: string;
@@ -253,7 +253,7 @@ export async function buildBattlecodeFairnessManifest(
   const botPackage = input?.botPackage ?? "fiberchamp";
   const botScriptHash = input?.botScriptHash ?? battlecodeBuiltInBotScriptHash();
   const clientHash = hashJson({
-    domain: "fiber-mpp-battlecode-client-v1",
+    domain: "fiber-paid-http-battlecode-client-v1",
     botPackage,
     submissionId: input?.submissionId,
     botScriptHash,
@@ -262,7 +262,7 @@ export async function buildBattlecodeFairnessManifest(
     engineVersion: engine.version
   });
   return {
-    domain: "fiber-mpp-battlecode-fairness-v1",
+    domain: "fiber-paid-http-battlecode-fairness-v1",
     botPackage,
     submissionId: input?.submissionId,
     botScriptHash,
@@ -878,7 +878,7 @@ export async function runBattlecodeTournament(options: RunOptions): Promise<Batt
     ledgerPath: battlecodeLedgerPath(options.repoRoot, env),
     replayPath,
     warnings: [
-      "Battlecode runs as an external AGPL-3.0 scaffold/engine dependency; FiberMPP stores only tournament evidence and local bot sources.",
+      "Battlecode runs as an external AGPL-3.0 scaffold/engine dependency; Fiber Paid HTTP stores only tournament evidence and local bot sources.",
       award?.settlement === "fiber-xudt-payment"
         ? "The prize was settled by a live Fiber xUDT payment and recorded with payment hash evidence."
         : "The xUDT award is recorded as a local claimable prize ledger entry; set BATTLECODE_AWARD_SETTLEMENT=fiber-xudt for live Fiber xUDT prize payout."
@@ -975,7 +975,7 @@ async function createBattlecodeAward(ticket: BattlecodeTicket, match: Battlecode
       prizePayment,
       matchHash: match.matchHash,
       awardedAt: new Date().toISOString(),
-      note: "Prize settled by a live Fiber xUDT payment after a paid FiberMPP entry and deterministic local Battlecode match."
+      note: "Prize settled by a live Fiber xUDT payment after a paid Fiber Paid HTTP entry and deterministic local Battlecode match."
     };
   }
   return {
@@ -990,7 +990,7 @@ async function createBattlecodeAward(ticket: BattlecodeTicket, match: Battlecode
     settlement: "local-xudt-award-ledger",
     matchHash: match.matchHash,
     awardedAt: new Date().toISOString(),
-    note: "Prize claim recorded after a paid FiberMPP entry and deterministic local Battlecode match. On-chain xUDT payout signer is a separate integration step."
+    note: "Prize claim recorded after a paid Fiber Paid HTTP entry and deterministic local Battlecode match. On-chain xUDT payout signer is a separate integration step."
   };
 }
 
@@ -1023,7 +1023,7 @@ async function settleBattlecodeFiberXudtPrize(
   const invoice = await payeeRpc.newInvoice({
     amount: ticket.prizeAmount,
     currency: env.FIBER_CURRENCY ?? (mode === "testnet" ? "Fibt" : "Fibd"),
-    description: `FiberMPP Battlecode prize ${ticket.ticketId} ${match.matchId}`,
+    description: `Fiber Paid HTTP Battlecode prize ${ticket.ticketId} ${match.matchId}`,
     expirySeconds: timeoutSeconds,
     udtTypeScript
   });

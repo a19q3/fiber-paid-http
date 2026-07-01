@@ -8,10 +8,10 @@ import {
   verifyReceiptSignatureWithAnySecret,
   type PaymentReceipt,
   type ResourceDescriptor
-} from "@fiber-mpp/core";
-import { paidFetch, inspectChallenge } from "@fiber-mpp/client";
-import { FiberMethodAdapter } from "@fiber-mpp/fiber-method";
-import { F402ChallengeSchema, f402ChallengeToMpp, f402ProofToCredential } from "@fiber-mpp/f402-compat";
+} from "@fiber-paid-http/core";
+import { paidFetch, inspectChallenge } from "@fiber-paid-http/client";
+import { FiberMethodAdapter } from "@fiber-paid-http/fiber-method";
+import { F402ChallengeSchema, f402ChallengeToMpp, f402ProofToCredential } from "@fiber-paid-http/f402-compat";
 import {
   FL402ChallengeSchema,
   FL402ProofSchema,
@@ -19,8 +19,8 @@ import {
   fl402ProofToCredential,
   issueFl402Challenge,
   verifyFl402Proof
-} from "@fiber-mpp/fl402-compat";
-import { createFiberMppMiddleware, createReverseProxyHandler } from "@fiber-mpp/server-middleware";
+} from "@fiber-paid-http/fl402-compat";
+import { createFiberPaidHttpMiddleware, createReverseProxyHandler } from "@fiber-paid-http/server-middleware";
 import {
   SqliteStore,
   auditSqliteReceipts,
@@ -29,7 +29,7 @@ import {
   exportSqliteReceipts,
   listSqliteDeliveryOutcomes,
   restoreSqliteStore
-} from "@fiber-mpp/storage";
+} from "@fiber-paid-http/storage";
 import {
   BootstrapError,
   buildBootstrapReport,
@@ -38,6 +38,7 @@ import {
   parseGatewayConfig,
   previousSecretsFromGatewayConfig,
   probeFiberRpcReadiness,
+  readPaidHttpEnv,
   resolveGatewayCorsPolicy,
   resolveGatewayConfig,
   resolveGatewayOperations,
@@ -54,14 +55,14 @@ import { generateVectors, verifyVectors } from "./vectors.js";
 const program = new Command();
 
 program
-  .name("fiber-mpp")
-  .description("Fiber payment method tooling for Machine Payments Protocol")
+  .name("fiber-paid-http")
+  .description("Fiber Paid HTTP gateway, SDK, evidence, and compatibility tooling")
   .version("0.1.0")
   .option("--engine <engine>", "execution engine", "typescript")
   .hook("preAction", (command) => {
     const engine = command.opts<{ engine: string }>().engine;
     if (engine !== "typescript") {
-      throw new Error("The TypeScript CLI only supports --engine typescript. Use fiber-mpp-rs for the Rust engine.");
+      throw new Error("The TypeScript CLI only supports --engine typescript. Use fiber-paid-http-rs for the Rust engine.");
     }
   });
 
@@ -74,7 +75,7 @@ program
   .option("--storage <uri>", "sqlite://path")
   .option("--port <port>", "port")
   .option("--server-id <id>", "server id")
-  .description("Run FiberMPP as a reverse proxy in front of an upstream HTTP service")
+  .description("Run Fiber Paid HTTP as a reverse proxy in front of an upstream HTTP service")
   .action(async (opts: { config?: string; upstream?: string; priceCkb?: string; methods?: string; storage?: string; port?: string; serverId?: string }) => {
     const config = opts.config ? parseGatewayConfig(await readJson(opts.config)) : undefined;
     const resolved = resolveGatewayConfig({ ...opts, config }, process.env);
@@ -85,22 +86,22 @@ program
 program
   .command("init")
   .option("--role <role>", "bootstrap role", "gateway")
-  .option("--out <path>", "config output path", "fiber-mpp.gateway.json")
-  .description("Write a FiberMPP bootstrap config template")
+  .option("--out <path>", "config output path", "fiber-paid-http.gateway.json")
+  .description("Write a Fiber Paid HTTP bootstrap config template")
   .action(async (opts: { role: string; out: string }) => {
     const role = parseRole(opts.role);
     if (role !== "gateway") {
-      throw new Error("Only `fiber-mpp init --role gateway` is supported");
+      throw new Error("Only `fiber-paid-http init --role gateway` is supported");
     }
     await writeGatewayConfigTemplate(opts.out);
     console.log(JSON.stringify({
       role,
       written: opts.out,
-      secret: "export FIBER_MPP_SECRET=$(openssl rand -hex 32)",
+      secret: "export FIBER_PAID_HTTP_SECRET=$(openssl rand -hex 32)",
       next_steps: [
         `edit ${opts.out}`,
-        `fiber-mpp doctor --role gateway --config ${opts.out}`,
-        `fiber-mpp serve --config ${opts.out}`
+        `fiber-paid-http doctor --role gateway --config ${opts.out}`,
+        `fiber-paid-http serve --config ${opts.out}`
       ]
     }, null, 2));
   });
@@ -111,7 +112,7 @@ program
   .description("Create or refresh local reference notes")
   .action(async (action: string) => {
     if (action !== "init") {
-      throw new Error("Only `fiber-mpp refs init` is supported");
+      throw new Error("Only `fiber-paid-http refs init` is supported");
     }
     const result = await writeReferenceStarterNotes(process.cwd());
     console.log(
@@ -131,10 +132,10 @@ program
   .command("server")
   .option("--config <path>", "config file")
   .option("--port <port>", "port")
-  .description("Start a configured FiberMPP gateway")
+  .description("Start a configured Fiber Paid HTTP gateway")
   .action(async (opts: { config?: string; port?: string }) => {
     if (!opts.config) {
-      throw new Error("fiber-mpp server requires --config. Use `fiber-mpp evidence start` for the local evidence API.");
+      throw new Error("fiber-paid-http server requires --config. Use `fiber-paid-http evidence start` for the local evidence API.");
     }
     const config = parseGatewayConfig(await readJson(opts.config));
     const resolved = resolveGatewayConfig({ config, port: opts.port }, process.env);
@@ -149,7 +150,7 @@ program
   .description("Inspect an MPP 402 challenge")
   .action(async (action: string, url: string) => {
     if (action !== "inspect") {
-      throw new Error("Only `fiber-mpp challenge inspect <url>` is supported");
+      throw new Error("Only `fiber-paid-http challenge inspect <url>` is supported");
     }
     const signed = await inspectChallenge(url);
     console.log(JSON.stringify(signed, null, 2));
@@ -186,10 +187,10 @@ program
   .command("f402")
   .argument("<action>", "convert")
   .argument("<file>")
-  .description("Convert F402 challenge/proof JSON to FiberMPP shapes")
+  .description("Convert F402 challenge/proof JSON to Fiber Paid HTTP shapes")
   .action(async (action: string, file: string) => {
     if (action !== "convert") {
-      throw new Error("Only `fiber-mpp f402 convert <file>` is supported");
+      throw new Error("Only `fiber-paid-http f402 convert <file>` is supported");
     }
     const f402 = F402ChallengeSchema.parse(await readJson(file));
     const resource = {
@@ -199,7 +200,7 @@ program
     const challenge = f402ChallengeToMpp({
       f402,
       resource,
-      serverId: "fiber-mpp-cli"
+      serverId: "fiber-paid-http-cli"
     });
     const credential = f402ProofToCredential({
       proof: {
@@ -220,15 +221,15 @@ program
   .command("fl402")
   .argument("<action>", "issue|verify|convert")
   .argument("<file>")
-  .option("--root-key <key>", "F-L402 root key; defaults to FIBER_MPP_FL402_ROOT_KEY")
-  .option("--server-id <id>", "server id for MPP conversion", "fiber-mpp-cli")
+  .option("--root-key <key>", "F-L402 root key; defaults to FIBER_PAID_HTTP_FL402_ROOT_KEY")
+  .option("--server-id <id>", "server id for MPP conversion", "fiber-paid-http-cli")
   .description("Issue, verify, or convert F-L402 challenge/proof JSON")
   .action(async (action: string, file: string, opts: { rootKey?: string; serverId: string }) => {
     const input = unwrapVectorInput(await readJson(file));
-    const rootKey = opts.rootKey ?? process.env.FIBER_MPP_FL402_ROOT_KEY;
+    const rootKey = opts.rootKey ?? readPaidHttpEnv(process.env, "FIBER_PAID_HTTP_FL402_ROOT_KEY");
     if (action === "issue") {
       if (!rootKey) {
-        throw new Error("fiber-mpp fl402 issue requires --root-key or FIBER_MPP_FL402_ROOT_KEY");
+        throw new Error("fiber-paid-http fl402 issue requires --root-key or FIBER_PAID_HTTP_FL402_ROOT_KEY");
       }
       const resource = fl402Resource(input);
       const challenge = issueFl402Challenge({
@@ -251,7 +252,7 @@ program
     const proofSource = input.proof && typeof input.proof === "object" ? input.proof : input;
     if (action === "verify") {
       if (!rootKey) {
-        throw new Error("fiber-mpp fl402 verify requires --root-key or FIBER_MPP_FL402_ROOT_KEY");
+        throw new Error("fiber-paid-http fl402 verify requires --root-key or FIBER_PAID_HTTP_FL402_ROOT_KEY");
       }
       const proof = FL402ProofSchema.parse(proofSource);
       const payload = verifyFl402Proof({ challenge: fl402, proof, rootKey });
@@ -277,7 +278,7 @@ program
       console.log(JSON.stringify({ challenge, ...(credential ? { credential } : {}) }, null, 2));
       return;
     }
-    throw new Error("Use `fiber-mpp fl402 issue`, `fiber-mpp fl402 verify`, or `fiber-mpp fl402 convert`");
+    throw new Error("Use `fiber-paid-http fl402 issue`, `fiber-paid-http fl402 verify`, or `fiber-paid-http fl402 convert`");
   });
 
 program
@@ -289,7 +290,7 @@ program
   .description("Verify a Payment-Receipt JSON file")
   .action(async (action: string, file: string, opts: { secret?: string; previousSecret?: string[] }) => {
     if (action !== "verify") {
-      throw new Error("Only `fiber-mpp receipt verify <receipt.json>` is supported");
+      throw new Error("Only `fiber-paid-http receipt verify <receipt.json>` is supported");
     }
     const receipt = (await readJson(file)) as PaymentReceipt;
     const secrets = receiptAuditSecrets(undefined, opts.secret, opts.previousSecret, true);
@@ -306,13 +307,13 @@ program
   .option("--secret <secret>", "receipt HMAC secret for receipt export/audit")
   .option("--previous-secret <secret...>", "previous receipt HMAC secret accepted during rotation")
   .option("--force", "overwrite restore destination")
-  .description("Operate on FiberMPP durable storage")
+  .description("Operate on Fiber Paid HTTP durable storage")
   .action(async (action: string, opts: { config?: string; storage?: string; out?: string; from?: string; secret?: string; previousSecret?: string[]; force?: boolean }) => {
     const config = opts.config ? parseGatewayConfig(await readJson(opts.config)) : undefined;
     const storagePath = storagePathFromOptions(opts.storage, config);
     if (action === "backup") {
       if (!opts.out) {
-        throw new Error("fiber-mpp storage backup requires --out <path>");
+        throw new Error("fiber-paid-http storage backup requires --out <path>");
       }
       const result = await backupSqliteStore(storagePath, opts.out);
       console.log(JSON.stringify({ storage: "sqlite", action, ...result }, null, 2));
@@ -328,10 +329,10 @@ program
     }
     if (action === "restore") {
       if (!opts.from) {
-        throw new Error("fiber-mpp storage restore requires --from <path>");
+        throw new Error("fiber-paid-http storage restore requires --from <path>");
       }
       if (!opts.force) {
-        throw new Error("fiber-mpp storage restore requires --force to overwrite the configured SQLite database");
+        throw new Error("fiber-paid-http storage restore requires --force to overwrite the configured SQLite database");
       }
       const result = await restoreSqliteStore(opts.from, storagePath, { force: true });
       console.log(JSON.stringify({ storage: "sqlite", action, ...result }, null, 2));
@@ -339,7 +340,7 @@ program
     }
     if (action === "export-receipts") {
       if (!opts.out) {
-        throw new Error("fiber-mpp storage export-receipts requires --out <path>");
+        throw new Error("fiber-paid-http storage export-receipts requires --out <path>");
       }
       const secrets = receiptAuditSecrets(config, opts.secret, opts.previousSecret, false);
       const result = await exportSqliteReceipts(storagePath, opts.out, secrets.length > 0 ? { secrets } : {});
@@ -372,13 +373,13 @@ program
       }, null, 2));
       return;
     }
-    throw new Error("Use `fiber-mpp storage backup`, `fiber-mpp storage restore`, `fiber-mpp storage check`, `fiber-mpp storage export-receipts`, `fiber-mpp storage audit-receipts`, or `fiber-mpp storage list-deliveries`");
+    throw new Error("Use `fiber-paid-http storage backup`, `fiber-paid-http storage restore`, `fiber-paid-http storage check`, `fiber-paid-http storage export-receipts`, `fiber-paid-http storage audit-receipts`, or `fiber-paid-http storage list-deliveries`");
   });
 
 program
   .command("vectors")
   .argument("<action>", "generate|verify")
-  .description("Generate or verify canonical FiberMPP conformance vectors")
+  .description("Generate or verify canonical Fiber Paid HTTP conformance vectors")
   .action(async (action: string) => {
     if (action === "generate") {
       await generateVectors();
@@ -388,7 +389,7 @@ program
       await verifyVectors();
       return;
     }
-    throw new Error("Use `fiber-mpp vectors generate` or `fiber-mpp vectors verify`");
+    throw new Error("Use `fiber-paid-http vectors generate` or `fiber-paid-http vectors verify`");
   });
 
 program
@@ -396,7 +397,7 @@ program
   .argument("[url]")
   .option("--role <role>", "payer|payee|gateway")
   .option("--config <path>", "gateway config JSON")
-  .description("Report FiberMPP bootstrap readiness")
+  .description("Report Fiber Paid HTTP bootstrap readiness")
   .action(async (url: string | undefined, opts: { role?: string; config?: string }) => {
     const role = parseRole(opts.role ?? (url ? "payer" : "gateway"));
     const config = opts.config ? parseGatewayConfig(await readJson(opts.config)) : undefined;
@@ -421,7 +422,7 @@ program
   .option("--port <port>", "API port", "8787")
   .option("--web-port <port>", "web console port", "8788")
   .option("--api-only", "start only the Evidence API")
-  .description("Start the FiberMPP local evidence API and web console")
+  .description("Start the Fiber Paid HTTP local evidence API and web console")
   .action(async (action: string, opts: { port: string; webPort: string; apiOnly?: boolean }) => {
     if (action === "start") {
       const apiPort = Number(opts.port);
@@ -434,7 +435,7 @@ program
       await waitForEvidenceServers(servers);
       return;
     }
-    throw new Error("Use `fiber-mpp evidence start`");
+    throw new Error("Use `fiber-paid-http evidence start`");
   });
 
 program.parseAsync().catch((error: unknown) => {
@@ -496,7 +497,7 @@ function fl402Resource(input: Record<string, unknown>, fallbackUrl = "http://fl4
 
 function startGateway(config: ResolvedGatewayConfig): void {
   if (!config.storage.startsWith("sqlite://")) {
-    throw new Error("fiber-mpp gateway requires storage sqlite://path");
+    throw new Error("fiber-paid-http gateway requires storage sqlite://path");
   }
   const startedAt = new Date();
   const metrics: GatewayMetrics = {
@@ -509,7 +510,7 @@ function startGateway(config: ResolvedGatewayConfig): void {
   };
   const rateLimiter = createRateLimiter(config.operations.rateLimit);
   const store = new SqliteStore(config.storage.slice("sqlite://".length));
-  const middleware = createFiberMppMiddleware({
+  const middleware = createFiberPaidHttpMiddleware({
     secret: config.secret,
     previousSecrets: config.previousSecrets,
     serverId: config.serverId,
@@ -542,7 +543,7 @@ function startGateway(config: ResolvedGatewayConfig): void {
         status = 200;
         sendJson(res, status, {
           status: "ok",
-          service: "fiber-mpp-gateway",
+          service: "fiber-paid-http-gateway",
           server_id: config.serverId,
           started_at: startedAt.toISOString()
         }, config.cors, origin);
@@ -626,14 +627,14 @@ async function doctorReport(role: BootstrapRole, config: GatewayConfig | undefin
     const price = config?.price ?? { value: "1", currency: "CKB", display: "1 CKB" };
     const report = buildBootstrapReport(role, {
       env: fiberEnv,
-      secret: process.env[config?.secret_env ?? "FIBER_MPP_SECRET"],
-      secretEnv: config?.secret_env ?? "FIBER_MPP_SECRET",
+      secret: readPaidHttpEnv(process.env, config?.secret_env ?? "FIBER_PAID_HTTP_SECRET"),
+      secretEnv: config?.secret_env ?? "FIBER_PAID_HTTP_SECRET",
       previousSecretEnvs: previousSecretsFromGatewayConfig(config, process.env).secretEnvs,
       previousSecrets: previousSecretsFromGatewayConfig(config, process.env).secrets,
       missingPreviousSecretEnvs: previousSecretsFromGatewayConfig(config, process.env).missing,
       shortPreviousSecretEnvs: previousSecretsFromGatewayConfig(config, process.env).short,
       literalRpcAuth: gatewayConfigHasLiteralRpcAuth(config),
-      storage: config?.storage ?? "sqlite://./fiber-mpp.sqlite",
+      storage: config?.storage ?? "sqlite://./fiber-paid-http.sqlite",
       upstream: config?.upstream,
       methods,
       price,
@@ -660,7 +661,7 @@ function storagePathFromOptions(storage: string | undefined, config: GatewayConf
   }
   const normalized = uri.startsWith("sqlite://") || uri.includes("://") ? uri : `sqlite://${uri}`;
   if (!normalized.startsWith("sqlite://")) {
-    throw new Error("FiberMPP storage operations currently support sqlite:// storage only");
+    throw new Error("Fiber Paid HTTP storage operations currently support sqlite:// storage only");
   }
   const path = normalized.slice("sqlite://".length);
   if (!path) {
@@ -682,14 +683,14 @@ function receiptAuditSecrets(
   if (previous.short.length > 0) {
     throw new Error(`Configured previous secret env var(s) must be at least 32 characters: ${previous.short.join(", ")}`);
   }
-  const currentSecret = explicitSecret ?? process.env[config?.secret_env ?? "FIBER_MPP_SECRET"];
+  const currentSecret = explicitSecret ?? readPaidHttpEnv(process.env, config?.secret_env ?? "FIBER_PAID_HTTP_SECRET");
   const secrets = [
     ...(currentSecret ? [currentSecret] : []),
     ...(explicitPreviousSecrets ?? []),
     ...previous.secrets
   ].filter(Boolean);
   if (secrets.length === 0 && required) {
-    throw new Error("Provide --secret, --previous-secret, FIBER_MPP_SECRET, or configured previous_secret_envs");
+    throw new Error("Provide --secret, --previous-secret, FIBER_PAID_HTTP_SECRET, or configured previous_secret_envs");
   }
   return Array.from(new Set(secrets));
 }
@@ -741,7 +742,7 @@ async function probeIfStructurallyReady(
     report.next_steps = [
       "start the required Fiber node",
       "check the RPC URL, Authorization header, peers, and ChannelReady channels",
-      `retry fiber-mpp doctor --role ${retryRole}`
+      `retry fiber-paid-http doctor --role ${retryRole}`
     ];
   }
   return report;
@@ -749,9 +750,9 @@ async function probeIfStructurallyReady(
 
 async function writeReferenceStarterNotes(cwd: string): Promise<{ written: string[]; skipped: string[] }> {
   const files = new Map<string, string>([
-    ["docs/refs/README.md", "# FiberMPP Reference Index\n\nReference notes for FiberMPP protocol, Fiber RPC, F402/L402 compatibility, and security boundaries.\n"],
-    ["docs/refs/fiber.md", "# Fiber References\n\nTrack Fiber JSON-RPC invoice creation, payment sending, invoice status, payment status, and settlement semantics used by FiberMPP.\n"],
-    ["docs/refs/mpp.md", "# MPP References\n\nTrack the HTTP 402 challenge, credential, receipt, replay, and resource-binding lifecycle used by FiberMPP.\n"],
+    ["docs/refs/README.md", "# Fiber Paid HTTP Reference Index\n\nReference notes for Fiber Paid HTTP protocol, Fiber RPC, F402/L402 compatibility, and security boundaries.\n"],
+    ["docs/refs/fiber.md", "# Fiber References\n\nTrack Fiber JSON-RPC invoice creation, payment sending, invoice status, payment status, and settlement semantics used by Fiber Paid HTTP.\n"],
+    ["docs/refs/mpp.md", "# MPP References\n\nTrack the HTTP 402 challenge, credential, receipt, replay, and resource-binding lifecycle used by Fiber Paid HTTP.\n"],
     ["docs/refs/infern.md", "# Infern / F402 References\n\nTrack F402 compatibility boundaries and integration assumptions for Fiber-backed paid access flows.\n"],
     ["docs/refs/l402.md", "# L402 References\n\nTrack macaroon, preimage, and paid-access precedent relevant to Authorization-bound receipts.\n"],
     ["docs/refs/security.md", "# Security References\n\nTrack replay, wrong-resource, wrong-method, wrong-amount, expired-challenge, paid-but-denied, and unpaid-service attack coverage.\n"]
@@ -917,25 +918,25 @@ function isOperationsPath(pathname: string, operations: GatewayOperations): bool
 
 function renderMetrics(metrics: GatewayMetrics, config: ResolvedGatewayConfig): string {
   const lines = [
-    "# HELP fiber_mpp_gateway_requests_total Total FiberMPP gateway HTTP requests.",
-    "# TYPE fiber_mpp_gateway_requests_total counter",
-    `fiber_mpp_gateway_requests_total{server_id="${escapePromLabel(config.serverId)}"} ${metrics.requestsTotal}`,
-    "# HELP fiber_mpp_gateway_responses_total FiberMPP gateway HTTP responses by status.",
-    "# TYPE fiber_mpp_gateway_responses_total counter"
+    "# HELP fiber_paid_http_gateway_requests_total Total Fiber Paid HTTP gateway HTTP requests.",
+    "# TYPE fiber_paid_http_gateway_requests_total counter",
+    `fiber_paid_http_gateway_requests_total{server_id="${escapePromLabel(config.serverId)}"} ${metrics.requestsTotal}`,
+    "# HELP fiber_paid_http_gateway_responses_total Fiber Paid HTTP gateway HTTP responses by status.",
+    "# TYPE fiber_paid_http_gateway_responses_total counter"
   ];
   for (const [status, count] of [...metrics.responsesByStatus.entries()].sort(([a], [b]) => a - b)) {
-    lines.push(`fiber_mpp_gateway_responses_total{server_id="${escapePromLabel(config.serverId)}",status="${status}"} ${count}`);
+    lines.push(`fiber_paid_http_gateway_responses_total{server_id="${escapePromLabel(config.serverId)}",status="${status}"} ${count}`);
   }
   lines.push(
-    "# HELP fiber_mpp_gateway_readiness_checks_total Total readiness checks.",
-    "# TYPE fiber_mpp_gateway_readiness_checks_total counter",
-    `fiber_mpp_gateway_readiness_checks_total{server_id="${escapePromLabel(config.serverId)}"} ${metrics.readinessChecks}`,
-    "# HELP fiber_mpp_gateway_readiness_failures_total Total failed readiness checks.",
-    "# TYPE fiber_mpp_gateway_readiness_failures_total counter",
-    `fiber_mpp_gateway_readiness_failures_total{server_id="${escapePromLabel(config.serverId)}"} ${metrics.readinessFailures}`,
-    "# HELP fiber_mpp_gateway_rate_limit_rejections_total Total requests rejected by the gateway rate limiter.",
-    "# TYPE fiber_mpp_gateway_rate_limit_rejections_total counter",
-    `fiber_mpp_gateway_rate_limit_rejections_total{server_id="${escapePromLabel(config.serverId)}"} ${metrics.rateLimitRejections}`,
+    "# HELP fiber_paid_http_gateway_readiness_checks_total Total readiness checks.",
+    "# TYPE fiber_paid_http_gateway_readiness_checks_total counter",
+    `fiber_paid_http_gateway_readiness_checks_total{server_id="${escapePromLabel(config.serverId)}"} ${metrics.readinessChecks}`,
+    "# HELP fiber_paid_http_gateway_readiness_failures_total Total failed readiness checks.",
+    "# TYPE fiber_paid_http_gateway_readiness_failures_total counter",
+    `fiber_paid_http_gateway_readiness_failures_total{server_id="${escapePromLabel(config.serverId)}"} ${metrics.readinessFailures}`,
+    "# HELP fiber_paid_http_gateway_rate_limit_rejections_total Total requests rejected by the gateway rate limiter.",
+    "# TYPE fiber_paid_http_gateway_rate_limit_rejections_total counter",
+    `fiber_paid_http_gateway_rate_limit_rejections_total{server_id="${escapePromLabel(config.serverId)}"} ${metrics.rateLimitRejections}`,
     ""
   );
   return lines.join("\n");
@@ -1017,21 +1018,21 @@ class GatewayHttpError extends Error {
 }
 
 async function loadEvidenceApi(): Promise<{ startEvidenceApi: (port?: number) => unknown }> {
-  const mod = await import("@fiber-mpp/evidence-api") as unknown as {
+  const mod = await import("@fiber-paid-http/evidence-api") as unknown as {
     startEvidenceApi?: (port?: number) => unknown;
   };
   if (!mod.startEvidenceApi) {
-    throw new Error("@fiber-mpp/evidence-api does not export startEvidenceApi; run pnpm build before using the evidence API");
+    throw new Error("@fiber-paid-http/evidence-api does not export startEvidenceApi; run pnpm build before using the evidence API");
   }
   return { startEvidenceApi: mod.startEvidenceApi };
 }
 
 async function loadEvidenceWeb(): Promise<{ startEvidenceWeb: (port?: number, options?: { apiBase?: string }) => unknown }> {
-  const mod = await import("@fiber-mpp/evidence-web") as unknown as {
+  const mod = await import("@fiber-paid-http/evidence-web") as unknown as {
     startEvidenceWeb?: (port?: number, options?: { apiBase?: string }) => unknown;
   };
   if (!mod.startEvidenceWeb) {
-    throw new Error("@fiber-mpp/evidence-web does not export startEvidenceWeb; run pnpm install and pnpm build before using the evidence console");
+    throw new Error("@fiber-paid-http/evidence-web does not export startEvidenceWeb; run pnpm install and pnpm build before using the evidence console");
   }
   return { startEvidenceWeb: mod.startEvidenceWeb };
 }

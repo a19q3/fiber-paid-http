@@ -1,8 +1,8 @@
 {
-  "name": "@fiber-mpp/f402-compat",
+  "name": "@fiber-paid-http/f402-compat",
   "version": "0.1.0",
   "type": "module",
-  "description": "F402 compatibility converters for FiberMPP.",
+  "description": "F402 compatibility converters for Fiber Paid HTTP.",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -15,7 +15,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@fiber-mpp/core": "workspace:*",
+    "@fiber-paid-http/core": "workspace:*",
     "zod": "^3.25.0"
   }
 }

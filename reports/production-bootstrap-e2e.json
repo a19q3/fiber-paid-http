@@ -19,7 +19,7 @@
   },
   "gateway_bootstrap": {
     "status": "ready",
-    "server_id": "fiber-mpp-production-bootstrap-e2e",
+    "server_id": "fiber-paid-http-production-bootstrap-e2e",
     "rpc_auth_from_env": true,
     "log_redaction_enabled": true,
     "rate_limit_enabled": true
@@ -48,6 +48,6 @@
   "blockers_remaining_for_production_ready": [],
   "production_bootstrap_e2e": true,
   "production_bootstrap_e2e_blockers": [],
-  "production_readiness_source": "reports/fiber-mpp-gate.json",
+  "production_readiness_source": "reports/fiber-paid-http-gate.json",
   "production_blockers": []
 }

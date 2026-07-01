@@ -208,7 +208,7 @@ export function SettingsDrawer() {
                   <input id="bootstrap-payee-auth" name="payeeRpcAuth" type="password" autoComplete="off" spellCheck={false} />
                 </div>
               </div>
-              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--muted)", marginTop: 8 }} title="Durable production deployments should set FIBER_MPP_SECRET in the API process environment.">
+              <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: "var(--muted)", marginTop: 8 }} title="Durable production deployments should set FIBER_PAID_HTTP_SECRET in the API process environment.">
                 <input id="bootstrap-generate-secret" type="checkbox" checked={ev.bootstrapDraft.generateRuntimeSecret} onChange={(e) => ev.setBootstrapDraft("generateRuntimeSecret", e.target.checked)} />
                 Generate a fresh session signing secret
               </label>

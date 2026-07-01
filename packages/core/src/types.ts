@@ -35,7 +35,7 @@ export const FiberMethodChallengeSchema = z.object({
 export const PaymentMethodChallengeSchema = FiberMethodChallengeSchema;
 
 export const PaymentChallengeSchema = z.object({
-  domain: z.literal("fiber-mpp-challenge-v1"),
+  domain: z.literal("fiber-paid-http-challenge-v1"),
   challengeId: z.string().min(8),
   resource: ResourceDescriptorSchema,
   amount: AmountSchema,
@@ -50,7 +50,7 @@ export const PaymentChallengeSchema = z.object({
 });
 
 export const PaymentCredentialSchema = z.object({
-  domain: z.literal("fiber-mpp-credential-v1"),
+  domain: z.literal("fiber-paid-http-credential-v1"),
   challengeId: z.string().min(8),
   method: z.string().min(1),
   resourceHash: z.string().min(32),
@@ -68,7 +68,7 @@ export const SettlementSchema = z.object({
 });
 
 export const PaymentReceiptUnsignedSchema = z.object({
-  domain: z.literal("fiber-mpp-receipt-v1"),
+  domain: z.literal("fiber-paid-http-receipt-v1"),
   receiptId: z.string().min(8),
   challengeId: z.string().min(8),
   method: z.string().min(1),

@@ -5,10 +5,10 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ACTION="${1:-start}"
 API_PORT="${EVIDENCE_API_PORT:-8787}"
 WEB_PORT="${EVIDENCE_WEB_PORT:-8788}"
-SESSION="${FIBER_MPP_DEMO_SESSION:-live-demo}"
-POLL_MS="${FIBER_MPP_DEMO_POLL_MS:-1200}"
-STEP_DELAY_MS="${FIBER_MPP_DEMO_STEP_DELAY_MS:-3500}"
-COUNTDOWN_SECONDS="${FIBER_MPP_DEMO_COUNTDOWN_SECONDS:-8}"
+SESSION="${FIBER_PAID_HTTP_DEMO_SESSION:-live-demo}"
+POLL_MS="${FIBER_PAID_HTTP_DEMO_POLL_MS:-1200}"
+STEP_DELAY_MS="${FIBER_PAID_HTTP_DEMO_STEP_DELAY_MS:-3500}"
+COUNTDOWN_SECONDS="${FIBER_PAID_HTTP_DEMO_COUNTDOWN_SECONDS:-8}"
 API_BASE="http://127.0.0.1:${API_PORT}"
 WEB_URL="http://127.0.0.1:${WEB_PORT}"
 PID_FILE="${ROOT}/.tmp/evidence-live-demo.pid"
@@ -27,13 +27,13 @@ require_live_env() {
   [[ -n "${FIBER_PAYEE_RPC_URL:-${FIBER_RPC_URL:-}}" ]] || missing+=("FIBER_PAYEE_RPC_URL or FIBER_RPC_URL")
   [[ -n "${FIBER_CURRENCY:-}" ]] || missing+=("FIBER_CURRENCY=Fibd for local or Fibt for testnet")
   [[ -n "${FIBER_E2E_AMOUNT_SHANNONS:-}" ]] || missing+=("FIBER_E2E_AMOUNT_SHANNONS")
-  [[ -n "${FIBER_MPP_SECRET:-}" ]] || missing+=("FIBER_MPP_SECRET")
+  [[ -n "${FIBER_PAID_HTTP_SECRET:-}" ]] || missing+=("FIBER_PAID_HTTP_SECRET")
   if ((${#missing[@]})); then
     echo "Live evidence demo refuses to start without real Fiber env:" >&2
     printf '  - %s\n' "${missing[@]}" >&2
     echo >&2
     echo "For the local 3-node network, use for example:" >&2
-    echo "  RUN_FIBER_E2E=1 FIBER_MODE=local FIBER_PAYER_RPC_URL=http://127.0.0.1:21714 FIBER_PAYEE_RPC_URL=http://127.0.0.1:21716 FIBER_CURRENCY=Fibd FIBER_E2E_AMOUNT_SHANNONS=100 FIBER_MPP_SECRET=\$(openssl rand -hex 32) $0 start" >&2
+    echo "  RUN_FIBER_E2E=1 FIBER_MODE=local FIBER_PAYER_RPC_URL=http://127.0.0.1:21714 FIBER_PAYEE_RPC_URL=http://127.0.0.1:21716 FIBER_CURRENCY=Fibd FIBER_E2E_AMOUNT_SHANNONS=100 FIBER_PAID_HTTP_SECRET=\$(openssl rand -hex 32) $0 start" >&2
     exit 78
   fi
 }
@@ -52,8 +52,8 @@ start_server() {
   fi
   echo "Starting Evidence API/Web on ${API_BASE} and ${WEB_URL}..."
   setsid env \
-    FIBER_MPP_EVIDENCE_API_BASE="${API_BASE}" \
-    pnpm exec fiber-mpp evidence start --port "${API_PORT}" --web-port "${WEB_PORT}" \
+    FIBER_PAID_HTTP_EVIDENCE_API_BASE="${API_BASE}" \
+    pnpm exec fiber-paid-http evidence start --port "${API_PORT}" --web-port "${WEB_PORT}" \
     >"${LOG_FILE}" 2>&1 &
   echo "$!" > "${PID_FILE}"
   wait_url "${API_BASE}/healthz" "Evidence API"
@@ -104,7 +104,7 @@ print_status() {
   echo "  EVIDENCE_API_PORT=${API_PORT} EVIDENCE_WEB_PORT=${WEB_PORT} $0 logs"
   echo
   echo "Run this after opening the web URL when live Fiber env is configured:"
-  echo "  FIBER_MPP_DEMO_SESSION=${SESSION} EVIDENCE_API_PORT=${API_PORT} EVIDENCE_WEB_PORT=${WEB_PORT} $0 run"
+  echo "  FIBER_PAID_HTTP_DEMO_SESSION=${SESSION} EVIDENCE_API_PORT=${API_PORT} EVIDENCE_WEB_PORT=${WEB_PORT} $0 run"
   echo
 }
 

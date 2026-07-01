@@ -8,7 +8,7 @@ The x402 attack literature highlights five families of practical failures:
 - web-layer handling mistakes,
 - paid-but-denied or unpaid-service outcomes.
 
-FiberMPP implemented mitigations:
+Fiber Paid HTTP implemented mitigations:
 
 - Challenge HMAC over canonical JSON.
 - Credential resource hash check against the original challenge and current request.
