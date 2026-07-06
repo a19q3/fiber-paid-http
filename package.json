@@ -4,7 +4,16 @@
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.12.1",
+  "license": "MIT",
   "description": "Rust-first Fiber paid HTTP gateway with MPP, F402, and F-L402 compatibility envelopes.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/a19q3/fiber-paid-http.git"
+  },
+  "engines": {
+    "node": ">=24.0.0",
+    "pnpm": ">=10.12.1"
+  },
   "scripts": {
     "lint": "pnpm -r --if-present lint",
     "typecheck": "tsc -p tsconfig.json --noEmit && pnpm --filter @fiber-paid-http/evidence-web exec tsc -p tsconfig.json --noEmit",

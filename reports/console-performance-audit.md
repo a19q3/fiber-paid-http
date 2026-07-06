@@ -1,5 +1,7 @@
 # Fiber Paid HTTP Evidence Console Performance Audit
 
+> **ARCHIVED.** This 2026-06-25 audit was written against the pre-rename topology (`apps/demo-api`, `apps/demo-web`). Current apps live under `apps/evidence-api` and `apps/evidence-web`. This report is preserved as historical evidence; do not read its file paths as current checkout paths.
+
 Generated: 2026-06-25
 
 Scope:

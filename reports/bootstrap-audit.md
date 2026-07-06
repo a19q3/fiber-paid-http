@@ -1,5 +1,7 @@
 # Fiber Paid HTTP Bootstrap Audit And Fix
 
+> **ARCHIVED.** This 2026-06-25 audit records the bootstrap fix pass and includes pre-rename paths such as `apps/demo-api` plus older local defaults. Current user-facing bootstrap guidance lives in `docs/bootstrap.md`, `docs/fiber-local-network.md`, and the current scripts.
+
 Date: 2026-06-25
 
 Scope: user, merchant/admin, Fiber node operator, and maintainer bootstrap paths after removal of non-live payment paths.

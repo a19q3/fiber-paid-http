@@ -101,7 +101,7 @@ state_name: ChannelReady
 Run Fiber Paid HTTP role checks before the live test:
 
 ```bash
-cd /home/arthur/a19q3/fiber-paid-http
+cd "$(git rev-parse --show-toplevel)"
 
 export FIBER_MODE=testnet
 export FIBER_CURRENCY=Fibt
@@ -128,7 +128,7 @@ If it reports no peers or no `ChannelReady` channels, fix Fiber connectivity bef
 ## Run Live Testnet E2E
 
 ```bash
-cd /home/arthur/a19q3/fiber-paid-http
+cd "$(git rev-parse --show-toplevel)"
 
 export RUN_FIBER_E2E=1
 export FIBER_MODE=testnet
@@ -147,7 +147,7 @@ pnpm test:fiber
 The reproducible evidence runner wraps the same env, role doctors, live Fiber test, and canonical gate:
 
 ```bash
-cd /home/arthur/a19q3/fiber-paid-http
+cd "$(git rev-parse --show-toplevel)"
 
 export FIBER_PAYER_RPC_URL=http://127.0.0.1:8227
 export FIBER_PAYEE_RPC_URL=http://127.0.0.1:8237

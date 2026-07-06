@@ -1,6 +1,6 @@
 # Fiber Paid HTTP Reference Index
 
-This index records the external sources inspected before implementation. Reference notes live under `docs/refs` only. External repositories are cloned read-only under `/home/arthur/a19q3`.
+This index records the external sources inspected before implementation. Reference notes live under `docs/refs` only. Local repository paths are written as `<reference-workspace>/...` placeholders because each contributor may clone references in a different location.
 
 ## mpp.dev
 
@@ -29,7 +29,7 @@ This index records the external sources inspected before implementation. Referen
 ## Infern announcement
 
 - URL: https://talk.nervos.org/t/introducing-infern-serve-an-ai-model-from-your-own-machine-and-get-paid-per-request-over-fiber/10408
-- Local repo path: `/home/arthur/a19q3/infern`
+- Local repo path: `<reference-workspace>/infern`
 - Why it matters: describes F402: HTTP 402 carrying a Fiber invoice, payment over Fiber, retry with proof, and serving the response.
 - Fiber Paid HTTP behavior learned: F402 should be an adapter, not the primary protocol. Fiber Paid HTTP should provide infrastructure that Infern-like apps can use.
 - What not to copy: do not build an AI inference marketplace, routing marketplace, registry, stake/slashing system, or model UI.
@@ -39,13 +39,13 @@ This index records the external sources inspected before implementation. Referen
 - URL: https://talk.nervos.org/t/gone-in-60ms-fiber-network-infrastructure-hackathon-announcement/10418
 - Local repo path: none
 - Why it matters: likely frames Fiber infrastructure priorities and hackathon submission expectations.
-- Fiber Paid HTTP behavior learned: unresolved from this environment because the page timed out during fetch on 2026-06-24.
+- Fiber Paid HTTP behavior learned: submit as category 3 infrastructure; include project summary, selected category, team members, fully open-sourced repository link, runnable and hosted demo, video demonstration, technical breakdown, Fiber infrastructure gap, roadmap, and any AI allowance claim. Documentation quality is an explicit judging criterion.
 - What not to copy: no implementation details were copied.
 
 ## nervosnetwork/fiber
 
 - URL: https://github.com/nervosnetwork/fiber
-- Local repo path: `/home/arthur/a19q3/fiber`
+- Local repo path: `<reference-workspace>/fiber`
 - Why it matters: reference Fiber Network Node implementation and JSON-RPC surface.
 - Fiber Paid HTTP behavior learned: Fiber exposes invoice and payment RPC methods that are sufficient for an MPP method adapter: `new_invoice`, `get_invoice`, `send_payment`, `get_payment`, `list_payments`, `list_channels`, and `node_info`.
 - What not to copy: do not import or modify Fiber internals. Fiber Paid HTTP talks over JSON-RPC.
@@ -53,7 +53,7 @@ This index records the external sources inspected before implementation. Referen
 ## Fiber RPC README
 
 - URL: https://github.com/nervosnetwork/fiber/blob/develop/crates/fiber-lib/src/rpc/README.md
-- Local repo path: `/home/arthur/a19q3/fiber/crates/fiber-lib/src/rpc/README.md`
+- Local repo path: `<reference-workspace>/fiber/crates/fiber-lib/src/rpc/README.md`
 - Why it matters: current method names, parameter shapes, statuses, and warnings.
 - Fiber Paid HTTP behavior learned: the RPC port must be treated as trusted-only; invoice status `Received` or `Paid` and payment status success-like states can count as settled.
 - What not to copy: do not expose Fiber RPC directly to browsers or untrusted networks.
@@ -61,7 +61,7 @@ This index records the external sources inspected before implementation. Referen
 ## Fiber glossary
 
 - URL: https://github.com/nervosnetwork/fiber/blob/develop/docs/glossary.md
-- Local repo path: `/home/arthur/a19q3/fiber/docs/glossary.md`
+- Local repo path: `<reference-workspace>/fiber/docs/glossary.md`
 - Why it matters: clarifies payment channels, invoices, payment hashes, preimages, HTLC/PTLC language, and node identifiers.
 - Fiber Paid HTTP behavior learned: use pubkey/node id carefully and keep invoice/payment-hash semantics visible in docs and proofs.
 - What not to copy: do not overspecify PTLC behavior that is not exposed by current RPC.
@@ -69,7 +69,7 @@ This index records the external sources inspected before implementation. Referen
 ## lightninglabs/l402
 
 - URL: https://github.com/lightninglabs/l402
-- Local repo path: `/home/arthur/a19q3/l402`
+- Local repo path: `<reference-workspace>/l402`
 - Why it matters: precedent for combining HTTP 402, invoices, and bearer credentials.
 - Fiber Paid HTTP behavior learned: challenge tokens should bind challenge id, resource, amount, payment hash, expiration, and issuer. Replay must be tracked when credentials are bearer-like.
 - What not to copy: do not use Lightning-specific macaroon or BOLT11 assumptions as Fiber requirements.
@@ -77,7 +77,7 @@ This index records the external sources inspected before implementation. Referen
 ## Fewsats awesome-L402
 
 - URL: https://github.com/Fewsats/awesome-L402
-- Local repo path: `/home/arthur/a19q3/awesome-L402`
+- Local repo path: `<reference-workspace>/awesome-L402`
 - Why it matters: ecosystem map for L402 tooling and patterns.
 - Fiber Paid HTTP behavior learned: middleware, clients, CLI tools, and HTTP gateway adapters are the right reusable surfaces.
 - What not to copy: do not imply Fiber Paid HTTP is a Lightning L402 byte-format implementation; its F-L402 token is application-level Fiber compatibility.
@@ -100,7 +100,7 @@ This index records the external sources inspected before implementation. Referen
 
 ## Additional cloned repositories
 
-- `/home/arthur/a19q3/fiber-docs`: Fiber docs reference.
-- `/home/arthur/a19q3/fiber-pay`: CLI/payment UX reference.
-- `/home/arthur/a19q3/fiber-l402`: Fiber L402 precedent.
-- `/home/arthur/a19q3/fiber-checkout`: React checkout/payment component reference.
+- `<reference-workspace>/fiber-docs`: Fiber docs reference.
+- `<reference-workspace>/fiber-pay`: CLI/payment UX reference.
+- `<reference-workspace>/fiber-l402`: Fiber L402 precedent.
+- `<reference-workspace>/fiber-checkout`: React checkout/payment component reference.

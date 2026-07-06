@@ -1,5 +1,7 @@
 # Paid API Example
 
+> **README-only skeleton.** Source under `examples/paid-api/src` is not yet shipped. The snippet below shows the intended wiring; copy and adapt it to your own host project.
+
 ```ts
 import { createFiberPaidHttpMiddleware } from "@fiber-paid-http/server-middleware";
 import { FiberMethodAdapter } from "@fiber-paid-http/fiber-method";

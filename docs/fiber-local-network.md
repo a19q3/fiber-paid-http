@@ -1,16 +1,16 @@
 # Local Fiber Network
 
-This is the reproducible local Fiber network used by Fiber Paid HTTP live E2E. It wraps the current supported Fiber development flow from `/home/arthur/a19q3/fiber` without modifying Fiber internals.
+This is the reproducible local Fiber network used by Fiber Paid HTTP live E2E. It wraps the current supported Fiber development flow from `${FIBER_REPO:-../fiber}` without modifying Fiber internals.
 
 ## Source Of Truth
 
 The supported local multi-node path in the Fiber repo is:
 
-- `/home/arthur/a19q3/fiber/docs/dev/README.md`: starts local development nodes with `./tests/nodes/start.sh`.
-- `/home/arthur/a19q3/fiber/tests/nodes/start.sh`: initializes the dev CKB chain, builds `fnn`, starts CKB, and starts FNN nodes.
-- `/home/arthur/a19q3/fiber/tests/nodes/wait.sh`: waits for generated local RPC/P2P ports.
-- `/home/arthur/a19q3/fiber/tests/bruno/e2e/router-pay`: opens `node1 -> node2 -> node3` CKB channels and proves routed payments.
-- `/home/arthur/a19q3/fiber/tests/bruno/environments/test.bru`: defines local ports and node ids.
+- `${FIBER_REPO:-../fiber}/docs/dev/README.md`: starts local development nodes with `./tests/nodes/start.sh`.
+- `${FIBER_REPO:-../fiber}/tests/nodes/start.sh`: initializes the dev CKB chain, builds `fnn`, starts CKB, and starts FNN nodes.
+- `${FIBER_REPO:-../fiber}/tests/nodes/wait.sh`: waits for generated local RPC/P2P ports.
+- `${FIBER_REPO:-../fiber}/tests/bruno/e2e/router-pay`: opens `node1 -> node2 -> node3` CKB channels and proves routed payments.
+- `${FIBER_REPO:-../fiber}/tests/bruno/environments/test.bru`: defines local ports and node ids.
 
 Fiber's Docker docs describe running a single packaged node. The multi-node local E2E environment is the repo dev/test script path above, not Docker Compose.
 
@@ -41,11 +41,11 @@ export FIBER_PAID_HTTP_SECRET="$(openssl rand -hex 32)"
 From Fiber Paid HTTP:
 
 ```bash
-cd /home/arthur/a19q3/fiber-paid-http
+cd "$(git rev-parse --show-toplevel)"
 scripts/fiber_local_network.sh up
 ```
 
-The wrapper uses `ckb` and `ckb-cli`. If they are not already on `PATH`, it auto-detects the portable binaries at `/home/arthur/a19q3/ckb-bin/ckb_v0.207.0_x86_64-unknown-linux-gnu-portable`.
+The wrapper uses `ckb` and `ckb-cli`. If they are not already on `PATH`, it auto-detects the portable binaries at `$HOME/ckb-bin/ckb_v0.207.0_x86_64-unknown-linux-gnu-portable` or next to `$FIBER_REPO`.
 
 The wrapper also uses Fiber's supported `sqlite` cargo feature for the local FNN binary build. This avoids the default RocksDB C++ build in constrained local environments while still running the current Fiber node implementation.
 
@@ -62,7 +62,7 @@ The production gate records observed shim use in `toolchain_shims_used` from `re
 
 The script:
 
-1. starts `/home/arthur/a19q3/fiber/tests/nodes/start.sh e2e/router-pay` in the background,
+1. starts `${FIBER_REPO:-../fiber}/tests/nodes/start.sh e2e/router-pay` in the background,
 2. waits for CKB and FNN RPC ports,
 3. connects node2 to node1 and node3 to node2,
 4. opens node1-to-node2 and node2-to-node3 channels,
@@ -106,14 +106,14 @@ scripts/fiber_local_network.sh stop
 Terminal 1:
 
 ```bash
-cd /home/arthur/a19q3/fiber
+cd "${FIBER_REPO:-../fiber}"
 REMOVE_OLD_STATE=y ./tests/nodes/start.sh e2e/router-pay
 ```
 
 Terminal 2:
 
 ```bash
-cd /home/arthur/a19q3/fiber
+cd "${FIBER_REPO:-../fiber}"
 ./tests/nodes/wait.sh
 ```
 
@@ -162,7 +162,7 @@ The result should include two graph channels before running Fiber Paid HTTP live
 ## Run Fiber Paid HTTP Live E2E
 
 ```bash
-cd /home/arthur/a19q3/fiber-paid-http
+cd "$(git rev-parse --show-toplevel)"
 RUN_FIBER_E2E=1 \
 FIBER_MODE=local \
 FIBER_PAYEE_RPC_URL=http://127.0.0.1:21716 \

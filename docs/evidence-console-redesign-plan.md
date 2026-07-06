@@ -1,5 +1,7 @@
 # Fiber Paid HTTP Evidence Console 重构方案
 
+> **Status.** 2026-06 design record. The current implementation has moved to the React + Vite app under `apps/evidence-web/`; use this document for design intent, not current file paths or line numbers.
+
 > 目标：**整齐、酷炫、但不过载、不混乱**。通过引入 **左侧 Sidebar** 与 **重组的 Settings 面板** 把信息压力从单屏 cockpit 分流出去。
 > 参考：ThunderHub（`apotdevin/thunderhub`）的 shell 模式 —— 精简顶栏 + 可折叠分区侧栏 + 右侧 Inspector 抽屉 + 轻量 Preferences。
 > 本文档**只提方案，不改代码**。

@@ -1,5 +1,7 @@
 # Fiber Paid HTTP Evidence Console — Theatre / Placeholder / Stub Audit
 
+> **ARCHIVED.** This 2026-06-25 audit was written against the pre-rename topology (`apps/demo-api`, `apps/demo-web`) at commit `4bcb129`. Current apps live under `apps/evidence-api` and `apps/evidence-web`. This report is preserved as historical evidence; do not read its file paths as current checkout paths.
+
 **Scope**: `apps/demo-api/`, `apps/demo-web/`, plus the gate reports they read.
 **Method**: read every source file end-to-end, diff each visible claim against the actual code path, cross-check report JSON files on disk.
 **Date**: 2026-06-25 (against commit `4bcb129`).

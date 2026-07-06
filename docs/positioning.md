@@ -1,6 +1,6 @@
 # Positioning
 
-Fiber Paid HTTP is the current name for a Fiber Paid HTTP protocol-family implementation. The repo name stays stable, while the product surface is broader than one protocol acronym:
+Fiber Paid HTTP is a paid-HTTP protocol-family implementation for Fiber. The repo and CLI names stay stable, while the product surface is broader than one protocol acronym:
 
 ```text
 Rust       = canonical protocol core, vector verifier, and production gateway path

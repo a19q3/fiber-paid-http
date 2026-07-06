@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-FIBER_REPO="${FIBER_REPO:-/home/arthur/a19q3/fiber}"
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." &>/dev/null && pwd)"
+DEFAULT_FIBER_REPO="$(cd -- "${REPO_ROOT}/../fiber" 2>/dev/null && pwd || printf '%s' "${REPO_ROOT}/../fiber")"
+FIBER_REPO="${FIBER_REPO:-$DEFAULT_FIBER_REPO}"
 export PATH="${SCRIPT_DIR}/bin:${PATH}"
-LOG_DIR="${FIBER_LOCAL_LOG_DIR:-$(pwd)/reports/fiber-local-network}"
+LOG_DIR="${FIBER_LOCAL_LOG_DIR:-${REPO_ROOT}/reports/fiber-local-network}"
 PID_FILE="${LOG_DIR}/fiber-start.pid"
 START_LOG="${LOG_DIR}/start.log"
 WAIT_LOG="${LOG_DIR}/wait.log"
@@ -39,12 +41,12 @@ Commands:
   stop    Stop the background network started by this script.
 
 Environment:
-  FIBER_REPO=/home/arthur/a19q3/fiber
+  FIBER_REPO=../fiber
   FIBER_LOCAL_LOG_DIR=reports/fiber-local-network
   REMOVE_OLD_STATE=y
   FIBER_LOCAL_ASSET=ckb|xudt
   FIBER_LOCAL_PRIZE_ROUTE=1
-  PATH=/home/arthur/a19q3/ckb-bin/ckb_v0.207.0_x86_64-unknown-linux-gnu-portable:$PATH
+  PATH=$HOME/ckb-bin/ckb_v0.207.0_x86_64-unknown-linux-gnu-portable:$PATH
 USAGE
 }
 
@@ -233,7 +235,7 @@ ensure_ckb_bins() {
   fi
   local candidate
   for candidate in \
-    "/home/arthur/a19q3/ckb-bin/ckb_v0.207.0_x86_64-unknown-linux-gnu-portable" \
+    "${HOME}/ckb-bin/ckb_v0.207.0_x86_64-unknown-linux-gnu-portable" \
     "${FIBER_REPO}/../ckb-bin/ckb_v0.207.0_x86_64-unknown-linux-gnu-portable"; do
     if [[ -x "${candidate}/ckb" && -x "${candidate}/ckb-cli" ]]; then
       export PATH="${candidate}:${PATH}"

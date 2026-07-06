@@ -145,7 +145,7 @@ flowchart LR
 ## Quick start
 
 ```bash
-pnpm install
+pnpm install --frozen-lockfile
 pnpm build
 pnpm exec fiber-paid-http init --role gateway --out fiber-paid-http.gateway.json
 export FIBER_PAID_HTTP_SECRET="$(openssl rand -hex 32)"
@@ -153,9 +153,31 @@ pnpm exec fiber-paid-http doctor --role gateway --config fiber-paid-http.gateway
 pnpm exec fiber-paid-http serve --config fiber-paid-http.gateway.json
 ```
 
+Use Node 24 and pnpm 10.12.1 or newer. `.node-version` and `.nvmrc` are provided for local version managers.
+
 The doctor command prints exact blockers until `FIBER_MODE`, payee Fiber RPC, storage, upstream, signing secret, Fiber peers, and `ChannelReady` channels are configured.
 
 The configured gateway exposes `GET /healthz`, `GET /readyz`, and `GET /metrics`, rejects disallowed browser origins before challenge issuance, enforces protected-route rate limits and a request body limit, writes structured JSON request logs, and shuts down gracefully on `SIGINT`/`SIGTERM`.
+
+## Judge demo path
+
+For hackathon review, use [docs/hackathon-submission.md](docs/hackathon-submission.md) as the submission packet and [docs/README.md](docs/README.md) as the full documentation map.
+
+Local Evidence Console demo:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm build
+pnpm evidence:api
+```
+
+In another shell:
+
+```bash
+pnpm evidence:web
+```
+
+The Flow workspace demonstrates `402 -> Fiber payment/proof -> Authorization retry -> Payment-Receipt -> replay rejection`. The Evidence workspace links the committed reports for Rust/TypeScript parity, security coverage, testnet evidence, and production bootstrap evidence.
 
 ## Evidence paths
 

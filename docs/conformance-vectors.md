@@ -57,7 +57,7 @@ attack.fl402-wrong-preimage.json
 attack.fl402-tampered-macaroon.json
 ```
 
-The verifier exercises the same TypeScript parsing, signing, resource hashing, middleware verification, F402 conversion, F-L402 preimage/macaroon verification, replay storage, and receipt signature checks that production code uses. The Rust verifier must agree on all 18 shared vectors.
+The verifier exercises the same TypeScript parsing, signing, resource hashing, middleware verification, F402 conversion, F-L402 preimage/macaroon verification, replay storage, and receipt signature checks that production code uses. The Rust verifier must agree on all 16 deterministic fixtures; reports also track the 2 live-Fiber evidence fixtures, for 18 shared vector files total.
 
 ## Live Fiber Evidence
 

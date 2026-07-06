@@ -29,3 +29,5 @@ Partial mitigations:
 - PII minimization: challenges carry only route/resource/payment metadata by default.
 
 Tests cover the required security cases in `tests/unit` and `tests/integration`.
+
+For the attack-by-attack evidence map, see [security-matrix.md](security-matrix.md) and `reports/security-matrix.json`. The matrix links each covered attack to the expected rejection code, implemented test, and vector file.

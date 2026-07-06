@@ -37,7 +37,7 @@ Fiber payment execution requires `FIBER_MODE=local` or `FIBER_MODE=testnet` plus
 | `crates/fiber-paid-http-f402` | F402 proof → credential conversion, `canonical_equal`. |
 | `crates/fiber-paid-http-server` | axum-based gateway with 402 + `Cache-Control: no-store`. |
 | `crates/fiber-paid-http-cli` | `fiber-paid-http-rs` binary: `vectors verify`, `receipt verify`, `challenge inspect`, `doctor`, `server --config`. |
-| `test-vectors/` | Shared protocol truth — 14 vectors (challenge, credential, receipt, f402, resource hash, attack vectors, fiber local-e2e evidence). Both engines must agree byte-for-byte on canonical hash + result + error code. |
+| `test-vectors/` | Shared protocol truth — 16 deterministic conformance vectors plus 2 live-Fiber evidence fixtures (18 total). Both engines must agree byte-for-byte on canonical hash + result + error code where the fixture is deterministic. |
 
 ## Commands
 
@@ -70,7 +70,7 @@ cargo run -p fiber-paid-http-cli -- challenge inspect <file>
 cargo run -p fiber-paid-http-cli -- doctor
 bash scripts/fiber_paid_http_rust_gate.sh              # writes reports/fiber-paid-http-rust-gate.json
 bash scripts/fiber_paid_http_canonical_gate.sh         # writes reports/canonical-core-parity.json
-                                   # asserts TS↔Rust parity on 14 vectors + receipt/f402 + RPC semantics
+                                   # asserts TS↔Rust parity on 16 deterministic vectors + 2 evidence fixtures + receipt/f402/F-L402 + RPC semantics
 ```
 
 ### Fiber live E2E (optional)
@@ -145,4 +145,4 @@ Both Rust (`crates/fiber-paid-http-core`) and TypeScript (`packages/core`) imple
 
 ## Memory hints
 
-If you discover new commands (build/test/lint/deploy), style preferences, or gotchas, append them here. Current gates assume `pnpm@10.12.1`, Node 24 (`@types/node ^24`), TypeScript ^5.8, vitest ^3.2, Rust toolchain at `/home/arthur/.cargo/bin/cargo`, and an external Fiber repo at `/home/arthur/a19q3/fiber` (override with `FIBER_REPO`).
+If you discover new commands (build/test/lint/deploy), style preferences, or gotchas, append them here. Current gates assume `pnpm@10.12.1`, Node 24 (`@types/node ^24`), TypeScript ^5.8, vitest ^3.2, Rust toolchain at `$HOME/.cargo/bin/cargo`, and an external Fiber repo at `${FIBER_REPO:-../fiber}`.

@@ -11,6 +11,7 @@ bash scripts/fiber_paid_http_ops_gate.sh
 
 node <<'JSON'
 const fs = require("node:fs");
+const path = require("node:path");
 const { execFileSync } = require("node:child_process");
 const { productionBootstrapReadiness } = require("./scripts/lib/production-bootstrap-readiness.cjs");
 const {
@@ -113,7 +114,7 @@ function readFiberCommit() {
 function fiberRepoCandidates() {
   return Array.from(new Set([
     process.env.FIBER_REPO,
-    "/home/arthur/a19q3/fiber"
+    path.resolve(process.cwd(), "../fiber")
   ].filter(Boolean)));
 }
 

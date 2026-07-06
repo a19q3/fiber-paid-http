@@ -5,7 +5,7 @@
 Use [fiber-local-network.md](fiber-local-network.md) for the current reproducible local network setup. The short form is:
 
 ```bash
-cd /home/arthur/a19q3/fiber-paid-http
+cd "$(git rev-parse --show-toplevel)"
 scripts/fiber_local_network.sh up
 ```
 
@@ -26,7 +26,7 @@ The preflight test in `tests/integration/fiber-preflight.test.ts` reports skippe
 
 ## RPC Methods Confirmed From Current Fiber
 
-From `/home/arthur/a19q3/fiber/crates/fiber-lib/src/rpc/README.md` and Bruno e2e tests:
+From `${FIBER_REPO:-../fiber}/crates/fiber-lib/src/rpc/README.md` and Bruno e2e tests:
 
 - `new_invoice`: payee creates invoice. Numeric fields such as `amount` and `expiry` are sent as hex JSON quantities, for example `0x64`.
 - `get_invoice`: payee inspects invoice by `payment_hash`; settled invoice status is `Paid`.
@@ -63,19 +63,19 @@ export FIBER_PAYER_RPC_AUTH='Bearer ...'
 
 ## Local Devnet Setup Using The Fiber Repo
 
-The preferred setup is `scripts/fiber_local_network.sh up`, documented in [fiber-local-network.md](fiber-local-network.md). The manual commands below use the checked-out Fiber repo at `/home/arthur/a19q3/fiber` and the same node identities used by Fiber's Bruno `router-pay` e2e collection.
+The preferred setup is `scripts/fiber_local_network.sh up`, documented in [fiber-local-network.md](fiber-local-network.md). The manual commands below use the checked-out Fiber repo at `${FIBER_REPO:-../fiber}` and the same node identities used by Fiber's Bruno `router-pay` e2e collection.
 
 Terminal 1:
 
 ```bash
-cd /home/arthur/a19q3/fiber
+cd "${FIBER_REPO:-../fiber}"
 REMOVE_OLD_STATE=y ./tests/nodes/start.sh e2e/router-pay
 ```
 
 Terminal 2:
 
 ```bash
-cd /home/arthur/a19q3/fiber
+cd "${FIBER_REPO:-../fiber}"
 ./tests/nodes/wait.sh
 ```
 
@@ -128,7 +128,7 @@ curl -sS http://127.0.0.1:21714 \
 Then run Fiber Paid HTTP:
 
 ```bash
-cd /home/arthur/a19q3/fiber-paid-http
+cd "$(git rev-parse --show-toplevel)"
 export RUN_FIBER_E2E=1
 export FIBER_MODE=local
 export FIBER_RPC_URL=http://127.0.0.1:21716

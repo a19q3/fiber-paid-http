@@ -1,5 +1,7 @@
 # Fiber Paid HTTP Evidence Console Frontend Plan
 
+> **Status.** 2026-06 design record. The current implementation has moved to the React + Vite app under `apps/evidence-web/`; use this document for design intent, not current file paths or line numbers.
+
 ## Intent
 
 Build a fancy but thin protocol console for showing one verifiable Fiber Paid HTTP flow:

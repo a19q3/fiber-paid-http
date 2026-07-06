@@ -2,7 +2,7 @@
 
 Fiber Paid HTTP uses Fiber through JSON-RPC only. The RPC README warns that exposing the RPC port to arbitrary machines is dangerous, so production deployments should bind it to trusted local networks or loopback and put Fiber Paid HTTP in front.
 
-Relevant RPC methods from `/home/arthur/a19q3/fiber/crates/fiber-lib/src/rpc/README.md`:
+Relevant RPC methods from `<reference-workspace>/fiber/crates/fiber-lib/src/rpc/README.md`:
 
 - `new_invoice`: creates a Fiber invoice with amount, currency, optional payment hash or preimage, expiry, and routing options.
 - `get_invoice`: retrieves invoice status by payment hash. Useful server-side verification statuses are `Received` and `Paid`.

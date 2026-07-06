@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-real_cargo="${REAL_CARGO:-/home/arthur/.cargo/bin/cargo}"
-fiber_repo="${FIBER_REPO:-/home/arthur/a19q3/fiber}"
+real_cargo="${REAL_CARGO:-${HOME}/.cargo/bin/cargo}"
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+repo_root="$(cd -- "${script_dir}/../.." &>/dev/null && pwd)"
+default_fiber_repo="$(cd -- "${repo_root}/../fiber" 2>/dev/null && pwd || printf '%s' "${repo_root}/../fiber")"
+fiber_repo="${FIBER_REPO:-$default_fiber_repo}"
 
 merge_sqlite_feature() {
   local features="$1"

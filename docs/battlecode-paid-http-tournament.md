@@ -15,7 +15,7 @@ This flow turns a local Battlecode match into a paid-entry tournament:
 The Battlecode engine is an external AGPL-3.0 dependency. Keep it outside this repository:
 
 ```bash
-git clone --depth 1 https://github.com/battlecode/battlecode25-scaffold.git /home/arthur/a19q3/battlecode25-scaffold
+git clone --depth 1 https://github.com/battlecode/battlecode25-scaffold.git "$HOME/battlecode25-scaffold"
 ```
 
 The API runner does not copy Battlecode scaffold code into Fiber Paid HTTP. It stores submitted bot sources under `.tmp/battlecode-tournament/submissions/`, records tournament state in a SQLite ledger, materializes each match under `.tmp/battlecode-tournament/runs/`, and runs `battlecode.server.Main` headlessly.
@@ -25,13 +25,13 @@ The API runner does not copy Battlecode scaffold code into Fiber Paid HTTP. It s
 Use JDK 21. A local user-level JDK is preferred:
 
 ```bash
-export BATTLECODE_JDK_HOME=/home/arthur/a19q3/.toolchains/jdk-21.0.11+10
+export BATTLECODE_JDK_HOME=/path/to/jdk-21
 ```
 
 Use either a downloaded Battlecode engine jar:
 
 ```bash
-export BATTLECODE_ENGINE_JAR=/home/arthur/a19q3/.toolchains/battlecode25/battlecode25-java-3.1.0.jar
+export BATTLECODE_ENGINE_JAR=/path/to/battlecode25-java-3.1.0.jar
 export BATTLECODE_ENGINE_VERSION=3.1.0
 ```
 

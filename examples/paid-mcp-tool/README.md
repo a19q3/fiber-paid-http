@@ -1,5 +1,7 @@
 # Paid MCP Tool Example
 
+> **README-only skeleton.** Source under `examples/paid-mcp-tool/src` is not yet shipped. The snippet below shows the intended wiring; copy and adapt it to your own host project.
+
 Expose an HTTP endpoint for a tool call and wrap it with Fiber Paid HTTP:
 
 ```ts

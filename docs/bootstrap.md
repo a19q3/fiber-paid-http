@@ -121,14 +121,14 @@ Keep signing secrets out of config. The config stores environment variable names
 ```json
 {
   "secret_env": "FIBER_PAID_HTTP_SECRET",
-  "previous_secret_envs": ["FIBER_PAID_HTTP_SECRET_2026_06_PREVIOUS"]
+  "previous_secret_envs": ["FIBER_PAID_HTTP_SECRET_PREVIOUS"]
 }
 ```
 
 Rotation flow:
 
 ```bash
-export FIBER_PAID_HTTP_SECRET_2026_06_PREVIOUS="$FIBER_PAID_HTTP_SECRET"
+export FIBER_PAID_HTTP_SECRET_PREVIOUS="$FIBER_PAID_HTTP_SECRET"
 export FIBER_PAID_HTTP_SECRET="$(openssl rand -hex 32)"
 pnpm exec fiber-paid-http doctor --role gateway --config fiber-paid-http.gateway.json
 pnpm exec fiber-paid-http serve --config fiber-paid-http.gateway.json
@@ -140,7 +140,7 @@ Verify a receipt against current plus explicit previous secrets:
 
 ```bash
 pnpm exec fiber-paid-http receipt verify receipt.json \
-  --previous-secret "$FIBER_PAID_HTTP_SECRET_2026_06_PREVIOUS"
+  --previous-secret "$FIBER_PAID_HTTP_SECRET_PREVIOUS"
 ```
 
 ## Gateway Operations
@@ -211,7 +211,7 @@ When `previous_secret_envs` is set in the gateway config, both receipt export an
 ```bash
 pnpm exec fiber-paid-http storage audit-receipts \
   --config fiber-paid-http.gateway.json \
-  --previous-secret "$FIBER_PAID_HTTP_SECRET_2026_06_PREVIOUS"
+  --previous-secret "$FIBER_PAID_HTTP_SECRET_PREVIOUS"
 ```
 
 Paid-but-denied evidence is recorded when a credential is redeemed but the protected upstream throws or returns a server error. Operators can inspect delivery outcomes:
