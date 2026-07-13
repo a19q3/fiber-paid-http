@@ -126,7 +126,7 @@ export const ResourceHashIcon = wrapIcon("ResourceHash", Hash);
 export const RouteIcon = wrapIcon("Route", Route);
 export const F402Icon = wrapIcon("F402", Radio);
 export const VectorHarnessIcon = wrapIcon("VectorHarness", Database);
-export const AttackReplayIcon = wrapIcon("AttackReplay", ShieldAlert);
+export const AttackReplayIcon = wrapIcon("AttackReplay", CircleX);
 export const SettingsIcon = wrapIcon("Settings", SlidersHorizontal);
 
 export const consoleIconComponents = {
