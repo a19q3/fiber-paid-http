@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React from "react";
 import { useEvidence } from "../state/EvidenceContext.js";
 import { Icon } from "../components/Icon.js";
-import { formatTime, channelEvidenceText } from "../lib/utils.js";
+import { formatTime } from "../lib/utils.js";
 import type { FlowEvent } from "../types.js";
 
 function eventIcon(level: string) {
@@ -31,7 +31,6 @@ function staticEvents(apiBase: string, reports: Record<string, unknown>, mode?: 
 
 export function Inspector() {
   const ev = useEvidence();
-  const [tab, setTab] = useState<"log" | "actuator" | "attack">("log");
 
   const events = [...(ev.flow.events || []), ...ev.localLogs];
   const visible = events.length ? events : staticEvents(ev.apiBase, ev.reports, ev.status?.mode);
@@ -48,8 +47,6 @@ export function Inspector() {
     if (ev.flow?.authorization || ev.flow?.fiberChallenge || ev.phase === "payment_settled" || ev.phase === "challenge_received") return { state: "active", detail: ev.flow?.authorization ? "payment proof ready" : "402 challenge issued", service: "awaiting receipt", replay: "not attempted", reissued: "false", health: "API connected" };
     return { state: "idle", detail: "awaiting receipt", service: "not executed", replay: "not attempted", reissued: "false", health: ev.status?.livePaymentEnabled ? "live Fiber ready" : "API connected" };
   })();
-
-  const network = ev.status?.localFiberNetwork || {};
 
   return (
     <aside className="app-inspector">

@@ -28,31 +28,29 @@ export const workspaceTabs = [
   { id: "network", label: "Network", icon: "FiberNetwork" },
 ] as const;
 
-export const reportKeys = {
-  canonical: "canonical",
-  fiber: "fiber-local",
-  fiberTestnet: "fiber-testnet",
-  productionOps: "production-ops",
-  productionBootstrap: "production-bootstrap",
-  security: "security",
-  gate: "gate",
-  gateLocal: "gate-local",
-  gateDefault: "gate-default",
-  rustGate: "rust-gate",
-  tsGate: "ts-gate",
-} as const;
+export interface ReportEntry {
+  key: string;
+  slug: string;
+  file?: string;
+}
 
-export const reportDisplayList = [
-  { file: "canonical-core-parity.json", key: "canonical" as const },
-  { file: "fiber-testnet-e2e-success.json", key: "fiberTestnet" as const },
-  { file: "fiber-local-e2e-evidence.json", key: "fiber" as const },
-  { file: "production-operations-matrix.json", key: "productionOps" as const },
-  { file: "production-bootstrap-e2e.json", key: "productionBootstrap" as const },
-  { file: "fiber-paid-http-gate.json", key: "gate" as const },
-  { file: "fiber-paid-http-gate.local.json", key: "gateLocal" as const },
-  { file: "fiber-paid-http-gate.default.json", key: "gateDefault" as const },
-  { file: "security-matrix.json", key: "security" as const },
+export const reportRegistry: readonly ReportEntry[] = [
+  { key: "canonical", slug: "canonical", file: "canonical-core-parity.json" },
+  { key: "fiberTestnet", slug: "fiber-testnet", file: "fiber-testnet-e2e-success.json" },
+  { key: "fiber", slug: "fiber-local", file: "fiber-local-e2e-evidence.json" },
+  { key: "productionOps", slug: "production-ops", file: "production-operations-matrix.json" },
+  { key: "productionBootstrap", slug: "production-bootstrap", file: "production-bootstrap-e2e.json" },
+  { key: "gate", slug: "gate", file: "fiber-paid-http-gate.json" },
+  { key: "gateLocal", slug: "gate-local", file: "fiber-paid-http-gate.local.json" },
+  { key: "gateDefault", slug: "gate-default", file: "fiber-paid-http-gate.default.json" },
+  { key: "security", slug: "security", file: "security-matrix.json" },
+  { key: "rustGate", slug: "rust-gate" },
+  { key: "tsGate", slug: "ts-gate" },
 ];
+
+export const reportDisplayList: ReadonlyArray<{ key: string; file: string }> = reportRegistry
+  .filter((e): e is ReportEntry & { file: string } => Boolean(e.file))
+  .map((e) => ({ key: e.key, file: e.file }));
 
 export const consolePersonas: Record<Persona, { title: string; summary: string }> = {
   operator: {

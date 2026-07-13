@@ -17,6 +17,7 @@ export function SettingsDrawer() {
 
   const applyReason = personaActionReason(ev.persona, "bootstrap");
   const clearReason = personaActionReason(ev.persona, "resetRuntime");
+  const isBusy = ev.busy || ev.refreshing;
 
   const submitRuntimeBootstrap = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -48,10 +49,10 @@ export function SettingsDrawer() {
                 <input className="api-base-input" id="api-base-input" value={apiInput} onChange={(e) => setApiInput(e.target.value)} autoComplete="off" spellCheck={false} />
               </div>
               <div className="btn-row">
-                <button className="btn primary" id="api-apply" type="submit" disabled={ev.busy || ev.refreshing}>
+                <button className="btn primary" id="api-apply" type="submit" disabled={isBusy}>
                   <Icon name="ActionRetry" /> Connect
                 </button>
-                <button className="btn" id="refresh-all" type="button" onClick={() => ev.refreshAll("manual refresh")} disabled={ev.busy || ev.refreshing}>
+                <button className="btn" id="refresh-all" type="button" onClick={() => ev.refreshAll("manual refresh")} disabled={isBusy}>
                   <Icon name="ActionRetry" /> Refresh
                 </button>
               </div>
@@ -107,11 +108,11 @@ export function SettingsDrawer() {
             <div className="field-grid">
               <div className="field">
                 <span><Icon name="Price" /> Derived amount (CKB)</span>
-                <input id="settings-amount-ckb" value={ev.parameters.amountCkb} readOnly />
+                <input id="amount-ckb" value={ev.parameters.amountCkb} readOnly />
               </div>
               <div className="field">
                 <span><Icon name="ResourceHash" /> Charge amount (shannons)</span>
-                <input id="settings-amount-shannons" value={ev.parameters.amountShannons} onChange={(e) => ev.setAmountShannons(e.target.value)} inputMode="numeric" />
+                <input id="amount-shannons" value={ev.parameters.amountShannons} onChange={(e) => ev.setAmountShannons(e.target.value)} inputMode="numeric" />
               </div>
             </div>
           </section>
@@ -143,20 +144,6 @@ export function SettingsDrawer() {
                   </div>
                 ))
               )}
-            </div>
-            {/* Mirror selects for check scripts */}
-            <div style={{ display: "none" }} aria-hidden="true">
-              {(["payer", "payee", "gateway"] as const).map((role) => (
-                <select key={`mirror-${role}`} id={`${role}-profile`} value={ev.profileSelection[role]} onChange={(e) => ev.setProfileSelection(role, e.target.value)}>
-                  {(profiles[role] || []).map((p) => <option key={p.id} value={p.id}>{p.label} · {p.status}</option>)}
-                </select>
-              ))}
-              <input id="amount-ckb" value={ev.parameters.amountCkb} readOnly />
-              <input id="amount-shannons" value={ev.parameters.amountShannons} readOnly />
-              <div className="role-capability" id="payer-capability" />
-              <div className="role-capability" id="payee-capability" />
-              <div className="role-capability" id="gateway-capability" />
-              <div className="config-summary" id="config-summary" />
             </div>
           </section>
 
@@ -212,10 +199,10 @@ export function SettingsDrawer() {
                 Generate a fresh session signing secret
               </label>
               <div className="btn-row" style={{ marginTop: 10 }}>
-                <button className="btn primary" id="apply-runtime-bootstrap" type="submit" disabled={ev.busy || ev.refreshing || Boolean(applyReason)} title={applyReason || "Apply"}>
+                <button className="btn primary" id="apply-runtime-bootstrap" type="submit" disabled={isBusy || Boolean(applyReason)} title={applyReason || "Apply"}>
                   <Icon name="StatusPassed" /> Apply bootstrap
                 </button>
-                <button className="btn" id="clear-runtime-bootstrap" type="button" onClick={() => ev.clearRuntimeBootstrap()} disabled={ev.busy || ev.refreshing || runtimeSource !== "runtime" || Boolean(clearReason)} title={clearReason || "Clear"}>
+                <button className="btn" id="clear-runtime-bootstrap" type="button" onClick={() => ev.clearRuntimeBootstrap()} disabled={isBusy || runtimeSource !== "runtime" || Boolean(clearReason)} title={clearReason || "Clear"}>
                   <Icon name="ClearLog" /> Clear runtime
                 </button>
                 <button className="btn" id="copy-env" type="button" onClick={() => ev.copyEnv()} disabled={ev.busy}>

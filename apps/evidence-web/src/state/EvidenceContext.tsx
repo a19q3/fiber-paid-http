@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useRef, useEff
 import type { ApiClient } from "../lib/api.js";
 import {
   fallbackEndpoints,
-  reportKeys,
+  reportRegistry,
   personaActionReason,
   mergeConsoleSettings,
 } from "../constants.js";
@@ -72,7 +72,6 @@ interface StatusData {
   badges?: Record<string, boolean | null>;
   productionEvidence?: Record<string, unknown>;
   localFiberNetwork?: Record<string, unknown> & { route?: unknown };
-  engine?: { canonical: string; typescriptRole: string; typescriptTrustedBoundary: boolean };
   livePaymentEnabled?: boolean;
   flow?: FlowState;
 }
@@ -176,7 +175,7 @@ function fallbackBootstrap(mode: string, error?: Error): BootstrapData {
   return {
     generatedAt: new Date().toISOString(),
     mode: mode || "unconfigured", liveReady: false,
-    evidence: { localFiberE2e: false, testnetFiberE2e: false, productionOperationsReady: false, productionBootstrapReady: false, productionReady: false, gateReady: false, gateBlockers: [] },
+    evidence: { productionReady: false },
     roles: [mkRole("payer", "Payer FNN"), mkRole("payee", "Payee FNN"), mkRole("gateway", "Rust Gateway")],
   };
 }
@@ -216,6 +215,20 @@ function inferPhase(flow: FlowState | undefined, current: Phase): Phase {
   if (flow?.fiberChallenge || flow?.challengeBody) return "challenge_received";
   return current || "idle";
 }
+
+const ACTION_PHASE: Record<string, Phase> = {
+  unpaid: "challenge_received",
+  pay: "payment_settled",
+  retry: "receipt_returned",
+  replay: "replay_rejected",
+};
+
+const ACTION_PERMISSION: Record<string, string> = {
+  unpaid: "send",
+  pay: "pay",
+  retry: "retry",
+  replay: "replay",
+};
 
 export function EvidenceProvider({
   children,
@@ -290,6 +303,16 @@ export function EvidenceProvider({
     });
   }, []);
 
+  const setAndPersist = useCallback((updater: (prev: EvidenceState) => Partial<EvidenceState>) => {
+    setState((prev) => {
+      const next = { ...prev, ...updater(prev) };
+      persist(next);
+      return next;
+    });
+  }, [persist]);
+
+  const clearBusy = useCallback(() => setAndPersist(() => ({ busy: false, activeAction: null })), [setAndPersist]);
+
   const addLocalLog = useCallback((level: string, actor: string, message: string, detail?: string) => {
     setState((prev) => ({ ...prev, localLogs: [...prev.localLogs, logEvent(level, actor, message, detail)] }));
   }, []);
@@ -357,14 +380,13 @@ export function EvidenceProvider({
               mode: "api-unreachable",
               blockers: [`Evidence API unreachable at ${apiBaseState}`],
               endpoints: fallbackEndpoints,
-              badges: { rustCanonicalEngine: null, tsVectorHarness: null, localFiberE2e: null, f402Compatibility: null, productionReady: false, gateReady: false },
+              badges: { rustCanonicalEngine: null, tsVectorHarness: null, f402Compatibility: null, productionReady: false },
               localFiberNetwork: {
                 node1: { role: "payer", rpc: "127.0.0.1:21714", status: "unconfigured" },
                 node2: { role: "router", rpc: "127.0.0.1:21715", status: "unconfigured" },
                 node3: { role: "payee", rpc: "127.0.0.1:21716", status: "unconfigured" },
                 route: [], routeSource: "unavailable", channelCount: null, channelCountSource: "unavailable", routeStatus: "api unreachable",
               },
-              engine: { canonical: "rust", typescriptRole: "compatibility tooling", typescriptTrustedBoundary: false },
             };
             refreshedStatusMode = fallbackStatus.mode;
             update({ status: fallbackStatus });
@@ -381,7 +403,7 @@ export function EvidenceProvider({
           }
         })(),
         (async () => {
-          const entries = await Promise.all(Object.entries(reportKeys).map(async ([key, slug]) => {
+          const entries = await Promise.all(reportRegistry.map(async ({ key, slug }) => {
             try { return [key, await api.getJson(`/api/reports/${slug}`)]; } catch { return [key, { exists: false, path: `reports/${slug}.json` }]; }
           }));
           update({ reports: Object.fromEntries(entries) });
@@ -410,20 +432,21 @@ export function EvidenceProvider({
 
   const runAction = useCallback(async (action: string) => {
     if (state.busy) return;
-    const perm = action === "unpaid" ? "send" : action;
+    const perm = ACTION_PERMISSION[action] || action;
     const reason = personaActionReason(state.persona, perm);
     if (reason) {
       addLocalLog("WARN", "role-guard", `${action} blocked`, reason);
       update({ actionHint: reason });
       return;
     }
-    update({ busy: true, activeAction: action, phase: action === "unpaid" ? "unpaid_request_sent" : state.phase });
+    const startedPhase: Phase = action === "unpaid" ? "unpaid_request_sent" : state.phase;
+    const completedPhase: Phase = ACTION_PHASE[action] || state.phase;
+    update({ busy: true, activeAction: action, phase: startedPhase });
     try {
       const body = action === "unpaid" ? evidenceActionBody() : {};
       const result = await api.postJson<{ flow: FlowState }>(`/api/evidence/${action}`, body);
       const flow = result.flow || state.flow;
-      const phase: Phase = action === "unpaid" ? "challenge_received" : action === "pay" ? "payment_settled" : action === "retry" ? "receipt_returned" : action === "replay" ? "replay_rejected" : state.phase;
-      update({ flow, phase });
+      update({ flow, phase: completedPhase });
       try {
         const status = await api.getJson<StatusData>("/api/status");
         update({ status, flow: status.flow || flow });
@@ -432,13 +455,9 @@ export function EvidenceProvider({
       update({ phase: "failed" });
       addLocalLog("ERROR", "web", `${action} failed`, (error as Error).message);
     } finally {
-      setState((prev) => {
-        const next = { ...prev, busy: false, activeAction: null };
-        persist(next);
-        return next;
-      });
+      clearBusy();
     }
-  }, [state.busy, state.persona, state.phase, state.flow, api, evidenceActionBody, update, addLocalLog, persist]);
+  }, [state.busy, state.persona, state.phase, state.flow, api, evidenceActionBody, update, addLocalLog, clearBusy]);
 
   const resetEvidenceFlow = useCallback(async (reason: string) => {
     update({ flow: { events: [] }, phase: "idle" });
@@ -483,9 +502,9 @@ export function EvidenceProvider({
     } catch (error) {
       addLocalLog("ERROR", "bootstrap", "runtime bootstrap failed", (error as Error).message);
     } finally {
-      setState((prev) => { const next = { ...prev, busy: false, activeAction: null }; persist(next); return next; });
+      clearBusy();
     }
-  }, [state.persona, state.bootstrapDraft, state.profileSelection, state.bootstrap, state.configuration, api, update, addLocalLog, persist]);
+  }, [state.persona, state.bootstrapDraft, state.profileSelection, state.bootstrap, state.configuration, api, update, addLocalLog, clearBusy]);
 
   const clearRuntimeBootstrap = useCallback(async () => {
     const reason = personaActionReason(state.persona, "resetRuntime");
@@ -504,9 +523,9 @@ export function EvidenceProvider({
     } catch (error) {
       addLocalLog("ERROR", "bootstrap", "runtime clear failed", (error as Error).message);
     } finally {
-      setState((prev) => { const next = { ...prev, busy: false, activeAction: null }; persist(next); return next; });
+      clearBusy();
     }
-  }, [state.persona, state.bootstrap, state.configuration, api, update, addLocalLog, persist]);
+  }, [state.persona, state.bootstrap, state.configuration, api, update, addLocalLog, clearBusy]);
 
   const clearLog = useCallback(async () => {
     update({ busy: true, activeAction: "reset", flow: { events: [] }, phase: "idle" as Phase, localLogs: [] });
@@ -517,9 +536,9 @@ export function EvidenceProvider({
       update({ localLogs: [], flow: { events: [] } });
       addLocalLog("WARN", "web", "server reset unavailable", (error as Error).message);
     } finally {
-      setState((prev) => { const next = { ...prev, busy: false, activeAction: null }; persist(next); return next; });
+      clearBusy();
     }
-  }, [api, update, addLocalLog, persist]);
+  }, [api, update, addLocalLog, clearBusy]);
 
   const exportEvidence = useCallback(async () => {
     if (state.busy) return;
@@ -531,9 +550,9 @@ export function EvidenceProvider({
     } catch (error) {
       addLocalLog("ERROR", "evidence", "export failed", (error as Error).message);
     } finally {
-      setState((prev) => { const next = { ...prev, busy: false, activeAction: null }; persist(next); return next; });
+      clearBusy();
     }
-  }, [state.busy, api, evidenceActionBody, update, addLocalLog, persist]);
+  }, [state.busy, api, evidenceActionBody, update, addLocalLog, clearBusy]);
 
   const copyEnv = useCallback(async () => {
     if (state.busy) return;
@@ -561,34 +580,30 @@ export function EvidenceProvider({
     configLoadedRef.current = false;
   }, [api]);
 
-  const setWorkspaceTab = useCallback((tab: WorkspaceTab) => {
-    setState((prev) => { const next = { ...prev, workspaceTab: tab }; persist(next); return next; });
-  }, [persist]);
+  const setWorkspaceTab = useCallback((tab: WorkspaceTab) => setAndPersist(() => ({ workspaceTab: tab })), [setAndPersist]);
 
   const setSettingsOpen = useCallback((open: boolean) => update({ settingsOpen: open }), [update]);
   const setInspectorOpen = useCallback((open: boolean) => update({ inspectorOpen: open }), [update]);
-  const setPersona = useCallback((p: Persona) => { setState((prev) => { const next = { ...prev, persona: p }; persist(next); return next; }); }, [persist]);
-  const setDensity = useCallback((d: Density) => { setState((prev) => { const next = { ...prev, density: d }; persist(next); return next; }); }, [persist]);
-  const setAutoRefresh = useCallback((v: boolean) => { setState((prev) => { const next = { ...prev, autoRefresh: v }; persist(next); return next; }); }, [persist]);
-  const setSelected = useCallback((path: string) => { setState((prev) => { const next = { ...prev, selected: path }; persist(next); return next; }); }, [persist]);
+  const setPersona = useCallback((p: Persona) => setAndPersist(() => ({ persona: p })), [setAndPersist]);
+  const setDensity = useCallback((d: Density) => setAndPersist(() => ({ density: d })), [setAndPersist]);
+  const setAutoRefresh = useCallback((v: boolean) => setAndPersist(() => ({ autoRefresh: v })), [setAndPersist]);
+  const setSelected = useCallback((path: string) => setAndPersist(() => ({ selected: path })), [setAndPersist]);
   const setActiveTab = useCallback((tab: string) => update({ activeTab: tab }), [update]);
 
   const setProfileSelection = useCallback((role: string, id: string) => {
-    setState((prev) => { const next = { ...prev, profileSelection: { ...prev.profileSelection, [role]: id } }; persist(next); return next; });
-  }, [persist]);
+    setAndPersist((prev) => ({ profileSelection: { ...prev.profileSelection, [role]: id } }));
+  }, [setAndPersist]);
 
   const setAmountShannons = useCallback((v: string) => {
     const sanitized = sanitizeAmountInput(v, false);
-    setState((prev) => {
+    setAndPersist(() => {
       const amountCkb = /^\d+$/.test(sanitized) ? shannonsToCkb(sanitized) : "";
-      const next = { ...prev, parameters: { amountCkb, amountShannons: sanitized } };
-      persist(next);
-      return next;
+      return { parameters: { amountCkb, amountShannons: sanitized } };
     });
-  }, [persist]);
+  }, [setAndPersist]);
 
   const setBootstrapDraft = useCallback((key: string, value: string | boolean) => {
-    setState((prev) => {
+    setAndPersist((prev) => {
       const v = key === "amountShannons" && typeof value === "string" ? sanitizeAmountInput(value, false) : value;
       const bootstrapDraft = { ...prev.bootstrapDraft, [key]: v };
       if (key === "mode" && typeof v === "string") {
@@ -598,11 +613,9 @@ export function EvidenceProvider({
           bootstrapDraft.currency = defaultFiberRpcCurrency(v);
         }
       }
-      const next = { ...prev, bootstrapDraft };
-      persist(next);
-      return next;
+      return { bootstrapDraft };
     });
-  }, [persist]);
+  }, [setAndPersist]);
 
   // auto-refresh
   useEffect(() => {

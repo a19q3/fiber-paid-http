@@ -2,15 +2,7 @@ import React, { useMemo } from "react";
 import { useEvidence } from "../state/EvidenceContext.js";
 import { Icon } from "../components/Icon.js";
 import { evidenceTabs, reportDisplayList } from "../constants.js";
-import { booleanSummary, readinessSummary, vectorSummary } from "../lib/utils.js";
-
-function flowChallengeId(flow: { challengeId?: string; challengeBody?: { challengeId?: string; challenge?: { challengeId?: string } } | null }): string | undefined {
-  return flow.challengeId || flow.challengeBody?.challengeId || flow.challengeBody?.challenge?.challengeId;
-}
-
-function flowResourceHash(flow: { resourceHash?: string; credential?: { resourceHash?: string } | null; challengeBody?: { resourceHash?: string } | null }): string | undefined {
-  return flow.resourceHash || flow.credential?.resourceHash || flow.challengeBody?.resourceHash;
-}
+import { booleanSummary, readinessSummary, vectorSummary, flowChallengeId, flowResourceHash } from "../lib/utils.js";
 
 export function EvidenceView() {
   const ev = useEvidence();

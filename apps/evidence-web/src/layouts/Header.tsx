@@ -11,6 +11,7 @@ interface HeaderProps {
 
 export function Header({ onToggleSidebar, sidebarCollapsed, onOpenPrefs }: HeaderProps) {
   const ev = useEvidence();
+  const isBusy = ev.busy || ev.refreshing;
   const connClass = ev.refreshing ? "refreshing" : ev.apiConnection;
 
   return (
@@ -31,7 +32,7 @@ export function Header({ onToggleSidebar, sidebarCollapsed, onOpenPrefs }: Heade
           <span className={"conn-dot " + connClass} />
           <span id="api-state-text">{ev.apiMessage || "not connected"}{ev.lastRefreshedAt ? ` · ${formatTime(ev.lastRefreshedAt)}` : ""}</span>
         </div>
-        <button className={"icon-btn" + (ev.refreshing ? " is-busy" : "")} onClick={() => ev.refreshAll("manual refresh")} disabled={ev.busy || ev.refreshing} title="Refresh" aria-label="Refresh console">
+        <button className={"icon-btn" + (ev.refreshing ? " is-busy" : "")} onClick={() => ev.refreshAll("manual refresh")} disabled={isBusy} title="Refresh" aria-label="Refresh console">
           <Icon name="ActionRetry" />
         </button>
         <button className="icon-btn" onClick={onOpenPrefs} title="Preferences" aria-label="Open preferences">

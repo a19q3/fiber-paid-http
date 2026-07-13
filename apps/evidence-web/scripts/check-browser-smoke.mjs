@@ -99,7 +99,7 @@ async function runSmoke(client, apiBase, webUrl) {
   await click(client, "#open-settings");
   await waitFor(client, "Boolean(document.querySelector('#api-base-input'))", "api input");
   await waitFor(client, `document.querySelector("#api-base-input")?.value === ${JSON.stringify(apiBase)}`, "injected API base");
-  await setInputAndChange(client, "#settings-amount-shannons", "200");
+  await setInputAndChange(client, "#amount-shannons", "200");
   await waitFor(client, `document.querySelector("#amount-ckb")?.value === "0.000002"`, "CKB amount stored");
   await click(client, "#close-settings");
   await waitFor(client, `!document.querySelector("#settings-overlay")`, "settings closed");

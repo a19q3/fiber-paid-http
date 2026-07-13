@@ -2,7 +2,7 @@ import React from "react";
 import { useEvidence } from "../state/EvidenceContext.js";
 import { Icon } from "../components/Icon.js";
 import { fallbackEndpoints, personaActionReason } from "../constants.js";
-import { short, copyTextToClipboard } from "../lib/utils.js";
+import { short, copyTextToClipboard, flowChallengeId, flowResourceHash } from "../lib/utils.js";
 
 interface TimelineStep {
   actor: string;
@@ -24,14 +24,6 @@ function hasPhase(current: string, target: string): boolean {
 function eventTime(events: { time: string; message: string; detail?: string }[], needle: string): string | undefined {
   const event = events.find((item) => `${item.message} ${item.detail || ""}`.toLowerCase().includes(needle.toLowerCase()));
   return event ? event.time.slice(11, 23) : undefined;
-}
-
-function flowChallengeId(flow: { challengeId?: string; challengeBody?: { challengeId?: string; challenge?: { challengeId?: string } } | null }): string | undefined {
-  return flow.challengeId || flow.challengeBody?.challengeId || flow.challengeBody?.challenge?.challengeId;
-}
-
-function flowResourceHash(flow: { resourceHash?: string; credential?: { resourceHash?: string } | null; challengeBody?: { resourceHash?: string } | null }): string | undefined {
-  return flow.resourceHash || flow.credential?.resourceHash || flow.challengeBody?.resourceHash;
 }
 
 function isLiveFiberFlow(flow: { proof?: { mode?: string } | null }, status?: { livePaymentEnabled?: boolean; mode?: string }): boolean {
@@ -161,7 +153,7 @@ export function FlowView() {
               <div className="kv-row">
                 <span className="kv-label"><Icon name="Price" />Price</span>
                 <strong id="price">{ev.parameters.amountCkb} CKB</strong>
-                <button className="copy-btn" data-copy={`${ev.parameters.amountCkb} CKB`} onClick={async () => { await copyTextToClipboard(`${ev.parameters.amountCkb} CKB`); }} aria-label="Copy price"><Icon name="Copy" /></button>
+                <button className="copy-btn" onClick={async () => { await copyTextToClipboard(`${ev.parameters.amountCkb} CKB`); }} aria-label="Copy price"><Icon name="Copy" /></button>
               </div>
               <div className="kv-row">
                 <span className="kv-label"><Icon name="Method" />Method</span>
@@ -170,12 +162,12 @@ export function FlowView() {
               <div className="kv-row">
                 <span className="kv-label"><Icon name="ResourceHash" />Challenge ID</span>
                 <strong id="challenge-id">{challengeId}</strong>
-                <button className="copy-btn" data-copy-target="challenge-id" onClick={async () => { await copyTextToClipboard(challengeId); }} aria-label="Copy challenge ID"><Icon name="Copy" /></button>
+                <button className="copy-btn" onClick={async () => { await copyTextToClipboard(challengeId); }} aria-label="Copy challenge ID"><Icon name="Copy" /></button>
               </div>
               <div className="kv-row">
                 <span className="kv-label"><Icon name="ResourceHash" />Resource Hash</span>
                 <strong id="resource-hash">{resourceHash}</strong>
-                <button className="copy-btn" data-copy-target="resource-hash" onClick={async () => { await copyTextToClipboard(resourceHash); }} aria-label="Copy resource hash"><Icon name="Copy" /></button>
+                <button className="copy-btn" onClick={async () => { await copyTextToClipboard(resourceHash); }} aria-label="Copy resource hash"><Icon name="Copy" /></button>
               </div>
               <div className="kv-row">
                 <span className="kv-label"><Icon name="Route" />Route</span>

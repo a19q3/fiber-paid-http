@@ -153,3 +153,18 @@ export function channelEvidenceText(network: Record<string, unknown>): string {
   if (network.channelCountSource === "not-polled") return "not polled";
   return "unavailable";
 }
+
+export interface FlowSummary {
+  challengeId?: string;
+  resourceHash?: string;
+  challengeBody?: { challengeId?: string; resourceHash?: string; challenge?: { challengeId?: string } } | null;
+  credential?: { resourceHash?: string } | null;
+}
+
+export function flowChallengeId(flow: FlowSummary | null | undefined): string | undefined {
+  return flow?.challengeId || flow?.challengeBody?.challengeId || flow?.challengeBody?.challenge?.challengeId;
+}
+
+export function flowResourceHash(flow: FlowSummary | null | undefined): string | undefined {
+  return flow?.resourceHash || flow?.credential?.resourceHash || flow?.challengeBody?.resourceHash;
+}

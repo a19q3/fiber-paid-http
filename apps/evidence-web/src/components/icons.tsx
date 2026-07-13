@@ -164,5 +164,3 @@ export const consoleIconComponents = {
   Tournament: TournamentIcon,
   VectorHarness: VectorHarnessIcon
 } satisfies Record<ConsoleIconName, React.ComponentType<WrappedIconProps>>;
-
-export const consoleIconNames = Object.keys(consoleIconComponents).sort() as ConsoleIconName[];

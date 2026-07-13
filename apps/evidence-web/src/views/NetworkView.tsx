@@ -1,16 +1,7 @@
 import React from "react";
 import { useEvidence } from "../state/EvidenceContext.js";
 import { Icon } from "../components/Icon.js";
-
-function channelText(network: Record<string, unknown>): string {
-  const channelCount = network.channelCount;
-  if (typeof channelCount === "number") {
-    const suffix = network.channelCountSource === "fiber-local-e2e-report" ? " from report" : " configured";
-    return `${channelCount}${suffix}`;
-  }
-  if (network.channelCountSource === "not-polled") return "not polled";
-  return "unavailable";
-}
+import { channelEvidenceText } from "../lib/utils.js";
 
 export function NetworkView() {
   const ev = useEvidence();
@@ -39,7 +30,7 @@ export function NetworkView() {
             </div>
           ))}
           <div className="network-footer">
-            <span>Channel Evidence <strong>{channelText(network)}</strong></span>
+            <span>Channel Evidence <strong>{channelEvidenceText(network)}</strong></span>
             <span>Route Status <strong>{(network.routeStatus as string) || "not configured"}</strong></span>
           </div>
         </div>
