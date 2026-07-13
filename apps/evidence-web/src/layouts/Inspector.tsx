@@ -53,9 +53,14 @@ export function Inspector() {
       <div className="inspector-section" style={{ flex: "1 1 0" }}>
         <div className="inspector-head">
           <span><Icon name="Terminal" /> Event Log</span>
-          <button className="icon-btn" id="clear-log" style={{ width: 24, height: 24 }} onClick={() => ev.clearLog()} title="Clear log" aria-label="Clear event log">
-            <Icon name="ClearLog" />
-          </button>
+          <div className="inspector-actions">
+            <button className="icon-btn" id="clear-log" onClick={() => ev.clearLog()} title="Clear log" aria-label="Clear event log">
+              <Icon name="ClearLog" />
+            </button>
+            <button className="icon-btn" id="close-inspector" onClick={() => ev.setInspectorOpen(false)} title="Hide inspector" aria-label="Hide inspector">
+              <Icon name="Navigation" />
+            </button>
+          </div>
         </div>
         <div className="inspector-body" id="logs">
           {visible.map((event, i) => (

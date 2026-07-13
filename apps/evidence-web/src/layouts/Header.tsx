@@ -5,19 +5,27 @@ import { formatTime } from "../lib/utils.js";
 
 interface HeaderProps {
   onToggleSidebar: () => void;
-  sidebarCollapsed: boolean;
+  navigationExpanded: boolean;
   onOpenPrefs: () => void;
 }
 
-export function Header({ onToggleSidebar, sidebarCollapsed, onOpenPrefs }: HeaderProps) {
+export function Header({ onToggleSidebar, navigationExpanded, onOpenPrefs }: HeaderProps) {
   const ev = useEvidence();
   const isBusy = ev.busy || ev.refreshing;
   const connClass = ev.refreshing ? "refreshing" : ev.apiConnection;
 
   return (
     <>
-      <button className="icon-btn" onClick={onToggleSidebar} title="Toggle sidebar" aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}>
-        <Icon name="Timeline" />
+      <button
+        className="icon-btn"
+        id="toggle-navigation"
+        onClick={onToggleSidebar}
+        title={navigationExpanded ? "Collapse navigation" : "Expand navigation"}
+        aria-label={navigationExpanded ? "Collapse navigation" : "Expand navigation"}
+        aria-controls="workspace-navigation"
+        aria-expanded={navigationExpanded}
+      >
+        <Icon name="Navigation" />
       </button>
       <div className="header-brand">
         <div className="header-mark" />

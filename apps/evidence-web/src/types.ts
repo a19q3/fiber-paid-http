@@ -72,6 +72,7 @@ export interface ConsolePreferences {
   bootstrapDraft?: BootstrapDraft;
   workspaceTab?: WorkspaceTab;
   autoRefresh?: boolean;
+  inspectorOpen?: boolean;
   consoleSettings?: { persona: Persona; density: Density };
 }
 

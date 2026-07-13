@@ -268,7 +268,9 @@ export function EvidenceProvider({
     persona: mergeConsoleSettings(savedPrefs.consoleSettings).persona,
     density: mergeConsoleSettings(savedPrefs.consoleSettings).density,
     settingsOpen: false,
-    inspectorOpen: true,
+    inspectorOpen: typeof savedPrefs.inspectorOpen === "boolean"
+      ? savedPrefs.inspectorOpen
+      : window.matchMedia("(min-width: 1280px)").matches,
     flow: { events: [] },
     activeTab: "chain",
     phase: "idle",
@@ -292,6 +294,7 @@ export function EvidenceProvider({
       bootstrapDraft: s.bootstrapDraft,
       workspaceTab: s.workspaceTab,
       autoRefresh: s.autoRefresh,
+      inspectorOpen: s.inspectorOpen,
       consoleSettings: { persona: s.persona, density: s.density },
     }));
   }, [apiBaseState]);
@@ -583,7 +586,7 @@ export function EvidenceProvider({
   const setWorkspaceTab = useCallback((tab: WorkspaceTab) => setAndPersist(() => ({ workspaceTab: tab })), [setAndPersist]);
 
   const setSettingsOpen = useCallback((open: boolean) => update({ settingsOpen: open }), [update]);
-  const setInspectorOpen = useCallback((open: boolean) => update({ inspectorOpen: open }), [update]);
+  const setInspectorOpen = useCallback((open: boolean) => setAndPersist(() => ({ inspectorOpen: open })), [setAndPersist]);
   const setPersona = useCallback((p: Persona) => setAndPersist(() => ({ persona: p })), [setAndPersist]);
   const setDensity = useCallback((d: Density) => setAndPersist(() => ({ density: d })), [setAndPersist]);
   const setAutoRefresh = useCallback((v: boolean) => setAndPersist(() => ({ autoRefresh: v })), [setAndPersist]);

@@ -165,6 +165,53 @@ async function runLayoutChecks(client) {
     recordJitterFailures(failures, `evidence-tabs-container-${viewport.width}`, evidenceTabsContainerJitter, { position: true });
   }
 
+  for (const viewport of viewports.filter(({ width }) => width <= 767)) {
+    await client.send("Emulation.setDeviceMetricsOverride", {
+      width: viewport.width,
+      height: viewport.height,
+      deviceScaleFactor: 1,
+      mobile: false
+    });
+    await client.evaluate("new Promise((resolve) => setTimeout(resolve, 250))");
+    const mobileNavBefore = await client.evaluate(mobileNavigationExpression());
+    if (mobileNavBefore.visible || mobileNavBefore.expanded) {
+      failures.push(`${viewport.width}: mobile navigation must start closed ${JSON.stringify(mobileNavBefore)}`);
+    }
+    await client.evaluate("document.querySelector('#toggle-navigation')?.click()");
+    await client.evaluate("new Promise((resolve) => setTimeout(resolve, 250))");
+    const mobileNavOpen = await client.evaluate(mobileNavigationExpression());
+    if (!mobileNavOpen.visible || !mobileNavOpen.expanded) {
+      failures.push(`${viewport.width}: mobile navigation did not open ${JSON.stringify(mobileNavOpen)}`);
+    }
+    await client.evaluate("document.querySelector('[data-workspace-tab=\"evidence\"]')?.click()");
+    await client.evaluate("new Promise((resolve) => setTimeout(resolve, 250))");
+    const mobileNavAfter = await client.evaluate(mobileNavigationExpression());
+    if (mobileNavAfter.visible || mobileNavAfter.expanded || mobileNavAfter.workspace !== "evidence") {
+      failures.push(`${viewport.width}: mobile navigation did not navigate and close ${JSON.stringify(mobileNavAfter)}`);
+    }
+  }
+
+  await client.send("Emulation.setDeviceMetricsOverride", {
+    width: 1024,
+    height: 1100,
+    deviceScaleFactor: 1,
+    mobile: false
+  });
+  await client.evaluate("document.querySelector('#close-inspector')?.click()");
+  await client.evaluate("document.querySelector('[aria-label=\"Open preferences\"]')?.click()");
+  await client.evaluate(`Array.from(document.querySelectorAll('.popover .toggle-btn')).find((button) => button.textContent.trim() === 'Hidden')?.click()`);
+  await client.evaluate("new Promise((resolve) => setTimeout(resolve, 250))");
+  const inspectorOpen = await client.evaluate(inspectorVisibilityExpression());
+  if (!inspectorOpen.visible || !inspectorOpen.openClass) {
+    failures.push(`1024: inspector preference did not open the responsive panel ${JSON.stringify(inspectorOpen)}`);
+  }
+  await client.evaluate("document.querySelector('#close-inspector')?.click()");
+  await client.evaluate("new Promise((resolve) => setTimeout(resolve, 250))");
+  const inspectorClosed = await client.evaluate(inspectorVisibilityExpression());
+  if (inspectorClosed.visible || inspectorClosed.openClass) {
+    failures.push(`1024: inspector close control did not hide the responsive panel ${JSON.stringify(inspectorClosed)}`);
+  }
+
   const screenshot = await client.send("Page.captureScreenshot", { format: "png", captureBeyondViewport: false, fromSurface: true });
   await writeFile(resolve(screenshotDir, "layout-check-final.png"), Buffer.from(screenshot.data, "base64"));
 
@@ -197,6 +244,10 @@ function layoutMetricsExpression() {
       .map((node) => node.dataset.panelId);
     const offenders = Array.from(document.querySelectorAll('body *'))
       .filter((node) => {
+        const style = getComputedStyle(node);
+        if (style.display === 'none' || style.visibility === 'hidden') {
+          return false;
+        }
         const rect = node.getBoundingClientRect();
         return rect.width > 0 && rect.height > 0 && (rect.right > innerWidth + 1 || rect.left < -1);
       })
@@ -210,6 +261,29 @@ function layoutMetricsExpression() {
         width: Math.round(node.getBoundingClientRect().width)
       }));
     return { innerWidth, scrollWidth: Math.max(root.scrollWidth, body.scrollWidth), visible, offenders };
+  })()`;
+}
+
+function mobileNavigationExpression() {
+  return `(() => {
+    const nav = document.querySelector('#workspace-navigation');
+    const style = nav ? getComputedStyle(nav) : null;
+    const rect = nav?.getBoundingClientRect();
+    return {
+      visible: Boolean(nav && style?.visibility !== 'hidden' && rect && rect.right > 0),
+      expanded: document.querySelector('#toggle-navigation')?.getAttribute('aria-expanded') === 'true',
+      workspace: document.querySelector('.console')?.dataset.workspace || ''
+    };
+  })()`;
+}
+
+function inspectorVisibilityExpression() {
+  return `(() => {
+    const inspector = document.querySelector('.app-inspector');
+    return {
+      visible: Boolean(inspector && getComputedStyle(inspector).display !== 'none'),
+      openClass: document.querySelector('.app-body')?.classList.contains('inspector-open') === true
+    };
   })()`;
 }
 

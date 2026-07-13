@@ -10,7 +10,7 @@ function badgeState(value: unknown): { status: string; text: string } {
   return { status: "warn", text: "unavailable" };
 }
 
-export function Sidebar() {
+export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const ev = useEvidence();
   const badges = ev.status?.badges || {};
 
@@ -23,7 +23,7 @@ export function Sidebar() {
   ];
 
   return (
-    <nav className="app-sidebar">
+    <nav className="app-sidebar" id="workspace-navigation" aria-label="Workspace navigation">
       <div className="sidebar-section">
         <div className="sidebar-label">Navigation</div>
         {workspaceTabs.map((tab) => (
@@ -31,7 +31,10 @@ export function Sidebar() {
             key={tab.id}
             className={"nav-item" + (ev.workspaceTab === tab.id ? " active" : "")}
             data-workspace-tab={tab.id}
-            onClick={() => ev.setWorkspaceTab(tab.id as WorkspaceTab)}
+            onClick={() => {
+              ev.setWorkspaceTab(tab.id as WorkspaceTab);
+              onNavigate?.();
+            }}
           >
             <Icon name={tab.icon as never} />
             <span>{tab.label}</span>

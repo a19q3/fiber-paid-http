@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { EvidenceProvider, useEvidence } from "./state/EvidenceContext.js";
 import { ApiClient, getInitialApiBase, readConsoleSessionId } from "./lib/api.js";
 import { readStorage, boundedInteger } from "./lib/utils.js";
@@ -20,6 +20,38 @@ function ConsoleApp() {
   const ev = useEvidence();
   const [prefsOpen, setPrefsOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [mobileViewport, setMobileViewport] = useState(() => window.matchMedia("(max-width: 767px)").matches);
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 767px)");
+    const onChange = (event: MediaQueryListEvent) => {
+      setMobileViewport(event.matches);
+      if (!event.matches) setMobileNavOpen(false);
+    };
+    media.addEventListener("change", onChange);
+    return () => media.removeEventListener("change", onChange);
+  }, []);
+
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setMobileNavOpen(false);
+      document.getElementById("toggle-navigation")?.focus();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    requestAnimationFrame(() => document.querySelector<HTMLButtonElement>("#workspace-navigation .nav-item.active")?.focus());
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [mobileNavOpen]);
+
+  const closeMobileNav = (focusMain = false) => {
+    setMobileNavOpen(false);
+    requestAnimationFrame(() => {
+      const target = focusMain ? document.getElementById("main-content") : document.getElementById("toggle-navigation");
+      target?.focus();
+    });
+  };
 
   const shellClass = [
     "app-shell",
@@ -30,17 +62,26 @@ function ConsoleApp() {
   const bodyClass = [
     "app-body",
     sidebarCollapsed ? "sidebar-collapsed" : "",
-    ev.inspectorOpen ? "" : "inspector-collapsed",
+    mobileNavOpen ? "mobile-nav-open" : "",
+    ev.inspectorOpen ? "inspector-open" : "inspector-collapsed",
   ].filter(Boolean).join(" ");
+
+  const navigationExpanded = mobileViewport ? mobileNavOpen : !sidebarCollapsed;
+  const toggleNavigation = () => {
+    if (mobileViewport) setMobileNavOpen((open) => !open);
+    else setSidebarCollapsed((collapsed) => !collapsed);
+  };
 
   return (
     <div className={shellClass} data-workspace={ev.workspaceTab}>
-      <div className="app-header">
-        <Header onToggleSidebar={() => setSidebarCollapsed((v) => !v)} sidebarCollapsed={sidebarCollapsed} onOpenPrefs={() => setPrefsOpen(true)} />
+      <a className="skip-link" href="#main-content">Skip to content</a>
+      <div className="app-header" inert={ev.settingsOpen ? true : undefined} aria-hidden={ev.settingsOpen ? true : undefined}>
+        <Header onToggleSidebar={toggleNavigation} navigationExpanded={navigationExpanded} onOpenPrefs={() => setPrefsOpen(true)} />
       </div>
-      <div className={bodyClass}>
-        <Sidebar />
-        <main className="app-main">
+      <div className={bodyClass} inert={ev.settingsOpen ? true : undefined} aria-hidden={ev.settingsOpen ? true : undefined}>
+        <Sidebar onNavigate={mobileViewport ? () => closeMobileNav(true) : undefined} />
+        <button type="button" className="mobile-nav-backdrop" aria-label="Close navigation" onClick={() => closeMobileNav()} />
+        <main className="app-main" id="main-content" tabIndex={-1} inert={mobileNavOpen ? true : undefined} aria-hidden={mobileNavOpen ? true : undefined}>
           {ev.workspaceTab === "flow" && <FlowView />}
           {ev.workspaceTab === "tournament" && <TournamentView />}
           {ev.workspaceTab === "bootstrap" && <BootstrapView />}

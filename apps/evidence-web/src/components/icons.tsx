@@ -15,6 +15,7 @@ import {
   Hash,
   Monitor,
   Network,
+  PanelLeft,
   PanelRight,
   Radio,
   ReceiptText,
@@ -56,6 +57,7 @@ export type ConsoleIconName =
   | "FiberNetwork"
   | "F402"
   | "Method"
+  | "Navigation"
   | "PaymentReceipt"
   | "Price"
   | "ReportArtifact"
@@ -122,6 +124,7 @@ export const SecurityMatrixIcon = wrapIcon("SecurityMatrix", ShieldAlert);
 export const CanonicalParityIcon = wrapIcon("CanonicalParity", PanelRight);
 export const PriceIcon = wrapIcon("Price", Coins);
 export const MethodIcon = wrapIcon("Method", CircleDollarSign);
+export const NavigationIcon = wrapIcon("Navigation", PanelLeft);
 export const ResourceHashIcon = wrapIcon("ResourceHash", Hash);
 export const RouteIcon = wrapIcon("Route", Route);
 export const F402Icon = wrapIcon("F402", Radio);
@@ -148,6 +151,7 @@ export const consoleIconComponents = {
   F402: F402Icon,
   FiberNetwork: FiberNetworkIcon,
   Method: MethodIcon,
+  Navigation: NavigationIcon,
   PaymentReceipt: PaymentReceiptIcon,
   Price: PriceIcon,
   ReportArtifact: ReportArtifactIcon,

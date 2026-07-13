@@ -96,13 +96,24 @@ async function runSmoke(client, apiBase, webUrl) {
   await waitFor(client, `document.querySelector("#api-state-text")?.textContent?.includes(${JSON.stringify(`connected ${apiBase}`)})`, "connected API state");
   steps.push(await snapshot(client, "connected-api"));
 
+  await client.evaluate(`document.querySelector("#open-settings")?.focus()`);
   await click(client, "#open-settings");
   await waitFor(client, "Boolean(document.querySelector('#api-base-input'))", "api input");
+  await waitFor(client, `document.activeElement?.id === "close-settings"`, "settings receives initial focus");
+  assertSmoke(await client.evaluate(`(() => {
+    const dialog = document.querySelector('[role="dialog"]');
+    const controls = Array.from(dialog?.querySelectorAll('input, select, textarea') || []);
+    return controls.length > 0 && controls.every((control) =>
+      control.labels?.length > 0 || control.hasAttribute('aria-label') || control.hasAttribute('aria-labelledby')
+    );
+  })()`), "every settings form control must have an accessible name");
+  assertSmoke(await client.evaluate(`document.querySelector(".app-header")?.hasAttribute("inert") && document.querySelector(".app-body")?.hasAttribute("inert")`), "settings must make the background inert");
   await waitFor(client, `document.querySelector("#api-base-input")?.value === ${JSON.stringify(apiBase)}`, "injected API base");
   await setInputAndChange(client, "#amount-shannons", "200");
   await waitFor(client, `document.querySelector("#amount-ckb")?.value === "0.000002"`, "CKB amount stored");
   await click(client, "#close-settings");
   await waitFor(client, `!document.querySelector("#settings-overlay")`, "settings closed");
+  await waitFor(client, `document.activeElement?.id === "open-settings"`, "settings restores opener focus");
 
   await click(client, '[data-workspace-tab="flow"]');
   await waitFor(client, `document.querySelector(".console")?.dataset.workspace === "flow"`, "flow workspace");
@@ -161,8 +172,14 @@ async function runSmoke(client, apiBase, webUrl) {
   assertCompletedFlowEvidence(completedFlowEvidence);
 
   await click(client, '[data-workspace-tab="bootstrap"]');
+  const refreshTimestampBefore = await client.evaluate(`document.querySelector("#refresh-bootstrap")?.dataset.lastRefreshedAt || ""`);
   await click(client, "#refresh-bootstrap");
-  await waitFor(client, `!document.querySelector("#refresh-bootstrap")?.classList.contains("is-busy")`, "bootstrap refresh settles");
+  await waitFor(client, `(() => {
+    const button = document.querySelector("#refresh-bootstrap");
+    return button?.dataset.refreshing === "false"
+      && button?.dataset.lastRefreshedAt
+      && button.dataset.lastRefreshedAt !== ${JSON.stringify(refreshTimestampBefore)};
+  })()`, "bootstrap refresh settles with a new timestamp");
   await waitFor(client, `document.querySelector("#bootstrap-summary")?.textContent?.length > 20`, "bootstrap summary rendered");
   steps.push(await snapshot(client, "bootstrap-refresh"));
 
@@ -299,6 +316,12 @@ async function smokeDiagnostics(client) {
     pay: {
       disabled: document.querySelector("#pay")?.disabled,
       title: document.querySelector("#pay")?.title
+    },
+    focus: {
+      id: document.activeElement?.id,
+      tag: document.activeElement?.tagName,
+      headerInert: document.querySelector(".app-header")?.hasAttribute("inert"),
+      bodyInert: document.querySelector(".app-body")?.hasAttribute("inert")
     },
     logs: document.querySelector("#logs")?.textContent?.replace(/\\s+/g, " ").trim().slice(-800),
     api: document.querySelector("#api-state-text")?.textContent
