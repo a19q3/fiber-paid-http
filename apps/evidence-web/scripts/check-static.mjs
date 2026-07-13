@@ -6,88 +6,66 @@ const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "..", "..", "..");
 const distHtmlPath = resolve(here, "..", "dist", "index.html");
 const distDir = resolve(here, "..", "dist");
-const rootPackagePath = resolve(repoRoot, "package.json");
-const apiPackagePath = resolve(repoRoot, "apps", "evidence-api", "package.json");
-const webPackagePath = resolve(repoRoot, "apps", "evidence-web", "package.json");
-const webServerPath = resolve(repoRoot, "apps", "evidence-web", "server.mjs");
-const cliPackagePath = resolve(repoRoot, "packages", "cli", "package.json");
-const cliSourcePath = resolve(repoRoot, "packages", "cli", "src", "index.ts");
-const gateScriptPath = resolve(repoRoot, "scripts", "fiber_paid_http_gate.sh");
-const tsconfigBasePath = resolve(repoRoot, "tsconfig.base.json");
 
 async function safeRead(path) {
   try { return await readFile(path, "utf8"); } catch { return ""; }
 }
 
-let distAssetsContent = "";
+let distBundle = { js: "", css: "", all: "", files: [] };
 try {
   const assetFiles = await readdir(resolve(distDir, "assets"));
-  const jsFiles = assetFiles.filter((f) => f.endsWith(".js") || f.endsWith(".css"));
-  const contents = await Promise.all(jsFiles.map((f) => readFile(resolve(distDir, "assets", f), "utf8")));
-  distAssetsContent = contents.join("\n");
+  const jsFiles = assetFiles.filter((f) => f.endsWith(".js"));
+  const cssFiles = assetFiles.filter((f) => f.endsWith(".css"));
+  const jsContents = await Promise.all(jsFiles.map((f) => readFile(resolve(distDir, "assets", f), "utf8")));
+  const cssContents = await Promise.all(cssFiles.map((f) => readFile(resolve(distDir, "assets", f), "utf8")));
+  distBundle = {
+    js: jsContents.join("\n"),
+    css: cssContents.join("\n"),
+    all: [...jsContents, ...cssContents].join("\n"),
+    files: [...jsFiles, ...cssFiles],
+  };
 } catch {
-  // no assets dir yet
+  // dist/ may not exist yet (pre-build)
 }
 
-const [html, rootPackageJson, apiPackageJson, webPackageJson, webServer, cliPackageJson, cliSource, gateScript, tsconfigBase] = await Promise.all([
-  safeRead(distHtmlPath),
-  safeRead(rootPackagePath),
-  safeRead(apiPackagePath),
-  safeRead(webPackagePath),
-  safeRead(webServerPath),
-  safeRead(cliPackagePath),
-  safeRead(cliSourcePath),
-  safeRead(gateScriptPath),
-  safeRead(tsconfigBasePath),
-]);
+const html = await safeRead(distHtmlPath);
+await access(distDir).catch(() => {
+  console.error(`dist/ directory not found. Run: pnpm --filter @fiber-paid-http/evidence-web build`);
+  process.exit(1);
+});
 
 if (!html) {
   console.error(`dist/index.html not found at ${distHtmlPath}. Run: pnpm --filter @fiber-paid-http/evidence-web build`);
   process.exit(1);
 }
 
-await access(distDir).catch(() => {
-  console.error(`dist/ directory not found. Run: pnpm --filter @fiber-paid-http/evidence-web build`);
-  process.exit(1);
-});
-
-const commandSurface = [
-  html,
-  distAssetsContent,
-  rootPackageJson,
-  apiPackageJson,
-  webPackageJson,
-  webServer,
-  cliPackageJson,
-  cliSource,
-  gateScript,
-  tsconfigBase,
-].join("\n");
-
 const requiredHtmlFragments = [
   '<div id="root"',
   '<script type="module"',
 ];
 
-const requiredCommandFragments = [
-  'evidence/reset',
-  'evidence/export',
-  'bootstrap/runtime',
-  'bootstrap/runtime/reset',
-  'x-fiber-paid-http-session',
-  'sessionId',
-  'pollMs',
-  'unpaid',
-  'payment_settled',
-  'receipt_returned',
-  'replay_rejected',
-  'challenge_received',
-  'productionReady',
+// API URL fragments that must appear inside a `/api/...` URL literal in the
+// production bundle. This catches "endpoint renamed" and "URL split across
+// concatenation" — both of which the old string-includes check missed.
+const requiredUrlFragments = [
+  "evidence/reset",
+  "evidence/export",
+  "bootstrap/runtime",
+  "bootstrap/runtime/reset",
 ];
 
-const requiredCliFragments = [
-  'evidence-web',
-  'evidence-api',
+// Other constants that must survive minification as string literals in the
+// bundle. Phase names, header names, localStorage keys, badge fields.
+const requiredBundleFragments = [
+  "x-fiber-paid-http-session",
+  "sessionId",
+  "pollMs",
+  "unpaid",
+  "payment_settled",
+  "receipt_returned",
+  "replay_rejected",
+  "challenge_received",
+  "productionReady",
 ];
 
 for (const fragment of requiredHtmlFragments) {
@@ -97,18 +75,25 @@ for (const fragment of requiredHtmlFragments) {
   }
 }
 
-for (const fragment of requiredCommandFragments) {
-  if (!commandSurface.includes(fragment)) {
-    console.error(`Command surface missing required fragment: ${fragment}`);
-    process.exit(1);
-  }
+// Extract every `/api/...` URL literal from the JS bundle (covers both
+// string literals and template-literal URLs like `/api/evidence/${action}`).
+const apiUrlRegex = /\/api\/[A-Za-z0-9_/$\-\{\}]+/g;
+const apiUrlMatches = distBundle.js.match(apiUrlRegex) || [];
+const apiUrls = [...new Set(apiUrlMatches)];
+
+const missingUrls = requiredUrlFragments.filter((frag) => !apiUrls.some((url) => url.includes(frag)));
+if (missingUrls.length) {
+  console.error("Bundle is missing required API URL fragments:");
+  for (const frag of missingUrls) console.error(`  - ${frag}`);
+  console.error(`Bundle API URLs detected: ${apiUrls.join(", ") || "(none)"}`);
+  process.exit(1);
 }
 
-for (const fragment of requiredCliFragments) {
-  if (!commandSurface.includes(fragment)) {
-    console.error(`CLI surface missing required fragment: ${fragment}`);
-    process.exit(1);
-  }
+const missingBundle = requiredBundleFragments.filter((frag) => !distBundle.all.includes(frag));
+if (missingBundle.length) {
+  console.error("Bundle is missing required constants:");
+  for (const frag of missingBundle) console.error(`  - ${frag}`);
+  process.exit(1);
 }
 
 const distAssets = html.match(/\/assets\/[^"]+\.(js|css)/g) || [];
@@ -117,4 +102,8 @@ if (distAssets.length === 0) {
   process.exit(1);
 }
 
-console.log(`evidence-web dist check passed: ${distAssets.length} assets, ${requiredHtmlFragments.length} html anchors, ${requiredCommandFragments.length} command anchors`);
+console.log(
+  `evidence-web dist check passed: ${distAssets.length} assets, ` +
+  `${distBundle.files.length} bundle files, ${apiUrls.length} API URLs detected, ` +
+  `${requiredUrlFragments.length} URL anchors, ${requiredBundleFragments.length} constant anchors`,
+);
