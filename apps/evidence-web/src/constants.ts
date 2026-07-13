@@ -5,10 +5,10 @@ export const API_REQUEST_TIMEOUT_MS = 10000;
 export const DEFAULT_AUTO_REFRESH_MS = 15000;
 
 export const fallbackEndpoints: Endpoint[] = [
-  { path: "/paid/protocol-service", label: "GET /paid/protocol-service", price: { display: "100 CKB" }, fiberAmountShannons: "100" },
-  { path: "/paid/weather", label: "GET /paid/weather", price: { display: "10 CKB" }, fiberAmountShannons: "10" },
-  { path: "/paid/mpp-tool", label: "GET /paid/mpp-tool", price: { display: "50 CKB" }, fiberAmountShannons: "50" },
-  { path: "/paid/file", label: "GET /paid/file", price: { display: "25 CKB" }, fiberAmountShannons: "25" },
+  { path: "/paid/protocol-service", label: "GET /paid/protocol-service", charge: { amount: "100", currency: "ckb", display: "0.000001 CKB" } },
+  { path: "/paid/weather", label: "GET /paid/weather", charge: { amount: "10", currency: "ckb", display: "0.0000001 CKB" } },
+  { path: "/paid/mpp-tool", label: "GET /paid/mpp-tool", charge: { amount: "50", currency: "ckb", display: "0.0000005 CKB" } },
+  { path: "/paid/file", label: "GET /paid/file", charge: { amount: "25", currency: "ckb", display: "0.00000025 CKB" } },
 ];
 
 export const evidenceTabs = [

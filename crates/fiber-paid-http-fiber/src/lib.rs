@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use std::future::Future;
 use std::time::Duration;
 use thiserror::Error;
 
@@ -12,6 +13,8 @@ pub const GET_INVOICE_METHOD: &str = "get_invoice";
 pub enum FiberRpcError {
     #[error("invalid decimal quantity")]
     InvalidQuantity,
+    #[error("invalid invoice hash algorithm")]
+    InvalidHashAlgorithm,
     #[error("missing payment hash")]
     MissingPaymentHash,
     #[error("http error: {0}")]
@@ -20,6 +23,12 @@ pub enum FiberRpcError {
     Rpc { method: String, message: String },
     #[error("fiber rpc {method} response did not include result")]
     MissingResult { method: String },
+    #[error("invalid settlement polling configuration")]
+    InvalidPollingConfig,
+    #[error("fiber invoice reached terminal status {0}")]
+    InvoiceTerminal(String),
+    #[error("timed out waiting for Fiber invoice to reach Paid; last status {last_status}")]
+    InvoiceTimeout { last_status: String },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -56,6 +65,7 @@ pub fn new_invoice_params(
     amount: &str,
     currency: &str,
     expiry_seconds: Option<u64>,
+    hash_algorithm: Option<&str>,
 ) -> Result<Value, FiberRpcError> {
     let mut params = json!({
         "amount": to_fiber_hex_quantity(amount)?,
@@ -63,6 +73,12 @@ pub fn new_invoice_params(
     });
     if let Some(expiry) = expiry_seconds {
         params["expiry"] = Value::String(format!("0x{expiry:x}"));
+    }
+    if let Some(hash_algorithm) = hash_algorithm {
+        if !matches!(hash_algorithm, "ckb_hash" | "sha256") {
+            return Err(FiberRpcError::InvalidHashAlgorithm);
+        }
+        params["hash_algorithm"] = Value::String(hash_algorithm.to_string());
     }
     Ok(params)
 }
@@ -89,6 +105,58 @@ pub fn is_payment_success_status(status: &str) -> bool {
 
 pub fn is_invoice_paid_status(status: &str) -> bool {
     status == "Paid"
+}
+
+pub fn is_invoice_pending_status(status: &str) -> bool {
+    matches!(status, "Open" | "Received")
+}
+
+pub fn is_invoice_terminal_status(status: &str) -> bool {
+    matches!(status, "Cancelled" | "Expired")
+}
+
+pub async fn wait_for_invoice_paid(
+    rpc: &FiberRpcClient,
+    payment_hash: &str,
+    timeout: Duration,
+    poll_interval: Duration,
+) -> Result<Value, FiberRpcError> {
+    wait_for_invoice_paid_with(|| rpc.get_invoice(payment_hash), timeout, poll_interval).await
+}
+
+pub async fn wait_for_invoice_paid_with<F, Fut>(
+    mut get_invoice: F,
+    timeout: Duration,
+    poll_interval: Duration,
+) -> Result<Value, FiberRpcError>
+where
+    F: FnMut() -> Fut,
+    Fut: Future<Output = Result<Value, FiberRpcError>>,
+{
+    if timeout.is_zero() || poll_interval.is_zero() || poll_interval > timeout {
+        return Err(FiberRpcError::InvalidPollingConfig);
+    }
+    let started = tokio::time::Instant::now();
+    let mut last_status = "unknown".to_string();
+    loop {
+        let invoice = get_invoice().await?;
+        let status = invoice
+            .get("status")
+            .and_then(Value::as_str)
+            .unwrap_or("unknown");
+        last_status.clear();
+        last_status.push_str(status);
+        if is_invoice_paid_status(status) {
+            return Ok(invoice);
+        }
+        if is_invoice_terminal_status(status) {
+            return Err(FiberRpcError::InvoiceTerminal(status.to_string()));
+        }
+        if started.elapsed() >= timeout {
+            return Err(FiberRpcError::InvoiceTimeout { last_status });
+        }
+        tokio::time::sleep(poll_interval).await;
+    }
 }
 
 pub fn extract_invoice_payment_hash(invoice: &Value) -> Result<String, FiberRpcError> {
@@ -155,10 +223,16 @@ impl FiberRpcClient {
         amount: &str,
         currency: &str,
         expiry_seconds: Option<u64>,
+        hash_algorithm: Option<&str>,
     ) -> Result<Value, FiberRpcError> {
         self.request(
             NEW_INVOICE_METHOD,
-            vec![new_invoice_params(amount, currency, expiry_seconds)?],
+            vec![new_invoice_params(
+                amount,
+                currency,
+                expiry_seconds,
+                hash_algorithm,
+            )?],
         )
         .await
     }
@@ -189,10 +263,21 @@ impl FiberRpcClient {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::VecDeque;
+    use std::sync::{Arc, Mutex};
 
     #[test]
     fn encodes_hex_quantities() {
         assert_eq!(to_fiber_hex_quantity("100").unwrap(), "0x64");
+        assert_eq!(
+            new_invoice_params("100", "Fibt", Some(120), Some("sha256")).unwrap(),
+            json!({
+                "amount": "0x64",
+                "currency": "Fibt",
+                "expiry": "0x78",
+                "hash_algorithm": "sha256"
+            })
+        );
     }
 
     #[test]
@@ -202,5 +287,48 @@ mod tests {
         assert_eq!(semantics.payment_send_method, "send_payment");
         assert_eq!(semantics.payment_status_method, "get_payment");
         assert_eq!(semantics.invoice_status_method, "get_invoice");
+    }
+
+    #[tokio::test]
+    async fn polls_open_received_then_paid() {
+        let statuses = Arc::new(Mutex::new(VecDeque::from(["Open", "Received", "Paid"])));
+        let result = wait_for_invoice_paid_with(
+            {
+                let statuses = Arc::clone(&statuses);
+                move || {
+                    let status = statuses.lock().unwrap().pop_front().unwrap_or("Paid");
+                    async move { Ok(json!({ "status": status })) }
+                }
+            },
+            Duration::from_millis(100),
+            Duration::from_millis(1),
+        )
+        .await
+        .unwrap();
+        assert_eq!(result["status"], "Paid");
+    }
+
+    #[tokio::test]
+    async fn rejects_terminal_invoice_status() {
+        let error = wait_for_invoice_paid_with(
+            || async { Ok(json!({ "status": "Expired" })) },
+            Duration::from_millis(100),
+            Duration::from_millis(1),
+        )
+        .await
+        .unwrap_err();
+        assert!(matches!(error, FiberRpcError::InvoiceTerminal(status) if status == "Expired"));
+    }
+
+    #[tokio::test]
+    async fn rejects_invalid_polling_configuration() {
+        let error = wait_for_invoice_paid_with(
+            || async { Ok(json!({ "status": "Open" })) },
+            Duration::ZERO,
+            Duration::from_millis(1),
+        )
+        .await
+        .unwrap_err();
+        assert!(matches!(error, FiberRpcError::InvalidPollingConfig));
     }
 }

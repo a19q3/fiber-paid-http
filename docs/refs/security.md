@@ -10,14 +10,14 @@ The x402 attack literature highlights five families of practical failures:
 
 Fiber Paid HTTP implemented mitigations:
 
-- Challenge HMAC over canonical JSON.
-- Credential resource hash check against the original challenge and current request.
+- Seven-slot HMAC-SHA256 challenge ID binding from the MPP draft.
+- Exact echoed-challenge matching plus a stored resource descriptor check against the current request.
 - Method binding by matching credential method to the selected challenge method.
 - Fiber payment hash and amount binding in the Fiber adapter.
 - Expiry checks with configurable clock skew.
 - Single-use challenge and credential storage.
 - `Cache-Control: no-store` on 402 and error responses.
-- Receipts signed separately from challenges.
+- Receipts emitted only for successful `2xx` delivery and retained with their challenge ID and payment reference.
 
 Known limit:
 

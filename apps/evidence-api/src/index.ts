@@ -8,9 +8,14 @@ import { Hono } from "hono";
 import {
   PAYMENT_RECEIPT_HEADER,
   buildAuthorizationPaymentHeader,
+  canonicalJson,
+  decodeFiberChargeRequest,
   decodeReceipt,
+  parseWwwAuthenticatePaymentHeader,
   resourceHashFromRequest,
-  type FiberMethodChallenge,
+  sha256Hex,
+  type FiberChargeRequest,
+  type PaymentChallenge,
   type PaymentCredential,
   type PaymentReceipt
 } from "@fiber-paid-http/core";
@@ -41,21 +46,25 @@ const FLOW_SESSION_HEADER = "x-fiber-paid-http-session";
 const CORS_ALLOWED_HEADERS = `authorization, content-type, ${FLOW_SESSION_HEADER}`;
 
 export type EvidenceApiOptions = Partial<FiberPaidHttpMiddlewareConfig> & {
-  price?: { value: string; currency: string; display?: string };
-  fiberAmountShannons?: string;
+  charge?: { amount: string; currency: string; display?: string };
   payerFiber?: FiberMethodAdapter;
 };
 
 type EvidenceResource = {
   path: string;
   label: string;
-  price: { value: string; currency: string; display?: string };
-  fiberAmountShannons: string;
+  charge: { amount: string; currency: string; display: string };
   response: Record<string, unknown> | string;
   contentType?: string;
 };
 
 type EvidenceResourceSummary = Omit<EvidenceResource, "response">;
+
+type EvidenceFiberChallenge = {
+  challenge: PaymentChallenge;
+  request: FiberChargeRequest;
+  paymentHash: string;
+};
 
 type FiberNodeContext = {
   role: string;
@@ -107,7 +116,8 @@ type ProductionBootstrap = {
     gateReady: boolean;
     gateBlockers: string[];
     paymentHash?: string;
-    receiptId?: string;
+    receiptReference?: string;
+    challengeId?: string;
     sources: Record<string, unknown>;
     conflicts: string[];
   };
@@ -219,7 +229,6 @@ type RuntimeBootstrapSummary = {
 
 type EvidenceActionRequest = {
   endpoint?: unknown;
-  amountCkb?: unknown;
   amountShannons?: unknown;
   payerProfileId?: unknown;
   payeeProfileId?: unknown;
@@ -246,7 +255,7 @@ type EvidenceFlowState = {
   parameters?: { amountCkb: string; amountShannons: string };
   challengeBody?: unknown;
   challengeId?: string;
-  fiberChallenge?: FiberMethodChallenge;
+  fiberChallenge?: EvidenceFiberChallenge;
   proof?: unknown;
   credential?: PaymentCredential;
   authorization?: string;
@@ -262,7 +271,7 @@ type EvidenceFlowState = {
     resourceUrl?: string;
     challengeBody?: unknown;
     challengeId?: string;
-    fiberChallenge?: FiberMethodChallenge;
+    fiberChallenge?: EvidenceFiberChallenge;
     proof?: unknown;
     credential?: PaymentCredential;
     authorization?: string;
@@ -293,8 +302,7 @@ const defaultResources: EvidenceResource[] = [
   {
     path: "/paid/protocol-service",
     label: "GET /paid/protocol-service",
-    price: { value: "100", currency: "CKB", display: "100 CKB" },
-    fiberAmountShannons: "100",
+    charge: chargeFromShannons("100"),
     response: {
       service: "protected-api",
       executed: true,
@@ -305,8 +313,7 @@ const defaultResources: EvidenceResource[] = [
   {
     path: "/paid/weather",
     label: "GET /paid/weather",
-    price: { value: "10", currency: "CKB", display: "10 CKB" },
-    fiberAmountShannons: "10",
+    charge: chargeFromShannons("10"),
     response: {
       city: "Shanghai",
       condition: "clear",
@@ -316,8 +323,7 @@ const defaultResources: EvidenceResource[] = [
   {
     path: "/paid/mpp-tool",
     label: "GET /paid/mpp-tool",
-    price: { value: "50", currency: "CKB", display: "50 CKB" },
-    fiberAmountShannons: "50",
+    charge: chargeFromShannons("50"),
     response: {
       tool: "fiber_paid_http.echo",
       result: { text: "paid MCP tool result" }
@@ -326,8 +332,7 @@ const defaultResources: EvidenceResource[] = [
   {
     path: "/paid/file",
     label: "GET /paid/file",
-    price: { value: "25", currency: "CKB", display: "25 CKB" },
-    fiberAmountShannons: "25",
+    charge: chargeFromShannons("25"),
     response: "paid file contents\n",
     contentType: "text/plain"
   }
@@ -343,8 +348,7 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
 
   const resources = defaultResources.map((resource) => ({
     ...resource,
-    price: options.price ?? resource.price,
-    fiberAmountShannons: options.fiberAmountShannons ?? resource.fiberAmountShannons
+    charge: options.charge ? normalizeEvidenceCharge(options.charge) : resource.charge
   }));
   const flows = new Map<string, EvidenceFlowState>();
 
@@ -456,12 +460,7 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
       mode: mode.liveReady ? mode.mode : "unconfigured",
       livePaymentEnabled: mode.liveReady,
       blockers: mode.blockers,
-      endpoints: resources.map(({ path, label, price, fiberAmountShannons }) => ({
-        path,
-        label,
-        price,
-        fiberAmountShannons
-      })),
+      endpoints: resources.map(summarizeResource),
       localFiberNetwork: routeContext,
       badges: {
         rustCanonicalEngine: Boolean((canonical.data as { rust_canonical_verifier?: boolean } | undefined)?.rust_canonical_verifier),
@@ -584,15 +583,21 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
     flow.resourceHash = await resourceHashFromRequest(new Request(resourceUrl));
     flow.profileSelection = normalizeProfileSelection(request, defaultProfileSelection());
     flow.parameters = {
-      amountCkb: resource.price.value,
-      amountShannons: resource.fiberAmountShannons
+      amountCkb: shannonsToCkb(resource.charge.amount),
+      amountShannons: resource.charge.amount
     };
-    appendEvent(flow, "INFO", "client", `GET ${resource.path}`, `amount=${resource.price.display ?? `${resource.price.value} CKB`}; fiber_amount_shannons=${resource.fiberAmountShannons}`);
+    appendEvent(
+      flow,
+      "INFO",
+      "client",
+      `GET ${resource.path}`,
+      `charge=${resource.charge.amount} shannons (${resource.charge.display})`
+    );
     const response = await protectResource(resource)(new Request(resourceUrl));
     const body = await safeJson(response);
-    const fiberChallenge = findFiberChallenge(body);
+    const fiberChallenge = findFiberChallenge(response);
     flow.challengeBody = body;
-    flow.challengeId = getChallengeId(body);
+    flow.challengeId = fiberChallenge?.challenge.id;
     flow.fiberChallenge = fiberChallenge;
     appendEvent(
       flow,
@@ -612,8 +617,11 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
 
   app.post("/paid/echo", async (c) =>
     protectWithRuntime({
-      price: options.price ?? { value: "1", currency: "CKB", display: "1 CKB" },
-      methods: ["fiber"],
+      charge: {
+        amount: options.charge?.amount ?? "1",
+        currency: options.charge?.currency ?? "ckb",
+        description: "Paid echo"
+      },
       handler: async (request) =>
         Response.json({
           paid: true,
@@ -635,20 +643,16 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
     }
     const challenge = flow.fiberChallenge!;
     appendEvent(flow, "INFO", "node1 (payer)", "send_payment", `payment_hash=${challenge.paymentHash}`);
-    const proof = await runtime.payerFiber.payChallenge(challenge);
-    flow.proof = proof;
+    const payload = await runtime.payerFiber.payCharge(challenge.request);
+    flow.proof = payload;
     flow.credential = {
-      domain: "fiber-paid-http-credential-v1",
-      challengeId: flow.challengeId!,
-      method: "fiber",
-      resourceHash: await resourceHashFromRequest(new Request(flow.resourceUrl!)),
-      paymentProof: proof,
-      submittedAt: new Date().toISOString()
+      challenge: challenge.challenge,
+      payload
     };
     flow.authorization = buildAuthorizationPaymentHeader(flow.credential);
-    appendEvent(flow, "INFO", "fiber-method", "payment proof returned", `mode=${String((proof as { mode?: unknown }).mode ?? "unknown")}; status=${String((proof as { status?: unknown }).status ?? "settled")}`);
+    appendEvent(flow, "INFO", "fiber-method", "payment payload returned", `payment_hash=${payload.paymentHash}`);
     return c.json({
-      proof,
+      payload,
       credential: flow.credential,
       authorizationPreview: preview(flow.authorization!),
       flow
@@ -673,7 +677,7 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
     flow.receipt = receipt;
     flow.paidBody = body;
     if (receipt) {
-      appendEvent(flow, "INFO", "server", "payment verified", `receipt_id=${receipt.receiptId}`);
+      appendEvent(flow, "INFO", "server", "payment verified", `reference=${receipt.reference}`);
       appendEvent(flow, "INFO", "protected-service", "service executed", `HTTP ${response.status}`);
     }
     return c.json({
@@ -817,9 +821,9 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
       body: flow.tournament.requestBody
     }));
     const body = await safeJson(response);
-    const fiberChallenge = findFiberChallenge(body);
+    const fiberChallenge = findFiberChallenge(response);
     flow.tournament.challengeBody = body;
-    flow.tournament.challengeId = getChallengeId(body);
+    flow.tournament.challengeId = fiberChallenge?.challenge.id;
     flow.tournament.fiberChallenge = fiberChallenge;
     appendEvent(flow, response.status === 402 ? "INFO" : "ERROR", "gateway", response.status === 402 ? "Battlecode entry 402 issued" : "Battlecode entry challenge failed", `HTTP ${response.status}`);
     c.header("cache-control", "no-store");
@@ -846,26 +850,18 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
       return c.json({ error: "invalid-tournament-state", message: "request an unpaid tournament entry first", flow }, 409);
     }
     appendEvent(flow, "INFO", "payer", "pay Battlecode xUDT ticket over Fiber", `payment_hash=${tournament.fiberChallenge.paymentHash}`);
-    const proof = await runtime.payerFiber.payChallenge(tournament.fiberChallenge);
+    const payload = await runtime.payerFiber.payCharge(tournament.fiberChallenge.request);
     const credential: PaymentCredential = {
-      domain: "fiber-paid-http-credential-v1",
-      challengeId: tournament.challengeId,
-      method: "fiber",
-      resourceHash: await resourceHashFromRequest(new Request(tournament.resourceUrl, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: tournament.requestBody ?? "{}"
-      })),
-      paymentProof: proof,
-      submittedAt: new Date().toISOString()
+      challenge: tournament.fiberChallenge.challenge,
+      payload
     };
-    tournament.proof = proof;
+    tournament.proof = payload;
     tournament.credential = credential;
     tournament.authorization = buildAuthorizationPaymentHeader(credential);
-    appendEvent(flow, "INFO", "fiber-method", "Battlecode ticket payment settled", `mode=${String((proof as { mode?: unknown }).mode ?? "unknown")}`);
+    appendEvent(flow, "INFO", "fiber-method", "Battlecode ticket payment settled", `payment_hash=${payload.paymentHash}`);
     c.header("cache-control", "no-store");
     return c.json({
-      proof,
+      payload,
       credential,
       authorizationPreview: preview(tournament.authorization),
       flow
@@ -902,8 +898,9 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
           effectiveEnv(),
           tournament.submission ?? await findBattlecodeSubmission(repoRoot, tournament.registration.submissionId, effectiveEnv())
         ),
-        receiptId: receipt.receiptId,
-        paymentHash: receipt.settlement.paymentHash
+        receiptReference: receipt.reference,
+        challengeId: receipt.challengeId,
+        paymentHash: receipt.reference
       });
       tournament.ticket = ticket;
       await appendBattlecodeTicket(repoRoot, ticket, effectiveEnv());
@@ -983,9 +980,11 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
 
   function protectResource(resource: EvidenceResource): (request: Request) => Promise<Response> {
     return protectWithRuntime({
-      price: resource.price,
-      methods: ["fiber"],
-      fiberAmountShannons: resource.fiberAmountShannons,
+      charge: {
+        amount: resource.charge.amount,
+        currency: resource.charge.currency,
+        description: resource.label
+      },
       handler: async () => {
         if (typeof resource.response === "string") {
           return new Response(resource.response, {
@@ -1006,24 +1005,12 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
 
   function protectBattlecodeRegistration(registration: BattlecodeRegistrationInput): (request: Request) => Promise<Response> {
     return protectWithRuntime({
-      price: battlecodeEntryPrice(registration),
-      methods: ["fiber"],
-      fiberAmountShannons: registration.entryAmount,
-      fiberUdtTypeScript: runtime ? battlecodeXudtTypeScript(effectiveEnv()) : undefined,
-      metadata: {
-        application: "fiber-paid-http-battlecode-tournament",
-        playerId: registration.playerId,
-        submissionId: registration.submissionId,
-        botPackage: registration.botPackage,
-        botScriptHash: registration.botScriptHash,
-        clientHash: registration.clientHash,
-        fairnessCommitment: {
-          botScriptHash: registration.botScriptHash,
-          clientHash: registration.clientHash
-        },
-        xudtAsset: registration.xudtAsset,
-        prizeAmount: registration.prizeAmount,
-        map: registration.map
+      charge: {
+        amount: registration.entryAmount,
+        currency: battlecodeEntryPrice(registration).currency,
+        description: `Battlecode entry for ${registration.playerId}`,
+        externalId: registration.submissionId,
+        udtTypeScript: runtime ? battlecodeXudtTypeScript(effectiveEnv()) : undefined
       },
       handler: async () => Response.json({
         ok: true,
@@ -1060,10 +1047,7 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
       readReport("productionOps")
     ]);
     const configuration = await buildEvidenceConfiguration(resources, options, bootstrap, effectiveEnv(), runtimeSession);
-    const requestedAmountCkb = normalizeAmountCkb(request.amountCkb);
-    const requestedAmountShannons = normalizeAmountShannons(
-      request.amountShannons ?? (requestedAmountCkb ? ckbToShannons(requestedAmountCkb) : undefined)
-    );
+    const requestedAmountShannons = normalizeAmountShannons(request.amountShannons);
     return {
       generatedAt: new Date().toISOString(),
       console: "Fiber Paid HTTP Evidence Console",
@@ -1071,7 +1055,9 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
         endpoint: stringValue(request.endpoint) ?? flow.endpoint ?? configuration.defaults.endpoint,
         profileSelection: normalizeProfileSelection(request, defaultProfileSelection()),
         parameters: {
-          amountCkb: requestedAmountCkb ?? flow.parameters?.amountCkb ?? configuration.defaults.amountCkb,
+          amountCkb: requestedAmountShannons
+            ? shannonsToCkb(requestedAmountShannons)
+            : flow.parameters?.amountCkb ?? configuration.defaults.amountCkb,
           amountShannons: requestedAmountShannons ?? flow.parameters?.amountShannons ?? configuration.defaults.amountShannons
         }
       },
@@ -1176,9 +1162,11 @@ function createFiberRuntime(options: EvidenceApiOptions, env: NodeJS.ProcessEnv 
   const middleware = createFiberPaidHttpMiddleware({
     secret,
     serverId: options.serverId ?? "fiber-paid-http-evidence-api",
+    realm: options.realm ?? env.FIBER_PAID_HTTP_REALM ?? "fiber-paid-http-evidence-api",
+    publicBaseUrl: options.publicBaseUrl ?? "http://127.0.0.1",
+    allowInsecureHttp: options.allowInsecureHttp ?? true,
     store: options.store ?? new SqliteStore(evidenceDbPath),
     fiber,
-    defaultFiberAmountShannons: options.fiberAmountShannons ?? env.FIBER_E2E_AMOUNT_SHANNONS ?? "1000",
     challengeTtlSeconds: options.challengeTtlSeconds ?? positiveInteger(paidHttpChallengeTtlSeconds(env), 120),
     clockSkewSeconds: options.clockSkewSeconds ?? 2
   });
@@ -1295,8 +1283,8 @@ async function buildEvidenceConfiguration(
   };
   const defaults = {
     endpoint: defaultResource.path,
-    amountCkb: defaultResource.price.value,
-    amountShannons: defaultResource.fiberAmountShannons,
+    amountCkb: shannonsToCkb(defaultResource.charge.amount),
+    amountShannons: defaultResource.charge.amount,
     payerProfileId: profiles.payer[0]?.id ?? "env-payer",
     payeeProfileId: profiles.payee[0]?.id ?? "env-payee",
     gatewayProfileId: profiles.gateway[0]?.id ?? "env-gateway"
@@ -1324,7 +1312,7 @@ async function buildEvidenceConfiguration(
     warnings: [
       "Only env-payer, env-payee, and env-gateway are executable from process env; runtime-payer, runtime-payee, and runtime-gateway are executable after UI runtime bootstrap; recorded evidence profiles are export-only.",
       "The payer client sends Fiber payments; the payee FNN creates invoices; the Rust gateway protects resources, verifies settlement, and issues receipts.",
-      "CKB is the user-facing protocol price unit; Fiber RPC settlement uses integer shannons."
+      "Each charge has one canonical integer shannon amount; its CKB value is derived for display only."
     ]
   };
 }
@@ -1471,7 +1459,8 @@ function evidenceProfile(
     notes: [
       `${mode} Fiber E2E report is available.`,
       evidence.paymentHash ? `payment_hash=${evidence.paymentHash}` : "payment_hash unavailable",
-      evidence.receiptId ? `receipt_id=${evidence.receiptId}` : "receipt_id unavailable"
+      evidence.receiptReference ? `receipt_reference=${evidence.receiptReference}` : "receipt_reference unavailable",
+      evidence.challengeId ? `challenge_id=${evidence.challengeId}` : "challenge_id unavailable"
     ],
     blockers: ["recorded evidence only; not a live RPC profile in this process"]
   };
@@ -1497,7 +1486,7 @@ function buildEnvTemplate(resource: EvidenceResource, env: NodeJS.ProcessEnv = p
     `FIBER_PAYER_RPC_URL=${env.FIBER_PAYER_RPC_URL ?? "<payer-fnn-rpc-url>"}`,
     `FIBER_PAYEE_RPC_URL=${env.FIBER_PAYEE_RPC_URL ?? env.FIBER_RPC_URL ?? "<payee-fnn-rpc-url>"}`,
     `FIBER_PAID_HTTP_SECRET=${paidHttpSecret(env) ? "<present; not exported>" : "<32+ character random secret>"}`,
-    `FIBER_E2E_AMOUNT_SHANNONS=${resource.fiberAmountShannons}`
+    `FIBER_E2E_AMOUNT_SHANNONS=${resource.charge.amount}`
   ];
   if (env.FIBER_ROUTER_RPC_URL) {
     lines.splice(4, 0, `FIBER_ROUTER_RPC_URL=${env.FIBER_ROUTER_RPC_URL}`);
@@ -1753,16 +1742,12 @@ function isLoopbackHost(hostname: string): boolean {
   return host === "localhost" || host === "127.0.0.1" || host === "::1";
 }
 
-function envWithLegacy(env: NodeJS.ProcessEnv, primary: string, legacy: string): string | undefined {
-  return env[primary] ?? env[legacy];
-}
-
 function paidHttpSecret(env: NodeJS.ProcessEnv = process.env): string | undefined {
-  return envWithLegacy(env, "FIBER_PAID_HTTP_SECRET", "FIBER_MPP_SECRET");
+  return env.FIBER_PAID_HTTP_SECRET;
 }
 
 function paidHttpChallengeTtlSeconds(env: NodeJS.ProcessEnv = process.env): string | undefined {
-  return envWithLegacy(env, "FIBER_PAID_HTTP_CHALLENGE_TTL_SECONDS", "FIBER_MPP_CHALLENGE_TTL_SECONDS");
+  return env.FIBER_PAID_HTTP_CHALLENGE_TTL_SECONDS;
 }
 
 function allowedConsoleOrigin(origin: string | undefined, env: NodeJS.ProcessEnv = process.env): string | undefined {
@@ -1772,8 +1757,6 @@ function allowedConsoleOrigin(origin: string | undefined, env: NodeJS.ProcessEnv
   const configured = (
     env.FIBER_PAID_HTTP_CONSOLE_ORIGINS ??
     env.FIBER_PAID_HTTP_CONSOLE_ORIGIN ??
-    env.FIBER_MPP_CONSOLE_ORIGINS ??
-    env.FIBER_MPP_CONSOLE_ORIGIN ??
     ""
   )
     .split(",")
@@ -1782,7 +1765,7 @@ function allowedConsoleOrigin(origin: string | undefined, env: NodeJS.ProcessEnv
   if (configured.includes(origin)) {
     return origin;
   }
-  if (origin === "null" && envWithLegacy(env, "FIBER_PAID_HTTP_ALLOW_FILE_ORIGIN", "FIBER_MPP_ALLOW_FILE_ORIGIN") === "1") {
+  if (origin === "null" && env.FIBER_PAID_HTTP_ALLOW_FILE_ORIGIN === "1") {
     return origin;
   }
   try {
@@ -1877,7 +1860,7 @@ function assertRuntimeBootstrapAllowed(
   env: NodeJS.ProcessEnv = process.env
 ): void {
   const requestHost = new URL(request.url).hostname;
-  if (!isLoopbackHost(requestHost) && envWithLegacy(env, "FIBER_PAID_HTTP_ALLOW_RUNTIME_BOOTSTRAP", "FIBER_MPP_ALLOW_RUNTIME_BOOTSTRAP") !== "1") {
+  if (!isLoopbackHost(requestHost) && env.FIBER_PAID_HTTP_ALLOW_RUNTIME_BOOTSTRAP !== "1") {
     throw new RuntimeBootstrapPolicyError("UI runtime bootstrap is disabled on non-loopback API hosts; start the gateway with process env or set FIBER_PAID_HTTP_ALLOW_RUNTIME_BOOTSTRAP=1 intentionally");
   }
   const origin = request.headers.get("origin") ?? undefined;
@@ -1893,7 +1876,7 @@ function assertRuntimeBootstrapAllowed(
     optionalRuntimeSecret(input.payeeRpcAuth) ||
     optionalRuntimeSecret(input.rpcAuth)
   );
-  if (authProvided && envWithLegacy(env, "FIBER_PAID_HTTP_ALLOW_REMOTE_RUNTIME_RPC_AUTH", "FIBER_MPP_ALLOW_REMOTE_RUNTIME_RPC_AUTH") !== "1") {
+  if (authProvided && env.FIBER_PAID_HTTP_ALLOW_REMOTE_RUNTIME_RPC_AUTH !== "1") {
     const rpcUrls = [
       stringValue(input.payerRpcUrl),
       stringValue(input.payeeRpcUrl),
@@ -2031,7 +2014,11 @@ function booleanValue(value: unknown, fallback: boolean): boolean {
 
 async function readEvidenceActionRequest(request: Request): Promise<EvidenceActionRequest> {
   const body = await request.json().catch(() => undefined) as EvidenceActionRequest | undefined;
-  return body && typeof body === "object" ? body : {};
+  if (!body || typeof body !== "object") return {};
+  if (Object.prototype.hasOwnProperty.call(body, "amountCkb")) {
+    throw new Error("amountCkb is derived output; send amountShannons only");
+  }
+  return body;
 }
 
 function parseJsonBody(bodyText: string): unknown {
@@ -2047,22 +2034,13 @@ function parseJsonBody(bodyText: string): unknown {
 
 function resolveRequestedResource(resources: EvidenceResource[], request: EvidenceActionRequest): EvidenceResource {
   const resource = findResource(resources, stringValue(request.endpoint));
-  const amountCkb = normalizeAmountCkb(request.amountCkb);
-  const amountShannons = normalizeAmountShannons(
-    request.amountShannons ?? (amountCkb ? ckbToShannons(amountCkb) : undefined)
-  );
-  if (!amountCkb && !amountShannons) {
+  const amountShannons = normalizeAmountShannons(request.amountShannons);
+  if (!amountShannons) {
     return resource;
   }
-  const displayValue = amountCkb ?? resource.price.value;
   return {
     ...resource,
-    price: {
-      value: displayValue,
-      currency: "CKB",
-      display: `${displayValue} CKB`
-    },
-    fiberAmountShannons: amountShannons ?? resource.fiberAmountShannons
+    charge: chargeFromShannons(amountShannons)
   };
 }
 
@@ -2116,23 +2094,6 @@ function normalizeFlowSessionId(value: unknown): string {
   return /^[a-z0-9][a-z0-9._:-]{0,80}$/i.test(text) ? text : "default";
 }
 
-function normalizeAmountCkb(value: unknown): string | undefined {
-  const text = stringValue(value);
-  if (!text) {
-    return undefined;
-  }
-  if (!/^(?:0|[1-9]\d*)(?:\.\d{1,8})?$/.test(text)) {
-    throw new Error("amountCkb must be a positive CKB decimal with at most 8 decimal places");
-  }
-  if (ckbToShannons(text) === "0") {
-    throw new Error("amountCkb must be greater than zero");
-  }
-  if (BigInt(ckbToShannons(text)) > 100_000_000_000_000_000n) {
-    throw new Error("amountCkb exceeds the console safety limit");
-  }
-  return text;
-}
-
 function normalizeAmountShannons(value: unknown): string | undefined {
   const text = stringValue(value);
   if (!text) {
@@ -2151,9 +2112,36 @@ function normalizeAmountShannons(value: unknown): string | undefined {
   return amount.toString();
 }
 
-function ckbToShannons(value: string): string {
-  const [whole, fraction = ""] = value.split(".");
-  return (BigInt(whole ?? "0") * 100_000_000n + BigInt(fraction.padEnd(8, "0"))).toString();
+function shannonsToCkb(value: string): string {
+  const amount = BigInt(value);
+  const whole = amount / 100_000_000n;
+  const fraction = (amount % 100_000_000n).toString().padStart(8, "0").replace(/0+$/, "");
+  return fraction ? `${whole}.${fraction}` : whole.toString();
+}
+
+function formatCkbDisplay(amountShannons: string): string {
+  return `${shannonsToCkb(amountShannons)} CKB`;
+}
+
+function chargeFromShannons(amount: string): EvidenceResource["charge"] {
+  return {
+    amount,
+    currency: "ckb",
+    display: formatCkbDisplay(amount)
+  };
+}
+
+function normalizeEvidenceCharge(input: NonNullable<EvidenceApiOptions["charge"]>): EvidenceResource["charge"] {
+  const amount = normalizeAmountShannons(input.amount);
+  const currency = input.currency.trim().toLowerCase();
+  if (!amount || currency !== "ckb") {
+    throw new Error("Evidence Console charge must use a positive integer shannon amount and currency ckb");
+  }
+  return {
+    amount,
+    currency,
+    display: input.display ?? formatCkbDisplay(amount)
+  };
 }
 
 function positiveInteger(value: unknown, fallback: number): number {
@@ -2169,8 +2157,7 @@ function summarizeResource(resource: EvidenceResource): EvidenceResourceSummary 
   return {
     path: resource.path,
     label: resource.label,
-    price: resource.price,
-    fiberAmountShannons: resource.fiberAmountShannons,
+    charge: resource.charge,
     contentType: resource.contentType
   };
 }
@@ -2194,16 +2181,19 @@ function appendEvent(flow: EvidenceFlowState, level: FlowEvent["level"], actor: 
   });
 }
 
-function findFiberChallenge(body: unknown): FiberMethodChallenge | undefined {
-  const candidate = body as { challenge?: { methods?: unknown[] } };
-  return candidate.challenge?.methods?.find((method): method is FiberMethodChallenge => {
-    return Boolean(method && typeof method === "object" && (method as { method?: unknown }).method === "fiber");
-  });
-}
-
-function getChallengeId(body: unknown): string | undefined {
-  const candidate = body as { challengeId?: string; challenge?: { challengeId?: string } };
-  return candidate.challengeId ?? candidate.challenge?.challengeId;
+function findFiberChallenge(response: Response): EvidenceFiberChallenge | undefined {
+  const challenge = parseWwwAuthenticatePaymentHeader(response.headers.get("www-authenticate"));
+  if (!challenge) return undefined;
+  try {
+    const request = decodeFiberChargeRequest(challenge.request);
+    return {
+      challenge,
+      request,
+      paymentHash: request.methodDetails.paymentHash
+    };
+  } catch {
+    return undefined;
+  }
 }
 
 function challengeReadyBlocker(flow: EvidenceFlowState): string | undefined {
@@ -2333,7 +2323,10 @@ export function deriveProductionEvidence(reports: {
   const localFiberE2e = anyTrue(localClaims) && !hasBooleanConflict(localClaims);
   const preservedTestnetEvidence = fiberTestnetEvidence(reports.fiberTestnet);
   const testnetFiberE2e = preservedTestnetEvidence.passed;
-  const productionBootstrapReady = anyTrue(productionBootstrapClaims) && !hasBooleanConflict(productionBootstrapClaims);
+  const productionBootstrapReady =
+    productionBootstrapEvidence(reports.productionBootstrap) &&
+    anyTrue(productionBootstrapClaims) &&
+    !hasBooleanConflict(productionBootstrapClaims);
   const gateBlockers = stringArrayField(reports.gate, "fiber_paid_http_gate_blockers");
   const productionReady = testnetFiberE2e && productionOpsReady && productionBootstrapReady;
   const gateReady = productionReady || (anyTrue(gateReadyClaims) && !hasBooleanConflict(gateReadyClaims));
@@ -2346,7 +2339,8 @@ export function deriveProductionEvidence(reports: {
     gateReady,
     gateBlockers,
     paymentHash: preservedTestnetEvidence.paymentHash,
-    receiptId: preservedTestnetEvidence.receiptId,
+    receiptReference: preservedTestnetEvidence.receiptReference,
+    challengeId: preservedTestnetEvidence.challengeId,
     sources: {
       localFiberE2e: localClaims,
       testnetFiberE2e: testnetClaims,
@@ -2359,39 +2353,182 @@ export function deriveProductionEvidence(reports: {
   };
 }
 
-function fiberTestnetEvidence(report: ReportReadResult): { passed: boolean; paymentHash?: string; receiptId?: string } {
+function fiberTestnetEvidence(report: ReportReadResult): {
+  passed: boolean;
+  paymentHash?: string;
+  receiptReference?: string;
+  challengeId?: string;
+} {
   const data = report.data && typeof report.data === "object" ? report.data as Record<string, unknown> : {};
-  const result = data.fiber_e2e_result && typeof data.fiber_e2e_result === "object"
-    ? data.fiber_e2e_result as Record<string, unknown>
-    : data;
-  const gate = data.gate_report && typeof data.gate_report === "object"
-    ? data.gate_report as Record<string, unknown>
-    : data;
-  const paymentHash = stringValue(result.fiber_e2e_payment_hash) || stringValue(gate.fiber_e2e_payment_hash);
-  const receiptId = stringValue(result.fiber_e2e_receipt_id) || stringValue(gate.fiber_e2e_receipt_id);
-  const resultBlockers = Array.isArray(result.fiber_e2e_blockers) ? result.fiber_e2e_blockers : [];
-  const gateBlockers = Array.isArray(gate.fiber_e2e_blockers) ? gate.fiber_e2e_blockers : [];
+  const paymentHash = stringValue(data.fiber_e2e_payment_hash);
+  const receiptReference = stringValue(data.fiber_e2e_receipt_reference);
+  const challengeId = stringValue(data.fiber_e2e_challenge_id);
+  const declaredDigest = stringValue(data.testnet_evidence_digest);
+  const actualKeys = Object.keys(data).sort();
   const passed = (
-    (typeof data.status === "undefined" || data.status === "passed") &&
-    (typeof data.gate_exit === "undefined" || data.gate_exit === 0) &&
-    (result.fiber_preflight_test_loaded === true || gate.fiber_preflight_test_loaded === true) &&
-    (result.fiber_live_test_selected === true || gate.fiber_live_test_selected === true) &&
-    (result.fiber_e2e_mode === "testnet" || gate.fiber_e2e_mode === "testnet") &&
-    (result.fiber_e2e_status === "passed" || gate.fiber_e2e_status === "passed") &&
-    (result.fiber_live_test_loaded === true || gate.fiber_live_test_loaded === true) &&
-    (result.testnet_fiber_e2e === true || gate.testnet_fiber_e2e === true) &&
-    (result.live_fiber_testnet_e2e === true || gate.live_fiber_testnet_e2e === true) &&
-    (result.testnet_fiber_e2e_evidence === true || gate.testnet_fiber_e2e_evidence === true) &&
-    resultBlockers.length === 0 &&
-    gateBlockers.length === 0 &&
-    /^0x[0-9a-fA-F]{64}$/.test(paymentHash ?? "") &&
-    /^rcpt_[a-z0-9]+$/i.test(receiptId ?? "")
+    JSON.stringify(actualKeys) === JSON.stringify(TESTNET_EVIDENCE_KEYS) &&
+    data.schema === "fiber-paid-http-testnet-e2e-evidence-v1" &&
+    data.fiber_preflight_test_loaded === true &&
+    data.fiber_live_test_selected === true &&
+    data.fiber_live_test_loaded === true &&
+    data.fiber_e2e_mode === "testnet" &&
+    data.fiber_e2e_status === "passed" &&
+    data.live_fiber_testnet_e2e === true &&
+    data.testnet_fiber_e2e === true &&
+    data.testnet_fiber_e2e_evidence === true &&
+    Array.isArray(data.fiber_e2e_blockers) && data.fiber_e2e_blockers.length === 0 &&
+    /^[0-9a-f]{40}$/.test(stringValue(data.fiber_commit) ?? "") &&
+    isCanonicalIsoTimestamp(data.testnet_evidence_recorded_at) &&
+    /^0x[0-9a-f]{64}$/.test(paymentHash ?? "") &&
+    receiptReference === paymentHash &&
+    /^[A-Za-z0-9_-]{43}$/.test(challengeId ?? "") &&
+    /^sha256:[0-9a-f]{64}$/.test(declaredDigest ?? "") &&
+    declaredDigest === testnetEvidenceDigest(data)
   );
   return {
     passed,
     paymentHash: passed ? paymentHash : undefined,
-    receiptId: passed ? receiptId : undefined
+    receiptReference: passed ? receiptReference : undefined,
+    challengeId: passed ? challengeId : undefined
   };
+}
+
+function productionBootstrapEvidence(report: ReportReadResult): boolean {
+  const data = report.data && typeof report.data === "object" ? report.data as Record<string, unknown> : {};
+  const transport = objectValue(data.transport);
+  const payer = objectValue(data.payer_bootstrap);
+  const payee = objectValue(data.payee_bootstrap);
+  const gateway = objectValue(data.gateway_bootstrap);
+  const paid = objectValue(data.paid_request);
+  const replay = objectValue(data.replay);
+  const limits = objectValue(data.operational_limits);
+  const storage = objectValue(data.storage);
+  return (
+    data.schema === "fiber-paid-http-production-bootstrap-v1" &&
+    isCanonicalIsoTimestamp(data.generated_at) &&
+    data.status === "passed" &&
+    Array.isArray(data.blockers) && data.blockers.length === 0 &&
+    data.mode === "testnet" &&
+    data.engine === "rust" &&
+    /^[0-9a-f]{40}$/.test(stringValue(data.fiber_commit) ?? "") &&
+    transport.tls === true &&
+    ["TLSv1.2", "TLSv1.3"].includes(stringValue(transport.protocol) ?? "") &&
+    validHttpsOrigin(transport.public_base_url) &&
+    bootstrapRoleReady(payer) &&
+    bootstrapRoleReady(payee) &&
+    gateway.status === "ready" &&
+    gateway.server_id === "fiber-paid-http-production-bootstrap-e2e" &&
+    gateway.rust_gateway === true &&
+    gateway.rpc_auth_from_env === true &&
+    gateway.log_redaction_enabled === true &&
+    gateway.rate_limit_enforced === true &&
+    gateway.body_limit_enforced === true &&
+    gateway.upstream_timeout_enforced === true &&
+    gateway.upstream_response_limit_enforced === true &&
+    gateway.graceful_shutdown === true &&
+    Number.isInteger(gateway.graceful_shutdown_duration_ms) &&
+    Number(gateway.graceful_shutdown_duration_ms) >= 0 &&
+    Number(gateway.graceful_shutdown_duration_ms) < 10000 &&
+    data.unpaid_request_status === 402 &&
+    paid.status === 200 &&
+    /^0x[0-9a-f]{64}$/.test(stringValue(paid.receipt_reference) ?? "") &&
+    /^[A-Za-z0-9_-]{43}$/.test(stringValue(paid.challenge_id) ?? "") &&
+    paid.receipt_reference === paid.payment_hash &&
+    paid.receipt_schema_valid === true &&
+    paid.settlement_status === "settled" &&
+    paid.delivery_status === "delivered" &&
+    paid.delivery_response_status === 200 &&
+    replay.status === 402 &&
+    replay.receipt_reissued === false &&
+    replay.service_executions === 1 &&
+    limits.body_limit_status === 413 &&
+    limits.rate_limit_status === 429 &&
+    limits.retry_after_present === true &&
+    limits.upstream_response_limit_status === 502 &&
+    limits.upstream_response_limit_receipt_reissued === false &&
+    limits.upstream_timeout_status === 502 &&
+    limits.upstream_timeout_receipt_reissued === false &&
+    storage.schema_version === 1 &&
+    String(storage.journal_mode ?? "").toLowerCase() === "wal" &&
+    storage.foreign_keys === true &&
+    storage.integrity_check === "ok" &&
+    Number(storage.receipts) >= 1 &&
+    Number(storage.valid_receipts) >= 1 &&
+    storage.invalid_receipts === 0 &&
+    storage.failed_deliveries === 2 &&
+    storage.expected_probe_failed_deliveries === 2 &&
+    storage.unexpected_failed_deliveries === 0
+  );
+}
+
+function bootstrapRoleReady(role: Record<string, unknown>): boolean {
+  return role.status === "ready" &&
+    typeof role.node_id === "string" && role.node_id.length > 0 &&
+    role.rpc_auth_from_env === true &&
+    Number(role.peers) > 0 &&
+    Number(role.ready_channels) > 0;
+}
+
+function objectValue(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+}
+
+function validHttpsOrigin(value: unknown): boolean {
+  if (typeof value !== "string") return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" && !url.username && !url.password && url.pathname === "/" && !url.search && !url.hash;
+  } catch {
+    return false;
+  }
+}
+
+const TESTNET_EVIDENCE_KEYS = [
+  "fiber_commit",
+  "fiber_e2e_blockers",
+  "fiber_e2e_challenge_id",
+  "fiber_e2e_mode",
+  "fiber_e2e_payment_hash",
+  "fiber_e2e_receipt_reference",
+  "fiber_e2e_status",
+  "fiber_live_test_loaded",
+  "fiber_live_test_selected",
+  "fiber_preflight_test_loaded",
+  "live_fiber_testnet_e2e",
+  "schema",
+  "testnet_evidence_digest",
+  "testnet_evidence_recorded_at",
+  "testnet_fiber_e2e",
+  "testnet_fiber_e2e_evidence"
+].sort();
+
+function testnetEvidenceDigest(data: Record<string, unknown>): string {
+  return `sha256:${sha256Hex(canonicalJson({
+    schema: "fiber-paid-http-testnet-evidence-digest-v1",
+    evidence_schema: data.schema ?? null,
+    fiber_commit: data.fiber_commit ?? null,
+    testnet_evidence_recorded_at: data.testnet_evidence_recorded_at ?? null,
+    fiber_preflight_test_loaded: data.fiber_preflight_test_loaded === true,
+    fiber_live_test_selected: data.fiber_live_test_selected === true,
+    fiber_live_test_loaded: data.fiber_live_test_loaded === true,
+    fiber_e2e_mode: data.fiber_e2e_mode ?? null,
+    fiber_e2e_status: data.fiber_e2e_status ?? null,
+    live_fiber_testnet_e2e: data.live_fiber_testnet_e2e === true,
+    testnet_fiber_e2e: data.testnet_fiber_e2e === true,
+    testnet_fiber_e2e_evidence: data.testnet_fiber_e2e_evidence === true,
+    fiber_e2e_payment_hash: data.fiber_e2e_payment_hash ?? null,
+    fiber_e2e_receipt_reference: data.fiber_e2e_receipt_reference ?? null,
+    fiber_e2e_challenge_id: data.fiber_e2e_challenge_id ?? null,
+    fiber_e2e_blockers: Array.isArray(data.fiber_e2e_blockers) ? data.fiber_e2e_blockers : null
+  }))}`;
+}
+
+function isCanonicalIsoTimestamp(value: unknown): boolean {
+  if (typeof value !== "string" || !value) return false;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) && new Date(parsed).toISOString() === value;
 }
 
 function booleanClaims(reports: ReportReadResult[], fieldName: string): Array<{ path: string; value: boolean }> {
@@ -2460,8 +2597,9 @@ function summarizeReport(data: unknown): Record<string, unknown> | null {
     canonical_hash_parity: report.canonical_hash_parity,
     error_code_parity: report.error_code_parity,
     fiber_commit: report.fiber_commit,
-    fiber_e2e_payment_hash: report.fiber_e2e_payment_hash ?? report.payment_hash,
-    fiber_e2e_receipt_id: report.fiber_e2e_receipt_id ?? report.receipt_id,
+    fiber_e2e_payment_hash: report.fiber_e2e_payment_hash,
+    fiber_e2e_receipt_reference: report.fiber_e2e_receipt_reference,
+    fiber_e2e_challenge_id: report.fiber_e2e_challenge_id,
     production_blockers: report.production_blockers
   };
 }

@@ -29,7 +29,8 @@ describe("Fiber live E2E preflight", () => {
     if (preflight.status === "skipped") {
       expect(preflight.blockers.length).toBeGreaterThan(0);
       expect(result.fiber_e2e_payment_hash).toBeUndefined();
-      expect(result.fiber_e2e_receipt_id).toBeUndefined();
+      expect(result.fiber_e2e_receipt_reference).toBeUndefined();
+      expect(result.fiber_e2e_challenge_id).toBeUndefined();
     } else {
       expect(preflight.blockers).toEqual([]);
     }

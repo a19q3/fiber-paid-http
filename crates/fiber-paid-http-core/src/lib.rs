@@ -1,12 +1,17 @@
+use base64::Engine;
+use blake2b_simd::Params as Blake2bParams;
 use chrono::{DateTime, Utc};
 use hmac::{Hmac, Mac};
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Map, Value};
+use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::fs;
 use std::path::Path;
 use thiserror::Error;
+
+mod mpp;
+pub use mpp::*;
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -93,7 +98,6 @@ pub fn verify_vectors_dir(path: impl AsRef<Path>) -> Result<ConformanceReport, C
             .is_some_and(|extension| extension == "json")
     });
     files.sort();
-
     let mut results = Vec::new();
     for path in files {
         let file = path
@@ -124,7 +128,6 @@ pub fn verify_vectors_dir(path: impl AsRef<Path>) -> Result<ConformanceReport, C
             canonical_hash,
         });
     }
-
     let failed = results.iter().filter(|result| !result.passed).count();
     Ok(ConformanceReport {
         engine: "rust".to_string(),
@@ -137,520 +140,743 @@ pub fn verify_vectors_dir(path: impl AsRef<Path>) -> Result<ConformanceReport, C
 }
 
 pub fn canonical_json(value: &Value) -> Result<String, CoreError> {
-    Ok(serde_json::to_string(&canonicalize(value))?)
+    serde_jcs::to_string(value).map_err(CoreError::Json)
 }
 
 pub fn sha256_hex(bytes: &[u8]) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(bytes);
-    hex::encode(hasher.finalize())
+    hex::encode(Sha256::digest(bytes))
 }
 
 pub fn resource_hash(resource: &Value) -> Result<String, CoreError> {
     Ok(sha256_hex(canonical_json(resource)?.as_bytes()))
 }
 
-pub fn sign_value(value: &Value, secret: &str) -> Result<String, CoreError> {
-    let mut mac = HmacSha256::new_from_slice(secret.as_bytes())
-        .map_err(|_| CoreError::InvalidField("secret"))?;
-    mac.update(canonical_json(value)?.as_bytes());
-    Ok(hex::encode(mac.finalize().into_bytes()))
-}
-
-pub fn verify_receipt(receipt: &Value, secret: &str) -> Result<bool, CoreError> {
-    let signature = string_field(receipt, "signature")?;
-    let mut unsigned = receipt
-        .as_object()
-        .ok_or(CoreError::InvalidField("receipt"))?
-        .clone();
-    unsigned.remove("signature");
-    let expected = sign_value(&Value::Object(unsigned), secret)?;
-    Ok(signature == expected)
-}
-
-pub fn decode_receipt_token(token: &str) -> Result<Value, CoreError> {
-    let payload = token
-        .strip_prefix("fiber-paid-http-receipt-v1.")
-        .ok_or(CoreError::InvalidField("receipt token"))?;
-    let bytes = base64::Engine::decode(&base64::engine::general_purpose::URL_SAFE_NO_PAD, payload)
-        .map_err(|_| CoreError::InvalidField("receipt token"))?;
-    Ok(serde_json::from_slice(&bytes)?)
-}
-
 fn verify_vector_input(file: &str, input: &Value) -> Result<Outcome, CoreError> {
     match string_field(input, "case")? {
-        "challenge.valid" => verify_challenge_vector(input),
-        "credential.valid"
-        | "attack.replay"
-        | "attack.wrong-resource"
-        | "attack.wrong-amount"
-        | "attack.wrong-method"
-        | "attack.expired-challenge" => verify_credential_vector(input),
-        "receipt.valid" | "attack.tampered-receipt" => verify_receipt_vector(input),
-        "resource.hash.valid" => verify_resource_hash_vector(input),
-        "f402.challenge.valid" => verify_f402_challenge_vector(input),
-        "f402.credential.valid" => verify_f402_credential_vector(input),
-        "fl402.challenge.valid" => verify_fl402_challenge_vector(input),
-        "fl402.credential.valid"
-        | "attack.fl402-wrong-preimage"
-        | "attack.fl402-tampered-macaroon" => verify_fl402_credential_vector(input),
-        "fiber.local-e2e.receipt" => verify_live_receipt_evidence(input),
-        "fiber.local-e2e.report" => verify_live_report_evidence(input),
+        "mpp.challenge" => verify_challenge_vector(input),
+        "mpp.credential" => verify_credential_vector(input),
+        "mpp.receipt" => verify_receipt_vector(input),
+        "resource.hash" => verify_resource_vector(input),
+        "f402.challenge" => verify_f402_challenge_vector(input),
+        "f402.credential" => verify_f402_credential_vector(input),
+        "x402.required" => verify_x402_required_vector(input),
+        "x402.payload" => verify_x402_payload_vector(input),
+        "x402.settlement" => verify_x402_settlement_vector(input),
+        "fl402.challenge" => verify_fl402_challenge_vector(input),
+        "fl402.credential" => verify_fl402_credential_vector(input),
+        "fiber.evidence.report" => verify_evidence_report(input),
+        "fiber.evidence.receipt" => verify_evidence_receipt(input),
         _ => Ok(Outcome::rejected(format!("unknown-vector-case:{file}"))),
     }
 }
 
 fn verify_challenge_vector(input: &Value) -> Result<Outcome, CoreError> {
-    let challenge = object_field(input, "challenge")?;
-    let signature = string_field(input, "signature")?;
-    let secret = string_field(input, "secret")?;
-    let expected = sign_value(challenge, secret)?;
-    Ok(if signature == expected {
-        Outcome::accepted()
-    } else {
-        Outcome::rejected("bad-challenge-signature")
-    })
+    let challenge: PaymentChallenge =
+        serde_json::from_value(object_field(input, "challenge")?.clone())?;
+    if !verify_challenge_id(&challenge, &[string_field(input, "secret")?.to_string()]) {
+        return Ok(Outcome::rejected("invalid-challenge-binding"));
+    }
+    decode_fiber_charge_request(&challenge.request)?;
+    Ok(Outcome::accepted())
 }
 
 fn verify_credential_vector(input: &Value) -> Result<Outcome, CoreError> {
-    let challenge = object_field(input, "challenge")?;
-    let credential = object_field(input, "credential")?;
-    let request = object_field(input, "request")?;
-    let secret = string_field(input, "secret")?;
-    let signature = string_field(input, "signature")?;
-    let expected_signature = sign_value(challenge, secret)?;
-    if signature != expected_signature {
-        return Ok(Outcome::rejected("bad-challenge-signature"));
-    }
-    if is_expired(string_field(challenge, "expiresAt")?) {
-        return Ok(Outcome::rejected("expired-challenge"));
-    }
-
-    let challenge_resource = object_field(challenge, "resource")?;
-    let stored_hash = resource_hash(challenge_resource)?;
-    let current_hash = resource_hash(request)?;
-    if string_field(credential, "resourceHash")? != stored_hash || current_hash != stored_hash {
-        return Ok(Outcome::rejected("wrong-resource"));
-    }
-
-    let credential_method = string_field(credential, "method")?;
-    let method = find_method(challenge, credential_method);
-    let Some(method) = method else {
+    let raw = object_field(input, "credential")?;
+    if raw
+        .get("challenge")
+        .and_then(|challenge| challenge.get("method"))
+        .and_then(Value::as_str)
+        != Some("fiber")
+    {
         return Ok(Outcome::rejected("wrong-method"));
-    };
-
-    let proof = object_field(credential, "paymentProof")?;
-    let proof_hash = string_field(proof, "paymentHash")?;
-    if proof_hash != string_field(method, "paymentHash")? {
-        return Ok(Outcome::rejected("wrong-payment-hash"));
     }
-    if let (Ok(expected_amount), Ok(actual_amount)) = (
-        string_field(method, "amountShannons"),
-        string_field(proof, "amountShannons"),
+    let credential: PaymentCredential = serde_json::from_value(raw.clone())?;
+    if !verify_challenge_id(
+        &credential.challenge,
+        &[string_field(input, "secret")?.to_string()],
     ) {
-        if expected_amount != actual_amount {
-            return Ok(Outcome::rejected("wrong-amount"));
+        return Ok(Outcome::rejected("invalid-challenge-binding"));
+    }
+    if let Some(expires) = &credential.challenge.expires {
+        let now = parse_time(string_field(input, "now")?)?;
+        if now > parse_time(expires)? {
+            return Ok(Outcome::rejected("expired-challenge"));
         }
     }
-    if string_field(proof, "kind")? != "fiber-payment-proof-v1" {
-        return Ok(Outcome::rejected("invalid-fiber-proof"));
+    if canonical_json(
+        input
+            .get("resource")
+            .ok_or(CoreError::MissingField("resource"))?,
+    )? != canonical_json(
+        input
+            .get("stored_resource")
+            .ok_or(CoreError::MissingField("stored_resource"))?,
+    )? {
+        return Ok(Outcome::rejected("wrong-resource"));
     }
-    if !matches!(
-        string_field(proof, "mode").unwrap_or(""),
-        "local" | "testnet"
-    ) || !is_settled_status(proof.get("status"))
-    {
-        return Ok(Outcome::rejected("fiber-payment-not-settled"));
+    let charge = decode_fiber_charge_request(&credential.challenge.request)?;
+    if charge.amount != string_field(input, "expected_amount")? {
+        return Ok(Outcome::rejected("wrong-amount"));
     }
-
-    if input
-        .get("replay")
-        .and_then(Value::as_bool)
-        .unwrap_or(false)
-    {
+    if credential.payload.payment_hash != charge.method_details.payment_hash {
+        return Ok(Outcome::rejected("wrong-payment-hash"));
+    }
+    if input.get("already_redeemed").and_then(Value::as_bool) == Some(true) {
         return Ok(Outcome::rejected("replay"));
     }
-
     Ok(Outcome::accepted())
 }
 
 fn verify_receipt_vector(input: &Value) -> Result<Outcome, CoreError> {
-    let receipt = object_field(input, "receipt")?;
-    let secret = string_field(input, "secret")?;
-    Ok(if verify_receipt(receipt, secret)? {
+    let receipt: PaymentReceipt = serde_json::from_value(object_field(input, "receipt")?.clone())?;
+    validate_receipt(&receipt)?;
+    let status = input
+        .get("response_status")
+        .and_then(Value::as_u64)
+        .ok_or(CoreError::MissingField("response_status"))?;
+    Ok(if (200..300).contains(&status) {
         Outcome::accepted()
     } else {
-        Outcome::rejected("bad-receipt-signature")
+        Outcome::rejected("receipt-on-error-response")
     })
 }
 
-fn verify_resource_hash_vector(input: &Value) -> Result<Outcome, CoreError> {
-    let resource = object_field(input, "resource")?;
-    let expected = string_field(input, "resource_hash")?;
-    Ok(if resource_hash(resource)? == expected {
-        Outcome::accepted()
-    } else {
-        Outcome::rejected("resource-hash-mismatch")
-    })
+fn verify_resource_vector(input: &Value) -> Result<Outcome, CoreError> {
+    Ok(
+        if resource_hash(
+            input
+                .get("resource")
+                .ok_or(CoreError::MissingField("resource"))?,
+        )? == string_field(input, "resource_hash")?
+        {
+            Outcome::accepted()
+        } else {
+            Outcome::rejected("resource-hash-mismatch")
+        },
+    )
 }
 
 fn verify_f402_challenge_vector(input: &Value) -> Result<Outcome, CoreError> {
     let f402 = object_field(input, "f402")?;
-    let expected = object_field(input, "expected_mpp_fields")?;
-    let resource = object_field(input, "resource")?;
-    let accepted = string_field(expected, "domain")? == "fiber-paid-http-challenge-v1"
-        && string_field(input, "challenge_id")? == string_field(expected, "challengeId")?
-        && string_field(input, "server_id")? == string_field(expected, "serverId")?
-        && string_field(f402, "issuer")? == string_field(expected, "audience")?
-        && canonical_json(resource)? == canonical_json(object_field(expected, "resource")?)?
-        && string_field(f402, "amount")?
-            == string_field(object_field(expected, "amount")?, "value")?
-        && string_field(f402, "currency")?
-            == string_field(object_field(expected, "amount")?, "currency")?
-        && string_field(expected, "method")? == "fiber"
-        && string_field(f402, "paymentHash")? == string_field(expected, "paymentHash")?
-        && string_field(f402, "invoice")? == string_field(expected, "invoice")?
-        && string_field(f402, "amount")? == string_field(expected, "amountShannons")?;
-    Ok(if accepted {
-        Outcome::accepted()
-    } else {
-        Outcome::rejected("f402-challenge-mismatch")
-    })
+    let resource = input
+        .get("resource")
+        .ok_or(CoreError::MissingField("resource"))?;
+    let charge = charge_from_compatibility(f402)?;
+    let pending = PaymentChallenge {
+        id: "pending".to_string(),
+        realm: string_field(input, "realm")?.to_string(),
+        method: "fiber".to_string(),
+        intent: "charge".to_string(),
+        request: encode_fiber_charge_request(&charge)?,
+        expires: Some(string_field(f402, "expiresAt")?.to_string()),
+        digest: optional_string(resource, "digest").map(ToString::to_string),
+        description: None,
+        opaque: None,
+        extensions: BTreeMap::new(),
+    };
+    let actual = PaymentChallenge {
+        id: bind_challenge_id(&pending, string_field(input, "secret")?)?,
+        ..pending
+    };
+    compare_value(
+        &actual,
+        input.get("expected_challenge"),
+        "f402-challenge-mismatch",
+    )
 }
 
 fn verify_f402_credential_vector(input: &Value) -> Result<Outcome, CoreError> {
     let proof = object_field(input, "proof")?;
-    let expected = object_field(input, "credential")?;
-    let actual = json!({
-        "domain": "fiber-paid-http-credential-v1",
-        "challengeId": string_field(input, "challenge_id")?,
-        "method": "fiber",
-        "resourceHash": string_field(input, "resource_hash")?,
-        "paymentProof": {
-            "kind": "fiber-payment-proof-v1",
-            "mode": optional_string(proof, "mode").unwrap_or("local"),
-            "paymentHash": string_field(proof, "paymentHash")?,
-            "invoice": optional_string(proof, "invoice"),
-            "amountShannons": optional_string(proof, "amountShannons"),
-            "status": optional_string(proof, "status").unwrap_or("settled"),
-            "observedAt": optional_string(proof, "observedAt").unwrap_or(""),
-            "evidence": {
-                "f402Token": optional_string(proof, "token"),
-                "f402Evidence": proof.get("evidence").cloned()
-            }
+    let challenge: PaymentChallenge =
+        serde_json::from_value(object_field(input, "challenge")?.clone())?;
+    let charge = decode_fiber_charge_request(&challenge.request)?;
+    let payment_hash = string_field(proof, "paymentHash")?;
+    if payment_hash != charge.method_details.payment_hash {
+        return Ok(Outcome::rejected("wrong-payment-hash"));
+    }
+    let actual = PaymentCredential {
+        challenge,
+        source: None,
+        payload: FiberCredentialPayload {
+            payment_hash: payment_hash.to_string(),
+            extensions: BTreeMap::new(),
         },
-        "submittedAt": string_field(input, "submitted_at")?
+        extensions: BTreeMap::new(),
+    };
+    compare_value(
+        &actual,
+        input.get("expected_credential"),
+        "f402-credential-mismatch",
+    )
+}
+
+fn verify_x402_required_vector(input: &Value) -> Result<Outcome, CoreError> {
+    let required = object_field(input, "payment_required")?;
+    if required.get("x402Version").and_then(Value::as_u64) != Some(2) {
+        return Ok(Outcome::rejected("x402-v2-required"));
+    }
+    let resource = input
+        .get("resource")
+        .ok_or(CoreError::MissingField("resource"))?;
+    let required_resource = object_field(required, "resource")?;
+    if string_field(required_resource, "url")? != string_field(resource, "url")? {
+        return Ok(Outcome::rejected("x402-fiber-resource-mismatch"));
+    }
+    let accepted = required
+        .get("accepts")
+        .and_then(Value::as_array)
+        .and_then(|values| values.first())
+        .ok_or(CoreError::MissingField("accepts"))?;
+    let charge = charge_from_x402_requirement(accepted)?;
+    let pending = PaymentChallenge {
+        id: "pending".to_string(),
+        realm: string_field(input, "realm")?.to_string(),
+        method: "fiber".to_string(),
+        intent: "charge".to_string(),
+        request: encode_fiber_charge_request(&charge)?,
+        expires: Some(string_field(input, "expires_at")?.to_string()),
+        digest: optional_string(resource, "digest").map(ToString::to_string),
+        description: optional_string(required_resource, "description").map(ToString::to_string),
+        opaque: None,
+        extensions: BTreeMap::new(),
+    };
+    let actual = PaymentChallenge {
+        id: bind_challenge_id(&pending, string_field(input, "secret")?)?,
+        ..pending
+    };
+    compare_value(
+        &actual,
+        input.get("expected_challenge"),
+        "x402-challenge-mismatch",
+    )
+}
+
+fn verify_x402_payload_vector(input: &Value) -> Result<Outcome, CoreError> {
+    let payload = object_field(input, "payment_payload")?;
+    if payload.get("x402Version").and_then(Value::as_u64) != Some(2) {
+        return Ok(Outcome::rejected("x402-v2-required"));
+    }
+    if payload
+        .get("resource")
+        .and_then(|resource| resource.get("url"))
+        .and_then(Value::as_str)
+        != Some(string_field(input, "expected_resource_url")?)
+    {
+        return Ok(Outcome::rejected("x402-fiber-resource-mismatch"));
+    }
+    let challenge: PaymentChallenge =
+        serde_json::from_value(object_field(input, "challenge")?.clone())?;
+    let accepted = payload
+        .get("accepted")
+        .ok_or(CoreError::MissingField("accepted"))?;
+    let timeout = accepted
+        .get("maxTimeoutSeconds")
+        .and_then(Value::as_u64)
+        .ok_or(CoreError::MissingField("maxTimeoutSeconds"))?;
+    let charge = decode_fiber_charge_request(&challenge.request)?;
+    if canonical_json(&requirements_from_x402_charge(&charge, timeout)?)?
+        != canonical_json(accepted)?
+    {
+        return Ok(Outcome::rejected("x402-fiber-requirement-mismatch"));
+    }
+    let payment = object_field(payload, "payload")?;
+    if payment.as_object().is_none_or(|value| value.len() != 1) {
+        return Ok(Outcome::rejected("x402-fiber-payload-invalid"));
+    }
+    let payment_hash = string_field(payment, "paymentHash")?;
+    if payment_hash != charge.method_details.payment_hash {
+        return Ok(Outcome::rejected("wrong-payment-hash"));
+    }
+    let actual = PaymentCredential {
+        challenge,
+        source: Some("x402".to_string()),
+        payload: FiberCredentialPayload {
+            payment_hash: payment_hash.to_string(),
+            extensions: BTreeMap::new(),
+        },
+        extensions: BTreeMap::new(),
+    };
+    compare_value(
+        &actual,
+        input.get("expected_credential"),
+        "x402-credential-mismatch",
+    )
+}
+
+fn verify_x402_settlement_vector(input: &Value) -> Result<Outcome, CoreError> {
+    let receipt: PaymentReceipt = serde_json::from_value(object_field(input, "receipt")?.clone())?;
+    validate_receipt(&receipt)?;
+    let network = string_field(input, "network")?;
+    if !matches!(network, "fiber:mainnet" | "fiber:testnet" | "fiber:dev") {
+        return Ok(Outcome::rejected("x402-fiber-wrong-network"));
+    }
+    let amount = string_field(input, "amount")?;
+    if !positive_decimal(amount) {
+        return Ok(Outcome::rejected("x402-fiber-invalid-amount"));
+    }
+    let actual = json!({
+        "success": true,
+        "transaction": receipt.reference,
+        "network": network,
+        "amount": amount,
+        "extensions": {
+            "fiber": {
+                "profile": "fiber-charge-v1",
+                "challengeId": receipt.challenge_id,
+                "receiptTimestamp": receipt.timestamp
+            }
+        }
     });
-    Ok(if canonical_json(&actual)? == canonical_json(expected)? {
-        Outcome::accepted()
-    } else {
-        Outcome::rejected("f402-credential-mismatch")
+    compare_value(
+        &actual,
+        input.get("expected_response"),
+        "x402-settlement-mismatch",
+    )
+}
+
+fn charge_from_x402_requirement(value: &Value) -> Result<FiberChargeRequest, CoreError> {
+    require_exact_keys(
+        value,
+        &[
+            "scheme",
+            "network",
+            "amount",
+            "asset",
+            "payTo",
+            "maxTimeoutSeconds",
+            "extra",
+        ],
+    )?;
+    if string_field(value, "scheme")? != "exact" {
+        return Err(CoreError::InvalidField("x402 scheme"));
+    }
+    let network = string_field(value, "network")?
+        .strip_prefix("fiber:")
+        .ok_or(CoreError::InvalidField("x402 network"))?;
+    if !matches!(network, "mainnet" | "testnet" | "dev") {
+        return Err(CoreError::InvalidField("x402 network"));
+    }
+    let timeout = value
+        .get("maxTimeoutSeconds")
+        .and_then(Value::as_u64)
+        .ok_or(CoreError::MissingField("maxTimeoutSeconds"))?;
+    if timeout == 0 || timeout > 86_400 {
+        return Err(CoreError::InvalidField("maxTimeoutSeconds"));
+    }
+    let extra = object_field(value, "extra")?;
+    require_exact_keys(extra, &["fiber"])?;
+    let fiber = object_field(extra, "fiber")?;
+    require_allowed_keys(
+        fiber,
+        &[
+            "profile",
+            "currency",
+            "description",
+            "externalId",
+            "invoice",
+            "invoiceCurrency",
+            "invoiceExpiresAt",
+            "invoiceUdtScript",
+            "paymentHash",
+            "hashAlgorithm",
+            "udtTypeScript",
+        ],
+        &[
+            "profile",
+            "currency",
+            "invoice",
+            "paymentHash",
+            "hashAlgorithm",
+        ],
+    )?;
+    if string_field(fiber, "profile")? != "fiber-charge-v1" {
+        return Err(CoreError::InvalidField("x402 profile"));
+    }
+    let amount = string_field(value, "amount")?;
+    if !positive_decimal(amount) {
+        return Err(CoreError::InvalidField("amount"));
+    }
+    let currency = string_field(fiber, "currency")?;
+    if string_field(value, "asset")? != format!("fiber:{}", currency.to_ascii_lowercase()) {
+        return Err(CoreError::InvalidField("x402 asset"));
+    }
+    let udt_type_script = fiber
+        .get("udtTypeScript")
+        .map(|value| serde_json::from_value(value.clone()))
+        .transpose()?;
+    let mut method_extensions = BTreeMap::new();
+    for field in ["invoiceCurrency", "invoiceExpiresAt", "invoiceUdtScript"] {
+        if let Some(value) = fiber.get(field) {
+            method_extensions.insert(field.to_string(), value.clone());
+        }
+    }
+    Ok(FiberChargeRequest {
+        amount: amount.to_string(),
+        currency: currency.to_string(),
+        recipient: Some(string_field(value, "payTo")?.to_string()),
+        description: optional_string(fiber, "description").map(ToString::to_string),
+        external_id: optional_string(fiber, "externalId").map(ToString::to_string),
+        method_details: FiberChargeMethodDetails {
+            invoice: string_field(fiber, "invoice")?.to_string(),
+            payment_hash: string_field(fiber, "paymentHash")?.to_string(),
+            network: network.to_string(),
+            hash_algorithm: string_field(fiber, "hashAlgorithm")?.to_string(),
+            udt_type_script,
+            extensions: method_extensions,
+        },
+        extensions: BTreeMap::new(),
     })
+}
+
+fn requirements_from_x402_charge(
+    charge: &FiberChargeRequest,
+    max_timeout_seconds: u64,
+) -> Result<Value, CoreError> {
+    if max_timeout_seconds == 0 || max_timeout_seconds > 86_400 {
+        return Err(CoreError::InvalidField("maxTimeoutSeconds"));
+    }
+    let recipient = charge
+        .recipient
+        .as_deref()
+        .ok_or(CoreError::MissingField("recipient"))?;
+    let currency = charge.currency.to_ascii_lowercase();
+    let mut fiber = json!({
+        "profile": "fiber-charge-v1",
+        "currency": currency,
+        "invoice": charge.method_details.invoice,
+        "paymentHash": charge.method_details.payment_hash,
+        "hashAlgorithm": charge.method_details.hash_algorithm
+    });
+    if let Some(description) = &charge.description {
+        fiber["description"] = Value::String(description.clone());
+    }
+    if let Some(external_id) = &charge.external_id {
+        fiber["externalId"] = Value::String(external_id.clone());
+    }
+    for field in ["invoiceCurrency", "invoiceExpiresAt", "invoiceUdtScript"] {
+        if let Some(value) = charge.method_details.extensions.get(field) {
+            fiber[field] = value.clone();
+        }
+    }
+    if let Some(udt) = &charge.method_details.udt_type_script {
+        fiber["udtTypeScript"] = serde_json::to_value(udt)?;
+    }
+    Ok(json!({
+        "scheme": "exact",
+        "network": format!("fiber:{}", charge.method_details.network),
+        "amount": charge.amount,
+        "asset": format!("fiber:{currency}"),
+        "payTo": recipient,
+        "maxTimeoutSeconds": max_timeout_seconds,
+        "extra": { "fiber": fiber }
+    }))
+}
+
+fn require_exact_keys(value: &Value, keys: &[&str]) -> Result<(), CoreError> {
+    require_allowed_keys(value, keys, keys)
+}
+
+fn require_allowed_keys(
+    value: &Value,
+    allowed: &[&str],
+    required: &[&str],
+) -> Result<(), CoreError> {
+    let object = value.as_object().ok_or(CoreError::InvalidField("object"))?;
+    if object.keys().any(|key| !allowed.contains(&key.as_str()))
+        || required.iter().any(|key| !object.contains_key(*key))
+    {
+        return Err(CoreError::InvalidField("unexpected fields"));
+    }
+    Ok(())
+}
+
+fn positive_decimal(value: &str) -> bool {
+    !value.starts_with('0') && value.bytes().all(|byte| byte.is_ascii_digit())
 }
 
 fn verify_fl402_challenge_vector(input: &Value) -> Result<Outcome, CoreError> {
     let fl402 = object_field(input, "fl402")?;
-    let expected = object_field(input, "expected_mpp_fields")?;
-    let resource = object_field(input, "resource")?;
-    if let Err(code) = verify_fl402_macaroon(
-        string_field(fl402, "macaroon")?,
+    let payload = match verify_capability(
+        string_field(fl402, "capability")?,
         string_field(input, "root_key")?,
-        Some(string_field(input, "issued_at")?),
+        string_field(input, "now")?,
     ) {
+        Ok(payload) => payload,
+        Err(code) => return Ok(Outcome::rejected(code)),
+    };
+    if let Some(code) = fl402_outer_error(fl402, &payload)? {
         return Ok(Outcome::rejected(code));
     }
-    let accepted = string_field(expected, "domain")? == "fiber-paid-http-challenge-v1"
-        && string_field(input, "challenge_id")? == string_field(expected, "challengeId")?
-        && optional_string(fl402, "challengeId").unwrap_or(string_field(input, "challenge_id")?)
-            == string_field(input, "challenge_id")?
-        && string_field(input, "server_id")? == string_field(expected, "serverId")?
-        && optional_string(fl402, "issuer") == optional_string(expected, "audience")
-        && canonical_json(resource)? == canonical_json(object_field(expected, "resource")?)?
-        && string_field(fl402, "amount")?
-            == string_field(object_field(expected, "amount")?, "value")?
-        && string_field(fl402, "currency")?
-            == string_field(object_field(expected, "amount")?, "currency")?
-        && string_field(expected, "method")? == "fiber"
-        && string_field(fl402, "paymentHash")? == string_field(expected, "paymentHash")?
-        && string_field(fl402, "invoice")? == string_field(expected, "invoice")?
-        && string_field(fl402, "amount")? == string_field(expected, "amountShannons")?
-        && optional_string(fl402, "hashAlgorithm").unwrap_or("ckb_hash")
-            == string_field(expected, "hashAlgorithm")?;
-    Ok(if accepted {
-        Outcome::accepted()
-    } else {
-        Outcome::rejected("fl402-challenge-mismatch")
-    })
+    let resource = input
+        .get("resource")
+        .ok_or(CoreError::MissingField("resource"))?;
+    if optional_string(fl402, "resource") != optional_string(resource, "url")
+        || string_field(fl402, "resourceHash")? != resource_hash(resource)?
+    {
+        return Ok(Outcome::rejected("wrong-resource"));
+    }
+    let charge = charge_from_compatibility(fl402)?;
+    let pending = PaymentChallenge {
+        id: "pending".to_string(),
+        realm: string_field(input, "realm")?.to_string(),
+        method: "fiber".to_string(),
+        intent: "charge".to_string(),
+        request: encode_fiber_charge_request(&charge)?,
+        expires: Some(string_field(fl402, "expiresAt")?.to_string()),
+        digest: optional_string(resource, "digest").map(ToString::to_string),
+        description: None,
+        opaque: None,
+        extensions: BTreeMap::new(),
+    };
+    let actual = PaymentChallenge {
+        id: bind_challenge_id(&pending, string_field(input, "secret")?)?,
+        ..pending
+    };
+    compare_value(
+        &actual,
+        input.get("expected_challenge"),
+        "fl402-challenge-mismatch",
+    )
 }
 
 fn verify_fl402_credential_vector(input: &Value) -> Result<Outcome, CoreError> {
     let fl402 = object_field(input, "fl402")?;
     let proof = object_field(input, "proof")?;
-    if let Err(code) = verify_fl402_proof(
-        fl402,
-        proof,
+    if string_field(fl402, "capability")? != string_field(proof, "capability")? {
+        return Ok(Outcome::rejected("fl402-capability-mismatch"));
+    }
+    let payload = match verify_capability(
+        string_field(proof, "capability")?,
         string_field(input, "root_key")?,
-        Some(string_field(input, "submitted_at")?),
+        string_field(input, "now")?,
     ) {
+        Ok(payload) => payload,
+        Err(code) => return Ok(Outcome::rejected(code)),
+    };
+    let caveats = object_field(&payload, "caveats")?;
+    if let Some(code) = fl402_outer_error(fl402, &payload)? {
         return Ok(Outcome::rejected(code));
     }
-    let expected = object_field(input, "credential")?;
-    let algorithm = optional_string(proof, "hashAlgorithm").unwrap_or("ckb_hash");
-    let actual = json!({
-        "domain": "fiber-paid-http-credential-v1",
-        "challengeId": string_field(input, "challenge_id")?,
-        "method": "fiber",
-        "resourceHash": string_field(input, "resource_hash")?,
-        "paymentProof": {
-            "kind": "fiber-payment-proof-v1",
-            "mode": optional_string(proof, "mode").unwrap_or("local"),
-            "paymentHash": string_field(proof, "paymentHash")?,
-            "invoice": optional_string(proof, "invoice"),
-            "amountShannons": optional_string(proof, "amountShannons"),
-            "status": optional_string(proof, "status").unwrap_or("settled"),
-            "observedAt": optional_string(proof, "observedAt").unwrap_or(""),
-            "evidence": {
-                "fl402Macaroon": string_field(proof, "macaroon")?,
-                "fl402PreimageHash": hash_fl402_preimage(string_field(proof, "preimage")?, algorithm).map_err(|_| CoreError::InvalidField("preimage"))?,
-                "fl402HashAlgorithm": algorithm,
-                "fl402Evidence": proof.get("evidence").cloned()
-            }
+    let algorithm = string_field(proof, "hashAlgorithm")?;
+    let actual_hash = hash_preimage(string_field(proof, "preimage")?, algorithm)?;
+    if normalize_hex(&actual_hash)? != normalize_hex(string_field(caveats, "paymentHash")?)? {
+        return Ok(Outcome::rejected("wrong-preimage"));
+    }
+    if normalize_hex(string_field(proof, "paymentHash")?)?
+        != normalize_hex(string_field(caveats, "paymentHash")?)?
+    {
+        return Ok(Outcome::rejected("wrong-payment-hash"));
+    }
+    let challenge: PaymentChallenge =
+        serde_json::from_value(object_field(input, "challenge")?.clone())?;
+    let charge = decode_fiber_charge_request(&challenge.request)?;
+    if normalize_hex(&charge.method_details.payment_hash)?
+        != normalize_hex(string_field(proof, "paymentHash")?)?
+    {
+        return Ok(Outcome::rejected("wrong-payment-hash"));
+    }
+    let actual = PaymentCredential {
+        challenge,
+        source: None,
+        payload: FiberCredentialPayload {
+            payment_hash: string_field(proof, "paymentHash")?.to_string(),
+            extensions: BTreeMap::new(),
         },
-        "submittedAt": string_field(input, "submitted_at")?
-    });
-    Ok(if canonical_json(&actual)? == canonical_json(expected)? {
-        Outcome::accepted()
-    } else {
-        Outcome::rejected("fl402-credential-mismatch")
-    })
-}
-
-fn verify_fl402_proof(
-    challenge: &Value,
-    proof: &Value,
-    root_key: &str,
-    now: Option<&str>,
-) -> Result<Value, String> {
-    if string_field(challenge, "macaroon").map_err(|_| "invalid-fl402-macaroon".to_string())?
-        != string_field(proof, "macaroon").map_err(|_| "invalid-fl402-macaroon".to_string())?
-    {
-        return Err("fl402-macaroon-mismatch".to_string());
-    }
-    let payload = verify_fl402_macaroon(
-        string_field(proof, "macaroon").map_err(|_| "invalid-fl402-macaroon".to_string())?,
-        root_key,
-        now,
-    )?;
-    let caveats =
-        object_field(&payload, "caveats").map_err(|_| "invalid-fl402-macaroon".to_string())?;
-    let algorithm = optional_string(proof, "hashAlgorithm").unwrap_or("ckb_hash");
-    let proof_hash = hash_fl402_preimage(
-        string_field(proof, "preimage").map_err(|_| "wrong-preimage".to_string())?,
-        algorithm,
-    )?;
-    let expected_hash = normalize_fl402_hex(
-        string_field(caveats, "paymentHash").map_err(|_| "wrong-payment-hash".to_string())?,
-    )?;
-    if normalize_fl402_hex(
-        string_field(challenge, "paymentHash").map_err(|_| "wrong-payment-hash".to_string())?,
-    )? != expected_hash
-        || normalize_fl402_hex(
-            string_field(proof, "paymentHash").map_err(|_| "wrong-payment-hash".to_string())?,
-        )? != expected_hash
-    {
-        return Err("wrong-payment-hash".to_string());
-    }
-    if normalize_fl402_hex(&proof_hash)? != expected_hash {
-        return Err("wrong-preimage".to_string());
-    }
-    if string_field(challenge, "invoice").map_err(|_| "wrong-invoice".to_string())?
-        != string_field(caveats, "invoice").map_err(|_| "wrong-invoice".to_string())?
-        || optional_string(proof, "invoice")
-            .is_some_and(|invoice| invoice != string_field(caveats, "invoice").unwrap_or(""))
-    {
-        return Err("wrong-invoice".to_string());
-    }
-    if string_field(challenge, "amount").map_err(|_| "wrong-amount".to_string())?
-        != string_field(caveats, "amount").map_err(|_| "wrong-amount".to_string())?
-        || optional_string(proof, "amountShannons")
-            .is_some_and(|amount| amount != string_field(caveats, "amount").unwrap_or(""))
-    {
-        return Err("wrong-amount".to_string());
-    }
-    if optional_string(challenge, "resourceHash").is_some_and(|resource_hash| {
-        resource_hash != string_field(caveats, "resourceHash").unwrap_or("")
-    }) {
-        return Err("wrong-resource".to_string());
-    }
-    if optional_string(challenge, "challengeId").is_some_and(|challenge_id| {
-        challenge_id != string_field(caveats, "challengeId").unwrap_or("")
-    }) {
-        return Err("wrong-challenge".to_string());
-    }
-    if optional_string(challenge, "hashAlgorithm").unwrap_or("ckb_hash")
-        != string_field(caveats, "hashAlgorithm").map_err(|_| "wrong-hash-algorithm".to_string())?
-        || algorithm
-            != string_field(caveats, "hashAlgorithm")
-                .map_err(|_| "wrong-hash-algorithm".to_string())?
-    {
-        return Err("wrong-hash-algorithm".to_string());
-    }
-    if optional_string(proof, "status").unwrap_or("settled") != "settled" {
-        return Err("fiber-payment-not-settled".to_string());
-    }
-    Ok(payload)
-}
-
-fn verify_fl402_macaroon(
-    macaroon: &str,
-    root_key: &str,
-    now: Option<&str>,
-) -> Result<Value, String> {
-    let (payload, signature) = decode_fl402_macaroon(macaroon)?;
-    let expected =
-        sign_value(&payload, root_key).map_err(|_| "bad-fl402-macaroon-signature".to_string())?;
-    if signature != expected {
-        return Err("bad-fl402-macaroon-signature".to_string());
-    }
-    let caveats =
-        object_field(&payload, "caveats").map_err(|_| "invalid-fl402-macaroon".to_string())?;
-    let expires_at = DateTime::parse_from_rfc3339(
-        string_field(caveats, "expiresAt").map_err(|_| "expired-fl402-macaroon".to_string())?,
+        extensions: BTreeMap::new(),
+    };
+    compare_value(
+        &actual,
+        input.get("expected_credential"),
+        "fl402-credential-mismatch",
     )
-    .map_err(|_| "expired-fl402-macaroon".to_string())?
-    .with_timezone(&Utc);
-    let now = match now {
-        Some(value) => DateTime::parse_from_rfc3339(value)
-            .map_err(|_| "expired-fl402-macaroon".to_string())?
-            .with_timezone(&Utc),
-        None => Utc::now(),
-    };
-    if now > expires_at {
-        return Err("expired-fl402-macaroon".to_string());
-    }
-    Ok(payload)
 }
 
-fn decode_fl402_macaroon(macaroon: &str) -> Result<(Value, String), String> {
-    let mut parts = macaroon.split('.');
-    let prefix = parts
-        .next()
-        .ok_or_else(|| "invalid-fl402-macaroon".to_string())?;
-    let encoded = parts
-        .next()
-        .ok_or_else(|| "invalid-fl402-macaroon".to_string())?;
-    let signature = parts
-        .next()
-        .ok_or_else(|| "invalid-fl402-macaroon".to_string())?;
-    if prefix != "fl402-macaroon-v1" || parts.next().is_some() {
-        return Err("invalid-fl402-macaroon".to_string());
-    }
-    let bytes = base64::Engine::decode(&base64::engine::general_purpose::URL_SAFE_NO_PAD, encoded)
-        .map_err(|_| "invalid-fl402-macaroon".to_string())?;
-    let payload: Value =
-        serde_json::from_slice(&bytes).map_err(|_| "invalid-fl402-macaroon".to_string())?;
-    Ok((payload, signature.to_string()))
-}
-
-fn hash_fl402_preimage(preimage: &str, algorithm: &str) -> Result<String, String> {
-    let bytes =
-        hex::decode(normalize_fl402_hex(preimage)?).map_err(|_| "wrong-preimage".to_string())?;
-    let digest = match algorithm {
-        "sha256" => {
-            let mut hasher = Sha256::new();
-            hasher.update(bytes);
-            hasher.finalize().to_vec()
-        }
-        "ckb_hash" => ckb_blake2b_256(&bytes).to_vec(),
-        _ => return Err("wrong-hash-algorithm".to_string()),
-    };
-    Ok(format!("0x{}", hex::encode(digest)))
-}
-
-fn normalize_fl402_hex(value: &str) -> Result<String, String> {
-    let normalized = value
-        .strip_prefix("0x")
-        .unwrap_or(value)
-        .to_ascii_lowercase();
-    if normalized.len() != 64 || !normalized.chars().all(|ch| ch.is_ascii_hexdigit()) {
-        return Err("wrong-preimage".to_string());
-    }
-    Ok(normalized)
-}
-
-fn ckb_blake2b_256(bytes: &[u8]) -> [u8; 32] {
-    let hash = blake2b_simd::Params::new()
-        .hash_length(32)
-        .personal(b"ckb-default-hash")
-        .hash(bytes);
-    let mut output = [0_u8; 32];
-    output.copy_from_slice(hash.as_bytes());
-    output
-}
-
-fn verify_live_report_evidence(input: &Value) -> Result<Outcome, CoreError> {
-    let report = object_field(input, "report")?;
-    let accepted = string_field(report, "fiber_e2e_status").unwrap_or("") == "passed"
-        && report
-            .get("live_fiber_local_e2e")
-            .and_then(Value::as_bool)
-            .unwrap_or(false)
-        && report
-            .get("fiber_e2e_payment_hash")
-            .and_then(Value::as_str)
-            .is_some()
-        && report
-            .get("fiber_e2e_receipt_id")
-            .and_then(Value::as_str)
-            .is_some();
-    Ok(if accepted {
-        Outcome::accepted()
-    } else {
-        Outcome::rejected("missing-local-fiber-e2e-evidence")
-    })
-}
-
-fn verify_live_receipt_evidence(input: &Value) -> Result<Outcome, CoreError> {
-    if let Some(receipt) = input.get("receipt") {
-        if let Some(secret) = input.get("secret").and_then(Value::as_str) {
-            if !verify_receipt(receipt, secret)? {
-                return Ok(Outcome::rejected("bad-receipt-signature"));
-            }
-        }
-        let matches = string_field(receipt, "receiptId")? == string_field(input, "receipt_id")?
-            && object_field(receipt, "settlement")?
-                .get("paymentHash")
-                .and_then(Value::as_str)
-                == input.get("payment_hash").and_then(Value::as_str);
-        return Ok(if matches {
-            Outcome::accepted()
-        } else {
-            Outcome::rejected("receipt-evidence-mismatch")
-        });
-    }
+fn verify_evidence_report(input: &Value) -> Result<Outcome, CoreError> {
     Ok(
-        if input.get("receipt_id").and_then(Value::as_str).is_some()
+        if input.get("status").and_then(Value::as_str) == Some("passed")
             && input.get("payment_hash").and_then(Value::as_str).is_some()
         {
             Outcome::accepted()
         } else {
-            Outcome::rejected("missing-local-fiber-receipt-evidence")
+            Outcome::rejected("missing-local-fiber-e2e-evidence")
         },
     )
 }
 
-fn canonicalize(value: &Value) -> Value {
-    match value {
-        Value::Array(values) => Value::Array(values.iter().map(canonicalize).collect()),
-        Value::Object(map) => {
-            let ordered: BTreeMap<String, Value> = map
-                .iter()
-                .map(|(key, value)| (key.clone(), canonicalize(value)))
-                .collect();
-            Value::Object(Map::from_iter(ordered))
-        }
-        _ => value.clone(),
+fn verify_evidence_receipt(input: &Value) -> Result<Outcome, CoreError> {
+    let Some(receipt) = input.get("receipt").filter(|value| value.is_object()) else {
+        return Ok(Outcome::rejected("missing-local-fiber-receipt-evidence"));
+    };
+    let receipt: PaymentReceipt = match serde_json::from_value(receipt.clone()) {
+        Ok(receipt) => receipt,
+        Err(_) => return Ok(Outcome::rejected("missing-local-fiber-receipt-evidence")),
+    };
+    Ok(if validate_receipt(&receipt).is_ok() {
+        Outcome::accepted()
+    } else {
+        Outcome::rejected("missing-local-fiber-receipt-evidence")
+    })
+}
+
+fn charge_from_compatibility(value: &Value) -> Result<FiberChargeRequest, CoreError> {
+    Ok(FiberChargeRequest {
+        amount: string_field(value, "amount")?.to_string(),
+        currency: string_field(value, "currency")?.to_ascii_lowercase(),
+        recipient: optional_string(value, "fiberNodeId").map(ToString::to_string),
+        description: None,
+        external_id: None,
+        method_details: FiberChargeMethodDetails {
+            invoice: string_field(value, "invoice")?.to_string(),
+            payment_hash: string_field(value, "paymentHash")?.to_string(),
+            network: string_field(value, "network")?.to_string(),
+            hash_algorithm: string_field(value, "hashAlgorithm")?.to_string(),
+            udt_type_script: None,
+            extensions: BTreeMap::new(),
+        },
+        extensions: BTreeMap::new(),
+    })
+}
+
+fn verify_capability(capability: &str, root_key: &str, now: &str) -> Result<Value, String> {
+    if root_key.len() < 32 {
+        return Err("fl402-root-key-too-short".to_string());
     }
+    let mut parts = capability.split('.');
+    let prefix = parts
+        .next()
+        .ok_or_else(|| "invalid-fl402-capability".to_string())?;
+    let encoded = parts
+        .next()
+        .ok_or_else(|| "invalid-fl402-capability".to_string())?;
+    let signature = parts
+        .next()
+        .ok_or_else(|| "invalid-fl402-capability".to_string())?;
+    if prefix != "fiber-l402-capability-v1" || parts.next().is_some() {
+        return Err("invalid-fl402-capability".to_string());
+    }
+    let bytes = base64::engine::general_purpose::URL_SAFE_NO_PAD
+        .decode(encoded)
+        .map_err(|_| "invalid-fl402-capability".to_string())?;
+    if base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(&bytes) != encoded {
+        return Err("invalid-fl402-capability".to_string());
+    }
+    let payload: Value =
+        serde_json::from_slice(&bytes).map_err(|_| "invalid-fl402-capability".to_string())?;
+    if canonical_json(&payload)
+        .map_err(|_| "invalid-fl402-capability".to_string())?
+        .as_bytes()
+        != bytes
+        || payload.get("domain").and_then(Value::as_str) != Some("fiber-l402-capability-v1")
+    {
+        return Err("invalid-fl402-capability".to_string());
+    }
+    let signature =
+        hex::decode(signature).map_err(|_| "bad-fl402-capability-signature".to_string())?;
+    let mut mac = HmacSha256::new_from_slice(root_key.as_bytes())
+        .map_err(|_| "bad-fl402-capability-signature".to_string())?;
+    mac.update(
+        canonical_json(&payload)
+            .map_err(|_| "bad-fl402-capability-signature".to_string())?
+            .as_bytes(),
+    );
+    if mac.verify_slice(&signature).is_err() {
+        return Err("bad-fl402-capability-signature".to_string());
+    }
+    let expires = object_field(&payload, "caveats")
+        .and_then(|caveats| string_field(caveats, "expiresAt"))
+        .map_err(|_| "expired-fl402-capability".to_string())?;
+    let issued =
+        string_field(&payload, "issuedAt").map_err(|_| "expired-fl402-capability".to_string())?;
+    let now = parse_time(now).map_err(|_| "expired-fl402-capability".to_string())?;
+    if parse_time(issued).map_err(|_| "expired-fl402-capability".to_string())? > now
+        || now > parse_time(expires).map_err(|_| "expired-fl402-capability".to_string())?
+    {
+        return Err("expired-fl402-capability".to_string());
+    }
+    Ok(payload)
+}
+
+fn fl402_outer_error(fl402: &Value, payload: &Value) -> Result<Option<&'static str>, CoreError> {
+    let caveats = object_field(payload, "caveats")?;
+    if string_field(fl402, "challengeId")? != string_field(caveats, "challengeId")? {
+        return Ok(Some("wrong-challenge"));
+    }
+    if string_field(fl402, "resourceHash")? != string_field(caveats, "resourceHash")?
+        || optional_string(fl402, "resource") != optional_string(caveats, "url")
+    {
+        return Ok(Some("wrong-resource"));
+    }
+    if normalize_hex(string_field(fl402, "paymentHash")?)?
+        != normalize_hex(string_field(caveats, "paymentHash")?)?
+    {
+        return Ok(Some("wrong-payment-hash"));
+    }
+    for (field, code) in [
+        ("invoice", "wrong-invoice"),
+        ("amount", "wrong-amount"),
+        ("currency", "wrong-currency"),
+        ("expiresAt", "wrong-expiry"),
+        ("network", "wrong-network"),
+        ("hashAlgorithm", "wrong-hash-algorithm"),
+    ] {
+        if string_field(fl402, field)? != string_field(caveats, field)? {
+            return Ok(Some(code));
+        }
+    }
+    if optional_string(fl402, "issuer") != optional_string(caveats, "issuer") {
+        return Ok(Some("wrong-issuer"));
+    }
+    if optional_string(fl402, "fiberNodeId") != optional_string(caveats, "fiberNodeId") {
+        return Ok(Some("wrong-recipient"));
+    }
+    Ok(None)
+}
+
+fn hash_preimage(preimage: &str, algorithm: &str) -> Result<String, CoreError> {
+    let bytes = hex::decode(normalize_hex(preimage)?.trim_start_matches("0x"))
+        .map_err(|_| CoreError::InvalidField("preimage"))?;
+    let digest = match algorithm {
+        "sha256" => Sha256::digest(bytes).to_vec(),
+        "ckb_hash" => Blake2bParams::new()
+            .hash_length(32)
+            .personal(b"ckb-default-hash")
+            .hash(&bytes)
+            .as_bytes()
+            .to_vec(),
+        _ => return Err(CoreError::InvalidField("hashAlgorithm")),
+    };
+    Ok(format!("0x{}", hex::encode(digest)))
+}
+
+fn normalize_hex(value: &str) -> Result<String, CoreError> {
+    let raw = value.trim_start_matches("0x").to_ascii_lowercase();
+    if raw.len() != 64 || !raw.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        return Err(CoreError::InvalidField("hex32"));
+    }
+    Ok(format!("0x{raw}"))
+}
+
+fn compare_value<T: Serialize>(
+    actual: &T,
+    expected: Option<&Value>,
+    error: &'static str,
+) -> Result<Outcome, CoreError> {
+    let actual = serde_json::to_value(actual)?;
+    Ok(
+        if expected
+            .is_some_and(|expected| canonical_json(&actual).ok() == canonical_json(expected).ok())
+        {
+            Outcome::accepted()
+        } else {
+            Outcome::rejected(error)
+        },
+    )
+}
+
+fn parse_time(value: &str) -> Result<DateTime<Utc>, CoreError> {
+    DateTime::parse_from_rfc3339(value)
+        .map(|value| value.with_timezone(&Utc))
+        .map_err(|_| CoreError::InvalidField("timestamp"))
 }
 
 fn object_field<'a>(source: &'a Value, field: &'static str) -> Result<&'a Value, CoreError> {
@@ -669,33 +895,6 @@ fn string_field<'a>(source: &'a Value, field: &'static str) -> Result<&'a str, C
 
 fn optional_string<'a>(source: &'a Value, field: &'static str) -> Option<&'a str> {
     source.get(field).and_then(Value::as_str)
-}
-
-fn find_method<'a>(challenge: &'a Value, name: &str) -> Option<&'a Value> {
-    challenge
-        .get("methods")?
-        .as_array()?
-        .iter()
-        .find(|method| method.get("method").and_then(Value::as_str) == Some(name))
-}
-
-fn is_expired(expires_at: &str) -> bool {
-    DateTime::parse_from_rfc3339(expires_at)
-        .map(|expires_at| expires_at.with_timezone(&Utc) < Utc::now())
-        .unwrap_or(true)
-}
-
-fn is_settled_status(value: Option<&Value>) -> bool {
-    value
-        .and_then(Value::as_str)
-        .map(|status| {
-            let status = status.to_ascii_lowercase();
-            matches!(
-                status.as_str(),
-                "settled" | "success" | "succeeded" | "paid"
-            )
-        })
-        .unwrap_or(false)
 }
 
 pub fn compare_reports(ts: &ConformanceReport, rust: &ConformanceReport) -> Value {
@@ -717,40 +916,19 @@ pub fn compare_reports(ts: &ConformanceReport, rust: &ConformanceReport) -> Valu
     let mut mismatches = Vec::new();
     for file in files {
         match (ts_by_file.get(file), rust_by_file.get(file)) {
+            (Some(ts), Some(rust))
+                if ts.canonical_hash == rust.canonical_hash
+                    && ts.actual == rust.actual
+                    && ts.actual_error_code == rust.actual_error_code
+                    && ts.passed == rust.passed => {}
             (Some(ts), Some(rust)) => {
-                if ts.canonical_hash != rust.canonical_hash
-                    || ts.actual != rust.actual
-                    || ts.actual_error_code != rust.actual_error_code
-                    || ts.passed != rust.passed
-                {
-                    mismatches.push(json!({
-                        "file": file,
-                        "ts": ts,
-                        "rust": rust
-                    }));
-                }
+                mismatches.push(json!({ "file": file, "ts": ts, "rust": rust }))
             }
             _ => mismatches.push(json!({ "file": file, "missing_from_one_stack": true })),
         }
     }
-
     let passed_ts = ts.results.iter().filter(|result| result.passed).count();
     let passed_rust = rust.results.iter().filter(|result| result.passed).count();
-    let error_code_parity = mismatches.iter().all(|mismatch| {
-        mismatch
-            .get("ts")
-            .zip(mismatch.get("rust"))
-            .map(|(ts, rust)| ts.get("actual_error_code") == rust.get("actual_error_code"))
-            .unwrap_or(false)
-    }) || mismatches.is_empty();
-    let canonical_hash_parity = mismatches.iter().all(|mismatch| {
-        mismatch
-            .get("ts")
-            .zip(mismatch.get("rust"))
-            .map(|(ts, rust)| ts.get("canonical_hash") == rust.get("canonical_hash"))
-            .unwrap_or(false)
-    }) || mismatches.is_empty();
-
     json!({
         "rust_canonical_verifier": rust.failed == 0,
         "typescript_vector_harness": ts.failed == 0,
@@ -758,19 +936,15 @@ pub fn compare_reports(ts: &ConformanceReport, rust: &ConformanceReport) -> Valu
         "shared_vectors_total": ts.results.len(),
         "shared_vectors_passed_typescript_harness": passed_ts,
         "shared_vectors_passed_rust": passed_rust,
-        "error_code_parity": error_code_parity && mismatches.is_empty(),
-        "canonical_hash_parity": canonical_hash_parity && mismatches.is_empty(),
-        "receipt_format_parity": receipt_format_parity(ts, rust),
+        "error_code_parity": mismatches.is_empty(),
+        "canonical_hash_parity": mismatches.is_empty(),
+        "receipt_format_parity": vector_names_passed(ts, rust, &["receipt.valid.json", "fiber.local-e2e.receipt.json"]),
         "f402_parity": vector_names_passed(ts, rust, &["f402.challenge.valid.json", "f402.credential.valid.json"]),
-        "fl402_parity": vector_names_passed(ts, rust, &[
-            "fl402.challenge.valid.json",
-            "fl402.credential.valid.json",
-            "attack.fl402-wrong-preimage.json",
-            "attack.fl402-tampered-macaroon.json"
-        ]),
+        "x402_parity": vector_names_passed(ts, rust, &["x402.required.valid.json", "x402.payload.valid.json", "x402.settlement.valid.json", "attack.x402-tampered-requirement.json"]),
+        "fl402_parity": vector_names_passed(ts, rust, &["fl402.challenge.valid.json", "fl402.credential.valid.json", "attack.fl402-wrong-preimage.json", "attack.fl402-tampered-capability.json"]),
         "fiber_rpc_semantics_parity": true,
         "canonical_engine": "rust",
-        "typescript_role": "sdk-evidence-f402-compat-vector-harness",
+        "typescript_role": "sdk-evidence-compatibility-vector-harness",
         "production_ready_for_fiber_method": false,
         "mismatches": mismatches
     })
@@ -778,25 +952,26 @@ pub fn compare_reports(ts: &ConformanceReport, rust: &ConformanceReport) -> Valu
 
 fn vector_names_passed(ts: &ConformanceReport, rust: &ConformanceReport, names: &[&str]) -> bool {
     let wanted = names.iter().copied().collect::<HashSet<_>>();
-    let ts_passed = ts
-        .results
-        .iter()
-        .filter(|result| wanted.contains(result.file.as_str()))
-        .all(|result| result.passed);
-    let rust_passed = rust
-        .results
-        .iter()
-        .filter(|result| wanted.contains(result.file.as_str()))
-        .all(|result| result.passed);
-    ts_passed && rust_passed
-}
-
-fn receipt_format_parity(ts: &ConformanceReport, rust: &ConformanceReport) -> bool {
-    vector_names_passed(
-        ts,
-        rust,
-        &["receipt.valid.json", "fiber.local-e2e.receipt.json"],
-    )
+    let all_present = names.iter().all(|name| {
+        ts.results
+            .iter()
+            .any(|result| result.file == *name && result.passed)
+            && rust
+                .results
+                .iter()
+                .any(|result| result.file == *name && result.passed)
+    });
+    all_present
+        && ts
+            .results
+            .iter()
+            .filter(|result| wanted.contains(result.file.as_str()))
+            .all(|result| result.passed)
+        && rust
+            .results
+            .iter()
+            .filter(|result| wanted.contains(result.file.as_str()))
+            .all(|result| result.passed)
 }
 
 #[cfg(test)]

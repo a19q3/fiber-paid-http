@@ -13,7 +13,6 @@ import {
   battlecodeLedgerPath,
   createBattlecodeSubmission,
   issueBattlecodeTicket,
-  legacyBattlecodeLedgerPath,
   normalizeBattlecodeRegistration,
   normalizeBattlecodeSubmission,
   readBattlecodeLedger
@@ -117,7 +116,7 @@ describe("Battlecode tournament helpers", () => {
       expect(ledger.submissions).toHaveLength(1);
       expect(battlecodeLedgerPath(root)).toMatch(/battlecode-tournament-ledger\.sqlite$/);
       expect(health).toMatchObject({
-        schemaVersion: 1,
+        schemaVersion: 2,
         journalMode: "wal",
         foreignKeys: true,
         integrityCheck: "ok",
@@ -128,29 +127,6 @@ describe("Battlecode tournament helpers", () => {
           awards: 0
         }
       });
-    } finally {
-      await rm(root, { recursive: true, force: true });
-    }
-  });
-
-  it("migrates the legacy JSON tournament ledger into SQLite", async () => {
-    const root = await mkdtemp(join(tmpdir(), "fiber-paid-http-battlecode-legacy-ledger-"));
-    try {
-      const legacyPath = legacyBattlecodeLedgerPath(root);
-      await mkdir(join(root, ".tmp"), { recursive: true });
-      await writeFile(legacyPath, `${JSON.stringify({
-        generatedAt: "2026-01-01T00:00:00.000Z",
-        submissions: [unitSubmission],
-        tickets: [],
-        matches: [],
-        awards: []
-      })}\n`);
-      const ledger = await readBattlecodeLedger(root);
-      const health = await battlecodeLedgerHealth(root);
-      expect(ledger.submissions).toHaveLength(1);
-      expect(ledger.submissions[0]?.submissionId).toBe(unitSubmission.submissionId);
-      expect(health.counts.submissions).toBe(1);
-      expect(health.legacyJsonPresent).toBe(true);
     } finally {
       await rm(root, { recursive: true, force: true });
     }
@@ -205,7 +181,8 @@ describe("Battlecode tournament helpers", () => {
         registration,
         submission: unitSubmission,
         fairnessManifest: unitManifest,
-        receiptId: "rcpt_unit",
+        receiptReference: `0x${"ab".repeat(32)}`,
+        challengeId: "A".repeat(43),
         paymentHash: `0x${"ab".repeat(32)}`
       });
       await appendBattlecodeTicket(root, ticket);

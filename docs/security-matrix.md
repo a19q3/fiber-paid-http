@@ -1,16 +1,18 @@
-# Security Matrix
+# Security matrix
 
-This matrix is generated as JSON by `pnpm exec fiber-paid-http vectors generate` at `reports/security-matrix.json`. The Markdown copy is the human review surface for the TypeScript conformance oracle.
-
-| attack | expected rejection | implemented test | vector file | status |
-| --- | --- | --- | --- | --- |
-| replay | `replay` | `tests/integration/full-flow.test.ts` and vector verification | `test-vectors/attack.replay.json` | covered |
-| wrong resource | `wrong-resource` | `tests/integration/full-flow.test.ts` and vector verification | `test-vectors/attack.wrong-resource.json` | covered |
-| wrong amount | `wrong-amount` | `tests/unit/middleware.test.ts` and vector verification | `test-vectors/attack.wrong-amount.json` | covered |
-| wrong method | `wrong-method` | `tests/unit/middleware.test.ts` and vector verification | `test-vectors/attack.wrong-method.json` | covered |
-| expired challenge | `expired-challenge` | `tests/integration/full-flow.test.ts`, `tests/unit/middleware.test.ts`, and vector verification | `test-vectors/attack.expired-challenge.json` | covered |
-| tampered receipt | `bad-receipt-signature` | vector verification | `test-vectors/attack.tampered-receipt.json` | covered |
-| F-L402 wrong preimage | `wrong-preimage` | `tests/unit/fl402.test.ts` and vector verification | `test-vectors/attack.fl402-wrong-preimage.json` | covered |
-| F-L402 tampered macaroon | `bad-fl402-macaroon-signature` | `tests/unit/fl402.test.ts` and vector verification | `test-vectors/attack.fl402-tampered-macaroon.json` | covered |
-
-Production readiness remains blocked after local-only Fiber evidence. The gate can set `production_ready_for_fiber_method: true` only while separate testnet Fiber E2E evidence, production operations gates, and production bootstrap E2E readiness evidence are all present.
+| Scenario | Expected result | Evidence |
+| --- | --- | --- |
+| Valid credential and settled invoice | accepted once | `credential.valid.json`, middleware/server tests |
+| Replay or concurrent duplicate | `replay` | `attack.replay.json`, atomic redemption tests |
+| Wrong URL or HTTP method | `wrong-resource` / `wrong-method` | attack vectors and gateway tests |
+| Wrong body | `wrong-body-digest` | middleware body-digest test |
+| Wrong amount or payment hash | `wrong-amount` / `wrong-payment-hash` | attack vectors |
+| Fetched invoice address, amount, currency/network, hash algorithm, UDT, or expiry differs | reject before payment/authorization | TS payer and Rust gateway invoice-record tests |
+| Expired challenge | `expired-challenge` | `attack.expired-challenge.json` |
+| Tampered challenge binding | fresh 402 | middleware/server tests |
+| Upstream non-2xx or exception | no receipt | `attack.receipt-on-error.json`, gateway tests |
+| Forged upstream receipt header | stripped | gateway delivery logic |
+| Wrong F-L402 preimage | `wrong-preimage` | `attack.fl402-wrong-preimage.json` |
+| Tampered F-L402 capability | `bad-fl402-capability-signature` | `attack.fl402-tampered-capability.json` |
+| Changed x402 accepted requirement | `x402-fiber-requirement-mismatch` | `attack.x402-tampered-requirement.json` |
+| Unsupported SQLite schema | startup failure | storage tests |

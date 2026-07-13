@@ -8,7 +8,7 @@ type TournamentFlow = {
   registration?: TournamentRegistration;
   challengeId?: string;
   fiberChallenge?: { paymentHash?: string };
-  receipt?: { receiptId?: string; settlement?: { paymentHash?: string } };
+  receipt?: { reference?: string; challengeId?: string };
   ticket?: TournamentTicket;
   report?: TournamentReport;
 };
@@ -35,7 +35,8 @@ type TournamentSubmission = {
 
 type TournamentTicket = TournamentRegistration & {
   ticketId: string;
-  receiptId: string;
+  receiptReference: string;
+  challengeId: string;
   paymentHash?: string;
   status: string;
 };
@@ -244,8 +245,9 @@ export function TournamentView() {
             <EvidenceCell label="Submission" value={tournament.ticket?.submissionId || tournament.registration?.submissionId || tournament.submission?.submissionId || form.submissionId || "pending"} />
             <EvidenceCell label="Bot Hash" value={tournament.ticket?.botScriptHash || tournament.registration?.botScriptHash || tournament.submission?.botScriptHash || form.botScriptHash || "pending"} />
             <EvidenceCell label="Client Hash" value={tournament.ticket?.clientHash || tournament.registration?.clientHash || form.clientHash || "pending"} />
-            <EvidenceCell label="Payment Hash" value={tournament.receipt?.settlement?.paymentHash || tournament.fiberChallenge?.paymentHash || "pending"} />
-            <EvidenceCell label="Receipt" value={tournament.receipt?.receiptId || tournament.ticket?.receiptId || "pending"} />
+            <EvidenceCell label="Payment Hash" value={tournament.receipt?.reference || tournament.fiberChallenge?.paymentHash || "pending"} />
+            <EvidenceCell label="Receipt Reference" value={tournament.receipt?.reference || tournament.ticket?.receiptReference || "pending"} />
+            <EvidenceCell label="Challenge" value={tournament.receipt?.challengeId || tournament.ticket?.challengeId || "pending"} />
             <EvidenceCell label="Ticket" value={tournament.ticket?.ticketId || "pending"} />
             <EvidenceCell label="Winner" value={tournament.report?.match?.winner || "pending"} tone={tournament.report?.match?.winner === "fiberchamp" ? "pass" : undefined} />
             <EvidenceCell label="Award" value={tournament.report?.award?.awardId || "pending"} tone={tournament.report?.award ? "pass" : undefined} />

@@ -99,7 +99,7 @@ async function runSmoke(client, apiBase, webUrl) {
   await click(client, "#open-settings");
   await waitFor(client, "Boolean(document.querySelector('#api-base-input'))", "api input");
   await waitFor(client, `document.querySelector("#api-base-input")?.value === ${JSON.stringify(apiBase)}`, "injected API base");
-  await setInputAndChange(client, "#settings-amount-ckb", "0.000002");
+  await setInputAndChange(client, "#settings-amount-shannons", "200");
   await waitFor(client, `document.querySelector("#amount-ckb")?.value === "0.000002"`, "CKB amount stored");
   await click(client, "#close-settings");
   await waitFor(client, `!document.querySelector("#settings-overlay")`, "settings closed");
@@ -136,7 +136,7 @@ async function runSmoke(client, apiBase, webUrl) {
   await click(client, "#retry");
   await waitFor(client, `document.querySelector("#replay")?.disabled === false`, "replay enabled after receipt");
   await waitFor(client, `document.querySelector("#actuator-service")?.textContent?.includes("executed")`, "service executed after receipt");
-  await waitFor(client, `document.querySelector("#timeline")?.textContent?.includes("receipt_id")`, "timeline receipt id rendered");
+  await waitFor(client, `document.querySelector("#timeline")?.textContent?.includes("receipt_reference")`, "timeline receipt reference rendered");
   steps.push(await snapshot(client, "authorization-retry"));
 
   await click(client, "#replay");
@@ -156,7 +156,7 @@ async function runSmoke(client, apiBase, webUrl) {
   await click(client, '[data-workspace-tab="evidence"]');
   await waitFor(client, `document.querySelector(".console")?.dataset.workspace === "evidence"`, "evidence workspace");
   await client.evaluate(`Array.from(document.querySelectorAll("#tabs .tab")).find((node) => node.textContent.includes("Payment Receipt"))?.click()`);
-  await waitFor(client, `document.querySelector("#json")?.textContent?.includes("receipt")`, "payment receipt evidence tab");
+  await waitFor(client, `document.querySelector("#json")?.textContent?.includes('"reference"') && document.querySelector("#json")?.textContent?.includes('"challengeId"')`, "payment receipt evidence tab");
   steps.push(await snapshot(client, "evidence-tab"));
   assertCompletedFlowEvidence(completedFlowEvidence);
 
@@ -184,7 +184,7 @@ async function runSmoke(client, apiBase, webUrl) {
     console_url: webUrl.replace(/:\d+\//, ":<port>/"),
     api_base_source: "served HTML injected by evidence web server",
     api_backing: "temporary local evidence API process with in-process Fiber adapters",
-    mode: normalizeSmokeText(await client.evaluate(`window.__fiberMppSmokeMode || document.querySelector("#api-state-text")?.textContent || ""`), apiBase),
+    mode: normalizeSmokeText(await client.evaluate(`window.__fiberPaidHttpSmokeMode || document.querySelector("#api-state-text")?.textContent || ""`), apiBase),
     completed_flow_evidence: completedFlowEvidence,
     reset_evidence_after_clear: resetEvidenceAfterClear,
     steps
@@ -193,10 +193,11 @@ async function runSmoke(client, apiBase, webUrl) {
 
 function assertCompletedFlowEvidence(evidence) {
   assertSmoke(Boolean(evidence), "completed evidence snapshot is missing");
-  assertSmoke(Boolean(evidence.challenge_id), "completed evidence snapshot must keep challenge_id");
-  assertSmoke(Boolean(evidence.resource_hash), "completed evidence snapshot must keep resource_hash");
-  assertSmoke(Boolean(evidence.payment_hash), "completed evidence snapshot must keep payment_hash");
-  assertSmoke(Boolean(evidence.receipt_id), "completed evidence snapshot must keep receipt_id");
+  assertSmoke(/^[A-Za-z0-9_-]{43}$/.test(evidence.challenge_id), "completed evidence snapshot must keep a canonical challenge_id");
+  assertSmoke(/^[0-9a-f]{64}$/i.test(evidence.resource_hash), "completed evidence snapshot must keep a canonical resource_hash");
+  assertSmoke(/^0x[0-9a-f]{64}$/i.test(evidence.payment_hash), "completed evidence snapshot must keep a canonical payment_hash");
+  assertSmoke(/^0x[0-9a-f]{64}$/i.test(evidence.receipt_reference), "completed evidence snapshot must keep a canonical receipt_reference");
+  assertSmoke(evidence.payment_hash.toLowerCase() === evidence.receipt_reference.toLowerCase(), "receipt_reference must equal payment_hash");
   assertSmoke(evidence.service_executed === "executed after receipt", "completed evidence snapshot must show service execution");
   assertSmoke(evidence.replay_status === "blocked", "completed evidence snapshot must show replay blocked");
   assertSmoke(evidence.receipt_reissued === "false", "completed evidence snapshot must show receipt not reissued");
@@ -220,25 +221,20 @@ async function snapshot(client, step) {
 async function evidenceSnapshot(client) {
   return client.evaluate(`(() => {
     const text = (selector) => document.querySelector(selector)?.textContent?.trim() || "";
-    const body = document.body?.textContent || "";
     const json = text("#json");
-    const timeline = text("#timeline");
-    const attack = text("#attack-grid");
-    const find = (source, pattern) => {
-      const match = String(source || "").match(pattern);
-      return match ? match[0] : "";
-    };
     const findCapture = (source, pattern) => {
       const match = String(source || "").match(pattern);
       return match ? match[1] : "";
     };
     const visibleChallenge = text("#challenge-id");
     const visibleResourceHash = text("#resource-hash");
+    const visiblePaymentHash = text("#inspector-payment-hash");
+    const visibleReceiptReference = text("#inspector-receipt-reference");
     return {
       challenge_id: visibleChallenge && visibleChallenge !== "pending" ? visibleChallenge : findCapture(json, /"challenge_id":\\s*"([^"]+)"/i),
       resource_hash: visibleResourceHash && visibleResourceHash !== "pending" ? visibleResourceHash : findCapture(json, /"resource_hash":\\s*"([^"]+)"/i),
-      payment_hash: find(json, /0x[0-9a-f]{64}/i) || find(timeline, /0x[0-9a-f]{12,}/i) || find(body, /0x[0-9a-f]{12,}/i),
-      receipt_id: find(json, /rcpt_[a-z0-9]+/i) || find(timeline, /rcpt_[a-z0-9]+/i) || find(attack, /rcpt_[a-z0-9]+/i),
+      payment_hash: /^0x[0-9a-f]{64}$/i.test(visiblePaymentHash) ? visiblePaymentHash : findCapture(json, /"paymentHash":\\s*"(0x[0-9a-f]{64})"/i),
+      receipt_reference: /^0x[0-9a-f]{64}$/i.test(visibleReceiptReference) ? visibleReceiptReference : findCapture(json, /"reference":\\s*"(0x[0-9a-f]{64})"/i),
       service_executed: text("#actuator-service"),
       replay_status: text("#actuator-replay"),
       receipt_reissued: text("#actuator-reissued"),

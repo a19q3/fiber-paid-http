@@ -10,10 +10,6 @@ default-run = "fiber-paid-http-rs"
 name = "fiber-paid-http-rs"
 path = "src/main.rs"
 
-[[bin]]
-name = "fiber-mpp-rs"
-path = "src/bin/fiber-mpp-rs.rs"
-
 [dependencies]
 anyhow.workspace = true
 clap.workspace = true

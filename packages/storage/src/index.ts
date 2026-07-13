@@ -1,8 +1,9 @@
 import {
-  verifyReceiptSignatureWithAnySecret,
+  PaymentReceiptSchema,
+  type FiberChargeRequest,
   type PaymentChallenge,
   type PaymentReceipt,
-  type PaymentCredential,
+  type ResourceDescriptor,
   type Settlement
 } from "@fiber-paid-http/core";
 import { constants } from "node:fs";
@@ -14,11 +15,19 @@ export type StoreKind = "sqlite" | "redis-compatible";
 
 export type ChallengeRecord = {
   challenge: PaymentChallenge;
-  signature: string;
-  resourceHash: string;
+  chargeRequest: FiberChargeRequest;
+  resourceBinding: ResourceDescriptor;
   createdAt: string;
   expiresAt: string;
-  usedAt?: string;
+  consumedAt?: string;
+};
+
+export type RedemptionRecord = {
+  challengeId: string;
+  credentialHash: string;
+  paymentHash: string;
+  settlement: Settlement;
+  consumedAt: string;
 };
 
 export type PaymentObservation = {
@@ -30,10 +39,11 @@ export type PaymentObservation = {
 };
 
 export type DeliveryOutcome = {
-  receiptId: string;
   challengeId: string;
   credentialHash: string;
-  status: "delivered" | "failed";
+  paymentHash: string;
+  receiptReference?: string;
+  status: "pending" | "delivered" | "failed";
   responseStatus?: number;
   errorCode?: string;
   errorMessage?: string;
@@ -45,22 +55,16 @@ export interface FiberPaidHttpStore {
   readonly durable: boolean;
   saveChallenge(record: ChallengeRecord): Promise<void>;
   getChallenge(challengeId: string): Promise<ChallengeRecord | null>;
-  markChallengeUsed(challengeId: string, usedAt: string): Promise<boolean>;
-  hasCredentialUse(credentialHash: string): Promise<boolean>;
-  saveCredentialUse(credentialHash: string, credential: PaymentCredential, usedAt: string): Promise<boolean>;
+  consumeRedemption(redemption: RedemptionRecord): Promise<boolean>;
+  getRedemption(challengeId: string): Promise<RedemptionRecord | null>;
   saveReceipt(receipt: PaymentReceipt): Promise<void>;
-  getReceipt(receiptId: string): Promise<PaymentReceipt | null>;
+  getReceipt(reference: string): Promise<PaymentReceipt | null>;
   listReceipts(): Promise<PaymentReceipt[]>;
   savePaymentObservation(observation: PaymentObservation): Promise<void>;
   getPaymentObservation(paymentHash: string): Promise<PaymentObservation | null>;
   saveDeliveryOutcome(outcome: DeliveryOutcome): Promise<void>;
   listDeliveryOutcomes(): Promise<DeliveryOutcome[]>;
 }
-
-/**
- * @deprecated Use `FiberPaidHttpStore`.
- */
-export type FiberMppStore = FiberPaidHttpStore;
 
 export const SQLITE_SCHEMA_VERSION = 1;
 
@@ -69,7 +73,7 @@ export type ReceiptAuditReport = {
   receipts: number;
   valid: number;
   invalid: number;
-  invalidReceiptIds: string[];
+  invalidReceiptReferences: string[];
 };
 
 export type ReceiptExportReport = ReceiptAuditReport & {
@@ -92,7 +96,7 @@ export class SqliteStore implements FiberPaidHttpStore {
   public constructor(path: string) {
     const { DatabaseSync } = loadNodeSqlite();
     this.db = new DatabaseSync(path) as SqliteDatabase;
-    applySqliteMigrations(this.db);
+    initializeSqliteSchema(this.db);
   }
 
   public schemaVersion(): number {
@@ -106,68 +110,136 @@ export class SqliteStore implements FiberPaidHttpStore {
   public async saveChallenge(record: ChallengeRecord): Promise<void> {
     this.db
       .prepare(
-        "INSERT OR REPLACE INTO challenges (id, record, used_at) VALUES (?, ?, COALESCE((SELECT used_at FROM challenges WHERE id = ?), NULL))"
+        `INSERT OR IGNORE INTO challenges
+         (id, challenge, charge_request, resource_binding, created_at, expires_at, consumed_at)
+         VALUES (?, ?, ?, ?, ?, ?, NULL)`
       )
-      .run(record.challenge.challengeId, JSON.stringify(record), record.challenge.challengeId);
+      .run(
+        record.challenge.id,
+        JSON.stringify(record.challenge),
+        JSON.stringify(record.chargeRequest),
+        JSON.stringify(record.resourceBinding),
+        record.createdAt,
+        record.expiresAt
+      );
   }
 
   public async getChallenge(challengeId: string): Promise<ChallengeRecord | null> {
-    const row = this.db.prepare("SELECT record, used_at FROM challenges WHERE id = ?").get(challengeId) as
-      | { record: string; used_at?: string | null }
+    const row = this.db.prepare(
+      `SELECT challenge, charge_request, resource_binding, created_at, expires_at, consumed_at
+       FROM challenges WHERE id = ?`
+    ).get(challengeId) as
+      | {
+          challenge: string;
+          charge_request: string;
+          resource_binding: string;
+          created_at: string;
+          expires_at: string;
+          consumed_at?: string | null;
+        }
       | undefined;
     if (!row) {
       return null;
     }
-    const record = JSON.parse(row.record) as ChallengeRecord;
-    return row.used_at ? { ...record, usedAt: row.used_at } : record;
+    return {
+      challenge: JSON.parse(row.challenge) as PaymentChallenge,
+      chargeRequest: JSON.parse(row.charge_request) as FiberChargeRequest,
+      resourceBinding: JSON.parse(row.resource_binding) as ResourceDescriptor,
+      createdAt: row.created_at,
+      expiresAt: row.expires_at,
+      ...(row.consumed_at ? { consumedAt: row.consumed_at } : {})
+    };
   }
 
-  public async markChallengeUsed(challengeId: string, usedAt: string): Promise<boolean> {
-    const row = this.db.prepare("SELECT used_at FROM challenges WHERE id = ?").get(challengeId) as
-      | { used_at?: string | null }
-      | undefined;
-    if (!row || row.used_at) {
-      return false;
-    }
-    this.db.prepare("UPDATE challenges SET used_at = ? WHERE id = ?").run(usedAt, challengeId);
-    return true;
-  }
-
-  public async hasCredentialUse(credentialHash: string): Promise<boolean> {
-    const row = this.db.prepare("SELECT hash FROM credential_uses WHERE hash = ?").get(credentialHash);
-    return Boolean(row);
-  }
-
-  public async saveCredentialUse(
-    credentialHash: string,
-    credential: PaymentCredential,
-    usedAt: string
-  ): Promise<boolean> {
+  public async consumeRedemption(redemption: RedemptionRecord): Promise<boolean> {
+    this.db.exec("BEGIN IMMEDIATE");
     try {
       this.db
-        .prepare("INSERT INTO credential_uses (hash, credential, used_at) VALUES (?, ?, ?)")
-        .run(credentialHash, JSON.stringify(credential), usedAt);
+        .prepare("UPDATE challenges SET consumed_at = ? WHERE id = ? AND consumed_at IS NULL")
+        .run(redemption.consumedAt, redemption.challengeId);
+      const changes = this.db.prepare("SELECT changes() AS count").get() as { count?: number } | undefined;
+      if (changes?.count !== 1) {
+        this.db.exec("ROLLBACK");
+        return false;
+      }
+      this.db
+        .prepare(
+          `INSERT INTO redemptions
+           (challenge_id, credential_hash, payment_hash, settlement, consumed_at)
+           VALUES (?, ?, ?, ?, ?)`
+        )
+        .run(
+          redemption.challengeId,
+          redemption.credentialHash,
+          redemption.paymentHash,
+          JSON.stringify(redemption.settlement),
+          redemption.consumedAt
+        );
+      const pending: DeliveryOutcome = {
+        challengeId: redemption.challengeId,
+        credentialHash: redemption.credentialHash,
+        paymentHash: redemption.paymentHash,
+        status: "pending",
+        recordedAt: redemption.consumedAt
+      };
+      this.db
+        .prepare(
+          `INSERT INTO delivery_outcomes
+           (challenge_id, credential_hash, payment_hash, status, recorded_at)
+           VALUES (?, ?, ?, ?, ?)`
+        )
+        .run(
+          pending.challengeId,
+          pending.credentialHash,
+          pending.paymentHash,
+          pending.status,
+          pending.recordedAt
+        );
+      this.db.exec("COMMIT");
       return true;
     } catch {
+      try {
+        this.db.exec("ROLLBACK");
+      } catch {
+        // The transaction may already have been rolled back by SQLite.
+      }
       return false;
     }
+  }
+
+  public async getRedemption(challengeId: string): Promise<RedemptionRecord | null> {
+    const row = this.db.prepare(
+      `SELECT credential_hash, payment_hash, settlement, consumed_at
+       FROM redemptions WHERE challenge_id = ?`
+    ).get(challengeId) as
+      | { credential_hash: string; payment_hash: string; settlement: string; consumed_at: string }
+      | undefined;
+    return row
+      ? {
+          challengeId,
+          credentialHash: row.credential_hash,
+          paymentHash: row.payment_hash,
+          settlement: JSON.parse(row.settlement) as Settlement,
+          consumedAt: row.consumed_at
+        }
+      : null;
   }
 
   public async saveReceipt(receipt: PaymentReceipt): Promise<void> {
     this.db
-      .prepare("INSERT OR REPLACE INTO receipts (id, receipt) VALUES (?, ?)")
-      .run(receipt.receiptId, JSON.stringify(receipt));
+      .prepare("INSERT OR IGNORE INTO receipts (reference, challenge_id, receipt) VALUES (?, ?, ?)")
+      .run(receipt.reference, receipt.challengeId, JSON.stringify(receipt));
   }
 
-  public async getReceipt(receiptId: string): Promise<PaymentReceipt | null> {
-    const row = this.db.prepare("SELECT receipt FROM receipts WHERE id = ?").get(receiptId) as
+  public async getReceipt(reference: string): Promise<PaymentReceipt | null> {
+    const row = this.db.prepare("SELECT receipt FROM receipts WHERE reference = ?").get(reference) as
       | { receipt: string }
       | undefined;
     return row ? (JSON.parse(row.receipt) as PaymentReceipt) : null;
   }
 
   public async listReceipts(): Promise<PaymentReceipt[]> {
-    const rows = this.db.prepare("SELECT receipt FROM receipts ORDER BY id").all() as Array<{ receipt: string }>;
+    const rows = this.db.prepare("SELECT receipt FROM receipts ORDER BY reference").all() as Array<{ receipt: string }>;
     return rows.map((row) => JSON.parse(row.receipt) as PaymentReceipt);
   }
 
@@ -189,20 +261,26 @@ export class SqliteStore implements FiberPaidHttpStore {
   public async saveDeliveryOutcome(outcome: DeliveryOutcome): Promise<void> {
     this.db
       .prepare(
-        "INSERT OR REPLACE INTO delivery_outcomes (receipt_id, challenge_id, credential_hash, outcome, recorded_at) VALUES (?, ?, ?, ?, ?)"
+        `INSERT OR REPLACE INTO delivery_outcomes
+         (challenge_id, credential_hash, payment_hash, receipt_reference, status,
+          response_status, error_code, error_message, recorded_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
-        outcome.receiptId,
         outcome.challengeId,
         outcome.credentialHash,
-        JSON.stringify(outcome),
+        outcome.paymentHash,
+        outcome.receiptReference ?? null,
+        outcome.status,
+        outcome.responseStatus ?? null,
+        outcome.errorCode ?? null,
+        outcome.errorMessage ?? null,
         outcome.recordedAt
       );
   }
 
   public async listDeliveryOutcomes(): Promise<DeliveryOutcome[]> {
-    const rows = this.db.prepare("SELECT outcome FROM delivery_outcomes ORDER BY recorded_at, receipt_id").all() as Array<{ outcome: string }>;
-    return rows.map((row) => JSON.parse(row.outcome) as DeliveryOutcome);
+    return readDeliveryOutcomes(this.db);
   }
 }
 
@@ -254,7 +332,7 @@ export async function checkSqliteStore(sourcePath: string): Promise<SqliteStoreH
   const { DatabaseSync } = loadNodeSqlite();
   const db = new DatabaseSync(source) as SqliteDatabase;
   try {
-    applySqliteMigrations(db);
+    initializeSqliteSchema(db);
     return sqliteHealthReport(db, source);
   } finally {
     db.close?.();
@@ -266,60 +344,53 @@ export async function listSqliteDeliveryOutcomes(sourcePath: string): Promise<De
   const { DatabaseSync } = loadNodeSqlite();
   const db = new DatabaseSync(source) as SqliteDatabase;
   try {
-    applySqliteMigrations(db);
-    const rows = db.prepare("SELECT outcome FROM delivery_outcomes ORDER BY recorded_at, receipt_id").all() as Array<{ outcome: string }>;
-    return rows.map((row) => JSON.parse(row.outcome) as DeliveryOutcome);
+    initializeSqliteSchema(db);
+    return readDeliveryOutcomes(db);
   } finally {
     db.close?.();
   }
 }
 
-export async function auditSqliteReceipts(sourcePath: string, secrets: string | string[]): Promise<ReceiptAuditReport> {
+export async function auditSqliteReceipts(sourcePath: string): Promise<ReceiptAuditReport> {
   const source = resolve(sourcePath);
   const receipts = await listSqliteReceipts(source);
-  const verificationSecrets = normalizeSecrets(secrets);
-  const invalidReceiptIds: string[] = [];
+  const invalidReceiptReferences: string[] = [];
   for (const receipt of receipts) {
-    if (!verifyReceiptSignatureWithAnySecret(receipt, verificationSecrets)) {
-      invalidReceiptIds.push(receipt.receiptId);
+    if (!PaymentReceiptSchema.safeParse(receipt).success) {
+      invalidReceiptReferences.push(receipt.reference);
     }
   }
   return {
     source,
     receipts: receipts.length,
-    valid: receipts.length - invalidReceiptIds.length,
-    invalid: invalidReceiptIds.length,
-    invalidReceiptIds
+    valid: receipts.length - invalidReceiptReferences.length,
+    invalid: invalidReceiptReferences.length,
+    invalidReceiptReferences
   };
 }
 
 export async function exportSqliteReceipts(
   sourcePath: string,
-  destinationPath: string,
-  options: { secret?: string; secrets?: string[] } = {}
+  destinationPath: string
 ): Promise<ReceiptExportReport> {
   const source = resolve(sourcePath);
   const destination = resolve(destinationPath);
   await assertFileMissing(destination, "receipt export destination already exists");
   await mkdir(dirname(destination), { recursive: true });
   const receipts = await listSqliteReceipts(source);
-  const invalidReceiptIds: string[] = [];
-  const verificationSecrets = normalizeOptionalSecrets(options);
+  const invalidReceiptReferences: string[] = [];
   const lines = receipts.map((receipt) => {
-    const signatureValid = verificationSecrets.length > 0
-      ? verifyReceiptSignatureWithAnySecret(receipt, verificationSecrets)
-      : undefined;
-    if (signatureValid === false) {
-      invalidReceiptIds.push(receipt.receiptId);
+    const valid = PaymentReceiptSchema.safeParse(receipt).success;
+    if (!valid) {
+      invalidReceiptReferences.push(receipt.reference);
     }
     return JSON.stringify({
-      receipt_id: receipt.receiptId,
+      receipt_reference: receipt.reference,
       challenge_id: receipt.challengeId,
       method: receipt.method,
-      issued_at: receipt.issuedAt,
-      server_id: receipt.serverId,
-      payment_hash: receipt.settlement.paymentHash,
-      receipt_signature_valid: signatureValid,
+      timestamp: receipt.timestamp,
+      payment_hash: receipt.reference,
+      receipt_schema_valid: valid,
       receipt
     });
   });
@@ -328,9 +399,9 @@ export async function exportSqliteReceipts(
     source,
     destination,
     receipts: receipts.length,
-    valid: verificationSecrets.length > 0 ? receipts.length - invalidReceiptIds.length : 0,
-    invalid: verificationSecrets.length > 0 ? invalidReceiptIds.length : 0,
-    invalidReceiptIds
+    valid: receipts.length - invalidReceiptReferences.length,
+    invalid: invalidReceiptReferences.length,
+    invalidReceiptReferences
   };
 }
 
@@ -339,7 +410,7 @@ export async function listSqliteReceipts(sourcePath: string): Promise<PaymentRec
   const { DatabaseSync } = loadNodeSqlite();
   const db = new DatabaseSync(source) as SqliteDatabase;
   try {
-    const rows = db.prepare("SELECT receipt FROM receipts ORDER BY id").all() as Array<{ receipt: string }>;
+    const rows = db.prepare("SELECT receipt FROM receipts ORDER BY reference").all() as Array<{ receipt: string }>;
     return rows.map((row) => JSON.parse(row.receipt) as PaymentReceipt);
   } finally {
     db.close?.();
@@ -358,7 +429,19 @@ type SqliteDatabase = {
   close?: () => void;
 };
 
-function applySqliteMigrations(db: SqliteDatabase): void {
+function initializeSqliteSchema(db: SqliteDatabase): void {
+  const currentVersion = sqliteUserVersion(db);
+  const existingTables = db.prepare(
+    "SELECT COUNT(*) AS count FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'"
+  ).get() as { count?: number } | undefined;
+  if (
+    (currentVersion === 0 && Number(existingTables?.count ?? 0) > 0) ||
+    (currentVersion !== 0 && currentVersion !== SQLITE_SCHEMA_VERSION)
+  ) {
+    throw new Error(
+      `unsupported database schema ${currentVersion}; create a new schema ${SQLITE_SCHEMA_VERSION} database`
+    );
+  }
   db.exec(`
     PRAGMA journal_mode = WAL;
     PRAGMA synchronous = NORMAL;
@@ -370,17 +453,26 @@ function applySqliteMigrations(db: SqliteDatabase): void {
     );
     CREATE TABLE IF NOT EXISTS challenges (
       id TEXT PRIMARY KEY,
-      record TEXT NOT NULL,
-      used_at TEXT
+      challenge TEXT NOT NULL,
+      charge_request TEXT NOT NULL,
+      resource_binding TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      consumed_at TEXT
     );
-    CREATE TABLE IF NOT EXISTS credential_uses (
-      hash TEXT PRIMARY KEY,
-      credential TEXT NOT NULL,
-      used_at TEXT NOT NULL
+    CREATE TABLE IF NOT EXISTS redemptions (
+      challenge_id TEXT PRIMARY KEY,
+      credential_hash TEXT NOT NULL UNIQUE,
+      payment_hash TEXT NOT NULL UNIQUE,
+      settlement TEXT NOT NULL,
+      consumed_at TEXT NOT NULL,
+      FOREIGN KEY(challenge_id) REFERENCES challenges(id)
     );
     CREATE TABLE IF NOT EXISTS receipts (
-      id TEXT PRIMARY KEY,
-      receipt TEXT NOT NULL
+      reference TEXT PRIMARY KEY,
+      challenge_id TEXT NOT NULL UNIQUE,
+      receipt TEXT NOT NULL,
+      FOREIGN KEY(challenge_id) REFERENCES challenges(id)
     );
     CREATE TABLE IF NOT EXISTS payment_observations (
       payment_hash TEXT PRIMARY KEY,
@@ -388,11 +480,16 @@ function applySqliteMigrations(db: SqliteDatabase): void {
       updated_at TEXT NOT NULL
     );
     CREATE TABLE IF NOT EXISTS delivery_outcomes (
-      receipt_id TEXT PRIMARY KEY,
-      challenge_id TEXT NOT NULL,
+      challenge_id TEXT PRIMARY KEY,
       credential_hash TEXT NOT NULL,
-      outcome TEXT NOT NULL,
-      recorded_at TEXT NOT NULL
+      payment_hash TEXT NOT NULL,
+      receipt_reference TEXT,
+      status TEXT NOT NULL,
+      response_status INTEGER,
+      error_code TEXT,
+      error_message TEXT,
+      recorded_at TEXT NOT NULL,
+      FOREIGN KEY(challenge_id) REFERENCES challenges(id)
     );
     PRAGMA user_version = ${SQLITE_SCHEMA_VERSION};
   `);
@@ -400,6 +497,61 @@ function applySqliteMigrations(db: SqliteDatabase): void {
     "schema_version",
     String(SQLITE_SCHEMA_VERSION)
   );
+  assertCanonicalSqliteSchema(db);
+}
+
+const CANONICAL_SQLITE_SCHEMA = {
+  challenges: ["id", "challenge", "charge_request", "resource_binding", "created_at", "expires_at", "consumed_at"],
+  delivery_outcomes: ["challenge_id", "credential_hash", "payment_hash", "receipt_reference", "status", "response_status", "error_code", "error_message", "recorded_at"],
+  fiber_paid_http_meta: ["key", "value"],
+  payment_observations: ["payment_hash", "observation", "updated_at"],
+  receipts: ["reference", "challenge_id", "receipt"],
+  redemptions: ["challenge_id", "credential_hash", "payment_hash", "settlement", "consumed_at"]
+} as const;
+
+function assertCanonicalSqliteSchema(db: SqliteDatabase): void {
+  const actualTables = db.prepare(
+    "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+  ).all() as Array<{ name: string }>;
+  const expectedTables = Object.keys(CANONICAL_SQLITE_SCHEMA).sort();
+  if (JSON.stringify(actualTables.map((row) => row.name)) !== JSON.stringify(expectedTables)) {
+    throw new Error("database schema v1 does not match the canonical table set");
+  }
+  for (const [table, expectedColumns] of Object.entries(CANONICAL_SQLITE_SCHEMA)) {
+    const actualColumns = db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>;
+    if (JSON.stringify(actualColumns.map((row) => row.name)) !== JSON.stringify(expectedColumns)) {
+      throw new Error(`database schema v1 table ${table} does not match the canonical columns`);
+    }
+  }
+}
+
+function readDeliveryOutcomes(db: SqliteDatabase): DeliveryOutcome[] {
+  const rows = db.prepare(
+    `SELECT challenge_id, credential_hash, payment_hash, receipt_reference, status,
+            response_status, error_code, error_message, recorded_at
+     FROM delivery_outcomes ORDER BY recorded_at, challenge_id`
+  ).all() as Array<{
+    challenge_id: string;
+    credential_hash: string;
+    payment_hash: string;
+    receipt_reference: string | null;
+    status: DeliveryOutcome["status"];
+    response_status: number | null;
+    error_code: string | null;
+    error_message: string | null;
+    recorded_at: string;
+  }>;
+  return rows.map((row) => ({
+    challengeId: row.challenge_id,
+    credentialHash: row.credential_hash,
+    paymentHash: row.payment_hash,
+    status: row.status,
+    recordedAt: row.recorded_at,
+    ...(row.receipt_reference ? { receiptReference: row.receipt_reference } : {}),
+    ...(row.response_status === null ? {} : { responseStatus: row.response_status }),
+    ...(row.error_code ? { errorCode: row.error_code } : {}),
+    ...(row.error_message ? { errorMessage: row.error_message } : {})
+  }));
 }
 
 function sqliteUserVersion(db: SqliteDatabase): number {
@@ -436,16 +588,4 @@ async function assertFileMissing(path: string, message: string): Promise<void> {
 
 function escapeSqlString(value: string): string {
   return value.replace(/'/g, "''");
-}
-
-function normalizeSecrets(secrets: string | string[]): string[] {
-  const normalized = (Array.isArray(secrets) ? secrets : [secrets]).filter(Boolean);
-  if (normalized.length === 0) {
-    throw new Error("At least one receipt audit secret is required");
-  }
-  return normalized;
-}
-
-function normalizeOptionalSecrets(options: { secret?: string; secrets?: string[] }): string[] {
-  return [...(options.secret ? [options.secret] : []), ...(options.secrets ?? [])].filter(Boolean);
 }

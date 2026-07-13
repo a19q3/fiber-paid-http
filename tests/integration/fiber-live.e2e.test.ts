@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import {
   PAYMENT_RECEIPT_HEADER,
   buildAuthorizationPaymentHeader,
+  decodeFiberChargeRequest,
   decodeReceipt,
-  resourceHashFromRequest,
-  type FiberMethodChallenge
+  parseWwwAuthenticatePaymentHeader
 } from "@fiber-paid-http/core";
 import {
   FiberMethodAdapter,
@@ -22,7 +22,8 @@ describe("live Fiber Paid HTTP payment flow", () => {
   it("settles through local/testnet Fiber RPC, returns a receipt, and rejects replay", async () => {
     const env = readLiveFiberEnv();
     let observedPaymentHash: string | undefined;
-    let observedReceiptId: string | undefined;
+    let observedReceiptReference: string | undefined;
+    let observedChallengeId: string | undefined;
     writeFiberE2eResult({
       fiber_live_test_selected: true,
       fiber_live_test_loaded: true,
@@ -70,17 +71,17 @@ describe("live Fiber Paid HTTP payment flow", () => {
 
       const middleware = createFiberPaidHttpMiddleware({
         secret: env.secret,
+        realm: "fiber-paid-http-live.local",
         serverId: "fiber-paid-http-live-e2e",
+        publicBaseUrl: "http://127.0.0.1",
+        allowInsecureHttp: true,
         store: new SqliteStore(env.storagePath),
         fiber: payeeFiber,
-        defaultFiberAmountShannons: env.amountShannons,
         challengeTtlSeconds: Math.ceil(env.timeoutMs / 1000) + 60,
         clockSkewSeconds: 2
       });
       const handler = middleware.protect({
-        price: { value: env.amountShannons, currency: "CKB" },
-        methods: ["fiber"],
-        fiberAmountShannons: env.amountShannons,
+        charge: { amount: env.amountShannons, currency: "ckb", description: "Live Fiber E2E" },
         handler: () => Response.json({ paid: true, rail: "fiber" })
       });
 
@@ -90,40 +91,28 @@ describe("live Fiber Paid HTTP payment flow", () => {
       expect(first.headers.get("www-authenticate")).toContain("Payment ");
       expect(first.headers.get("cache-control")).toBe("no-store");
 
-      const firstBody = (await first.json()) as {
-        challengeId: string;
-        challenge: { methods: Array<FiberMethodChallenge | { method: string }> };
-      };
-      const fiberChallenge = firstBody.challenge.methods.find(
-        (method): method is FiberMethodChallenge => method.method === "fiber"
-      );
-      expect(fiberChallenge?.invoice).toBeTruthy();
-      expect(fiberChallenge?.paymentHash).toMatch(/^0x[0-9a-fA-F]{64}$/);
-      if (!fiberChallenge) {
-        throw new Error("402 challenge did not include a Fiber method");
-      }
-      observedPaymentHash = fiberChallenge.paymentHash;
+      const challenge = parseWwwAuthenticatePaymentHeader(first.headers.get("www-authenticate"));
+      if (!challenge) throw new Error("402 response did not include a standard Payment challenge");
+      const charge = decodeFiberChargeRequest(challenge.request);
+      expect(charge.methodDetails.invoice).toBeTruthy();
+      expect(charge.methodDetails.paymentHash).toMatch(/^0x[0-9a-fA-F]{64}$/);
+      observedPaymentHash = charge.methodDetails.paymentHash;
 
-      const invoiceBefore = await payeeRpc.getInvoice(fiberChallenge.paymentHash);
+      const invoiceBefore = await payeeRpc.getInvoice(charge.methodDetails.paymentHash);
       expect(invoiceBefore.status).toBeTruthy();
 
-      const proof = await payerFiber.payChallenge(fiberChallenge);
-      expect(proof.status).toBe("Success");
-      expect(proof.paymentHash).toBe(fiberChallenge.paymentHash);
+      const payload = await payerFiber.payCharge(charge);
+      expect(payload.paymentHash).toBe(charge.methodDetails.paymentHash);
 
-      const paidInvoice = await waitForFiberInvoicePaid(payeeRpc, fiberChallenge.paymentHash, {
+      const paidInvoice = await waitForFiberInvoicePaid(payeeRpc, charge.methodDetails.paymentHash, {
         timeoutMs: env.timeoutMs,
         pollMs: env.pollMs
       });
       expect(isInvoicePaidStatus(paidInvoice.status)).toBe(true);
 
       const credential = {
-        domain: "fiber-paid-http-credential-v1" as const,
-        challengeId: firstBody.challengeId,
-        method: "fiber" as const,
-        resourceHash: await resourceHashFromRequest(new Request(url)),
-        paymentProof: proof,
-        submittedAt: new Date().toISOString()
+        challenge,
+        payload
       };
       const authorization = buildAuthorizationPaymentHeader(credential);
       const paid = await handler(new Request(url, { headers: { authorization } }));
@@ -131,18 +120,20 @@ describe("live Fiber Paid HTTP payment flow", () => {
       expect(await paid.json()).toEqual({ paid: true, rail: "fiber" });
 
       const receipt = decodeReceipt(paid.headers.get(PAYMENT_RECEIPT_HEADER)!);
-      observedReceiptId = receipt.receiptId;
-      expect(receipt.settlement.status).toBe("settled");
-      expect(receipt.settlement.paymentHash).toBe(fiberChallenge.paymentHash);
+      observedReceiptReference = receipt.reference;
+      observedChallengeId = receipt.challengeId;
+      expect(receipt.status).toBe("success");
+      expect(receipt.reference).toBe(charge.methodDetails.paymentHash);
 
       const replay = await handler(new Request(url, { headers: { authorization } }));
       expect(replay.status).toBe(402);
-      expect(await replay.text()).toContain("replay");
+      expect(replay.headers.get("www-authenticate")).toContain("Payment ");
 
       writeFiberE2eResult({
         fiber_e2e_status: "passed",
         fiber_e2e_payment_hash: observedPaymentHash,
-        fiber_e2e_receipt_id: observedReceiptId,
+        fiber_e2e_receipt_reference: observedReceiptReference,
+        fiber_e2e_challenge_id: observedChallengeId,
         fiber_e2e_error: undefined,
         fiber_e2e_blockers: []
       });
@@ -151,7 +142,8 @@ describe("live Fiber Paid HTTP payment flow", () => {
         fiber_e2e_status: "failed",
         fiber_e2e_error: formatError(error),
         fiber_e2e_payment_hash: observedPaymentHash,
-        fiber_e2e_receipt_id: observedReceiptId
+        fiber_e2e_receipt_reference: observedReceiptReference,
+        fiber_e2e_challenge_id: observedChallengeId
       });
       throw error;
     }

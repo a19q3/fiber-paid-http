@@ -56,7 +56,7 @@ Vector changes must keep TypeScript and Rust in lockstep.
 4. Run both vector verifiers.
 5. Confirm `reports/canonical-core-parity.json` has no mismatches.
 
-Use the current terminology: 16 deterministic conformance vectors plus 2 live-Fiber evidence fixtures, tracked as 18 shared vector files.
+Use the current terminology: 20 deterministic conformance vectors plus 2 live-Fiber evidence fixtures, tracked as 22 shared vector files.
 
 ## Fiber Evidence
 

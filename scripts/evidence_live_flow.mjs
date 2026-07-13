@@ -56,8 +56,9 @@ try {
   if (retry.body?.status !== 200 || !retry.body?.receipt) {
     throw new Error(`Authorization retry did not return HTTP 200 with Payment-Receipt: ${JSON.stringify(summarizeBody(retry.body))}`);
   }
-  const receiptId = retry.body.receipt.receiptId;
-  console.log(`Payment-Receipt returned receipt_id=${receiptId}`);
+  const receiptReference = retry.body.receipt.reference;
+  const challengeId = retry.body.receipt.challengeId;
+  console.log(`Payment-Receipt returned receipt_reference=${receiptReference} challenge_id=${challengeId}`);
   await pause("receipt visible");
 
   const replay = await postStep("replay", "/api/evidence/replay", {});
@@ -79,7 +80,8 @@ try {
     amountCkb,
     amountShannons,
     paymentHash: proofHash,
-    receiptId,
+    receiptReference,
+    challengeId,
     replayRejected: true,
     receiptReissued: false,
     frontendObserveUrl: `${webUrl}/?sessionId=${encodeURIComponent(sessionId)}&pollMs=1200`,
@@ -168,7 +170,7 @@ function summarizeBody(body) {
       paymentHash: body.proof.paymentHash || body.proof.payment_hash
     } : undefined,
     receipt: body.receipt ? {
-      receiptId: body.receipt.receiptId,
+      reference: body.receipt.reference,
       challengeId: body.receipt.challengeId
     } : undefined,
     flow: summarizeFlow(body.flow)
@@ -182,7 +184,8 @@ function summarizeFlow(flow) {
     challengeId: flow.challengeId,
     resourceHash: flow.resourceHash,
     paymentHash: flow.fiberChallenge?.paymentHash || flow.proof?.paymentHash || flow.proof?.payment_hash,
-    receiptId: flow.receipt?.receiptId,
+    receiptReference: flow.receipt?.reference,
+    receiptChallengeId: flow.receipt?.challengeId,
     replayStatus: flow.replayStatus,
     events: Array.isArray(flow.events) ? flow.events.map((event) => ({
       time: event.time,

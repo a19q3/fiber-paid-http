@@ -1,41 +1,44 @@
 import { describe, expect, it } from "vitest";
-import { resourceHash } from "@fiber-paid-http/core";
+import { decodeFiberChargeRequest, verifyChallengeId } from "@fiber-paid-http/core";
 import { f402ChallengeToMpp, f402ProofToCredential } from "@fiber-paid-http/f402-compat";
 
+const secret = "f402-unit-secret-at-least-16";
+const paymentHash = `0x${"ab".repeat(32)}`;
+const resource = { method: "GET", url: "https://localhost/paid/weather" };
+
 describe("F402 compatibility", () => {
-  it("converts an F402 challenge to an MPP challenge", () => {
-    const resource = { method: "GET", url: "http://localhost/paid/weather" };
-    const challenge = f402ChallengeToMpp({
-      f402: {
-        token: "v1.aaa.bbb",
-        invoice: "fibd1qfixture",
-        paymentHash: `0x${"ab".repeat(32)}`,
-        amount: "1000",
-        currency: "CKB",
-        expiresAt: new Date(Date.now() + 60_000).toISOString()
-      },
-      resource,
-      serverId: "f402-unit"
-    });
-    expect(challenge.methods[0]?.method).toBe("fiber");
-    expect(challenge.methods[0]).toMatchObject({ paymentHash: `0x${"ab".repeat(32)}` });
+  it("normalizes an F402 challenge into a bound MPP challenge", () => {
+    const challenge = makeChallenge();
+    expect(challenge.method).toBe("fiber");
+    expect(verifyChallengeId(challenge, secret)).toBe(true);
+    expect(decodeFiberChargeRequest(challenge.request).methodDetails.paymentHash).toBe(paymentHash);
   });
 
-  it("converts an F402 proof to PaymentCredential", () => {
-    const resource = { method: "GET", url: "http://localhost/paid/weather" };
+  it("normalizes an F402 proof into a standard Payment credential", () => {
+    const challenge = makeChallenge();
     const credential = f402ProofToCredential({
-      challengeId: "chal_1234567890abcdef",
-      resourceHash: resourceHash(resource),
-      proof: {
-        token: "v1.aaa.bbb",
-        invoice: "fibd1qfixture",
-        paymentHash: `0x${"cd".repeat(32)}`,
-        amountShannons: "1000",
-        mode: "local",
-        status: "settled"
-      }
+      challenge,
+      proof: { token: "v1.aaa.bbb", paymentHash }
     });
-    expect(credential.method).toBe("fiber");
-    expect(credential.paymentProof).toMatchObject({ mode: "local", paymentHash: `0x${"cd".repeat(32)}` });
+    expect(credential.challenge).toEqual(challenge);
+    expect(credential.payload).toEqual({ paymentHash });
   });
 });
+
+function makeChallenge() {
+  return f402ChallengeToMpp({
+    f402: {
+      token: "v1.aaa.bbb",
+      invoice: "fibt1qfixture",
+      paymentHash,
+      amount: "1000",
+      currency: "ckb",
+      expiresAt: "2030-01-01T00:00:00.000Z",
+      network: "testnet",
+      hashAlgorithm: "ckb_hash"
+    },
+    resource,
+    realm: "f402.example.test",
+    secret
+  });
+}

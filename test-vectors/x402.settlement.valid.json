@@ -1,0 +1,30 @@
+{
+  "input": {
+    "case": "x402.settlement",
+    "receipt": {
+      "status": "success",
+      "method": "fiber",
+      "timestamp": "2026-07-13T00:00:00.000Z",
+      "reference": "0xabababababababababababababababababababababababababababababababab",
+      "challengeId": "-KveO8VNE_AFk50OGn2xSnKMokF5HweGjq-fmeyj4Rg"
+    },
+    "network": "fiber:testnet",
+    "amount": "1000",
+    "expected_response": {
+      "success": true,
+      "transaction": "0xabababababababababababababababababababababababababababababababab",
+      "network": "fiber:testnet",
+      "amount": "1000",
+      "extensions": {
+        "fiber": {
+          "profile": "fiber-charge-v1",
+          "challengeId": "-KveO8VNE_AFk50OGn2xSnKMokF5HweGjq-fmeyj4Rg",
+          "receiptTimestamp": "2026-07-13T00:00:00.000Z"
+        }
+      }
+    }
+  },
+  "expected_canonical_hash": "e8dfb4a39b8a769de6c0eae2ab1b37c91ea55378039a2e279c51712666867300",
+  "expected_verification_result": "accepted",
+  "notes": "MPP success receipt to x402 v2 settlement response."
+}

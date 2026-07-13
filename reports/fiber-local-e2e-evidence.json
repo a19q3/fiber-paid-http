@@ -1,11 +1,13 @@
 {
   "evidence": true,
-  "source_report": "reports/fiber-local-e2e-success.json",
-  "receipt_source": "reports/fiber-local-e2e-success.json",
-  "payment_hash": "0x4de4574f1f2dd2ec47933506822860d3af3decbe4651de3f861ff81b9d61effc",
-  "receipt_id": "rcpt_d6368f6113b2a81e262fdf1c79a4e44d",
+  "source_report": "reports/fiber-paid-http-gate.local.json",
+  "payment_hash": "0x4cb08a82c282537b5e3dcb1405b9568251b024c0317d762f56b457ee22668693",
+  "receipt_reference": "0x4cb08a82c282537b5e3dcb1405b9568251b024c0317d762f56b457ee22668693",
+  "challenge_id": "GUgn0RDJiirijVH3IDRkd3s4s_HhXCtXAyb_rig50b0",
+  "fiber_commit": "e00d0e3c9a9284ea1c7705d360be615cfce1a5c6",
   "production_ready_for_fiber_method": false,
   "blockers": [
-    "testnet Fiber E2E evidence still pending"
+    "testnet Fiber E2E evidence still pending",
+    "production bootstrap E2E readiness evidence still pending"
   ]
 }

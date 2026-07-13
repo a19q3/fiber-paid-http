@@ -1,45 +1,33 @@
-# F402 and F-L402 Compatibility
+# F402 and F-L402 compatibility
 
-F402 compatibility is an adapter, not the primary Fiber Paid HTTP protocol.
+Compatibility is implemented at explicit ingress boundaries. The gateway never emits an alternative internal payment model.
 
-Fiber Paid HTTP accepts F402-like challenge bodies with:
+## F402
 
-```json
-{
-  "token": "v1...",
-  "invoice": "fibd...",
-  "paymentHash": "0x...",
-  "amount": "1000",
-  "currency": "CKB",
-  "expiresAt": "..."
-}
+An F402 charge is decoded and mapped to an MPP-draft `PaymentChallenge` with `method="fiber"`, `intent="charge"`, and an encoded Fiber charge request. An F402 proof maps to an MPP-draft `PaymentCredential` only when its payment hash matches the challenge.
+
+The mapped credential passes through the normal challenge binding, resource, expiry, settlement, and atomic replay checks.
+
+## F-L402 (experimental, disabled by default)
+
+When enabled, the gateway adds:
+
+```http
+WWW-Authenticate: L402 capability="...", invoice="...", payment_hash="..."
 ```
 
-The adapter converts that shape to an internal MPP `PaymentChallenge` with a Fiber method challenge. It also converts F402-like proof objects to `PaymentCredential`.
+The client retries with:
 
-## Infern compatibility note
+```http
+Authorization: L402 <capability>:<preimage>
+```
 
-Infern uses F402 for paid AI inference over Fiber. Fiber Paid HTTP deliberately avoids Infern-specific fields. The adapter focuses on common Fiber invoice, amount, payment hash, expiry, and token fields.
-
-## Difference from primary MPP mode
-
-Primary Fiber Paid HTTP mode is payment-method agnostic and returns `WWW-Authenticate: Payment`, `Authorization: Payment`, and `Payment-Receipt`. F402 mode exists so Fiber-native 402 applications can bridge into that internal model.
-
-## F-L402 Adapter
-
-F-L402 is the L402-style adapter for clients that expect:
+The capability format is project scoped:
 
 ```text
-WWW-Authenticate: L402 macaroon="...", invoice="..."
-Authorization: L402 <macaroon>:<preimage>
+fiber-l402-capability-v1.<jcs-base64url>.<hmac-sha256-hex>
 ```
 
-Fiber Paid HTTP issues an application-level token with this format:
+Its caveats bind challenge ID, resource, resource hash, invoice, payment hash, amount, currency, issuer, expiry, and hash algorithm. The gateway verifies the HMAC in constant time, checks the preimage using `ckb_hash` or `sha256`, loads the exact stored challenge, and creates a standard credential.
 
-```text
-fl402-macaroon-v1.<canonical-json-base64url>.<hmac-sha256>
-```
-
-The token carries first-party caveats for `challengeId`, `resourceHash`, HTTP method, URL, amount, currency, payment hash, invoice, expiry, issuer, optional Fiber node id, and hash algorithm. The verifier checks the HMAC, expiry, preimage hash, invoice, amount, resource binding, hash algorithm, and settled status before converting the proof into an internal `PaymentCredential`.
-
-This is L402-semantics compatibility for Fiber. It is not byte-level compatibility with Lightning Labs macaroon libraries.
+F-L402 does not claim byte compatibility with third-party token libraries. It is an experimental, opt-in adapter: omitting the `fl402` gateway configuration disables both its challenge and authorization path. When enabled, it uses the same Fiber settlement and MPP-draft receipt path.

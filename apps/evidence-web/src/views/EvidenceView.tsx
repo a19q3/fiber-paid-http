@@ -8,8 +8,8 @@ function flowChallengeId(flow: { challengeId?: string; challengeBody?: { challen
   return flow.challengeId || flow.challengeBody?.challengeId || flow.challengeBody?.challenge?.challengeId;
 }
 
-function flowResourceHash(flow: { resourceHash?: string; credential?: { resourceHash?: string } | null; receipt?: { resourceHash?: string } | null; challengeBody?: { resourceHash?: string } | null }): string | undefined {
-  return flow.resourceHash || flow.credential?.resourceHash || flow.receipt?.resourceHash || flow.challengeBody?.resourceHash;
+function flowResourceHash(flow: { resourceHash?: string; credential?: { resourceHash?: string } | null; challengeBody?: { resourceHash?: string } | null }): string | undefined {
+  return flow.resourceHash || flow.credential?.resourceHash || flow.challengeBody?.resourceHash;
 }
 
 export function EvidenceView() {
@@ -122,11 +122,12 @@ export function EvidenceView() {
                 {(() => {
                   const rejected = ev.phase === "replay_rejected" || ev.flow?.replayStatus === 402;
                   const receipt = ev.flow?.receipt;
-                  const ph = ev.flow?.fiberChallenge?.paymentHash || receipt?.settlement?.paymentHash || "pending";
+                  const ph = ev.flow?.fiberChallenge?.paymentHash || receipt?.reference || "pending";
                   return [
                     ["Status", rejected ? "REPLAY REJECTED" : "PENDING"],
                     ["Reason", rejected ? "Receipt not reused" : "Awaiting replay"],
-                    ["receipt_id", receipt?.receiptId || "pending"],
+                    ["receipt_reference", receipt?.reference || "pending"],
+                    ["challenge_id", receipt?.challengeId || "pending"],
                     ["payment_hash", ph],
                     ["Service", rejected ? "not re-executed" : "awaiting replay"],
                   ].map(([label, value]) => (

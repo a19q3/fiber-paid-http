@@ -4,8 +4,7 @@
   "type": "module",
   "description": "Fiber Paid HTTP gateway, bootstrap, payment, and evidence tooling.",
   "bin": {
-    "fiber-paid-http": "./dist/index.js",
-    "fiber-mpp": "./dist/index.js"
+    "fiber-paid-http": "./dist/index.js"
   },
   "exports": {
     ".": {
@@ -24,6 +23,7 @@
     "@fiber-paid-http/evidence-api": "workspace:*",
     "@fiber-paid-http/evidence-web": "workspace:*",
     "@fiber-paid-http/f402-compat": "workspace:*",
+    "@fiber-paid-http/x402-compat": "workspace:*",
     "@fiber-paid-http/fiber-method": "workspace:*",
     "@fiber-paid-http/fl402-compat": "workspace:*",
     "@fiber-paid-http/server-middleware": "workspace:*",

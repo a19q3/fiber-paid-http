@@ -1,0 +1,17 @@
+{
+  "input": {
+    "case": "mpp.receipt",
+    "receipt": {
+      "status": "success",
+      "method": "fiber",
+      "timestamp": "2026-07-13T00:00:00.000Z",
+      "reference": "0xabababababababababababababababababababababababababababababababab",
+      "challengeId": "-KveO8VNE_AFk50OGn2xSnKMokF5HweGjq-fmeyj4Rg"
+    },
+    "response_status": 500
+  },
+  "expected_canonical_hash": "892a53107af6345acb33fd7b602aec258ea366e8312040874e097188269c63ed",
+  "expected_verification_result": "rejected",
+  "expected_error_code": "receipt-on-error-response",
+  "notes": "Receipt is forbidden on non-2xx."
+}

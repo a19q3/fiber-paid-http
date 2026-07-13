@@ -6,8 +6,8 @@
   "cargo_clippy": true,
   "cargo_tests": true,
   "rust_vectors": true,
-  "shared_vectors_total": 18,
-  "shared_vectors_passed_rust": 18,
+  "shared_vectors_total": 22,
+  "shared_vectors_passed_rust": 22,
   "fiber_rpc_semantics": {
     "methods": [
       "new_invoice",
@@ -29,21 +29,21 @@
   "testnet_fiber_e2e": true,
   "testnet_fiber_e2e_evidence": true,
   "testnet_fiber_e2e_evidence_report": "reports/fiber-testnet-e2e-success.json",
-  "testnet_evidence_recorded_at": "2026-06-25T03:14:53.023Z",
-  "testnet_evidence_digest": "sha256:9b353342ec232458e48ab0a39f66828180935de17fbbda08db4804090f26d5ed",
+  "testnet_evidence_recorded_at": "2026-07-13T10:18:23.785Z",
+  "testnet_evidence_digest": "sha256:3c3bd52c3da7e7f78e37eda480d053c66bcc2f2d292ccc4e1ae9299b91d461d9",
   "testnet_fiber_e2e_evidence_verified": true,
   "testnet_fiber_e2e_evidence_blockers": [],
-  "fiber_commit": null,
+  "fiber_commit": "e00d0e3c9a9284ea1c7705d360be615cfce1a5c6",
   "rust_gateway_production_path": true,
   "rust_gateway_evidence": {
     "server_crate_tests": true,
     "cli_server_command_starts_gateway": true,
     "features": [
-      "signed 402 challenge issuance",
+      "MPP-draft 402 challenge issuance with server-bound challenge ids",
       "Fiber invoice creation through FNN JSON-RPC",
       "Fiber settlement inspection through FNN JSON-RPC",
       "Authorization: Payment verification",
-      "durable SQLite challenge/credential/receipt storage",
+      "durable SQLite challenge/redemption/receipt storage",
       "Payment-Receipt issuance",
       "replay rejection"
     ]

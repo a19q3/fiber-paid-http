@@ -8,7 +8,7 @@ describe("gateway operational log redaction", () => {
       nested: {
         rpc_auth: "Basic abc123",
         safe: "payment_hash=0xabc",
-        message: "request failed with authorization=abc123&token=def456"
+        message: "request failed with authorization=abc123&token=def456&capability=cap&preimage=00&invoice=inv"
       }
     });
 
@@ -17,7 +17,7 @@ describe("gateway operational log redaction", () => {
       nested: {
         rpc_auth: "[REDACTED]",
         safe: "payment_hash=0xabc",
-        message: "request failed with authorization=[REDACTED]&token=[REDACTED]"
+        message: "request failed with authorization=[REDACTED]&token=[REDACTED]&capability=[REDACTED]&preimage=[REDACTED]&invoice=[REDACTED]"
       }
     });
   });

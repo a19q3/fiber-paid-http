@@ -1,152 +1,129 @@
 const { createHash } = require("node:crypto");
 
+const TESTNET_EVIDENCE_SCHEMA = "fiber-paid-http-testnet-e2e-evidence-v1";
+const TESTNET_EVIDENCE_DIGEST_SCHEMA = "fiber-paid-http-testnet-evidence-digest-v1";
+const TESTNET_EVIDENCE_KEYS = [
+  "fiber_commit",
+  "fiber_e2e_blockers",
+  "fiber_e2e_challenge_id",
+  "fiber_e2e_mode",
+  "fiber_e2e_payment_hash",
+  "fiber_e2e_receipt_reference",
+  "fiber_e2e_status",
+  "fiber_live_test_loaded",
+  "fiber_live_test_selected",
+  "fiber_preflight_test_loaded",
+  "live_fiber_testnet_e2e",
+  "schema",
+  "testnet_evidence_digest",
+  "testnet_evidence_recorded_at",
+  "testnet_fiber_e2e",
+  "testnet_fiber_e2e_evidence"
+].sort();
+
 function verifyPreservedTestnetEvidence(report, options = {}) {
   const evidencePath = options.path || "reports/fiber-testnet-e2e-success.json";
   const blockers = [];
-  if (!report) {
-    return {
-      verified: false,
-      blockers: [`preserved testnet Fiber E2E evidence missing: ${evidencePath}`],
-      paymentHash: null,
-      receiptId: null,
-      fiberCommit: null,
-      recordedAt: null,
-      evidenceDigest: null
-    };
+  if (!report || typeof report !== "object" || Array.isArray(report)) {
+    return missingEvidenceResult(evidencePath);
   }
 
-  const facts = extractTestnetEvidenceFacts(report, options);
-  const {
-    result,
-    gate,
-    paymentHash,
-    receiptId,
-    fiberCommit,
-    recordedAt,
-    resultBlockers,
-    gateBlockers
-  } = facts;
-  const declaredDigest = testnetEvidenceDigestValue(report);
-  const computedDigest = computeTestnetEvidenceDigest(report, options).digest;
-
-  if (Object.hasOwn(report, "status") && report.status !== "passed") {
-    blockers.push("preserved testnet evidence status is not passed");
+  const actualKeys = Object.keys(report).sort();
+  if (JSON.stringify(actualKeys) !== JSON.stringify(TESTNET_EVIDENCE_KEYS)) {
+    blockers.push("preserved testnet evidence does not match the exact v1 field set");
   }
-  if (Object.hasOwn(report, "gate_exit") && report.gate_exit !== 0) {
-    blockers.push("preserved testnet evidence gate_exit is not 0");
+  if (report.schema !== TESTNET_EVIDENCE_SCHEMA) {
+    blockers.push(`preserved testnet evidence schema is not ${TESTNET_EVIDENCE_SCHEMA}`);
   }
-  if (result.fiber_preflight_test_loaded !== true) blockers.push("preserved testnet evidence preflight did not load");
-  if (result.fiber_live_test_selected !== true) blockers.push("preserved testnet evidence live test was not selected");
-  if (result.fiber_live_test_loaded !== true) blockers.push("preserved testnet evidence live test did not load");
-  if (result.fiber_e2e_mode !== "testnet") blockers.push("preserved testnet evidence mode is not testnet");
-  if (result.fiber_e2e_status !== "passed") blockers.push("preserved testnet evidence status is not passed");
-  if (resultBlockers.length > 0 || gateBlockers.length > 0) {
+  if (report.fiber_preflight_test_loaded !== true) blockers.push("preserved testnet evidence preflight did not load");
+  if (report.fiber_live_test_selected !== true) blockers.push("preserved testnet evidence live test was not selected");
+  if (report.fiber_live_test_loaded !== true) blockers.push("preserved testnet evidence live test did not load");
+  if (report.fiber_e2e_mode !== "testnet") blockers.push("preserved testnet evidence mode is not testnet");
+  if (report.fiber_e2e_status !== "passed") blockers.push("preserved testnet evidence status is not passed");
+  if (!Array.isArray(report.fiber_e2e_blockers) || report.fiber_e2e_blockers.length > 0) {
     blockers.push("preserved testnet evidence still has Fiber E2E blockers");
   }
-  if (!/^0x[0-9a-fA-F]{64}$/.test(String(paymentHash || ""))) {
-    blockers.push("preserved testnet evidence payment hash is missing or invalid");
+  if (!/^0x[0-9a-f]{64}$/.test(String(report.fiber_e2e_payment_hash || ""))) {
+    blockers.push("preserved testnet evidence payment hash is missing, invalid, or noncanonical");
   }
-  if (!/^rcpt_[a-z0-9]+$/i.test(String(receiptId || ""))) {
-    blockers.push("preserved testnet evidence receipt id is missing or invalid");
+  if (
+    !/^0x[0-9a-f]{64}$/.test(String(report.fiber_e2e_receipt_reference || "")) ||
+    report.fiber_e2e_receipt_reference !== report.fiber_e2e_payment_hash
+  ) {
+    blockers.push("preserved testnet evidence receipt reference is missing, invalid, noncanonical, or does not match payment hash");
   }
-  if (options.expectedFiberCommit && fiberCommit !== options.expectedFiberCommit) {
-    blockers.push(`preserved testnet evidence Fiber commit mismatch: expected ${options.expectedFiberCommit}, found ${fiberCommit || "missing"}`);
+  if (!/^[A-Za-z0-9_-]{43}$/.test(String(report.fiber_e2e_challenge_id || ""))) {
+    blockers.push("preserved testnet evidence challenge id is missing or invalid");
   }
-  if (!isIsoTimestamp(recordedAt)) {
+  if (!/^[0-9a-f]{40}$/.test(String(report.fiber_commit || ""))) {
+    blockers.push("preserved testnet evidence Fiber commit is missing, invalid, or noncanonical");
+  } else if (options.expectedFiberCommit && report.fiber_commit !== options.expectedFiberCommit) {
+    blockers.push(
+      `preserved testnet evidence Fiber commit mismatch: expected ${options.expectedFiberCommit}, found ${report.fiber_commit}`
+    );
+  }
+  if (!isIsoTimestamp(report.testnet_evidence_recorded_at)) {
     blockers.push("preserved testnet evidence recorded_at is missing or invalid");
   }
+  const declaredDigest = report.testnet_evidence_digest;
+  const computedDigest = computeTestnetEvidenceDigest(report).digest;
   if (!/^sha256:[0-9a-f]{64}$/.test(String(declaredDigest || ""))) {
     blockers.push("preserved testnet evidence digest is missing or invalid");
   } else if (declaredDigest !== computedDigest) {
     blockers.push(`preserved testnet evidence digest mismatch: expected ${computedDigest}, found ${declaredDigest}`);
   }
-  if (gate.live_fiber_testnet_e2e !== true) blockers.push("preserved gate report does not record live_fiber_testnet_e2e");
-  if (gate.testnet_fiber_e2e !== true) blockers.push("preserved gate report does not record testnet_fiber_e2e");
-  if (gate.testnet_fiber_e2e_evidence !== true) blockers.push("preserved gate report does not record testnet_fiber_e2e_evidence");
+  if (report.live_fiber_testnet_e2e !== true) blockers.push("preserved evidence does not record live_fiber_testnet_e2e");
+  if (report.testnet_fiber_e2e !== true) blockers.push("preserved evidence does not record testnet_fiber_e2e");
+  if (report.testnet_fiber_e2e_evidence !== true) blockers.push("preserved evidence does not record testnet_fiber_e2e_evidence");
 
   return {
     verified: blockers.length === 0,
     blockers,
-    paymentHash: paymentHash || null,
-    receiptId: receiptId || null,
-    fiberCommit: fiberCommit || null,
-    recordedAt: recordedAt || null,
+    paymentHash: report.fiber_e2e_payment_hash || null,
+    receiptReference: report.fiber_e2e_receipt_reference || null,
+    challengeId: report.fiber_e2e_challenge_id || null,
+    fiberCommit: report.fiber_commit || null,
+    recordedAt: report.testnet_evidence_recorded_at || null,
     evidenceDigest: declaredDigest || null
   };
 }
 
-function normalizePreservedTestnetEvidence(report, options = {}) {
-  if (!report || typeof report !== "object") return report;
-  const next = { ...report };
-  if (!testnetEvidenceRecordedAtValue(next) && options.fallbackRecordedAt) {
-    next.testnet_evidence_recorded_at = options.fallbackRecordedAt;
-  }
-  if (!testnetEvidenceDigestValue(next)) {
-    next.testnet_evidence_digest = computeTestnetEvidenceDigest(next, options).digest;
-  }
-  return next;
-}
-
-function computeTestnetEvidenceDigest(report, options = {}) {
+function computeTestnetEvidenceDigest(report) {
+  const material = {
+    schema: TESTNET_EVIDENCE_DIGEST_SCHEMA,
+    evidence_schema: report?.schema || null,
+    fiber_commit: report?.fiber_commit || null,
+    testnet_evidence_recorded_at: report?.testnet_evidence_recorded_at || null,
+    fiber_preflight_test_loaded: report?.fiber_preflight_test_loaded === true,
+    fiber_live_test_selected: report?.fiber_live_test_selected === true,
+    fiber_live_test_loaded: report?.fiber_live_test_loaded === true,
+    fiber_e2e_mode: report?.fiber_e2e_mode || null,
+    fiber_e2e_status: report?.fiber_e2e_status || null,
+    live_fiber_testnet_e2e: report?.live_fiber_testnet_e2e === true,
+    testnet_fiber_e2e: report?.testnet_fiber_e2e === true,
+    testnet_fiber_e2e_evidence: report?.testnet_fiber_e2e_evidence === true,
+    fiber_e2e_payment_hash: report?.fiber_e2e_payment_hash || null,
+    fiber_e2e_receipt_reference: report?.fiber_e2e_receipt_reference || null,
+    fiber_e2e_challenge_id: report?.fiber_e2e_challenge_id || null,
+    fiber_e2e_blockers: Array.isArray(report?.fiber_e2e_blockers) ? report.fiber_e2e_blockers : null
+  };
   return {
-    digest: `sha256:${sha256Hex(canonicalJson(testnetEvidenceDigestMaterial(report, options)))}`,
-    material: testnetEvidenceDigestMaterial(report, options)
+    digest: `sha256:${sha256Hex(canonicalJson(material))}`,
+    material
   };
 }
 
-function testnetEvidenceDigestMaterial(report, options = {}) {
-  const facts = extractTestnetEvidenceFacts(report || {}, options);
+function missingEvidenceResult(evidencePath) {
   return {
-    schema: "fiber-paid-http-testnet-evidence-digest-v1",
-    fiber_commit: facts.fiberCommit || null,
-    testnet_evidence_recorded_at: facts.recordedAt || null,
-    fiber_preflight_test_loaded: facts.result.fiber_preflight_test_loaded === true || facts.gate.fiber_preflight_test_loaded === true,
-    fiber_live_test_selected: facts.result.fiber_live_test_selected === true || facts.gate.fiber_live_test_selected === true,
-    fiber_live_test_loaded: facts.result.fiber_live_test_loaded === true || facts.gate.fiber_live_test_loaded === true,
-    fiber_e2e_mode: facts.result.fiber_e2e_mode || facts.gate.fiber_e2e_mode || null,
-    fiber_e2e_status: facts.result.fiber_e2e_status || facts.gate.fiber_e2e_status || null,
-    live_fiber_testnet_e2e: facts.result.live_fiber_testnet_e2e === true || facts.gate.live_fiber_testnet_e2e === true,
-    testnet_fiber_e2e: facts.result.testnet_fiber_e2e === true || facts.gate.testnet_fiber_e2e === true,
-    testnet_fiber_e2e_evidence: facts.result.testnet_fiber_e2e_evidence === true || facts.gate.testnet_fiber_e2e_evidence === true,
-    fiber_e2e_payment_hash: facts.paymentHash || null,
-    fiber_e2e_receipt_id: facts.receiptId || null,
-    fiber_e2e_blockers: [...facts.resultBlockers, ...facts.gateBlockers]
+    verified: false,
+    blockers: [`preserved testnet Fiber E2E evidence missing: ${evidencePath}`],
+    paymentHash: null,
+    receiptReference: null,
+    challengeId: null,
+    fiberCommit: null,
+    recordedAt: null,
+    evidenceDigest: null
   };
-}
-
-function extractTestnetEvidenceFacts(report, options = {}) {
-  const result = report.fiber_e2e_result || report;
-  const gate = report.gate_report || report;
-  return {
-    result,
-    gate,
-    paymentHash: result.fiber_e2e_payment_hash || gate.fiber_e2e_payment_hash || report.fiber_e2e_payment_hash,
-    receiptId: result.fiber_e2e_receipt_id || gate.fiber_e2e_receipt_id || report.fiber_e2e_receipt_id,
-    fiberCommit: result.fiber_commit || gate.fiber_commit || report.fiber_commit,
-    recordedAt: testnetEvidenceRecordedAtValue(report, options),
-    resultBlockers: Array.isArray(result.fiber_e2e_blockers) ? result.fiber_e2e_blockers : [],
-    gateBlockers: Array.isArray(gate.fiber_e2e_blockers) ? gate.fiber_e2e_blockers : []
-  };
-}
-
-function testnetEvidenceRecordedAtValue(report, options = {}) {
-  const result = report.fiber_e2e_result || report;
-  const gate = report.gate_report || report;
-  return (
-    result.testnet_evidence_recorded_at ||
-    gate.testnet_evidence_recorded_at ||
-    report.testnet_evidence_recorded_at ||
-    result.generated_at ||
-    gate.generated_at ||
-    report.generated_at ||
-    options.fallbackRecordedAt
-  );
-}
-
-function testnetEvidenceDigestValue(report) {
-  const result = report.fiber_e2e_result || report;
-  const gate = report.gate_report || report;
-  return report.testnet_evidence_digest || result.testnet_evidence_digest || gate.testnet_evidence_digest;
 }
 
 function isIsoTimestamp(value) {
@@ -176,7 +153,7 @@ function sha256Hex(value) {
 }
 
 module.exports = {
+  TESTNET_EVIDENCE_SCHEMA,
   computeTestnetEvidenceDigest,
-  normalizePreservedTestnetEvidence,
   verifyPreservedTestnetEvidence
 };

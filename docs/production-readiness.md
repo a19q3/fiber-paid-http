@@ -1,73 +1,56 @@
-# Production Readiness
+# Production readiness
 
-## Current status
+Production readiness is fail-closed. Passing unit tests is necessary but does not by itself prove a deployable Fiber payment path.
 
-Fiber Paid HTTP uses Rust as the canonical protocol core and verifier target. TypeScript remains a maintained JS ecosystem integration layer for SDKs, middleware, demos, examples, F402/F-L402/MPP compatibility, and vector tooling. The project has local Fiber E2E evidence, separate testnet Fiber E2E evidence, shared conformance vectors, a security matrix, and canonical parity gates.
+## Required configuration
 
-The Rust HTTP gateway production path implements signed `402 Payment Required` challenge issuance, durable SQLite storage, Fiber method adapter wiring, receipt issuance, and replay rejection. Production readiness is now gated by recorded testnet Fiber E2E evidence, production operations evidence, and production bootstrap E2E readiness evidence.
+- Rust gateway executable and Rust canonical verifier.
+- `realm` and an HTTPS `public_base_url`.
+- SQLite storage; in-memory storage is not accepted.
+- Active secret and any rotation secrets supplied through environment variables, each at least 32 characters.
+- `FIBER_MODE=local|testnet` and real payer/payee Fiber RPC connectivity for live evidence.
+- RPC authentication from environment variables.
+- Explicit positive smallest-unit charge configuration.
+- TLS termination, request limits, rate limiting, health checks, metrics, backups, and alerting.
 
-## Ready
+## Runtime gates
 
-- Typed MPP protocol model.
-- Canonical HMAC challenge and receipt signing.
-- TypeScript route middleware and reverse proxy mode.
-- Gateway bootstrap config template and role-aware doctor checks for Fiber RPC, peers, and `ChannelReady` channels.
-- TypeScript gateway requires explicit config; it no longer falls back to the local evidence API.
-- TypeScript gateway operator endpoints for `healthz`, `readyz`, and Prometheus-style `metrics`.
-- TypeScript gateway CORS allow-list enforcement before challenge issuance, protected-route rate limiting, request body limiting, redacted structured JSON lifecycle/request logs, graceful shutdown, and SQLite WAL/busy-timeout initialization.
-- Gateway Fiber RPC auth is supplied through process env or `*_rpc_auth_env` config pointers; literal RPC auth values in gateway config are blocked.
-- SQLite storage schema versioning, health checks, backup, and restore commands; backup uses SQLite `VACUUM INTO`, and restore requires explicit `--force`.
-- SQLite receipt export and receipt-signature audit commands.
-- Paid-but-denied delivery outcome audit records for redeemed credentials whose upstream handler fails or returns a server error.
-- Gateway signing secret rotation window: new challenges/receipts are signed with the current `secret_env`, while stored challenges and receipt audits can verify configured `previous_secret_envs`.
-- Production operations runbook and alert rules are present and gate-checked:
-  - `docs/production-operations.md`
-  - `deploy/prometheus/fiber-paid-http-alerts.yml`
-  - `reports/production-operations-matrix.json`
-- Fiber node backup/restore, trusted network binding, and paid-but-denied reconciliation policy are documented in the production operations runbook.
-- Client/wallet integration boundaries are documented so direct FNN JSON-RPC remains the production default, `fiber-pay` remains optional payer/ops tooling, and CCC/WalletConnect is limited to external CKB funding/signing.
-- Replay protection.
-- Resource/method/amount binding tests.
-- Explicit local/testnet Fiber settlement status.
-- F402 compatibility adapter.
-- F-L402 compatibility adapter in TypeScript and Rust.
-- Optional `Authorization: L402 macaroon:preimage` support in TypeScript middleware and Rust gateway.
-- TypeScript CLI and Rust `fiber-paid-http-rs` CLI.
-- Local Fiber E2E evidence from the 3-node network.
-- Testnet Fiber E2E evidence through funded `v0.9.0-rc4` FNN payer/payee nodes.
-- Rust canonical vector verification with TypeScript harness parity.
-- Rust HTTP gateway production path issues signed `402 Payment Required` challenges, creates Fiber invoices through FNN JSON-RPC, verifies settlement, records durable challenge/credential/receipt state, emits `Payment-Receipt`, and rejects replay.
+The gateway must demonstrate:
 
-## Before live production
+1. an unpaid request returns the MPP-draft `402` challenge and `no-store`;
+2. a real Fiber payment reaches `Success` / `Paid`;
+3. the standard credential produces one upstream `2xx` delivery;
+4. the MPP-draft receipt has a payment-hash `reference` and matching `challengeId` extension;
+5. replay returns a fresh `402` and does not execute upstream;
+6. SQLite uses WAL, foreign keys, and passes integrity checks;
+7. the intentional response-limit and timeout probes produce exactly two isolated paid-but-undelivered records, with no unexpected failed delivery;
+8. logs contain no authorization, invoice, capability, preimage, secret, or RPC authentication value;
+9. the Rust gateway's `/readyz`, `/metrics`, request/response size limits, upstream timeout, rate limiter, header stripping, TLS-terminated public flow, and graceful SIGINT shutdown are exercised.
 
-- Re-run the gates before release or deployment because production readiness is evidence-based and can regress if testnet evidence, operations checks, bootstrap readiness, layout evidence, or canonical parity fail.
+## Evidence freshness
 
-## Gate
+`production_ready_for_fiber_method` can be true only when:
 
-Run:
+- preserved testnet evidence verifies against the current Fiber commit;
+- the evidence contains the MPP-draft receipt reference and project challenge ID extension;
+- production bootstrap evidence passes;
+- production operations checks pass;
+- the aggregate gate has no blocker.
+
+A protocol or evidence-schema change invalidates earlier evidence. The gate must remain red until a new live run is recorded.
+
+Generate both current testnet and Rust production-bootstrap evidence with:
 
 ```bash
-bash scripts/fiber_paid_http_gate.sh
-bash scripts/fiber_paid_http_rust_gate.sh
-bash scripts/fiber_paid_http_canonical_gate.sh
+FIBER_MODE=testnet \
+FIBER_PAYER_RPC_URL=http://127.0.0.1:8227 \
+FIBER_PAYEE_RPC_URL=http://127.0.0.1:8237 \
+FIBER_PAYER_RPC_AUTH='Bearer <trusted-rpc-proxy-token>' \
+FIBER_PAYEE_RPC_AUTH='Bearer <trusted-rpc-proxy-token>' \
+FIBER_PAID_HTTP_SECRET="$(openssl rand -hex 32)" \
+bash scripts/fiber_testnet_e2e.sh
 ```
 
-The gates write:
+## Failure semantics
 
-```text
-reports/fiber-paid-http-ts-gate.json
-reports/fiber-paid-http-rust-gate.json
-reports/canonical-core-parity.json
-reports/fiber-paid-http-gate.default.json
-reports/fiber-paid-http-gate.local.json
-reports/fiber-local-e2e-evidence.json
-reports/production-operations-matrix.json
-```
-
-Current production reports may set:
-
-```json
-"production_ready_for_fiber_method": true
-```
-
-This value may remain or become `true` only when `testnet_fiber_e2e`, `production_operations`, `production_bootstrap_e2e`, `rust_gateway_production_path`, conformance vectors, and security matrix checks all pass with no production blockers. The broader `fiber_paid_http_gate_ready` field also requires the Evidence Console layout checks to pass.
+The challenge is consumed before upstream execution. An upstream failure therefore becomes a paid-but-undelivered record, not an automatic second execution. Operators reconcile the payment or deliver the service through an audited manual workflow described in `docs/production-operations.md`.

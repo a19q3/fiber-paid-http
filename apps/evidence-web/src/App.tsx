@@ -60,7 +60,7 @@ export default function App() {
   const api = useMemo(() => {
     const routeParams = new URLSearchParams(window.location.search);
     const sessionId = readConsoleSessionId(routeParams);
-    const prefsRaw = readStorage("fiberMppConsolePreferences");
+    const prefsRaw = readStorage("fiberPaidHttpConsolePreferences");
     let prefs: ConsolePreferences = {};
     if (prefsRaw) { try { const p = JSON.parse(prefsRaw); if (p && typeof p === "object") prefs = p; } catch { /* empty */ } }
     const apiBase = getInitialApiBase(prefs.apiBase);

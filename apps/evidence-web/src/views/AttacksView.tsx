@@ -6,7 +6,7 @@ export function AttacksView() {
   const ev = useEvidence();
   const replayRejected = ev.phase === "replay_rejected" || ev.flow?.replayStatus === 402;
   const receipt = ev.flow?.receipt;
-  const paymentHash = ev.flow?.fiberChallenge?.paymentHash || receipt?.settlement?.paymentHash || "pending";
+  const paymentHash = ev.flow?.fiberChallenge?.paymentHash || receipt?.reference || "pending";
 
   return (
     <>
@@ -38,7 +38,8 @@ export function AttacksView() {
               <div className="panel-title"><Icon name="ResourceHash" /> Evidence</div>
               <div className="panel-body">
                 <div className="kv">
-                  <div className="kv-row"><span className="kv-label">receipt_id</span><strong>{receipt?.receiptId || "pending"}</strong></div>
+                  <div className="kv-row"><span className="kv-label">receipt_reference</span><strong>{receipt?.reference || "pending"}</strong></div>
+                  <div className="kv-row"><span className="kv-label">challenge_id</span><strong>{receipt?.challengeId || "pending"}</strong></div>
                   <div className="kv-row"><span className="kv-label">payment_hash</span><strong>{paymentHash}</strong></div>
                   <div className="kv-row"><span className="kv-label">replay_status</span><strong>{replayRejected ? "402 rejected" : "not attempted"}</strong></div>
                 </div>

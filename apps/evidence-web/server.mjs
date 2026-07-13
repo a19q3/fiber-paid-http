@@ -22,7 +22,6 @@ export function startEvidenceWeb(port = Number(process.env.PORT || "8788"), opti
   const apiBase = normalizeApiBase(
     options.apiBase ||
       process.env.FIBER_PAID_HTTP_EVIDENCE_API_BASE ||
-      process.env.FIBER_MPP_EVIDENCE_API_BASE ||
       defaultApiBase
   );
   const headers = securityHeaders(apiBase);

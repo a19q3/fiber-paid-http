@@ -14,31 +14,25 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { execFileSync } = require("node:child_process");
 const { productionBootstrapReadiness } = require("./scripts/lib/production-bootstrap-readiness.cjs");
-const {
-  normalizePreservedTestnetEvidence,
-  verifyPreservedTestnetEvidence
-} = require("./scripts/lib/testnet-fiber-evidence-readiness.cjs");
+const { verifyPreservedTestnetEvidence } = require("./scripts/lib/testnet-fiber-evidence-readiness.cjs");
 const conformance = JSON.parse(fs.readFileSync("reports/rust-conformance.json", "utf8"));
 const ops = JSON.parse(fs.readFileSync("reports/production-operations-matrix.json", "utf8"));
 const testnetEvidencePath = "reports/fiber-testnet-e2e-success.json";
-let testnetEvidenceReport = fs.existsSync(testnetEvidencePath)
+const testnetEvidenceReport = fs.existsSync(testnetEvidencePath)
   ? JSON.parse(fs.readFileSync(testnetEvidencePath, "utf8"))
   : null;
 const productionBootstrap = fs.existsSync("reports/production-bootstrap-e2e.json")
   ? JSON.parse(fs.readFileSync("reports/production-bootstrap-e2e.json", "utf8"))
   : {};
 const currentFiberCommit = readFiberCommit();
-const testnetEvidenceRecordedAt = readTestnetEvidenceRecordedAt(testnetEvidenceReport);
-testnetEvidenceReport = normalizePreservedTestnetEvidence(testnetEvidenceReport, {
-  fallbackRecordedAt: testnetEvidenceRecordedAt
-});
 const testnetEvidenceCheck = verifyPreservedTestnetEvidence(testnetEvidenceReport, {
   path: testnetEvidencePath,
-  expectedFiberCommit: currentFiberCommit,
-  fallbackRecordedAt: testnetEvidenceRecordedAt
+  expectedFiberCommit: currentFiberCommit
 });
 const testnetFiberE2e = testnetEvidenceCheck.verified;
-const productionBootstrapCheck = productionBootstrapReadiness(productionBootstrap);
+const productionBootstrapCheck = productionBootstrapReadiness(productionBootstrap, {
+  expectedFiberCommit: currentFiberCommit
+});
 const productionBootstrapReady = productionBootstrapCheck.ready;
 const productionBlockers = [
   ...(testnetFiberE2e ? [] : ["testnet Fiber E2E evidence still pending"]),
@@ -81,11 +75,11 @@ const report = {
     server_crate_tests: true,
     cli_server_command_starts_gateway: true,
     features: [
-      "signed 402 challenge issuance",
+      "MPP-draft 402 challenge issuance with server-bound challenge ids",
       "Fiber invoice creation through FNN JSON-RPC",
       "Fiber settlement inspection through FNN JSON-RPC",
       "Authorization: Payment verification",
-      "durable SQLite challenge/credential/receipt storage",
+      "durable SQLite challenge/redemption/receipt storage",
       "Payment-Receipt issuance",
       "replay rejection"
     ]
@@ -118,21 +112,4 @@ function fiberRepoCandidates() {
   ].filter(Boolean)));
 }
 
-function readTestnetEvidenceRecordedAt(report) {
-  if (report && typeof report === "object") {
-    const direct =
-      report.testnet_evidence_recorded_at ||
-      report.generated_at ||
-      report.gate_report?.testnet_evidence_recorded_at ||
-      report.gate_report?.generated_at;
-    if (direct) {
-      return direct;
-    }
-  }
-  const wrapperPath = "reports/fiber-testnet-e2e/testnet-e2e-report.json";
-  if (!fs.existsSync(wrapperPath)) {
-    return null;
-  }
-  return JSON.parse(fs.readFileSync(wrapperPath, "utf8")).generated_at || null;
-}
 JSON

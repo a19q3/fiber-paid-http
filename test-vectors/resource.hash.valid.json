@@ -1,13 +1,13 @@
 {
   "input": {
-    "case": "resource.hash.valid",
+    "case": "resource.hash",
     "resource": {
       "method": "GET",
-      "url": "http://conformance.local/paid/weather"
+      "url": "https://conformance.example.com/paid/weather"
     },
-    "resource_hash": "e6ae6449bcbf5882012a00c4dcf32043c67355ee779dbaac489fec3b4c2b8546"
+    "resource_hash": "28dc8f30b70a77bc188124b17d197e0e48f586dd27d092819e9804d9a7c7b235"
   },
-  "expected_canonical_hash": "1a46318cf6aea460733f14322a782a3f84975539ce31844c83b832d428b988b8",
+  "expected_canonical_hash": "15073d9e9e6045fe67847fa7a4861438a3f6d8655609e3ddf2cac99625b485fa",
   "expected_verification_result": "accepted",
-  "notes": "Canonical resource hash for the paid resource descriptor."
+  "notes": "JCS resource binding."
 }

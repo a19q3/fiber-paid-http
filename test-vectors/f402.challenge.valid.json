@@ -1,45 +1,34 @@
 {
   "input": {
-    "case": "f402.challenge.valid",
+    "case": "f402.challenge",
     "f402": {
-      "token": "3c24d7c4122d7892c469f17b0695cd914661451db344832e2be4940341f890db",
-      "invoice": "fibd1qconformancepayment0001",
+      "token": "f402-conformance-token",
+      "invoice": "fibt1qconformancepayment0001",
       "paymentHash": "0xabababababababababababababababababababababababababababababababab",
       "amount": "1000",
-      "currency": "Fibd",
+      "currency": "ckb",
       "expiresAt": "2030-01-01T00:00:00.000Z",
-      "resource": "http://conformance.local/paid/weather",
-      "issuer": "fiber-paid-http-ts-conformance",
-      "fiberNodeId": "fiber-node-conformance-payee"
+      "resource": "https://conformance.example.com/paid/weather",
+      "issuer": "conformance.example.com",
+      "network": "testnet",
+      "hashAlgorithm": "ckb_hash"
     },
     "resource": {
       "method": "GET",
-      "url": "http://conformance.local/paid/weather"
+      "url": "https://conformance.example.com/paid/weather"
     },
-    "server_id": "fiber-paid-http-ts-conformance",
-    "challenge_id": "chal_conformance_0001",
-    "issued_at": "2026-06-24T00:00:00.000Z",
-    "expected_mpp_fields": {
-      "domain": "fiber-paid-http-challenge-v1",
-      "challengeId": "chal_conformance_0001",
-      "resource": {
-        "method": "GET",
-        "url": "http://conformance.local/paid/weather"
-      },
-      "amount": {
-        "value": "1000",
-        "currency": "Fibd"
-      },
+    "realm": "conformance.example.com",
+    "secret": "fiber-paid-http-conformance-secret",
+    "expected_challenge": {
+      "id": "R0024o8oOnnqKA1LlsbrKiIX0QbVxNyR6woW34498Hc",
+      "realm": "conformance.example.com",
       "method": "fiber",
-      "paymentHash": "0xabababababababababababababababababababababababababababababababab",
-      "invoice": "fibd1qconformancepayment0001",
-      "amountShannons": "1000",
-      "serverId": "fiber-paid-http-ts-conformance",
-      "audience": "fiber-paid-http-ts-conformance",
-      "maxUses": 1
+      "intent": "charge",
+      "request": "eyJhbW91bnQiOiIxMDAwIiwiY3VycmVuY3kiOiJja2IiLCJtZXRob2REZXRhaWxzIjp7Imhhc2hBbGdvcml0aG0iOiJja2JfaGFzaCIsImludm9pY2UiOiJmaWJ0MXFjb25mb3JtYW5jZXBheW1lbnQwMDAxIiwibmV0d29yayI6InRlc3RuZXQiLCJwYXltZW50SGFzaCI6IjB4YWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYiJ9fQ",
+      "expires": "2030-01-01T00:00:00.000Z"
     }
   },
-  "expected_canonical_hash": "24680e201fce4e106157a8c47f9fe8785ea6e196598eaba4e130edec3ddd249a",
+  "expected_canonical_hash": "1bec04203a18be033b9994299f67e35734ae351ebc74dc3d122059e63c61a337",
   "expected_verification_result": "accepted",
-  "notes": "F402 challenge fields as accepted by the TypeScript F402 compatibility adapter."
+  "notes": "F402 entrance normalization."
 }

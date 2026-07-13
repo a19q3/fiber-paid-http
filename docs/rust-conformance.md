@@ -1,40 +1,19 @@
-# Rust Conformance
+# Rust conformance
 
-Rust verifies the same `test-vectors/` suite as TypeScript.
+Run:
 
 ```bash
 cargo run -p fiber-paid-http-cli -- vectors verify
 ```
 
-The command writes:
+The verifier loads every JSON file in `test-vectors/`, computes its JCS SHA-256, executes the Rust case verifier, and writes `reports/rust-conformance.json`.
 
-```text
-reports/rust-conformance.json
-```
+The canonical gate compares that report with `reports/ts-conformance.json`. A fixture passes parity only when both engines agree on:
 
-The TypeScript verifier writes:
+- file presence;
+- canonical hash;
+- accepted or rejected result;
+- exact error code;
+- fixture pass state.
 
-```text
-reports/ts-conformance.json
-```
-
-The canonical gate compares those reports for:
-
-- vector count,
-- per-vector pass/fail result,
-- canonical hash,
-- rejection error code,
-- receipt vector pass status,
-- F402 vector pass status,
-- F-L402 vector and attack-vector pass status.
-
-Rust is the canonical verifier. The TypeScript report is a compatibility/vector-harness check, not a second production trusted boundary.
-
-The shared protocol truth remains:
-
-```text
-test-vectors/
-reports/security-matrix.json
-docs/conformance-vectors.md
-docs/security-matrix.md
-```
+The Rust HTTP tests additionally cover real gateway control flow: standard challenge issuance, settled credential acceptance, concurrent/replayed redemption rejection, upstream failure without receipt, and HTTPS configuration validation.

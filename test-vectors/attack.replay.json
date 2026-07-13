@@ -1,65 +1,34 @@
 {
   "input": {
-    "case": "attack.replay",
+    "case": "mpp.credential",
     "secret": "fiber-paid-http-conformance-secret",
-    "request": {
-      "method": "GET",
-      "url": "http://conformance.local/paid/weather"
-    },
-    "challenge": {
-      "domain": "fiber-paid-http-challenge-v1",
-      "challengeId": "chal_conformance_0001",
-      "resource": {
-        "method": "GET",
-        "url": "http://conformance.local/paid/weather"
-      },
-      "amount": {
-        "value": "1000",
-        "currency": "CKB"
-      },
-      "methods": [
-        {
-          "method": "fiber",
-          "intent": "charge",
-          "asset": "CKB",
-          "amountShannons": "1000",
-          "paymentHash": "0xabababababababababababababababababababababababababababababababab",
-          "invoice": "fibd1qconformancepayment0001",
-          "fiberNodeId": "fiber-node-conformance-payee",
-          "fiberRpcLabel": "conformance-local",
-          "expiresAt": "2030-01-01T00:00:00.000Z"
-        }
-      ],
-      "nonce": "0123456789abcdef0123456789abcdef",
-      "issuedAt": "2026-06-24T00:00:00.000Z",
-      "expiresAt": "2030-01-01T00:00:00.000Z",
-      "serverId": "fiber-paid-http-ts-conformance",
-      "maxUses": 1
-    },
-    "signature": "3c24d7c4122d7892c469f17b0695cd914661451db344832e2be4940341f890db",
+    "now": "2026-07-13T00:00:00.000Z",
     "credential": {
-      "domain": "fiber-paid-http-credential-v1",
-      "challengeId": "chal_conformance_0001",
-      "method": "fiber",
-      "resourceHash": "e6ae6449bcbf5882012a00c4dcf32043c67355ee779dbaac489fec3b4c2b8546",
-      "paymentProof": {
-        "kind": "fiber-payment-proof-v1",
-        "mode": "local",
-        "paymentHash": "0xabababababababababababababababababababababababababababababababab",
-        "invoice": "fibd1qconformancepayment0001",
-        "amountShannons": "1000",
-        "status": "settled",
-        "observedAt": "2026-06-24T00:00:00.000Z",
-        "evidence": {
-          "conformance": true
-        }
+      "challenge": {
+        "id": "-KveO8VNE_AFk50OGn2xSnKMokF5HweGjq-fmeyj4Rg",
+        "realm": "conformance.example.com",
+        "method": "fiber",
+        "intent": "charge",
+        "request": "eyJhbW91bnQiOiIxMDAwIiwiY3VycmVuY3kiOiJja2IiLCJkZXNjcmlwdGlvbiI6IkNvbmZvcm1hbmNlIGNoYXJnZSIsIm1ldGhvZERldGFpbHMiOnsiaGFzaEFsZ29yaXRobSI6ImNrYl9oYXNoIiwiaW52b2ljZSI6ImZpYnQxcWNvbmZvcm1hbmNlcGF5bWVudDAwMDEiLCJuZXR3b3JrIjoidGVzdG5ldCIsInBheW1lbnRIYXNoIjoiMHhhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiIn19",
+        "expires": "2030-01-01T00:00:00.000Z"
       },
-      "submittedAt": "2026-06-24T00:00:00.000Z"
+      "payload": {
+        "paymentHash": "0xabababababababababababababababababababababababababababababababab"
+      }
     },
-    "replay": true
+    "resource": {
+      "method": "GET",
+      "url": "https://conformance.example.com/paid/weather"
+    },
+    "stored_resource": {
+      "method": "GET",
+      "url": "https://conformance.example.com/paid/weather"
+    },
+    "expected_amount": "1000",
+    "already_redeemed": true
   },
-  "expected_canonical_hash": "a77dc9b750d6420ff77f419bd2554716d7f1fb166b11640d0fd4c2169de93497",
+  "expected_canonical_hash": "f26c9a310d3c32af61d7a799bfa647fa0ff789d19ab97e7f56e0e661e2b09fee",
   "expected_verification_result": "rejected",
   "expected_error_code": "replay",
-  "notes": "The same credential is redeemed twice; the second redemption must be rejected."
+  "notes": "Replay is single-use."
 }

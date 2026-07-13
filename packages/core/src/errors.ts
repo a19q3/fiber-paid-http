@@ -10,30 +10,25 @@ export class FiberPaidHttpError extends Error {
   }
 }
 
-/**
- * @deprecated Use `FiberPaidHttpError`. Kept so older Fiber MPP callers can
- * upgrade packages before renaming their imports.
- */
-export { FiberPaidHttpError as FiberMppError };
-
 export function toProblemJson(error: unknown): { status: number; body: Record<string, unknown> } {
-  if (error instanceof FiberPaidHttpError) {
+  if (error instanceof FiberPaidHttpError && error.status < 500) {
     return {
       status: error.status,
       body: {
-        type: `https://fiber-paid-http.local/problems/${error.code}`,
+        type: `https://paymentauth.org/problems/${error.code}`,
         title: error.code,
         status: error.status,
         detail: error.message
       }
     };
   }
+  const status = error instanceof FiberPaidHttpError && error.status >= 500 ? error.status : 500;
   return {
-    status: 500,
+    status,
     body: {
-      type: "https://fiber-paid-http.local/problems/internal-error",
+      type: "https://paymentauth.org/problems/internal-error",
       title: "internal-error",
-      status: 500,
+      status,
       detail: "Internal error"
     }
   };

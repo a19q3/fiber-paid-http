@@ -178,7 +178,7 @@ Policy:
    - refund/credit outside Fiber Paid HTTP,
    - manual service fulfillment,
    - operator-issued one-time replacement challenge after confirming the original credential hash cannot replay.
-6. Attach the `receiptId`, `challengeId`, `credentialHash`, `responseStatus`, and `failureCode` from the delivery outcome to the incident.
+6. Attach the receipt `reference`, `challengeId`, `credentialHash`, `responseStatus`, and `failureCode` from the delivery outcome to the incident.
 
 This policy preserves replay safety and makes the commercial compensation path explicit.
 

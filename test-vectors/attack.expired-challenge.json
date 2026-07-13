@@ -1,64 +1,33 @@
 {
   "input": {
-    "case": "attack.expired-challenge",
+    "case": "mpp.credential",
     "secret": "fiber-paid-http-conformance-secret",
-    "request": {
-      "method": "GET",
-      "url": "http://conformance.local/paid/weather"
-    },
-    "challenge": {
-      "domain": "fiber-paid-http-challenge-v1",
-      "challengeId": "chal_conformance_0001",
-      "resource": {
-        "method": "GET",
-        "url": "http://conformance.local/paid/weather"
-      },
-      "amount": {
-        "value": "1000",
-        "currency": "CKB"
-      },
-      "methods": [
-        {
-          "method": "fiber",
-          "intent": "charge",
-          "asset": "CKB",
-          "amountShannons": "1000",
-          "paymentHash": "0xabababababababababababababababababababababababababababababababab",
-          "invoice": "fibd1qconformancepayment0001",
-          "fiberNodeId": "fiber-node-conformance-payee",
-          "fiberRpcLabel": "conformance-local",
-          "expiresAt": "2020-01-01T00:00:00.000Z"
-        }
-      ],
-      "nonce": "0123456789abcdef0123456789abcdef",
-      "issuedAt": "2026-06-24T00:00:00.000Z",
-      "expiresAt": "2020-01-01T00:00:00.000Z",
-      "serverId": "fiber-paid-http-ts-conformance",
-      "maxUses": 1
-    },
-    "signature": "5b35ba6892ce49a9281fb4e681fb9a2d959ff60c86528e5d0ee1bf75f1be30ad",
+    "now": "2026-07-13T00:00:00.000Z",
     "credential": {
-      "domain": "fiber-paid-http-credential-v1",
-      "challengeId": "chal_conformance_0001",
-      "method": "fiber",
-      "resourceHash": "e6ae6449bcbf5882012a00c4dcf32043c67355ee779dbaac489fec3b4c2b8546",
-      "paymentProof": {
-        "kind": "fiber-payment-proof-v1",
-        "mode": "local",
-        "paymentHash": "0xabababababababababababababababababababababababababababababababab",
-        "invoice": "fibd1qconformancepayment0001",
-        "amountShannons": "1000",
-        "status": "settled",
-        "observedAt": "2026-06-24T00:00:00.000Z",
-        "evidence": {
-          "conformance": true
-        }
+      "challenge": {
+        "id": "MuiEMKiIZkqWazafB3tCtEls8VSyMDfniUCfmSRTAAs",
+        "realm": "conformance.example.com",
+        "method": "fiber",
+        "intent": "charge",
+        "request": "eyJhbW91bnQiOiIxMDAwIiwiY3VycmVuY3kiOiJja2IiLCJkZXNjcmlwdGlvbiI6IkNvbmZvcm1hbmNlIGNoYXJnZSIsIm1ldGhvZERldGFpbHMiOnsiaGFzaEFsZ29yaXRobSI6ImNrYl9oYXNoIiwiaW52b2ljZSI6ImZpYnQxcWNvbmZvcm1hbmNlcGF5bWVudDAwMDEiLCJuZXR3b3JrIjoidGVzdG5ldCIsInBheW1lbnRIYXNoIjoiMHhhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiIn19",
+        "expires": "2020-01-01T00:00:00.000Z"
       },
-      "submittedAt": "2026-06-24T00:00:00.000Z"
-    }
+      "payload": {
+        "paymentHash": "0xabababababababababababababababababababababababababababababababab"
+      }
+    },
+    "resource": {
+      "method": "GET",
+      "url": "https://conformance.example.com/paid/weather"
+    },
+    "stored_resource": {
+      "method": "GET",
+      "url": "https://conformance.example.com/paid/weather"
+    },
+    "expected_amount": "1000"
   },
-  "expected_canonical_hash": "8089afe25f5744364e5dfb5b03b923559ef50d8d4e9ad55fd3aec41db8f20718",
+  "expected_canonical_hash": "078fb951df4f80dfb1fde2957806587a4692c5907fed4b5d09a97a9c3c73e98b",
   "expected_verification_result": "rejected",
   "expected_error_code": "expired-challenge",
-  "notes": "Signed challenge has an expiry in the past and must be rejected before proof verification."
+  "notes": "Expired challenge."
 }

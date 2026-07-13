@@ -4,6 +4,11 @@ const DEFAULT_REDACTED_KEYS = [
   "secret",
   "secret_env",
   "previous_secret",
+  "root_key",
+  "capability",
+  "preimage",
+  "credential",
+  "invoice",
   "rpc_auth",
   "payee_rpc_auth",
   "payer_rpc_auth",
@@ -15,10 +20,15 @@ const DEFAULT_REDACTED_KEYS = [
 const SENSITIVE_VALUE_PATTERNS: Array<[RegExp, string]> = [
   [/\bBearer\s+[A-Za-z0-9._~+/=-]+/gi, "Bearer [REDACTED]"],
   [/\bBasic\s+[A-Za-z0-9+/=-]+/gi, "Basic [REDACTED]"],
+  [/\bPayment\s+[A-Za-z0-9_-]+/gi, "Payment [REDACTED]"],
+  [/\bL402\s+[^\s,]+/gi, "L402 [REDACTED]"],
   [/(authorization=)[^&\s]+/gi, "$1[REDACTED]"],
   [/(rpc_auth=)[^&\s]+/gi, "$1[REDACTED]"],
   [/(secret=)[^&\s]+/gi, "$1[REDACTED]"],
-  [/(token=)[^&\s]+/gi, "$1[REDACTED]"]
+  [/(token=)[^&\s]+/gi, "$1[REDACTED]"],
+  [/(capability=)[^&\s,]+/gi, "$1[REDACTED]"],
+  [/(preimage=)[^&\s,]+/gi, "$1[REDACTED]"],
+  [/(invoice=)[^&\s,]+/gi, "$1[REDACTED]"]
 ];
 
 export type LogRedactionPolicy = {

@@ -6,6 +6,8 @@ REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." &>/dev/null && pwd)"
 DEFAULT_FIBER_REPO="$(cd -- "${REPO_ROOT}/../fiber" 2>/dev/null && pwd || printf '%s' "${REPO_ROOT}/../fiber")"
 FIBER_REPO="${FIBER_REPO:-$DEFAULT_FIBER_REPO}"
 export PATH="${SCRIPT_DIR}/bin:${PATH}"
+export NO_PROXY="localhost,127.0.0.1,::1${NO_PROXY:+,${NO_PROXY}}"
+export no_proxy="localhost,127.0.0.1,::1${no_proxy:+,${no_proxy}}"
 LOG_DIR="${FIBER_LOCAL_LOG_DIR:-${REPO_ROOT}/reports/fiber-local-network}"
 PID_FILE="${LOG_DIR}/fiber-start.pid"
 START_LOG="${LOG_DIR}/start.log"
@@ -46,7 +48,7 @@ Environment:
   REMOVE_OLD_STATE=y
   FIBER_LOCAL_ASSET=ckb|xudt
   FIBER_LOCAL_PRIZE_ROUTE=1
-  PATH=$HOME/ckb-bin/ckb_v0.207.0_x86_64-unknown-linux-gnu-portable:$PATH
+  PATH=$HOME/ckb-bin/ckb_v0.202.0_x86_64-unknown-linux-gnu-portable:$PATH
 USAGE
 }
 
@@ -94,7 +96,16 @@ start_network() {
       if [[ "$FIBER_LOCAL_ASSET" == "xudt" && -z "${FIBER_LOCAL_TESTCASE:-}" ]]; then
         testcase="e2e/udt-router-pay"
       fi
-      setsid env REMOVE_OLD_STATE="${REMOVE_OLD_STATE:-y}" ./tests/nodes/start.sh "$testcase" >"$START_LOG" 2>&1 &
+      if command -v setsid >/dev/null 2>&1; then
+        setsid env REMOVE_OLD_STATE="${REMOVE_OLD_STATE:-y}" ./tests/nodes/start.sh "$testcase" >"$START_LOG" 2>&1 &
+      else
+        # macOS does not ship setsid. Job-control mode gives the launcher its
+        # own process group, while nohup keeps that group alive after this
+        # short-lived subshell exits. The recorded pid is also the group id,
+        # so stop_network can still terminate the complete local stack.
+        set -m
+        nohup env REMOVE_OLD_STATE="${REMOVE_OLD_STATE:-y}" ./tests/nodes/start.sh "$testcase" >"$START_LOG" 2>&1 &
+      fi
       echo "$!" >"$PID_FILE"
     )
   fi
@@ -230,19 +241,59 @@ require_fiber_repo() {
 }
 
 ensure_ckb_bins() {
-  if command -v ckb >/dev/null && command -v ckb-cli >/dev/null; then
-    return 0
+  local expected_version="0.202.0"
+  local parent_ckb="${REPO_ROOT}/../ckb/target/release/ckb"
+  local parent_ckb_cli="${REPO_ROOT}/../ckb-cli/target/debug/ckb-cli"
+  local pinned_ckb="${REPO_ROOT}/.tmp/ckb-v${expected_version}/target/release/ckb"
+  local ckb_bin="${FIBER_CKB_BIN:-}"
+  local ckb_cli_bin="${FIBER_CKB_CLI_BIN:-}"
+  local candidate=""
+
+  if [[ -z "$ckb_bin" ]]; then
+    for candidate in \
+      "$pinned_ckb" \
+      "$parent_ckb" \
+      "${HOME}/ckb-bin/ckb_v${expected_version}_x86_64-unknown-linux-gnu-portable/ckb" \
+      "${FIBER_REPO}/../ckb-bin/ckb_v${expected_version}_x86_64-unknown-linux-gnu-portable/ckb"; do
+      if [[ -x "$candidate" ]]; then
+        ckb_bin="$candidate"
+        break
+      fi
+    done
   fi
-  local candidate
-  for candidate in \
-    "${HOME}/ckb-bin/ckb_v0.207.0_x86_64-unknown-linux-gnu-portable" \
-    "${FIBER_REPO}/../ckb-bin/ckb_v0.207.0_x86_64-unknown-linux-gnu-portable"; do
-    if [[ -x "${candidate}/ckb" && -x "${candidate}/ckb-cli" ]]; then
-      export PATH="${candidate}:${PATH}"
-      echo "Using CKB binaries from ${candidate}"
-      return 0
-    fi
-  done
+  if [[ -z "$ckb_bin" ]]; then
+    ckb_bin="$(command -v ckb 2>/dev/null || true)"
+  fi
+  if [[ ! -x "$ckb_bin" ]]; then
+    echo "CKB ${expected_version} is required; set FIBER_CKB_BIN to its executable" >&2
+    exit 1
+  fi
+
+  local actual_version
+  actual_version="$("$ckb_bin" --version 2>/dev/null || true)"
+  if [[ "$actual_version" != "ckb ${expected_version} "* && "$actual_version" != "ckb ${expected_version}" ]]; then
+    echo "Fiber local E2E requires CKB ${expected_version}; found '${actual_version:-unknown}' at ${ckb_bin}" >&2
+    exit 1
+  fi
+
+  if [[ -z "$ckb_cli_bin" && -x "$parent_ckb_cli" ]]; then
+    ckb_cli_bin="$parent_ckb_cli"
+  fi
+  if [[ -z "$ckb_cli_bin" && -x "$(dirname "$ckb_bin")/ckb-cli" ]]; then
+    ckb_cli_bin="$(dirname "$ckb_bin")/ckb-cli"
+  fi
+  if [[ -z "$ckb_cli_bin" ]]; then
+    ckb_cli_bin="$(command -v ckb-cli 2>/dev/null || true)"
+  fi
+  if [[ ! -x "$ckb_cli_bin" ]]; then
+    echo "ckb-cli is required; set FIBER_CKB_CLI_BIN to its executable" >&2
+    exit 1
+  fi
+
+  export FIBER_CKB_BIN="$ckb_bin"
+  export FIBER_CKB_CLI_BIN="$ckb_cli_bin"
+  export PATH="$(dirname "$ckb_bin"):$(dirname "$ckb_cli_bin"):${PATH}"
+  echo "Using CKB ${expected_version} from ${ckb_bin}"
 }
 
 wait_rpc() {

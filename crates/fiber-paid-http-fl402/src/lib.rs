@@ -8,34 +8,42 @@ use thiserror::Error;
 
 type HmacSha256 = Hmac<Sha256>;
 
-pub const FL402_MACAROON_PREFIX: &str = "fl402-macaroon-v1";
+pub const FL402_CAPABILITY_PREFIX: &str = "fiber-l402-capability-v1";
 
 #[derive(Debug, Error)]
 pub enum Fl402Error {
-    #[error("invalid-fl402-macaroon")]
-    InvalidMacaroon,
-    #[error("bad-fl402-macaroon-signature")]
-    BadMacaroonSignature,
-    #[error("expired-fl402-macaroon")]
-    ExpiredMacaroon,
-    #[error("fl402-macaroon-mismatch")]
-    MacaroonMismatch,
+    #[error("invalid-fl402-capability")]
+    InvalidCapability,
+    #[error("bad-fl402-capability-signature")]
+    BadCapabilitySignature,
+    #[error("expired-fl402-capability")]
+    ExpiredCapability,
+    #[error("fl402-capability-mismatch")]
+    CapabilityMismatch,
     #[error("wrong-payment-hash")]
     WrongPaymentHash,
     #[error("wrong-preimage")]
     WrongPreimage,
-    #[error("wrong-invoice")]
-    WrongInvoice,
-    #[error("wrong-amount")]
-    WrongAmount,
     #[error("wrong-resource")]
     WrongResource,
     #[error("wrong-challenge")]
     WrongChallenge,
     #[error("wrong-hash-algorithm")]
     WrongHashAlgorithm,
-    #[error("fiber-payment-not-settled")]
-    PaymentNotSettled,
+    #[error("wrong-invoice")]
+    WrongInvoice,
+    #[error("wrong-amount")]
+    WrongAmount,
+    #[error("wrong-currency")]
+    WrongCurrency,
+    #[error("wrong-expiry")]
+    WrongExpiry,
+    #[error("wrong-issuer")]
+    WrongIssuer,
+    #[error("wrong-recipient")]
+    WrongRecipient,
+    #[error("wrong-network")]
+    WrongNetwork,
     #[error("missing field {0}")]
     MissingField(&'static str),
     #[error("invalid field {0}")]
@@ -46,39 +54,61 @@ pub enum Fl402Error {
     Core(#[from] fiber_paid_http_core::CoreError),
 }
 
-pub fn issue_fl402_macaroon(payload: &Value, root_key: &str) -> Result<String, Fl402Error> {
+pub fn issue_fl402_capability(payload: &Value, root_key: &str) -> Result<String, Fl402Error> {
+    if root_key.len() < 32 {
+        return Err(Fl402Error::InvalidField("rootKey"));
+    }
+    if string_field(payload, "domain")? != FL402_CAPABILITY_PREFIX {
+        return Err(Fl402Error::InvalidCapability);
+    }
     let encoded = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(canonical_json(payload)?);
     let signature = sign_payload(payload, root_key)?;
-    Ok(format!("{FL402_MACAROON_PREFIX}.{encoded}.{signature}"))
+    Ok(format!("{FL402_CAPABILITY_PREFIX}.{encoded}.{signature}"))
 }
 
-pub fn decode_fl402_macaroon(macaroon: &str) -> Result<(Value, String), Fl402Error> {
-    let mut parts = macaroon.split('.');
-    let prefix = parts.next().ok_or(Fl402Error::InvalidMacaroon)?;
-    let encoded = parts.next().ok_or(Fl402Error::InvalidMacaroon)?;
-    let signature = parts.next().ok_or(Fl402Error::InvalidMacaroon)?;
-    if prefix != FL402_MACAROON_PREFIX || parts.next().is_some() {
-        return Err(Fl402Error::InvalidMacaroon);
+pub fn decode_fl402_capability(capability: &str) -> Result<(Value, String), Fl402Error> {
+    let mut parts = capability.split('.');
+    let prefix = parts.next().ok_or(Fl402Error::InvalidCapability)?;
+    let encoded = parts.next().ok_or(Fl402Error::InvalidCapability)?;
+    let signature = parts.next().ok_or(Fl402Error::InvalidCapability)?;
+    if prefix != FL402_CAPABILITY_PREFIX || parts.next().is_some() {
+        return Err(Fl402Error::InvalidCapability);
     }
     let bytes = base64::engine::general_purpose::URL_SAFE_NO_PAD
         .decode(encoded)
-        .map_err(|_| Fl402Error::InvalidMacaroon)?;
-    Ok((serde_json::from_slice(&bytes)?, signature.to_string()))
+        .map_err(|_| Fl402Error::InvalidCapability)?;
+    let payload: Value = serde_json::from_slice(&bytes)?;
+    if canonical_json(&payload)?.as_bytes() != bytes {
+        return Err(Fl402Error::InvalidCapability);
+    }
+    if string_field(&payload, "domain")? != FL402_CAPABILITY_PREFIX {
+        return Err(Fl402Error::InvalidCapability);
+    }
+    Ok((payload, signature.to_string()))
 }
 
-pub fn verify_fl402_macaroon(
-    macaroon: &str,
+pub fn verify_fl402_capability(
+    capability: &str,
     root_key: &str,
     now: Option<&str>,
 ) -> Result<Value, Fl402Error> {
-    let (payload, signature) = decode_fl402_macaroon(macaroon)?;
-    let expected = sign_payload(&payload, root_key)?;
-    if signature != expected {
-        return Err(Fl402Error::BadMacaroonSignature);
+    if root_key.len() < 32 {
+        return Err(Fl402Error::InvalidField("rootKey"));
+    }
+    let (payload, signature) = decode_fl402_capability(capability)?;
+    let signature = hex::decode(signature).map_err(|_| Fl402Error::BadCapabilitySignature)?;
+    let mut mac = HmacSha256::new_from_slice(root_key.as_bytes())
+        .map_err(|_| Fl402Error::InvalidField("rootKey"))?;
+    mac.update(canonical_json(&payload)?.as_bytes());
+    if mac.verify_slice(&signature).is_err() {
+        return Err(Fl402Error::BadCapabilitySignature);
     }
     let caveats = object_field(&payload, "caveats")?;
     let expires_at = DateTime::parse_from_rfc3339(string_field(caveats, "expiresAt")?)
         .map_err(|_| Fl402Error::InvalidField("expiresAt"))?
+        .with_timezone(&Utc);
+    let issued_at = DateTime::parse_from_rfc3339(string_field(&payload, "issuedAt")?)
+        .map_err(|_| Fl402Error::InvalidField("issuedAt"))?
         .with_timezone(&Utc);
     let now = match now {
         Some(value) => DateTime::parse_from_rfc3339(value)
@@ -86,8 +116,8 @@ pub fn verify_fl402_macaroon(
             .with_timezone(&Utc),
         None => Utc::now(),
     };
-    if now > expires_at {
-        return Err(Fl402Error::ExpiredMacaroon);
+    if issued_at > now || now > expires_at {
+        return Err(Fl402Error::ExpiredCapability);
     }
     Ok(payload)
 }
@@ -98,10 +128,10 @@ pub fn verify_fl402_proof(
     root_key: &str,
     now: Option<&str>,
 ) -> Result<Value, Fl402Error> {
-    if string_field(challenge, "macaroon")? != string_field(proof, "macaroon")? {
-        return Err(Fl402Error::MacaroonMismatch);
+    if string_field(challenge, "capability")? != string_field(proof, "capability")? {
+        return Err(Fl402Error::CapabilityMismatch);
     }
-    let payload = verify_fl402_macaroon(string_field(proof, "macaroon")?, root_key, now)?;
+    let payload = verify_fl402_capability(string_field(proof, "capability")?, root_key, now)?;
     let caveats = object_field(&payload, "caveats")?;
     let algorithm = optional_string(proof, "hashAlgorithm").unwrap_or("ckb_hash");
     let proof_hash = hash_payment_preimage(string_field(proof, "preimage")?, algorithm)?;
@@ -114,80 +144,65 @@ pub fn verify_fl402_proof(
     if normalize_hex(&proof_hash)? != expected_hash {
         return Err(Fl402Error::WrongPreimage);
     }
-    if string_field(challenge, "invoice")? != string_field(caveats, "invoice")?
-        || optional_string(proof, "invoice")
-            .is_some_and(|invoice| invoice != string_field(caveats, "invoice").unwrap_or(""))
-    {
-        return Err(Fl402Error::WrongInvoice);
-    }
-    if string_field(challenge, "amount")? != string_field(caveats, "amount")?
-        || optional_string(proof, "amountShannons")
-            .is_some_and(|amount| amount != string_field(caveats, "amount").unwrap_or(""))
-    {
-        return Err(Fl402Error::WrongAmount);
-    }
-    if optional_string(challenge, "resourceHash").is_some_and(|resource_hash| {
-        resource_hash != string_field(caveats, "resourceHash").unwrap_or("")
-    }) {
+    if string_field(challenge, "resourceHash")? != string_field(caveats, "resourceHash")? {
         return Err(Fl402Error::WrongResource);
     }
-    if optional_string(challenge, "challengeId").is_some_and(|challenge_id| {
-        challenge_id != string_field(caveats, "challengeId").unwrap_or("")
-    }) {
+    if string_field(challenge, "resource")? != string_field(caveats, "url")? {
+        return Err(Fl402Error::WrongResource);
+    }
+    if string_field(challenge, "challengeId")? != string_field(caveats, "challengeId")? {
         return Err(Fl402Error::WrongChallenge);
     }
-    if optional_string(challenge, "hashAlgorithm").unwrap_or("ckb_hash")
-        != string_field(caveats, "hashAlgorithm")?
-        || algorithm != string_field(caveats, "hashAlgorithm")?
+    if string_field(challenge, "invoice")? != string_field(caveats, "invoice")? {
+        return Err(Fl402Error::WrongInvoice);
+    }
+    if string_field(challenge, "amount")? != string_field(caveats, "amount")? {
+        return Err(Fl402Error::WrongAmount);
+    }
+    if string_field(challenge, "currency")? != string_field(caveats, "currency")? {
+        return Err(Fl402Error::WrongCurrency);
+    }
+    if string_field(challenge, "expiresAt")? != string_field(caveats, "expiresAt")? {
+        return Err(Fl402Error::WrongExpiry);
+    }
+    if optional_string(challenge, "issuer") != optional_string(caveats, "issuer") {
+        return Err(Fl402Error::WrongIssuer);
+    }
+    if optional_string(challenge, "fiberNodeId") != optional_string(caveats, "fiberNodeId") {
+        return Err(Fl402Error::WrongRecipient);
+    }
+    if string_field(challenge, "network")? != string_field(caveats, "network")? {
+        return Err(Fl402Error::WrongNetwork);
+    }
+    if optional_string(challenge, "hashAlgorithm").unwrap_or("ckb_hash") != algorithm
+        || string_field(caveats, "hashAlgorithm")? != algorithm
     {
         return Err(Fl402Error::WrongHashAlgorithm);
-    }
-    if optional_string(proof, "status").unwrap_or("settled") != "settled" {
-        return Err(Fl402Error::PaymentNotSettled);
     }
     Ok(payload)
 }
 
-pub fn fl402_proof_to_credential(
-    proof: &Value,
-    challenge_id: &str,
-    resource_hash: &str,
-    submitted_at: &str,
-) -> Result<Value, Fl402Error> {
-    let algorithm = optional_string(proof, "hashAlgorithm").unwrap_or("ckb_hash");
+pub fn fl402_proof_to_credential(proof: &Value, challenge: &Value) -> Result<Value, Fl402Error> {
     Ok(json!({
-        "domain": "fiber-paid-http-credential-v1",
-        "challengeId": challenge_id,
-        "method": "fiber",
-        "resourceHash": resource_hash,
-        "paymentProof": {
-            "kind": "fiber-payment-proof-v1",
-            "mode": optional_string(proof, "mode").unwrap_or("local"),
-            "paymentHash": string_field(proof, "paymentHash")?,
-            "invoice": optional_string(proof, "invoice"),
-            "amountShannons": optional_string(proof, "amountShannons"),
-            "status": optional_string(proof, "status").unwrap_or("settled"),
-            "observedAt": optional_string(proof, "observedAt").unwrap_or(""),
-            "evidence": {
-                "fl402Macaroon": string_field(proof, "macaroon")?,
-                "fl402PreimageHash": hash_payment_preimage(string_field(proof, "preimage")?, algorithm)?,
-                "fl402HashAlgorithm": algorithm,
-                "fl402Evidence": proof.get("evidence").cloned()
-            }
-        },
-        "submittedAt": submitted_at
+        "challenge": challenge,
+        "payload": {
+            "paymentHash": string_field(proof, "paymentHash")?
+        }
     }))
 }
 
 pub fn hash_payment_preimage(preimage: &str, algorithm: &str) -> Result<String, Fl402Error> {
-    let bytes = hex_to_bytes(preimage)?;
+    let normalized = normalize_hex(preimage)?;
+    let bytes = hex::decode(normalized.trim_start_matches("0x"))
+        .map_err(|_| Fl402Error::InvalidField("preimage"))?;
     let digest = match algorithm {
-        "sha256" => {
-            let mut hasher = Sha256::new();
-            hasher.update(&bytes);
-            hasher.finalize().to_vec()
-        }
-        "ckb_hash" => ckb_blake2b_256(&bytes).to_vec(),
+        "sha256" => Sha256::digest(&bytes).to_vec(),
+        "ckb_hash" => blake2b_simd::Params::new()
+            .hash_length(32)
+            .personal(b"ckb-default-hash")
+            .hash(&bytes)
+            .as_bytes()
+            .to_vec(),
         _ => return Err(Fl402Error::InvalidField("hashAlgorithm")),
     };
     Ok(format!("0x{}", hex::encode(digest)))
@@ -198,32 +213,6 @@ fn sign_payload(payload: &Value, root_key: &str) -> Result<String, Fl402Error> {
         .map_err(|_| Fl402Error::InvalidField("rootKey"))?;
     mac.update(canonical_json(payload)?.as_bytes());
     Ok(hex::encode(mac.finalize().into_bytes()))
-}
-
-fn ckb_blake2b_256(bytes: &[u8]) -> [u8; 32] {
-    let hash = blake2b_simd::Params::new()
-        .hash_length(32)
-        .personal(b"ckb-default-hash")
-        .hash(bytes);
-    let mut output = [0_u8; 32];
-    output.copy_from_slice(hash.as_bytes());
-    output
-}
-
-fn hex_to_bytes(value: &str) -> Result<Vec<u8>, Fl402Error> {
-    let normalized = normalize_hex(value)?;
-    hex::decode(normalized).map_err(|_| Fl402Error::InvalidField("hex"))
-}
-
-fn normalize_hex(value: &str) -> Result<String, Fl402Error> {
-    let normalized = value
-        .strip_prefix("0x")
-        .unwrap_or(value)
-        .to_ascii_lowercase();
-    if normalized.len() != 64 || !normalized.chars().all(|ch| ch.is_ascii_hexdigit()) {
-        return Err(Fl402Error::InvalidField("hex32"));
-    }
-    Ok(normalized)
 }
 
 fn object_field<'a>(source: &'a Value, field: &'static str) -> Result<&'a Value, Fl402Error> {
@@ -244,59 +233,64 @@ fn optional_string<'a>(source: &'a Value, field: &'static str) -> Option<&'a str
     source.get(field).and_then(Value::as_str)
 }
 
+fn normalize_hex(value: &str) -> Result<String, Fl402Error> {
+    let raw = value.trim_start_matches("0x").to_ascii_lowercase();
+    if raw.len() != 64 || !raw.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+        return Err(Fl402Error::InvalidField("hex32"));
+    }
+    Ok(format!("0x{raw}"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use fiber_paid_http_core::sha256_hex;
 
     #[test]
     fn verifies_sha256_preimage() {
         let preimage = format!("0x{}", "11".repeat(32));
         let payment_hash = hash_payment_preimage(&preimage, "sha256").unwrap();
         let payload = json!({
-            "domain": "fl402-macaroon-v1",
+            "domain": FL402_CAPABILITY_PREFIX,
             "caveats": {
-                "challengeId": "chal_fl402_rust_0001",
-                "resourceHash": sha256_hex(b"resource"),
+                "challengeId": "challenge",
+                "resourceHash": "resource",
                 "method": "GET",
-                "url": "http://localhost/paid/weather",
-                "amount": "1000",
-                "currency": "Fibd",
+                "url": "https://example.com/paid",
                 "paymentHash": payment_hash,
-                "invoice": "fibd1qfixture",
-                "expiresAt": "2030-01-01T00:00:00.000Z",
+                "invoice": "fibt1fixture",
+                "amount": "1000",
+                "currency": "ckb",
+                "expiresAt": "2030-01-01T00:00:00Z",
+                "issuer": "example.com",
+                "network": "testnet",
                 "hashAlgorithm": "sha256"
             },
-            "nonce": "0123456789abcdef0123456789abcdef",
-            "issuedAt": "2026-07-01T00:00:00.000Z"
+            "nonce": "00112233445566778899aabbccddeeff",
+            "issuedAt": "2026-01-01T00:00:00Z"
         });
-        let macaroon = issue_fl402_macaroon(&payload, "root-key-at-least-16").unwrap();
+        let root_key = "fl402-rust-unit-root-key-at-least-32-characters";
+        let capability = issue_fl402_capability(&payload, root_key).unwrap();
         let challenge = json!({
-            "macaroon": macaroon,
-            "challengeId": "chal_fl402_rust_0001",
-            "invoice": "fibd1qfixture",
+            "challengeId": "challenge",
+            "capability": capability,
             "paymentHash": payment_hash,
+            "resourceHash": "resource",
+            "resource": "https://example.com/paid",
+            "method": "GET",
+            "invoice": "fibt1fixture",
             "amount": "1000",
-            "currency": "Fibd",
-            "expiresAt": "2030-01-01T00:00:00.000Z",
-            "resourceHash": sha256_hex(b"resource"),
+            "currency": "ckb",
+            "expiresAt": "2030-01-01T00:00:00Z",
+            "issuer": "example.com",
+            "network": "testnet",
             "hashAlgorithm": "sha256"
         });
         let proof = json!({
-            "macaroon": challenge["macaroon"],
+            "capability": challenge["capability"],
             "preimage": preimage,
-            "invoice": "fibd1qfixture",
             "paymentHash": payment_hash,
-            "amountShannons": "1000",
-            "status": "settled",
             "hashAlgorithm": "sha256"
         });
-        verify_fl402_proof(
-            &challenge,
-            &proof,
-            "root-key-at-least-16",
-            Some("2026-07-01T00:00:00.000Z"),
-        )
-        .unwrap();
+        verify_fl402_proof(&challenge, &proof, root_key, Some("2026-01-01T00:00:00Z")).unwrap();
     }
 }

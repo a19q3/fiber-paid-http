@@ -30,8 +30,8 @@ function flowChallengeId(flow: { challengeId?: string; challengeBody?: { challen
   return flow.challengeId || flow.challengeBody?.challengeId || flow.challengeBody?.challenge?.challengeId;
 }
 
-function flowResourceHash(flow: { resourceHash?: string; credential?: { resourceHash?: string } | null; receipt?: { resourceHash?: string } | null; challengeBody?: { resourceHash?: string } | null }): string | undefined {
-  return flow.resourceHash || flow.credential?.resourceHash || flow.receipt?.resourceHash || flow.challengeBody?.resourceHash;
+function flowResourceHash(flow: { resourceHash?: string; credential?: { resourceHash?: string } | null; challengeBody?: { resourceHash?: string } | null }): string | undefined {
+  return flow.resourceHash || flow.credential?.resourceHash || flow.challengeBody?.resourceHash;
 }
 
 function isLiveFiberFlow(flow: { proof?: { mode?: string } | null }, status?: { livePaymentEnabled?: boolean; mode?: string }): boolean {
@@ -42,8 +42,8 @@ function isLiveFiberFlow(flow: { proof?: { mode?: string } | null }, status?: { 
 export function Timeline() {
   const ev = useEvidence();
   const challengeId = flowChallengeId(ev.flow);
-  const paymentHash = ev.flow?.fiberChallenge?.paymentHash || ev.flow?.receipt?.settlement?.paymentHash;
-  const receiptId = ev.flow?.receipt?.receiptId;
+  const paymentHash = ev.flow?.fiberChallenge?.paymentHash || ev.flow?.receipt?.reference;
+  const receiptReference = ev.flow?.receipt?.reference;
   const events = ev.flow?.events || [];
   const liveFiberFlow = isLiveFiberFlow(ev.flow, ev.status || undefined);
   const proofMode = ev.flow?.proof?.mode || ev.status?.mode || "unconfigured";
@@ -58,11 +58,11 @@ export function Timeline() {
     mkStep(liveFiberFlow ? "FIBER RPC" : "FIBER METHOD", liveFiberFlow ? "send_payment (invoice)" : "Live Fiber required", `payment_hash: ${short(paymentHash)}`, hasPhase(ev.phase, "payment_settled"), "ActorFiber", eventTime(events, liveFiberFlow ? "send_payment" : "payment proof")),
     mkStep(liveFiberFlow ? "SETTLEMENT PROOF" : "METHOD VERIFIER", liveFiberFlow ? "Settlement observed" : "No payment executed", liveFiberFlow ? "settlement: success" : `mode: ${proofMode}`, hasPhase(ev.phase, "payment_settled"), "ActorFiber", eventTime(events, liveFiberFlow ? "payment proof returned" : "live Fiber")),
     mkStep("CLIENT", "Retry with Authorization: Payment", `payment_hash: ${short(paymentHash)}`, hasPhase(ev.phase, "receipt_returned"), "ActorClient", eventTime(events, "retry")),
-    mkStep("SERVER", "Verify Payment & Receipt", `receipt_id: ${short(receiptId)}`, hasPhase(ev.phase, "receipt_returned"), "ActorServer", eventTime(events, "payment verified")),
-    mkStep("SERVER", "Payment-Receipt Returned", `receipt_id: ${short(receiptId)}`, hasPhase(ev.phase, "receipt_returned"), "ActorServer", eventTime(events, "service executed")),
+    mkStep("SERVER", "Verify Payment & Receipt", `receipt_reference: ${short(receiptReference)}`, hasPhase(ev.phase, "receipt_returned"), "ActorServer", eventTime(events, "payment verified")),
+    mkStep("SERVER", "Payment-Receipt Returned", `challenge_id: ${short(ev.flow?.receipt?.challengeId)}`, hasPhase(ev.phase, "receipt_returned"), "ActorServer", eventTime(events, "service executed")),
     mkStep("PROTECTED API", "Service executed", "HTTP 200 OK", hasPhase(ev.phase, "receipt_returned"), "ActorProtectedApi", eventTime(events, "service executed")),
     {
-      actor: "CLIENT", label: "Replay same credential", snippet: `receipt_id: ${short(receiptId)}`,
+      actor: "CLIENT", label: "Replay same credential", snippet: `challenge_id: ${short(ev.flow?.receipt?.challengeId)}`,
       status: hasPhase(ev.phase, "replay_rejected") ? "rejected" : ev.busy && ev.phase === ("replay_attempted" as never) ? "running" : "idle",
       statusLabel: hasPhase(ev.phase, "replay_rejected") ? "replay rejected" : "idle",
       time: eventTime(events, "replay rejected"), icon: "ActorClient",
@@ -190,13 +190,12 @@ export function FlowView() {
             {endpoints.filter((e) => e.path !== ev.selected).map((ep) => (
               <button key={ep.path} className="scenario-btn scenario" disabled={ev.busy} onClick={async () => {
                 ev.setSelected(ep.path);
-                if (ep.price.value) ev.setAmountCkb(ep.price.value);
-                if (ep.fiberAmountShannons) ev.setAmountShannons(ep.fiberAmountShannons);
+                ev.setAmountShannons(ep.charge.amount);
                 await ev.resetEvidenceFlow("resource selected");
               }}>
                 <Icon name="RequestScenario" />
                 <span>{ep.label}</span>
-                <span>{ep.price.display}</span>
+                <span>{ep.charge.display}</span>
               </button>
             ))}
           </div>

@@ -1,61 +1,68 @@
 {
   "generated_by": "pnpm exec fiber-paid-http vectors generate",
-  "generated_at": "2026-06-24T00:00:00.000Z",
+  "generated_at": "2026-07-13T09:03:41.231Z",
   "attacks": [
     {
       "attack": "replay",
       "expected_rejection": "replay",
-      "implemented_test": "tests/integration/full-flow.test.ts and test-vectors/attack.replay.json",
+      "implemented_test": "test-vectors/attack.replay.json",
       "vector_file": "test-vectors/attack.replay.json",
       "status": "covered"
     },
     {
       "attack": "wrong resource",
       "expected_rejection": "wrong-resource",
-      "implemented_test": "tests/integration/full-flow.test.ts and test-vectors/attack.wrong-resource.json",
+      "implemented_test": "test-vectors/attack.wrong-resource.json",
       "vector_file": "test-vectors/attack.wrong-resource.json",
       "status": "covered"
     },
     {
       "attack": "wrong amount",
       "expected_rejection": "wrong-amount",
-      "implemented_test": "tests/unit/middleware.test.ts and test-vectors/attack.wrong-amount.json",
+      "implemented_test": "test-vectors/attack.wrong-amount.json",
       "vector_file": "test-vectors/attack.wrong-amount.json",
       "status": "covered"
     },
     {
       "attack": "wrong method",
       "expected_rejection": "wrong-method",
-      "implemented_test": "tests/unit/middleware.test.ts and test-vectors/attack.wrong-method.json",
+      "implemented_test": "test-vectors/attack.wrong-method.json",
       "vector_file": "test-vectors/attack.wrong-method.json",
       "status": "covered"
     },
     {
       "attack": "expired challenge",
       "expected_rejection": "expired-challenge",
-      "implemented_test": "tests/integration/full-flow.test.ts, tests/unit/middleware.test.ts, and test-vectors/attack.expired-challenge.json",
+      "implemented_test": "test-vectors/attack.expired-challenge.json",
       "vector_file": "test-vectors/attack.expired-challenge.json",
       "status": "covered"
     },
     {
-      "attack": "tampered receipt",
-      "expected_rejection": "bad-receipt-signature",
-      "implemented_test": "test-vectors/attack.tampered-receipt.json",
-      "vector_file": "test-vectors/attack.tampered-receipt.json",
+      "attack": "receipt on non-2xx",
+      "expected_rejection": "receipt-on-error-response",
+      "implemented_test": "test-vectors/attack.receipt-on-error.json",
+      "vector_file": "test-vectors/attack.receipt-on-error.json",
       "status": "covered"
     },
     {
       "attack": "F-L402 wrong preimage",
       "expected_rejection": "wrong-preimage",
-      "implemented_test": "tests/unit/fl402.test.ts and test-vectors/attack.fl402-wrong-preimage.json",
+      "implemented_test": "test-vectors/attack.fl402-wrong-preimage.json",
       "vector_file": "test-vectors/attack.fl402-wrong-preimage.json",
       "status": "covered"
     },
     {
-      "attack": "F-L402 tampered macaroon",
-      "expected_rejection": "bad-fl402-macaroon-signature",
-      "implemented_test": "tests/unit/fl402.test.ts and test-vectors/attack.fl402-tampered-macaroon.json",
-      "vector_file": "test-vectors/attack.fl402-tampered-macaroon.json",
+      "attack": "F-L402 tampered capability",
+      "expected_rejection": "bad-fl402-capability-signature",
+      "implemented_test": "test-vectors/attack.fl402-tampered-capability.json",
+      "vector_file": "test-vectors/attack.fl402-tampered-capability.json",
+      "status": "covered"
+    },
+    {
+      "attack": "x402 changed accepted requirement",
+      "expected_rejection": "x402-fiber-requirement-mismatch",
+      "implemented_test": "test-vectors/attack.x402-tampered-requirement.json",
+      "vector_file": "test-vectors/attack.x402-tampered-requirement.json",
       "status": "covered"
     }
   ]

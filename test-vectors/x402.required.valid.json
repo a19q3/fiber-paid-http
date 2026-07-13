@@ -1,0 +1,56 @@
+{
+  "input": {
+    "case": "x402.required",
+    "payment_required": {
+      "x402Version": 2,
+      "resource": {
+        "url": "https://conformance.example.com/paid/weather"
+      },
+      "accepts": [
+        {
+          "scheme": "exact",
+          "network": "fiber:testnet",
+          "amount": "1000",
+          "asset": "fiber:ckb",
+          "payTo": "03fiberconformancepayee",
+          "maxTimeoutSeconds": 120,
+          "extra": {
+            "fiber": {
+              "profile": "fiber-charge-v1",
+              "currency": "ckb",
+              "description": "Conformance charge",
+              "invoice": "fibt1qconformancepayment0001",
+              "paymentHash": "0xabababababababababababababababababababababababababababababababab",
+              "hashAlgorithm": "ckb_hash"
+            }
+          }
+        }
+      ],
+      "extensions": {
+        "fiber": {
+          "profile": "fiber-charge-v1",
+          "challengeId": "oISllrpItMxR5hXIPpbShsi8o9-HYE7T56NVKOfkTBI",
+          "expires": "2030-01-01T00:00:00.000Z"
+        }
+      }
+    },
+    "resource": {
+      "method": "GET",
+      "url": "https://conformance.example.com/paid/weather"
+    },
+    "realm": "conformance.example.com",
+    "secret": "fiber-paid-http-conformance-secret",
+    "expires_at": "2030-01-01T00:00:00.000Z",
+    "expected_challenge": {
+      "id": "oISllrpItMxR5hXIPpbShsi8o9-HYE7T56NVKOfkTBI",
+      "realm": "conformance.example.com",
+      "method": "fiber",
+      "intent": "charge",
+      "request": "eyJhbW91bnQiOiIxMDAwIiwiY3VycmVuY3kiOiJja2IiLCJkZXNjcmlwdGlvbiI6IkNvbmZvcm1hbmNlIGNoYXJnZSIsIm1ldGhvZERldGFpbHMiOnsiaGFzaEFsZ29yaXRobSI6ImNrYl9oYXNoIiwiaW52b2ljZSI6ImZpYnQxcWNvbmZvcm1hbmNlcGF5bWVudDAwMDEiLCJuZXR3b3JrIjoidGVzdG5ldCIsInBheW1lbnRIYXNoIjoiMHhhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiIn0sInJlY2lwaWVudCI6IjAzZmliZXJjb25mb3JtYW5jZXBheWVlIn0",
+      "expires": "2030-01-01T00:00:00.000Z"
+    }
+  },
+  "expected_canonical_hash": "cfeed4cf0fb982877bfaf497a73fadd973028bd9b8301f4900a8b61f6c47dcab",
+  "expected_verification_result": "accepted",
+  "notes": "x402 v2 exact/Fiber requirement normalization."
+}

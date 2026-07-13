@@ -3,9 +3,7 @@ import { dirname, resolve } from "node:path";
 import { mkdir } from "node:fs/promises";
 
 export const DEFAULT_SECRET_ENV = "FIBER_PAID_HTTP_SECRET";
-export const LEGACY_SECRET_ENV = "FIBER_MPP_SECRET";
 export const DEFAULT_FL402_ROOT_KEY_ENV = "FIBER_PAID_HTTP_FL402_ROOT_KEY";
-export const LEGACY_FL402_ROOT_KEY_ENV = "FIBER_MPP_FL402_ROOT_KEY";
 
 export type BootstrapRole = "payer" | "payee" | "gateway";
 
@@ -14,14 +12,17 @@ export type GatewayConfig = {
   listen?: string;
   port?: number;
   server_id?: string;
+  realm?: string;
+  public_base_url?: string;
+  allow_insecure_http?: boolean;
   upstream?: string;
   storage?: string;
-  price?: {
-    value: string;
+  charge?: {
+    amount: string;
     currency: string;
-    display?: string;
+    description?: string;
+    external_id?: string;
   };
-  methods?: string[];
   secret_env?: string;
   previous_secret_envs?: string[];
   cors?: {
@@ -37,6 +38,8 @@ export type GatewayConfig = {
     readiness_path?: string;
     metrics_path?: string;
     request_body_limit_bytes?: number;
+    upstream_response_limit_bytes?: number;
+    upstream_timeout_ms?: number;
     shutdown_grace_ms?: number;
     log_redaction?: {
       enabled?: boolean;
@@ -71,7 +74,7 @@ export type GatewayConfig = {
   };
 };
 
-type GatewayPrice = NonNullable<GatewayConfig["price"]>;
+type GatewayCharge = NonNullable<GatewayConfig["charge"]>;
 
 export type GatewayCorsPolicy = {
   allowedOrigins: string[];
@@ -87,6 +90,8 @@ export type GatewayOperations = {
   readinessPath: string;
   metricsPath: string;
   requestBodyLimitBytes: number;
+  upstreamResponseLimitBytes: number;
+  upstreamTimeoutMs: number;
   shutdownGraceMs: number;
   logRedaction: {
     enabled: boolean;
@@ -101,8 +106,8 @@ export type GatewayOperations = {
 export type GatewayCliOptions = {
   config?: GatewayConfig;
   upstream?: string;
-  priceCkb?: string;
-  methods?: string;
+  amount?: string;
+  currency?: string;
   storage?: string;
   port?: string;
   serverId?: string;
@@ -110,8 +115,10 @@ export type GatewayCliOptions = {
 
 export type ResolvedGatewayConfig = {
   upstream: string;
-  price: { value: string; currency: string; display?: string };
-  methods: string[];
+  realm: string;
+  publicBaseUrl: string;
+  allowInsecureHttp: boolean;
+  charge: GatewayCharge;
   storage: string;
   port: number;
   serverId: string;
@@ -159,14 +166,15 @@ export function gatewayConfigTemplate(): GatewayConfig {
     role: "gateway",
     listen: "127.0.0.1:8790",
     server_id: "fiber-paid-http-gateway",
+    realm: "paid.example.com",
+    public_base_url: "https://paid.example.com",
     upstream: "http://localhost:8080",
     storage: "sqlite://./fiber-paid-http.sqlite",
-    price: {
-      value: "1",
+    charge: {
+      amount: "100000000",
       currency: "CKB",
-      display: "1 CKB"
+      description: "Paid HTTP request"
     },
-    methods: ["fiber"],
     secret_env: DEFAULT_SECRET_ENV,
     previous_secret_envs: [],
     cors: {
@@ -182,6 +190,8 @@ export function gatewayConfigTemplate(): GatewayConfig {
       readiness_path: "/readyz",
       metrics_path: "/metrics",
       request_body_limit_bytes: 1048576,
+      upstream_response_limit_bytes: 8388608,
+      upstream_timeout_ms: 30000,
       shutdown_grace_ms: 10000,
       log_redaction: {
         enabled: true,
@@ -221,12 +231,6 @@ export function parseGatewayConfig(value: unknown): GatewayConfig {
 }
 
 export function readPaidHttpEnv(env: NodeJS.ProcessEnv, name: string): string | undefined {
-  if (name === DEFAULT_SECRET_ENV) {
-    return env[DEFAULT_SECRET_ENV] ?? env[LEGACY_SECRET_ENV];
-  }
-  if (name === DEFAULT_FL402_ROOT_KEY_ENV) {
-    return env[DEFAULT_FL402_ROOT_KEY_ENV] ?? env[LEGACY_FL402_ROOT_KEY_ENV];
-  }
   return env[name];
 }
 
@@ -235,12 +239,12 @@ export function resolveGatewayConfig(options: GatewayCliOptions, env: NodeJS.Pro
   const fiberEnv = fiberEnvFromGatewayConfig(config, env);
   const storage = normalizeStorageUri(options.storage ?? config?.storage ?? "sqlite://./fiber-paid-http.sqlite");
   const serverId = options.serverId ?? config?.server_id ?? "fiber-paid-http-gateway";
-  const price = options.priceCkb
-    ? { value: options.priceCkb, currency: "CKB", display: `${options.priceCkb} CKB` }
-    : config?.price ?? { value: "1", currency: "CKB", display: "1 CKB" };
-  const methods = options.methods
-    ? options.methods.split(",").map((method) => method.trim()).filter(Boolean)
-    : config?.methods ?? ["fiber"];
+  const realm = config?.realm;
+  const publicBaseUrl = config?.public_base_url;
+  const charge = config?.charge ?? (options.amount ? {
+    amount: options.amount,
+    currency: options.currency ?? "CKB"
+  } : undefined);
   const upstream = options.upstream ?? config?.upstream;
   const port = parsePort(options.port, config);
   const secretEnv = config?.secret_env ?? DEFAULT_SECRET_ENV;
@@ -258,14 +262,16 @@ export function resolveGatewayConfig(options: GatewayCliOptions, env: NodeJS.Pro
     secret,
     storage,
     upstream,
-    methods,
+    realm,
+    publicBaseUrl,
+    allowInsecureHttp: config?.allow_insecure_http,
     secretEnv,
     previousSecretEnvs: previousSecretResolution.secretEnvs,
     previousSecrets: previousSecretResolution.secrets,
     missingPreviousSecretEnvs: previousSecretResolution.missing,
     shortPreviousSecretEnvs: previousSecretResolution.short,
     literalRpcAuth: gatewayConfigHasLiteralRpcAuth(config),
-    price,
+    charge,
     fl402Configured,
     fl402RootKeyEnv,
     fl402RootKey,
@@ -278,8 +284,10 @@ export function resolveGatewayConfig(options: GatewayCliOptions, env: NodeJS.Pro
   }
   return {
     upstream: upstream!,
-    price,
-    methods,
+    realm: realm!,
+    publicBaseUrl: publicBaseUrl!,
+    allowInsecureHttp: config?.allow_insecure_http === true,
+    charge: charge!,
     storage,
     port,
     serverId,
@@ -307,14 +315,16 @@ export function buildBootstrapReport(
     secret?: string;
     storage?: string;
     upstream?: string;
-    methods?: string[];
+    realm?: string;
+    publicBaseUrl?: string;
+    allowInsecureHttp?: boolean;
     secretEnv?: string;
     previousSecretEnvs?: string[];
     previousSecrets?: string[];
     missingPreviousSecretEnvs?: string[];
     shortPreviousSecretEnvs?: string[];
     literalRpcAuth?: boolean;
-    price?: GatewayPrice;
+    charge?: GatewayCharge;
     fl402Configured?: boolean;
     fl402RootKeyEnv?: string;
     fl402RootKey?: string;
@@ -357,8 +367,10 @@ export function buildBootstrapReport(
     checks.secret_previous_env_count = input.previousSecretEnvs?.length ?? 0;
     checks.secret_previous_present_count = input.previousSecrets?.length ?? 0;
     checks.rpc_auth_from_env = !input.literalRpcAuth;
-    checks.methods_fiber_only = input.methods?.every((method) => method === "fiber") ?? true;
-    checks.price_currency = input.price?.currency ?? null;
+    checks.realm = input.realm ?? null;
+    checks.public_base_url = input.publicBaseUrl ?? null;
+    checks.charge_amount = input.charge?.amount ?? null;
+    checks.charge_currency = input.charge?.currency ?? null;
     checks.fl402_enabled = input.fl402Configured ?? false;
     checks.fl402_root_key_env = input.fl402Configured ? input.fl402RootKeyEnv ?? DEFAULT_FL402_ROOT_KEY_ENV : null;
     checks.fl402_hash_algorithm = input.fl402Configured ? input.fl402HashAlgorithm ?? "ckb_hash" : null;
@@ -366,6 +378,8 @@ export function buildBootstrapReport(
     checks.rate_limit_enabled = Boolean(input.operations && input.operations.rateLimit.maxRequests > 0 && input.operations.rateLimit.windowMs > 0);
     checks.log_redaction_enabled = input.operations?.logRedaction.enabled ?? false;
     checks.request_body_limit_bytes = input.operations?.requestBodyLimitBytes ?? null;
+    checks.upstream_response_limit_bytes = input.operations?.upstreamResponseLimitBytes ?? null;
+    checks.upstream_timeout_ms = input.operations?.upstreamTimeoutMs ?? null;
     if (!input.upstream) {
       blockers.push("set an upstream URL with --upstream or gateway config upstream");
     }
@@ -384,15 +398,32 @@ export function buildBootstrapReport(
     if (input.literalRpcAuth) {
       blockers.push("Fiber RPC auth must be provided through *_rpc_auth_env or process env, not literal config values");
     }
-    if (input.methods && input.methods.some((method) => method !== "fiber")) {
-      blockers.push("gateway methods must be fiber only");
+    if (!input.realm?.trim()) {
+      blockers.push("set gateway realm");
     }
-    if (input.price && input.price.currency !== "CKB") {
-      blockers.push("gateway price currency must be CKB");
+    let publicUrl: URL | undefined;
+    try {
+      publicUrl = input.publicBaseUrl ? new URL(input.publicBaseUrl) : undefined;
+    } catch {
+      blockers.push("gateway public_base_url must be an absolute URL");
+    }
+    if (!publicUrl) {
+      blockers.push("set gateway public_base_url");
+    } else {
+      const loopback = publicUrl.hostname === "localhost" || publicUrl.hostname === "127.0.0.1" || publicUrl.hostname === "[::1]";
+      if (publicUrl.protocol !== "https:" && !(publicUrl.protocol === "http:" && loopback && input.allowInsecureHttp === true)) {
+        blockers.push("gateway public_base_url must use https; loopback http must be explicitly enabled");
+      }
+      if (publicUrl.username || publicUrl.password || publicUrl.pathname !== "/" || publicUrl.search || publicUrl.hash) {
+        blockers.push("gateway public_base_url must be an origin without credentials, path, query, or fragment");
+      }
+    }
+    if (!input.charge || !/^[1-9]\d*$/.test(input.charge.amount) || !input.charge.currency.trim()) {
+      blockers.push("gateway charge requires a positive integer amount and currency");
     }
     if (input.fl402Configured) {
-      if (!input.fl402RootKey || input.fl402RootKey.length < 16) {
-        blockers.push(`set ${input.fl402RootKeyEnv ?? DEFAULT_FL402_ROOT_KEY_ENV} to an F-L402 root key of at least 16 characters`);
+      if (!input.fl402RootKey || input.fl402RootKey.length < 32) {
+        blockers.push(`set ${input.fl402RootKeyEnv ?? DEFAULT_FL402_ROOT_KEY_ENV} to an F-L402 root key of at least 32 characters`);
       }
       if (input.fl402HashAlgorithm !== "ckb_hash" && input.fl402HashAlgorithm !== "sha256") {
         blockers.push("gateway fl402.hash_algorithm must be ckb_hash or sha256");
@@ -407,6 +438,12 @@ export function buildBootstrapReport(
       }
       if (input.operations.requestBodyLimitBytes < 1024) {
         blockers.push("gateway request_body_limit_bytes must be at least 1024");
+      }
+      if (input.operations.upstreamResponseLimitBytes < 1024) {
+        blockers.push("gateway upstream_response_limit_bytes must be at least 1024");
+      }
+      if (input.operations.upstreamTimeoutMs < 1) {
+        blockers.push("gateway upstream_timeout_ms must be positive");
       }
       if (input.operations.shutdownGraceMs < 1000) {
         blockers.push("gateway shutdown_grace_ms must be at least 1000");
@@ -509,6 +546,8 @@ export function resolveGatewayOperations(config: GatewayConfig | undefined): Gat
     readinessPath: config?.operations?.readiness_path ?? "/readyz",
     metricsPath: config?.operations?.metrics_path ?? "/metrics",
     requestBodyLimitBytes: config?.operations?.request_body_limit_bytes ?? 1_048_576,
+    upstreamResponseLimitBytes: config?.operations?.upstream_response_limit_bytes ?? 8_388_608,
+    upstreamTimeoutMs: config?.operations?.upstream_timeout_ms ?? 30_000,
     shutdownGraceMs: config?.operations?.shutdown_grace_ms ?? 10_000,
     logRedaction: {
       enabled: config?.operations?.log_redaction?.enabled ?? true,

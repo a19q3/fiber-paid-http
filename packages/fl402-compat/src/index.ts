@@ -1,131 +1,136 @@
-import { hmacHex } from "@fiber-paid-http/core";
+import { createHash, randomBytes } from "node:crypto";
 import {
+  FiberChargeRequestSchema,
   PaymentChallengeSchema,
   PaymentCredentialSchema,
   base64urlDecode,
   base64urlEncode,
+  bindChallengeId,
   canonicalJson,
-  randomId,
-  randomNonce,
+  decodeFiberChargeRequest,
+  encodeFiberChargeRequest,
+  hmacHex,
   resourceHash,
-  sha256Hex,
   timingSafeEqualString,
   type PaymentChallenge,
   type PaymentCredential,
-  type ResourceDescriptor,
-  type SignedPaymentChallenge
+  type ResourceDescriptor
 } from "@fiber-paid-http/core";
 import { blake2b } from "@noble/hashes/blake2.js";
 import { z } from "zod";
 
 export const FL402_AUTH_SCHEME = "L402";
-export const FL402_MACAROON_PREFIX = "fl402-macaroon-v1";
+export const FL402_CAPABILITY_PREFIX = "fiber-l402-capability-v1";
 
 const Hex32Schema = z.string().regex(/^(0x)?[a-f0-9]{64}$/i);
 
 export const FL402HashAlgorithmSchema = z.enum(["ckb_hash", "sha256"]);
 
 export const FL402CaveatsSchema = z.object({
-  challengeId: z.string().min(8).optional(),
+  challengeId: z.string().min(1),
   resourceHash: z.string().min(32),
   method: z.string().min(1),
   url: z.string().min(1),
-  amount: z.string().regex(/^\d+$/),
+  amount: z.string().regex(/^[1-9]\d*$/),
   currency: z.string().min(1),
   paymentHash: Hex32Schema,
   invoice: z.string().min(1),
-  expiresAt: z.string().datetime(),
+  expiresAt: z.string().datetime({ offset: true }),
   issuer: z.string().optional(),
   fiberNodeId: z.string().optional(),
+  network: z.enum(["mainnet", "testnet", "dev"]).default("dev"),
   hashAlgorithm: FL402HashAlgorithmSchema.default("ckb_hash")
 });
 
-export const FL402MacaroonPayloadSchema = z.object({
-  domain: z.literal("fl402-macaroon-v1"),
+export const FL402CapabilityPayloadSchema = z.object({
+  domain: z.literal("fiber-l402-capability-v1"),
   caveats: FL402CaveatsSchema,
   nonce: z.string().min(16),
-  issuedAt: z.string().datetime()
+  issuedAt: z.string().datetime({ offset: true })
 });
 
 export const FL402ChallengeSchema = z.object({
-  challengeId: z.string().min(8).optional(),
-  macaroon: z.string().min(1),
+  challengeId: z.string().min(1),
+  capability: z.string().min(1),
   invoice: z.string().min(1),
   paymentHash: Hex32Schema,
-  amount: z.string().regex(/^\d+$/),
-  currency: z.string().default("CKB"),
-  expiresAt: z.string().datetime(),
+  amount: z.string().regex(/^[1-9]\d*$/),
+  currency: z.string().default("ckb"),
+  expiresAt: z.string().datetime({ offset: true }),
   resource: z.string().optional(),
-  resourceHash: z.string().min(32).optional(),
+  resourceHash: z.string().min(32),
   issuer: z.string().optional(),
   fiberNodeId: z.string().optional(),
+  network: z.enum(["mainnet", "testnet", "dev"]).default("dev"),
   hashAlgorithm: FL402HashAlgorithmSchema.default("ckb_hash")
 });
 
 export const FL402ProofSchema = z.object({
-  macaroon: z.string().min(1),
+  capability: z.string().min(1),
   preimage: Hex32Schema,
-  invoice: z.string().optional(),
   paymentHash: Hex32Schema,
-  amountShannons: z.string().regex(/^\d+$/).optional(),
-  mode: z.enum(["local", "testnet"]).default("local"),
-  status: z.string().default("settled"),
-  observedAt: z.string().datetime().optional(),
-  hashAlgorithm: FL402HashAlgorithmSchema.default("ckb_hash"),
-  evidence: z.unknown().optional()
+  hashAlgorithm: FL402HashAlgorithmSchema.default("ckb_hash")
 });
 
 export type FL402HashAlgorithm = z.infer<typeof FL402HashAlgorithmSchema>;
 export type FL402Caveats = z.infer<typeof FL402CaveatsSchema>;
-export type FL402MacaroonPayload = z.infer<typeof FL402MacaroonPayloadSchema>;
+export type FL402CapabilityPayload = z.infer<typeof FL402CapabilityPayloadSchema>;
 export type FL402Challenge = z.infer<typeof FL402ChallengeSchema>;
 export type FL402Proof = z.infer<typeof FL402ProofSchema>;
 
-export function issueFl402Macaroon(input: {
+export function issueFl402Capability(input: {
   rootKey: string;
   caveats: FL402Caveats;
   nonce?: string;
   issuedAt?: string;
 }): string {
-  const payload = FL402MacaroonPayloadSchema.parse({
-    domain: "fl402-macaroon-v1",
+  assertFl402RootKey(input.rootKey);
+  const payload = FL402CapabilityPayloadSchema.parse({
+    domain: FL402_CAPABILITY_PREFIX,
     caveats: input.caveats,
-    nonce: input.nonce ?? randomNonce(),
+    nonce: input.nonce ?? randomBytes(16).toString("hex"),
     issuedAt: input.issuedAt ?? new Date().toISOString()
   });
   const encoded = base64urlEncode(canonicalJson(payload));
   const signature = hmacHex(input.rootKey, payload);
-  return `${FL402_MACAROON_PREFIX}.${encoded}.${signature}`;
+  return `${FL402_CAPABILITY_PREFIX}.${encoded}.${signature}`;
 }
 
-export function decodeFl402Macaroon(macaroon: string): {
-  payload: FL402MacaroonPayload;
+export function decodeFl402Capability(capability: string): {
+  payload: FL402CapabilityPayload;
   signature: string;
 } {
-  const [prefix, encoded, signature, extra] = macaroon.split(".");
-  if (prefix !== FL402_MACAROON_PREFIX || !encoded || !signature || extra) {
-    throw new Error("invalid-fl402-macaroon");
+  const [prefix, encoded, signature, extra] = capability.split(".");
+  if (prefix !== FL402_CAPABILITY_PREFIX || !encoded || !signature || extra) {
+    throw new Error("invalid-fl402-capability");
+  }
+  const bytes = base64urlDecode(encoded);
+  const payload = FL402CapabilityPayloadSchema.parse(JSON.parse(bytes.toString("utf8")));
+  if (base64urlEncode(canonicalJson(payload)) !== encoded) {
+    throw new Error("invalid-fl402-capability");
   }
   return {
-    payload: FL402MacaroonPayloadSchema.parse(JSON.parse(base64urlDecode(encoded).toString("utf8"))),
+    payload,
     signature
   };
 }
 
-export function verifyFl402Macaroon(input: {
-  macaroon: string;
+export function verifyFl402Capability(input: {
+  capability: string;
   rootKey: string;
   now?: string;
-}): FL402MacaroonPayload {
-  const decoded = decodeFl402Macaroon(input.macaroon);
+}): FL402CapabilityPayload {
+  assertFl402RootKey(input.rootKey);
+  const decoded = decodeFl402Capability(input.capability);
   const expected = hmacHex(input.rootKey, decoded.payload);
   if (!timingSafeEqualString(expected, decoded.signature)) {
-    throw new Error("bad-fl402-macaroon-signature");
+    throw new Error("bad-fl402-capability-signature");
   }
   const nowMs = input.now ? new Date(input.now).getTime() : Date.now();
+  const issuedMs = new Date(decoded.payload.issuedAt).getTime();
   const expiresMs = new Date(decoded.payload.caveats.expiresAt).getTime();
-  if (Number.isNaN(expiresMs) || nowMs > expiresMs) {
-    throw new Error("expired-fl402-macaroon");
+  if (Number.isNaN(nowMs) || Number.isNaN(issuedMs) || Number.isNaN(expiresMs) || issuedMs > nowMs || nowMs > expiresMs) {
+    throw new Error("expired-fl402-capability");
   }
   return decoded.payload;
 }
@@ -138,9 +143,10 @@ export function issueFl402Challenge(input: {
   currency?: string;
   expiresAt: string;
   resource: ResourceDescriptor;
-  challengeId?: string;
+  challengeId: string;
   issuer?: string;
   fiberNodeId?: string;
+  network?: "mainnet" | "testnet" | "dev";
   hashAlgorithm?: FL402HashAlgorithm;
   nonce?: string;
   issuedAt?: string;
@@ -151,15 +157,16 @@ export function issueFl402Challenge(input: {
     method: input.resource.method,
     url: input.resource.url,
     amount: input.amount,
-    currency: input.currency ?? "CKB",
+    currency: input.currency ?? "ckb",
     paymentHash: input.paymentHash,
     invoice: input.invoice,
     expiresAt: input.expiresAt,
     issuer: input.issuer,
     fiberNodeId: input.fiberNodeId,
+    network: input.network ?? "dev",
     hashAlgorithm: input.hashAlgorithm ?? "ckb_hash"
   });
-  const macaroon = issueFl402Macaroon({
+  const capability = issueFl402Capability({
     rootKey: input.rootKey,
     caveats,
     nonce: input.nonce,
@@ -167,7 +174,7 @@ export function issueFl402Challenge(input: {
   });
   return FL402ChallengeSchema.parse({
     challengeId: input.challengeId,
-    macaroon,
+    capability,
     invoice: input.invoice,
     paymentHash: input.paymentHash,
     amount: input.amount,
@@ -177,6 +184,7 @@ export function issueFl402Challenge(input: {
     resourceHash: caveats.resourceHash,
     issuer: input.issuer,
     fiberNodeId: input.fiberNodeId,
+    network: caveats.network,
     hashAlgorithm: caveats.hashAlgorithm
   });
 }
@@ -186,39 +194,34 @@ export function verifyFl402Proof(input: {
   proof: FL402Proof;
   rootKey: string;
   now?: string;
-}): FL402MacaroonPayload {
+}): FL402CapabilityPayload {
   const challenge = FL402ChallengeSchema.parse(input.challenge);
   const proof = FL402ProofSchema.parse(input.proof);
-  if (challenge.macaroon !== proof.macaroon) {
-    throw new Error("fl402-macaroon-mismatch");
-  }
-  const payload = verifyFl402Macaroon({ macaroon: proof.macaroon, rootKey: input.rootKey, now: input.now });
+  if (challenge.capability !== proof.capability) throw new Error("fl402-capability-mismatch");
+  const payload = verifyFl402Capability({
+    capability: proof.capability,
+    rootKey: input.rootKey,
+    now: input.now
+  });
   const caveats = payload.caveats;
   const proofHash = hashPaymentPreimage(proof.preimage, proof.hashAlgorithm);
   const expectedHash = normalizeHex(caveats.paymentHash);
   if (normalizeHex(challenge.paymentHash) !== expectedHash || normalizeHex(proof.paymentHash) !== expectedHash) {
     throw new Error("wrong-payment-hash");
   }
-  if (normalizeHex(proofHash) !== expectedHash) {
-    throw new Error("wrong-preimage");
-  }
-  if (challenge.invoice !== caveats.invoice || proof.invoice && proof.invoice !== caveats.invoice) {
-    throw new Error("wrong-invoice");
-  }
-  if (challenge.amount !== caveats.amount || proof.amountShannons && proof.amountShannons !== caveats.amount) {
-    throw new Error("wrong-amount");
-  }
-  if (challenge.resourceHash && challenge.resourceHash !== caveats.resourceHash) {
-    throw new Error("wrong-resource");
-  }
-  if (challenge.challengeId && caveats.challengeId && challenge.challengeId !== caveats.challengeId) {
-    throw new Error("wrong-challenge");
-  }
+  if (normalizeHex(proofHash) !== expectedHash) throw new Error("wrong-preimage");
+  if (challenge.resourceHash !== caveats.resourceHash) throw new Error("wrong-resource");
+  if (challenge.resource !== caveats.url) throw new Error("wrong-resource");
+  if (challenge.challengeId !== caveats.challengeId) throw new Error("wrong-challenge");
+  if (challenge.invoice !== caveats.invoice) throw new Error("wrong-invoice");
+  if (challenge.amount !== caveats.amount) throw new Error("wrong-amount");
+  if (challenge.currency !== caveats.currency) throw new Error("wrong-currency");
+  if (challenge.expiresAt !== caveats.expiresAt) throw new Error("wrong-expiry");
+  if (challenge.issuer !== caveats.issuer) throw new Error("wrong-issuer");
+  if (challenge.fiberNodeId !== caveats.fiberNodeId) throw new Error("wrong-recipient");
+  if (challenge.network !== caveats.network) throw new Error("wrong-network");
   if (challenge.hashAlgorithm !== caveats.hashAlgorithm || proof.hashAlgorithm !== caveats.hashAlgorithm) {
     throw new Error("wrong-hash-algorithm");
-  }
-  if (proof.status !== "settled") {
-    throw new Error("fiber-payment-not-settled");
   }
   return payload;
 }
@@ -226,103 +229,50 @@ export function verifyFl402Proof(input: {
 export function fl402ChallengeToMpp(input: {
   fl402: FL402Challenge;
   resource: ResourceDescriptor;
-  serverId: string;
-  challengeId?: string;
-  issuedAt?: string;
-  amountValue?: string;
-  amountCurrency?: string;
+  realm: string;
+  secret: string;
 }): PaymentChallenge {
   const fl402 = FL402ChallengeSchema.parse(input.fl402);
-  const issuedAt = input.issuedAt ?? new Date().toISOString();
-  return PaymentChallengeSchema.parse({
-    domain: "fiber-paid-http-challenge-v1",
-    challengeId: input.challengeId ?? randomId("chal"),
-    resource: input.resource,
-    amount: {
-      value: input.amountValue ?? fl402.amount,
-      currency: input.amountCurrency ?? fl402.currency
-    },
-    methods: [
-      {
-        method: "fiber",
-        intent: "charge",
-        asset: fl402.currency,
-        amountShannons: fl402.amount,
-        paymentHash: fl402.paymentHash,
-        invoice: fl402.invoice,
-        fiberNodeId: fl402.fiberNodeId,
-        fiberRpcLabel: "fl402-compat",
-        expiresAt: fl402.expiresAt
-      }
-    ],
-    nonce: randomNonce(),
-    issuedAt,
-    expiresAt: fl402.expiresAt,
-    serverId: input.serverId,
-    audience: fl402.issuer,
-    maxUses: 1
+  const request = FiberChargeRequestSchema.parse({
+    amount: fl402.amount,
+    currency: fl402.currency,
+    recipient: fl402.fiberNodeId,
+    methodDetails: {
+      invoice: fl402.invoice,
+      paymentHash: fl402.paymentHash,
+      network: fl402.network,
+      hashAlgorithm: fl402.hashAlgorithm
+    }
   });
+  const unbound = PaymentChallengeSchema.parse({
+    id: "pending",
+    realm: input.realm,
+    method: "fiber",
+    intent: "charge",
+    request: encodeFiberChargeRequest(request),
+    expires: fl402.expiresAt,
+    digest: input.resource.digest
+  });
+  return PaymentChallengeSchema.parse({ ...unbound, id: bindChallengeId(unbound, input.secret) });
 }
 
 export function fl402ProofToCredential(input: {
   proof: FL402Proof;
-  challengeId: string;
-  resourceHash: string;
-  submittedAt?: string;
+  challenge: PaymentChallenge;
 }): PaymentCredential {
   const proof = FL402ProofSchema.parse(input.proof);
-  return PaymentCredentialSchema.parse({
-    domain: "fiber-paid-http-credential-v1",
-    challengeId: input.challengeId,
-    method: "fiber",
-    resourceHash: input.resourceHash,
-    paymentProof: {
-      kind: "fiber-payment-proof-v1",
-      mode: proof.mode,
-      paymentHash: proof.paymentHash,
-      invoice: proof.invoice,
-      amountShannons: proof.amountShannons,
-      status: proof.status,
-      observedAt: proof.observedAt ?? new Date().toISOString(),
-      evidence: {
-        fl402Macaroon: proof.macaroon,
-        fl402PreimageHash: hashPaymentPreimage(proof.preimage, proof.hashAlgorithm),
-        fl402HashAlgorithm: proof.hashAlgorithm,
-        fl402Evidence: proof.evidence
-      }
-    },
-    submittedAt: input.submittedAt ?? new Date().toISOString()
-  });
-}
-
-export function signedChallengeToFl402Body(input: {
-  signed: SignedPaymentChallenge;
-  rootKey: string;
-  hashAlgorithm?: FL402HashAlgorithm;
-}): FL402Challenge {
-  const fiber = input.signed.challenge.methods.find((method) => method.method === "fiber");
-  if (!fiber || fiber.method !== "fiber" || !fiber.invoice || !fiber.amountShannons) {
-    throw new Error("Signed challenge does not contain a complete Fiber method");
+  const challenge = PaymentChallengeSchema.parse(input.challenge);
+  const request = decodeFiberChargeRequest(challenge.request);
+  if (normalizeHex(proof.paymentHash) !== normalizeHex(request.methodDetails.paymentHash)) {
+    throw new Error("wrong-payment-hash");
   }
-  return issueFl402Challenge({
-    rootKey: input.rootKey,
-    invoice: fiber.invoice,
-    paymentHash: fiber.paymentHash,
-    amount: fiber.amountShannons,
-    currency: fiber.asset,
-    expiresAt: fiber.expiresAt,
-    resource: input.signed.challenge.resource,
-    challengeId: input.signed.challenge.challengeId,
-    issuer: input.signed.challenge.serverId,
-    fiberNodeId: fiber.fiberNodeId,
-    hashAlgorithm: input.hashAlgorithm
-  });
+  return PaymentCredentialSchema.parse({ challenge, payload: { paymentHash: proof.paymentHash } });
 }
 
 export function buildWwwAuthenticateL402Header(challenge: FL402Challenge): string {
   const fl402 = FL402ChallengeSchema.parse(challenge);
   return [
-    `${FL402_AUTH_SCHEME} macaroon="${fl402.macaroon}"`,
+    `${FL402_AUTH_SCHEME} capability="${fl402.capability}"`,
     `invoice="${fl402.invoice}"`,
     `payment_hash="${fl402.paymentHash}"`,
     `amount="${fl402.amount}"`,
@@ -330,50 +280,38 @@ export function buildWwwAuthenticateL402Header(challenge: FL402Challenge): strin
   ].join(", ");
 }
 
-export function buildAuthorizationL402Header(proof: Pick<FL402Proof, "macaroon" | "preimage">): string {
-  return `${FL402_AUTH_SCHEME} ${proof.macaroon}:${proof.preimage}`;
+export function buildAuthorizationL402Header(proof: Pick<FL402Proof, "capability" | "preimage">): string {
+  return `${FL402_AUTH_SCHEME} ${proof.capability}:${normalizeHex(proof.preimage)}`;
 }
 
-export function parseAuthorizationL402Header(header: string | null): Pick<FL402Proof, "macaroon" | "preimage"> | null {
-  if (!header) {
-    return null;
-  }
+export function parseAuthorizationL402Header(
+  header: string | null
+): Pick<FL402Proof, "capability" | "preimage"> | null {
+  if (!header) return null;
   const [scheme, credentials] = header.trim().split(/\s+/, 2);
-  if (scheme !== FL402_AUTH_SCHEME || !credentials) {
-    return null;
-  }
-  const [macaroon, preimage, extra] = credentials.split(":");
-  if (!macaroon || !preimage || extra) {
-    return null;
-  }
-  Hex32Schema.parse(preimage);
-  return { macaroon, preimage };
+  if (scheme?.toLowerCase() !== FL402_AUTH_SCHEME.toLowerCase() || !credentials) return null;
+  const separator = credentials.lastIndexOf(":");
+  if (separator <= 0) throw new Error("invalid-fl402-authorization");
+  return {
+    capability: credentials.slice(0, separator),
+    preimage: Hex32Schema.parse(credentials.slice(separator + 1))
+  };
 }
 
 export function hashPaymentPreimage(preimage: string, algorithm: FL402HashAlgorithm): `0x${string}` {
-  const bytes = hexToBytes(preimage);
-  if (algorithm === "sha256") {
-    return `0x${sha256Hex(Buffer.from(bytes))}`;
+  const bytes = Buffer.from(normalizeHex(preimage).slice(2), "hex");
+  const digest = algorithm === "sha256"
+    ? createHash("sha256").update(bytes).digest()
+    : Buffer.from(blake2b(bytes, { dkLen: 32, personalization: Buffer.from("ckb-default-hash") }));
+  return `0x${digest.toString("hex")}`;
+}
+
+function normalizeHex(value: string): `0x${string}` {
+  return `0x${value.replace(/^0x/i, "").toLowerCase()}`;
+}
+
+function assertFl402RootKey(rootKey: string): void {
+  if (Buffer.byteLength(rootKey, "utf8") < 32) {
+    throw new Error("fl402-root-key-too-short");
   }
-  const digest = blake2b(bytes, {
-    dkLen: 32,
-    personalization: new TextEncoder().encode("ckb-default-hash")
-  });
-  return `0x${bytesToHex(digest)}`;
-}
-
-function normalizeHex(value: string): string {
-  return value.toLowerCase().replace(/^0x/, "");
-}
-
-function hexToBytes(value: string): Uint8Array {
-  const normalized = normalizeHex(value);
-  if (!/^[a-f0-9]{64}$/.test(normalized)) {
-    throw new Error("expected-32-byte-hex");
-  }
-  return Uint8Array.from(Buffer.from(normalized, "hex"));
-}
-
-function bytesToHex(bytes: Uint8Array): string {
-  return Buffer.from(bytes).toString("hex");
 }

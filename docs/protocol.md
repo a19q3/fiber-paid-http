@@ -1,68 +1,85 @@
 # Protocol
 
-Fiber Paid HTTP implements an MPP-style HTTP 402 flow.
+Fiber Paid HTTP follows the current MPP HTTP authentication draft with `method="fiber"` and `intent="charge"`.
 
-## PaymentChallenge
+## Challenge
 
-The challenge domain is `fiber-paid-http-challenge-v1`. It binds:
+The gateway returns `402 Payment Required`, `Cache-Control: no-store`, and a `WWW-Authenticate: Payment` header containing:
 
-- HTTP method, URL, optional body hash, and content type,
-- amount and currency,
-- available payment methods,
-- nonce,
-- issue and expiry timestamps,
-- server id,
-- max use count of 1.
-
-The server signs the canonical JSON challenge with HMAC-SHA256.
-
-## PaymentCredential
-
-The credential domain is `fiber-paid-http-credential-v1`. It binds:
-
-- challenge id,
-- selected method,
-- resource hash,
-- method-specific payment proof,
-- submission timestamp.
-
-Clients send credentials as:
-
-```text
-Authorization: Payment <base64url JSON credential>
+```json
+{
+  "id": "base64url-hmac-sha256",
+  "realm": "api.example.com",
+  "method": "fiber",
+  "intent": "charge",
+  "request": "base64url-jcs-charge-request",
+  "expires": "2026-07-13T12:00:00.000Z",
+  "digest": "sha-256=:base64-digest:",
+  "description": "optional human description",
+  "opaque": "optional-unpadded-base64url-jcs-string-map"
+}
 ```
 
-## PaymentReceipt
+`id` binds `realm`, `method`, `intent`, `request`, `expires`, `digest`, and `opaque` with the draft's fixed seven-slot HMAC-SHA256 construction. `opaque`, when present, is unpadded base64url of JCS for a flat string-to-string object.
 
-The receipt domain is `fiber-paid-http-receipt-v1`. It includes challenge id, method, resource hash, amount, settlement evidence, server id, issue timestamp, and HMAC signature.
+The decoded Fiber charge request is:
 
-Servers return receipts as:
-
-```text
-Payment-Receipt: <base64url JSON receipt>
+```json
+{
+  "amount": "100000000",
+  "currency": "ckb",
+  "recipient": "optional Fiber node id",
+  "description": "optional description",
+  "externalId": "optional merchant id",
+  "methodDetails": {
+    "invoice": "Fiber invoice",
+    "paymentHash": "0x-prefixed 32-byte hash",
+    "network": "local or testnet",
+    "hashAlgorithm": "ckb_hash",
+    "udtTypeScript": null
+  }
+}
 ```
 
-## 402 response
+All integer values are decimal strings in the MPP charge and hex quantities only at the Fiber JSON-RPC boundary.
 
-Unpaid requests return:
+## Credential
 
-```text
-HTTP/1.1 402 Payment Required
-WWW-Authenticate: Payment id="...", method="fiber", intent="charge", challenge="..."
-Content-Type: application/problem+json
-Cache-Control: no-store
+The client retries with `Authorization: Payment <base64url-json>`:
+
+```json
+{
+  "challenge": { "id": "...", "realm": "...", "method": "fiber", "intent": "charge", "request": "..." },
+  "payload": { "paymentHash": "0x..." }
+}
 ```
 
-When F-L402 is enabled, the same response also includes an L402 challenge and an `fl402` body:
+The gateway requires an exact field match with the stored challenge, including the originally encoded `request` bytes. It then checks expiry, public resource URL, HTTP method, RFC 9530 body digest for non-GET/HEAD requests, charge details, payment hash, and Fiber settlement. The credential envelope is ordinary base64url JSON as specified by MPP; key order and insignificant JSON whitespace are not security boundaries.
 
-```text
-WWW-Authenticate: L402 macaroon="...", invoice="...", payment_hash="...", amount="...", currency="..."
+Redemption is a single SQLite transaction. Only one concurrent retry can consume the challenge.
+
+## Receipt
+
+Only a successfully delivered upstream `2xx` response gets `Payment-Receipt` and `Cache-Control: private`:
+
+```json
+{
+  "status": "success",
+  "method": "fiber",
+  "timestamp": "2026-07-13T12:00:01.000Z",
+  "reference": "0x...",
+  "challengeId": "..."
+}
 ```
 
-Clients can retry with:
+`reference` is the Fiber payment hash. `challengeId` links the delivery to the consumed challenge. The receipt is schema evidence; the settled Fiber payment and durable delivery record are the authority.
 
-```text
-Authorization: L402 <macaroon>:<preimage>
-```
+If settlement succeeds but the upstream fails, the gateway records a failed delivery and emits no receipt. Reconciliation uses the payment hash and challenge ID.
 
-The gateway verifies the F-L402 caveats and preimage, converts the proof to a `PaymentCredential`, and then applies the same resource binding, replay, Fiber settlement, and receipt checks used by `Authorization: Payment`.
+## Explicit compatibility entrances
+
+F402 maps its charge or proof into the shapes above.
+
+The optional experimental F-L402 adapter, disabled unless explicitly configured, returns an additional `WWW-Authenticate: L402 capability="..."` challenge. The retry is `Authorization: L402 <capability>:<preimage>`. The gateway verifies the capability, preimage hash, caveats, and stored challenge, then constructs the same MPP credential used by the normal verifier.
+
+No alternate settlement, replay, or receipt path exists.

@@ -21,6 +21,7 @@
       "@fiber-paid-http/storage": ["packages/storage/src/index.ts"],
       "@fiber-paid-http/fiber-method": ["packages/fiber-method/src/index.ts"],
       "@fiber-paid-http/f402-compat": ["packages/f402-compat/src/index.ts"],
+      "@fiber-paid-http/x402-compat": ["packages/x402-compat/src/index.ts"],
       "@fiber-paid-http/fl402-compat": ["packages/fl402-compat/src/index.ts"],
       "@fiber-paid-http/server-middleware": ["packages/server-middleware/src/index.ts"],
       "@fiber-paid-http/client": ["packages/client/src/index.ts"],

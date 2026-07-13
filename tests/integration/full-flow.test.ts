@@ -1,10 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildAuthorizationPaymentHeader,
-  resourceHash,
+  decodeFiberChargeRequest,
+  parseWwwAuthenticatePaymentHeader,
   resourceHashFromRequest,
-  signChallenge,
-  type FiberMethodChallenge
+  type PaymentChallenge
 } from "@fiber-paid-http/core";
 import { paidFetch } from "@fiber-paid-http/client";
 import { f402ChallengeToMpp, f402ProofToCredential } from "@fiber-paid-http/f402-compat";
@@ -13,18 +13,36 @@ import { createEvidenceApi } from "@fiber-paid-http/evidence-api";
 import {
   createFiberFixtureAdapters,
   createSqliteTestStore,
+  FIXTURE_INVOICE,
   FIXTURE_PAYMENT_HASH
 } from "../helpers/fiber-fixture.js";
 
 describe("Fiber Paid HTTP integration flows", () => {
   const evidenceSecret = "evidence-integration-secret-at-least-32-chars";
+  afterEach(() => vi.useRealTimers());
 
   it("evidence paid endpoint completes full flow", async () => {
     const { payeeFiber, payerFiber } = createFiberFixtureAdapters();
     const app = createEvidenceApi({ fiber: payeeFiber, payerFiber, store: createSqliteTestStore(), secret: evidenceSecret });
-    const result = await paidFetch("http://localhost/paid/weather", {}, { fetchImpl: appFetch(app), fiber: payerFiber });
+    const result = await paidFetch("http://localhost/paid/weather", {}, {
+      fetchImpl: appFetch(app),
+      fiber: payerFiber,
+      authorizePayment: ({ charge }) => charge.amount === "10" && charge.currency.toLowerCase() === "ckb"
+    });
     expect(result.response.status).toBe(200);
-    expect(result.receipt?.settlement.status).toBe("settled");
+    expect(result.receipt).toMatchObject({ status: "success", method: "fiber", reference: FIXTURE_PAYMENT_HASH });
+  });
+
+  it("never pays without explicit client authorization", async () => {
+    const { payeeFiber, payerFiber } = createFiberFixtureAdapters();
+    const app = createEvidenceApi({ fiber: payeeFiber, payerFiber, store: createSqliteTestStore(), secret: evidenceSecret });
+    const payCharge = vi.spyOn(payerFiber, "payCharge");
+
+    await expect(paidFetch("http://localhost/paid/weather", {}, {
+      fetchImpl: appFetch(app),
+      fiber: payerFiber
+    })).rejects.toMatchObject({ code: "payment-authorization-required", status: 403 });
+    expect(payCharge).not.toHaveBeenCalled();
   });
 
   it("evidence console API exposes liveness and readiness probes", async () => {
@@ -130,7 +148,6 @@ describe("Fiber Paid HTTP integration flows", () => {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         endpoint: "/paid/weather",
-        amountCkb: "0.000001",
         amountShannons: "100",
         payerProfileId: "env-payer",
         payeeProfileId: "env-payee",
@@ -139,22 +156,21 @@ describe("Fiber Paid HTTP integration flows", () => {
     });
     expect(unpaid.status).toBe(200);
     const unpaidBody = await unpaid.json() as {
-      fiberChallenge: { amountShannons?: string };
-      body: { challenge: { amount: { value: string; currency: string; display?: string } } };
+      fiberChallenge: { request: { amount: string; currency: string } };
+      body: { status: number; title: string };
       flow: {
         resourceHash: string;
-        resource: { price: { display?: string }; fiberAmountShannons: string };
+        resource: { charge: { amount: string; currency: string; display: string } };
         profileSelection: { payer: string; payee: string; gateway: string };
         events: Array<{ detail?: string }>;
       };
     };
-    expect(unpaidBody.body.challenge.amount).toEqual({ value: "0.000001", currency: "CKB", display: "0.000001 CKB" });
-    expect(unpaidBody.fiberChallenge.amountShannons).toBe("100");
+    expect(unpaidBody.body).toMatchObject({ status: 402, title: "Payment Required" });
+    expect(unpaidBody.fiberChallenge.request.amount).toBe("100");
     expect(unpaidBody.flow.resourceHash).toBe(await resourceHashFromRequest(new Request("http://localhost/paid/weather")));
-    expect(unpaidBody.flow.resource.price.display).toBe("0.000001 CKB");
-    expect(unpaidBody.flow.resource.fiberAmountShannons).toBe("100");
+    expect(unpaidBody.flow.resource.charge).toEqual({ amount: "100", currency: "ckb", display: "0.000001 CKB" });
     expect(unpaidBody.flow.profileSelection).toEqual({ payer: "env-payer", payee: "env-payee", gateway: "env-gateway" });
-    expect(JSON.stringify(unpaidBody.flow.events)).toContain("fiber_amount_shannons=100");
+    expect(JSON.stringify(unpaidBody.flow.events)).toContain("charge=100 shannons (0.000001 CKB)");
 
     const nonExecutableProfile = await app.request("http://localhost/api/evidence/unpaid", {
       method: "POST",
@@ -177,7 +193,6 @@ describe("Fiber Paid HTTP integration flows", () => {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         endpoint: "/paid/weather",
-        amountCkb: "0.000001",
         amountShannons: "100",
         payerProfileId: "env-payer",
         payeeProfileId: "env-payee",
@@ -197,7 +212,7 @@ describe("Fiber Paid HTTP integration flows", () => {
     const exported = await app.request("http://localhost/api/evidence/export", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ endpoint: "/paid/weather", amountCkb: "0.000001", amountShannons: "100" })
+      body: JSON.stringify({ endpoint: "/paid/weather", amountShannons: "100" })
     });
     expect(exported.status).toBe(200);
     expect(await exported.json()).toMatchObject({
@@ -220,9 +235,10 @@ describe("Fiber Paid HTTP integration flows", () => {
         gateReady: boolean;
         conflicts: string[];
         paymentHash?: string;
-        receiptId?: string;
+        receiptReference?: string;
+        challengeId?: string;
       };
-      endpoints: Array<{ path: string; price: { currency: string; display?: string } }>;
+      endpoints: Array<{ path: string; charge: { amount: string; currency: string; display: string } }>;
       localFiberNetwork: {
         node1: { status: string };
         node2: { status: string };
@@ -233,14 +249,21 @@ describe("Fiber Paid HTTP integration flows", () => {
       };
     };
     expect(statusBody.endpoints[0]?.path).toBe("/paid/protocol-service");
-    expect(statusBody.endpoints.map((endpoint) => endpoint.price.currency)).toEqual(["CKB", "CKB", "CKB", "CKB"]);
-    expect(statusBody.endpoints.map((endpoint) => endpoint.price.display)).toEqual(["100 CKB", "10 CKB", "50 CKB", "25 CKB"]);
-    expect(statusBody.badges.productionReady).toBe(true);
-    expect(statusBody.badges.gateReady).toBe(true);
-    expect(statusBody.productionEvidence.productionReady).toBe(true);
-    expect(statusBody.productionEvidence.gateReady).toBe(true);
-    expect(statusBody.productionEvidence.paymentHash).toMatch(/^0x[0-9a-f]{64}$/i);
-    expect(statusBody.productionEvidence.receiptId).toMatch(/^rcpt_[a-z0-9]+$/i);
+    expect(statusBody.endpoints.map((endpoint) => endpoint.charge.currency)).toEqual(["ckb", "ckb", "ckb", "ckb"]);
+    expect(statusBody.endpoints.map((endpoint) => endpoint.charge.amount)).toEqual(["100", "10", "50", "25"]);
+    expect(statusBody.endpoints.map((endpoint) => endpoint.charge.display)).toEqual([
+      "0.000001 CKB",
+      "0.0000001 CKB",
+      "0.0000005 CKB",
+      "0.00000025 CKB"
+    ]);
+    expect(statusBody.badges.productionReady).toBe(statusBody.productionEvidence.productionReady);
+    expect(statusBody.badges.gateReady).toBe(statusBody.productionEvidence.gateReady);
+    if (statusBody.productionEvidence.productionReady) {
+      expect(statusBody.productionEvidence.paymentHash).toMatch(/^0x[0-9a-f]{64}$/i);
+      expect(statusBody.productionEvidence.receiptReference).toBe(statusBody.productionEvidence.paymentHash);
+      expect(statusBody.productionEvidence.challengeId).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    }
     expect(statusBody.productionEvidence.conflicts.join(" ")).not.toContain("production-bootstrap-e2e.json=false");
     expect(JSON.stringify(statusBody)).not.toContain("robot");
     expect(new Set([
@@ -276,13 +299,12 @@ describe("Fiber Paid HTTP integration flows", () => {
     const unpaid = await app.request("http://localhost/api/evidence/unpaid", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ endpoint: "/paid/protocol-service", amountCkb: "1", amountShannons: "100" })
+      body: JSON.stringify({ endpoint: "/paid/protocol-service", amountShannons: "100" })
     });
     expect(unpaid.status).toBe(503);
     const unpaidBody = (await unpaid.clone().json()) as { status: number; flow: { events: Array<{ detail?: string }> } };
     expect(unpaidBody).toMatchObject({ status: 503 });
-    expect(JSON.stringify(unpaidBody.flow.events)).toContain("amount=1 CKB");
-    expect(JSON.stringify(unpaidBody.flow.events)).toContain("fiber_amount_shannons=100");
+    expect(JSON.stringify(unpaidBody.flow.events)).toContain("charge=100 shannons (0.000001 CKB)");
     expect(JSON.stringify(unpaidBody.flow.events)).not.toContain("Fibd");
 
     const pay = await app.request("http://localhost/api/evidence/pay", { method: "POST" });
@@ -326,7 +348,7 @@ describe("Fiber Paid HTTP integration flows", () => {
     const unpaid = await app.request("http://localhost/api/evidence/unpaid", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ endpoint: "/paid/weather", amountCkb: "10", amountShannons: "10" })
+      body: JSON.stringify({ endpoint: "/paid/weather", amountShannons: "10" })
     });
     expect(unpaid.status).toBe(200);
 
@@ -339,8 +361,25 @@ describe("Fiber Paid HTTP integration flows", () => {
     });
   });
 
+  it("rejects the removed display-unit charge input before invoice creation", async () => {
+    const { payeeFiber, payerFiber } = createFiberFixtureAdapters();
+    const app = createEvidenceApi({ fiber: payeeFiber, payerFiber, store: createSqliteTestStore(), secret: evidenceSecret });
+
+    const response = await app.request("http://localhost/api/evidence/unpaid", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ endpoint: "/paid/weather", amountCkb: "1" })
+    });
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({
+      error: "invalid-evidence-parameters",
+      message: "amountCkb is derived output; send amountShannons only"
+    });
+  });
+
   it("evidence console API supports UI runtime bootstrap without exporting secrets", async () => {
-    const app = withoutFiberLiveEnv(() => createEvidenceApi());
+    const app = withoutFiberLiveEnv(() => createEvidenceApi({ store: createSqliteTestStore() }));
     const configured = await app.request("http://localhost/api/bootstrap/runtime", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -522,14 +561,14 @@ describe("Fiber Paid HTTP integration flows", () => {
     const unpaidA = await app.request("http://localhost/api/evidence/unpaid", {
       method: "POST",
       headers: sessionA,
-      body: JSON.stringify({ endpoint: "/paid/weather", amountCkb: "10", amountShannons: "10" })
+      body: JSON.stringify({ endpoint: "/paid/weather", amountShannons: "10" })
     });
     expect(unpaidA.status).toBe(200);
 
     const unpaidB = await app.request("http://localhost/api/evidence/unpaid", {
       method: "POST",
       headers: sessionB,
-      body: JSON.stringify({ endpoint: "/paid/file", amountCkb: "25", amountShannons: "25" })
+      body: JSON.stringify({ endpoint: "/paid/file", amountShannons: "25" })
     });
     expect(unpaidB.status).toBe(200);
 
@@ -555,19 +594,26 @@ describe("Fiber Paid HTTP integration flows", () => {
     const { payeeFiber, payerFiber } = createFiberFixtureAdapters();
     const middleware = createFiberPaidHttpMiddleware({
       secret: "reverse-proxy-secret-at-least-16",
+      realm: "proxy.example.test",
       serverId: "reverse-proxy",
+      publicBaseUrl: "https://proxy.example.test",
       store: createSqliteTestStore(),
       fiber: payeeFiber
     });
     const proxy = createReverseProxyHandler(middleware, {
       upstream: "http://upstream.local",
-      price: { value: "1", currency: "CKB" },
-      methods: ["fiber"],
+      charge: { amount: "1000", currency: "ckb" },
       fetchImpl: async (input, init) => {
         const request = input instanceof Request ? input : new Request(input, init);
         return Response.json({
           upstream: new URL(request.url).pathname,
-          authForwarded: request.headers.has("authorization")
+          authForwarded: request.headers.has("authorization"),
+          nominatedForwarded: request.headers.has("x-remove")
+        }, {
+          headers: {
+            connection: "x-response-remove",
+            "x-response-remove": "must-not-reach-client"
+          }
         });
       }
     });
@@ -575,18 +621,61 @@ describe("Fiber Paid HTTP integration flows", () => {
       const request = input instanceof Request ? input : new Request(input, init);
       return proxy(request);
     }) as typeof fetch;
-    const result = await paidFetch("http://proxy.local/paid/data", {}, { fetchImpl: proxyFetch, fiber: payerFiber });
+    const result = await paidFetch("http://proxy.local/paid/data", {
+      headers: { connection: "x-remove", "x-remove": "must-not-reach-upstream" }
+    }, {
+      fetchImpl: proxyFetch,
+      fiber: payerFiber,
+      authorizePayment: ({ charge }) => charge.amount === "1000" && charge.currency === "ckb"
+    });
     expect(result.response.status).toBe(200);
-    expect(await result.response.json()).toEqual({ upstream: "/paid/data", authForwarded: false });
+    expect(await result.response.json()).toEqual({ upstream: "/paid/data", authForwarded: false, nominatedForwarded: false });
+    expect(result.response.headers.has("x-response-remove")).toBe(false);
+  });
+
+  it("fails closed without a receipt when an upstream response exceeds its limit", async () => {
+    const { payeeFiber, payerFiber } = createFiberFixtureAdapters();
+    const middleware = createFiberPaidHttpMiddleware({
+      secret: "response-limit-secret-at-least-32-chars",
+      realm: "proxy.example.test",
+      serverId: "response-limit-proxy",
+      publicBaseUrl: "https://proxy.example.test",
+      store: createSqliteTestStore(),
+      fiber: payeeFiber
+    });
+    const proxy = createReverseProxyHandler(middleware, {
+      upstream: "http://upstream.local",
+      charge: { amount: "1000", currency: "ckb" },
+      upstreamResponseLimitBytes: 1024,
+      fetchImpl: async () => new Response("x".repeat(1025), {
+        headers: { "content-length": "1025" }
+      })
+    });
+    const proxyFetch = ((input: RequestInfo | URL, init?: RequestInit) => {
+      const request = input instanceof Request ? input : new Request(input, init);
+      return proxy(request);
+    }) as typeof fetch;
+
+    const result = await paidFetch("http://proxy.local/paid/data", {}, {
+      fetchImpl: proxyFetch,
+      fiber: payerFiber,
+      authorizePayment: () => true
+    });
+    expect(result.response.status).toBe(502);
+    expect(result.response.headers.has("payment-receipt")).toBe(false);
+    expect(result.receipt).toBeUndefined();
   });
 
   it("F402 compatibility credential can redeem an MPP route", async () => {
     const { payeeFiber } = createFiberFixtureAdapters();
     const store = createSqliteTestStore();
-    const secret = "f402-flow-secret-at-least-16";
+    const secret = "f402-flow-secret-at-least-32-characters";
     const middleware = createFiberPaidHttpMiddleware({
       secret,
+      realm: "f402.example.test",
       serverId: "f402-flow",
+      publicBaseUrl: "http://localhost",
+      allowInsecureHttp: true,
       store,
       fiber: payeeFiber
     });
@@ -595,37 +684,34 @@ describe("Fiber Paid HTTP integration flows", () => {
     const challenge = f402ChallengeToMpp({
       f402: {
         token: "v1.aaa.bbb",
-        invoice: "fibd1qfixture",
+        invoice: FIXTURE_INVOICE,
         paymentHash: FIXTURE_PAYMENT_HASH,
         amount: "1000",
         currency: "CKB",
-        expiresAt: new Date(Date.now() + 60_000).toISOString()
+        expiresAt: new Date(Date.now() + 60_000).toISOString(),
+        network: "dev",
+        hashAlgorithm: "ckb_hash"
       },
       resource,
-      serverId: "f402-flow"
+      realm: "f402.example.test",
+      secret
     });
     await store.saveChallenge({
       challenge,
-      signature: signChallenge(challenge, secret),
-      resourceHash: resourceHash(resource),
-      createdAt: challenge.issuedAt,
-      expiresAt: challenge.expiresAt
+      chargeRequest: decodeFiberChargeRequest(challenge.request),
+      resourceBinding: resource,
+      createdAt: new Date().toISOString(),
+      expiresAt: challenge.expires!
     });
     const credential = f402ProofToCredential({
-      challengeId: challenge.challengeId,
-      resourceHash: resourceHash(resource),
+      challenge,
       proof: {
         token: "v1.aaa.bbb",
-        invoice: "fibd1qfixture",
-        paymentHash: FIXTURE_PAYMENT_HASH,
-        amountShannons: "1000",
-        mode: "local",
-        status: "settled"
+        paymentHash: FIXTURE_PAYMENT_HASH
       }
     });
     const handler = middleware.protect({
-      price: { value: "1000", currency: "CKB" },
-      methods: ["fiber"],
+      charge: { amount: "1000", currency: "ckb" },
       handler: () => Response.json({ f402: true })
     });
     const response = await handler(new Request(url, { headers: { authorization: buildAuthorizationPaymentHeader(credential) } }));
@@ -643,47 +729,46 @@ describe("Fiber Paid HTTP integration flows", () => {
       challengeTtlSeconds: 120
     });
     const first = await app.request("http://localhost/paid/weather");
-    const body = (await first.clone().json()) as {
-      challengeId: string;
-      challenge: { methods: FiberMethodChallenge[] };
-    };
-    const fiber = body.challenge.methods.find((method) => method.method === "fiber")!;
-    const proof = await payerFiber.payChallenge(fiber);
+    const challenge = challengeFromResponse(first);
+    const charge = decodeFiberChargeRequest(challenge.request);
+    const payload = await payerFiber.payCharge(charge);
     const credential = {
-      domain: "fiber-paid-http-credential-v1" as const,
-      challengeId: body.challengeId,
-      method: "fiber" as const,
-      resourceHash: await resourceHashFromRequest(new Request("http://localhost/paid/weather")),
-      paymentProof: proof,
-      submittedAt: new Date().toISOString()
+      challenge,
+      payload
     };
     const auth = buildAuthorizationPaymentHeader(credential);
     expect((await app.request("http://localhost/paid/file", { headers: { authorization: auth } })).status).toBe(402);
     expect((await app.request("http://localhost/paid/weather", { headers: { authorization: auth } })).status).toBe(200);
     expect((await app.request("http://localhost/paid/weather", { headers: { authorization: auth } })).status).toBe(402);
 
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-13T00:00:00.000Z"));
     const expiredAdapters = createFiberFixtureAdapters();
     const expired = createEvidenceApi({
       fiber: expiredAdapters.payeeFiber,
       payerFiber: expiredAdapters.payerFiber,
       store: createSqliteTestStore(),
       secret: evidenceSecret,
-      challengeTtlSeconds: -5,
+      challengeTtlSeconds: 1,
       clockSkewSeconds: 0
     });
     const expiredFirst = await expired.request("http://localhost/paid/weather");
-    const expiredBody = (await expiredFirst.json()) as typeof body;
-    const expiredFiber = expiredBody.challenge.methods.find((method) => method.method === "fiber")!;
-    const expiredProof = await expiredAdapters.payerFiber.payChallenge(expiredFiber);
+    const expiredChallenge = challengeFromResponse(expiredFirst);
+    const expiredPayload = await expiredAdapters.payerFiber.payCharge(decodeFiberChargeRequest(expiredChallenge.request));
     const expiredAuth = buildAuthorizationPaymentHeader({
-      ...credential,
-      challengeId: expiredBody.challengeId,
-      paymentProof: expiredProof,
-      submittedAt: new Date().toISOString()
+      challenge: expiredChallenge,
+      payload: expiredPayload
     });
+    vi.setSystemTime(new Date("2026-07-13T00:00:02.000Z"));
     expect((await expired.request("http://localhost/paid/weather", { headers: { authorization: expiredAuth } })).status).toBe(402);
   });
 });
+
+function challengeFromResponse(response: Response): PaymentChallenge {
+  const challenge = parseWwwAuthenticatePaymentHeader(response.headers.get("www-authenticate"));
+  if (!challenge) throw new Error("missing standard Payment challenge");
+  return challenge;
+}
 
 function withoutFiberLiveEnv<T>(fn: () => T): T {
   const keys = [

@@ -16,6 +16,7 @@ Local 3-node evidence is documented in [fiber-local-network.md](fiber-local-netw
 - `ckb-cli` for key handling.
 - Two CKB testnet accounts with faucet funds.
 - Two Fiber node RPC endpoints reachable only from trusted machines.
+- Authenticated trusted proxies in front of both payer and payee RPC endpoints for production-bootstrap evidence; provide authorization values only through `FIBER_PAYER_RPC_AUTH`, `FIBER_PAYEE_RPC_AUTH`, or their shared `FIBER_RPC_AUTH` fallback.
 - A payer route to the payee. This can be direct or through public testnet relay nodes.
 
 Fiber RPC must not be exposed to arbitrary browsers or public networks. Keep RPC on loopback, a private network, or behind strict auth.
@@ -107,6 +108,8 @@ export FIBER_MODE=testnet
 export FIBER_CURRENCY=Fibt
 export FIBER_PAYER_RPC_URL=http://127.0.0.1:8227
 export FIBER_PAYEE_RPC_URL=http://127.0.0.1:8237
+export FIBER_PAYER_RPC_AUTH='Bearer <trusted-rpc-proxy-token>'
+export FIBER_PAYEE_RPC_AUTH='Bearer <trusted-rpc-proxy-token>'
 export FIBER_PAID_HTTP_SECRET="$(openssl rand -hex 32)"
 
 pnpm exec fiber-paid-http doctor --role payer
@@ -136,6 +139,8 @@ export FIBER_CURRENCY=Fibt
 export FIBER_PAYER_RPC_URL=http://127.0.0.1:8227
 export FIBER_PAYEE_RPC_URL=http://127.0.0.1:8237
 export FIBER_RPC_URL=http://127.0.0.1:8237
+export FIBER_PAYER_RPC_AUTH='Bearer <trusted-rpc-proxy-token>'
+export FIBER_PAYEE_RPC_AUTH='Bearer <trusted-rpc-proxy-token>'
 export FIBER_PAID_HTTP_SECRET="$(openssl rand -hex 32)"
 export FIBER_E2E_AMOUNT_SHANNONS=100
 export FIBER_SETTLEMENT_TIMEOUT_MS=60000
@@ -151,8 +156,12 @@ cd "$(git rev-parse --show-toplevel)"
 
 export FIBER_PAYER_RPC_URL=http://127.0.0.1:8227
 export FIBER_PAYEE_RPC_URL=http://127.0.0.1:8237
+export FIBER_PAYER_RPC_AUTH='Bearer <trusted-rpc-proxy-token>'
+export FIBER_PAYEE_RPC_AUTH='Bearer <trusted-rpc-proxy-token>'
 scripts/fiber_testnet_e2e.sh
 ```
+
+The runner first exercises the real Rust gateway behind an ephemeral TLS 1.2+ proxy. It pays three real testnet challenges: one proves successful delivery and receipt/replay behavior, one proves the upstream-response limit, and one proves upstream timeout handling. It also triggers request-body and rate limits, checks health/readiness/metrics, audits the shared schema-v1 SQLite store from TypeScript after Rust shutdown, verifies log redaction and graceful shutdown, and writes a schema-v1 production-bootstrap report. It then runs the canonical gate and a separate live Fiber test.
 
 It writes:
 
@@ -161,7 +170,9 @@ reports/fiber-testnet-e2e/preflight.json
 reports/fiber-testnet-e2e/doctor-payer.json
 reports/fiber-testnet-e2e/doctor-payee.json
 reports/fiber-testnet-e2e/canonical-gate.log
+reports/fiber-testnet-e2e/production-bootstrap-e2e.log
 reports/fiber-testnet-e2e/testnet-e2e-report.json
+reports/production-bootstrap-e2e.json
 reports/fiber-testnet-e2e-success.json
 reports/fiber-testnet-e2e-evidence.json
 ```
@@ -173,10 +184,14 @@ When this passes, the gate records testnet Fiber E2E evidence. Local E2E alone i
 The testnet evidence is credible only when all of these are true:
 
 - `fiber_e2e_mode` is `testnet`.
+- `schema` is exactly `fiber-paid-http-testnet-e2e-evidence-v1` and the field set is exact.
 - `fiber_e2e_status` is `passed`.
 - `fiber_live_test_loaded` is `true`.
 - The output includes a non-empty `fiber_e2e_payment_hash`.
-- The output includes a non-empty `fiber_e2e_receipt_id`.
+- The output includes `fiber_e2e_receipt_reference` equal to the payment hash.
+- The output includes the 43-character MPP-draft `fiber_e2e_challenge_id`.
+- `testnet_evidence_digest` verifies without any generated-time fallback or automatic evidence upgrade.
+- `reports/production-bootstrap-e2e.json` identifies the Rust engine, current Fiber commit, testnet mode, TLS protocol, authenticated RPC env, one delivery, receipt-free replay rejection, SQLite health, and runtime-limit evidence.
 - The canonical gate records `production_ready_for_fiber_method: true` only when this testnet evidence, production operations checks, and production bootstrap E2E readiness evidence are all present.
 
 ## References

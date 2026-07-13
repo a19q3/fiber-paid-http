@@ -6,7 +6,7 @@ import {
   personaActionReason,
   mergeConsoleSettings,
 } from "../constants.js";
-import { sanitizeAmountInput, ckbToShannons, normalizeApiBase, readStorage, writeStorage, downloadJson, copyTextToClipboard, boundedInteger } from "../lib/utils.js";
+import { sanitizeAmountInput, ckbToShannons, shannonsToCkb, normalizeApiBase, readStorage, writeStorage, downloadJson, copyTextToClipboard, boundedInteger } from "../lib/utils.js";
 import type {
   Persona,
   Density,
@@ -26,7 +26,7 @@ interface FlowState {
   events?: FlowEvent[];
   fiberChallenge?: { paymentHash?: string } | null;
   authorization?: unknown | null;
-  receipt?: { receiptId?: string; settlement?: { paymentHash?: string }; resourceHash?: string } | null;
+  receipt?: { status?: string; method?: string; timestamp?: string; reference?: string; challengeId?: string } | null;
   replayStatus?: number | null;
   challengeId?: string;
   challengeBody?: { challengeId?: string; resourceHash?: string; challenge?: { challengeId?: string } } | null;
@@ -127,7 +127,6 @@ interface EvidenceContextValue extends EvidenceState {
   setDensity: (d: Density) => void;
   setAutoRefresh: (v: boolean) => void;
   setProfileSelection: (role: string, id: string) => void;
-  setAmountCkb: (v: string) => void;
   setAmountShannons: (v: string) => void;
   setBootstrapDraft: (key: string, value: string | boolean) => void;
   setActiveTab: (tab: string) => void;
@@ -203,7 +202,7 @@ function fallbackConfiguration(error?: Error): ConfigurationData {
       payee: fc("payee", "Payee FNN", "payee-fnn", "FIBER_PAYEE_RPC_URL"),
       gateway: fc("gateway", "Rust gateway", "rust-gateway", "FIBER_PAID_HTTP_SECRET"),
     },
-    defaults: { endpoint: fallbackEndpoints[0]!.path, amountCkb: "100", amountShannons: "100", payerProfileId: "env-payer", payeeProfileId: "env-payee", gatewayProfileId: "env-gateway" },
+    defaults: { endpoint: fallbackEndpoints[0]!.path, amountCkb: "0.000001", amountShannons: "100", payerProfileId: "env-payer", payeeProfileId: "env-payee", gatewayProfileId: "env-gateway" },
     parameters: { resources: fallbackEndpoints, challengeTtlSeconds: 120, settlementTimeoutMs: 30000, amountLimits: { minCkb: "0.00000001", maxCkb: "1000000000", minShannons: "1", maxShannons: "100000000000000000" } },
     envTemplate: ["RUN_FIBER_E2E=1", "FIBER_MODE=testnet", "FIBER_PAYER_RPC_URL=<payer-fnn-rpc-url>", "FIBER_PAYEE_RPC_URL=<payee-fnn-rpc-url>", "FIBER_PAID_HTTP_SECRET=<32+ character random secret>", "FIBER_E2E_AMOUNT_SHANNONS=100"].join("\n"),
     warnings: [error?.message || "configuration API unavailable"],
@@ -241,10 +240,10 @@ export function EvidenceProvider({
       payee: savedPrefs.profileSelection?.payee || "env-payee",
       gateway: savedPrefs.profileSelection?.gateway || "env-gateway",
     },
-    parameters: {
-      amountCkb: savedPrefs.parameters?.amountCkb || "100",
-      amountShannons: savedPrefs.parameters?.amountShannons || "100",
-    },
+    parameters: (() => {
+      const amountShannons = savedPrefs.parameters?.amountShannons || "100";
+      return { amountCkb: shannonsToCkb(amountShannons), amountShannons };
+    })(),
     bootstrapDraft: normalizeBootstrapDraft(savedPrefs.bootstrapDraft),
     apiConnection: "refreshing",
     apiMessage: "connecting API",
@@ -272,7 +271,7 @@ export function EvidenceProvider({
   const hasSavedRunSelection = useRef(Boolean(savedPrefs.selected || savedPrefs.parameters || savedPrefs.profileSelection));
 
   const persist = useCallback((s: EvidenceState) => {
-    writeStorage("fiberMppConsolePreferences", JSON.stringify({
+    writeStorage("fiberPaidHttpConsolePreferences", JSON.stringify({
       apiBase: apiBaseState,
       selected: s.selected,
       profileSelection: s.profileSelection,
@@ -302,6 +301,8 @@ export function EvidenceProvider({
       return { ok: false, message: "enter a positive CKB amount with up to 8 decimals" };
     if (!/^\d+$/.test(amountShannons) || BigInt(amountShannons || "0") <= 0n)
       return { ok: false, message: "enter a positive integer Fiber amount" };
+    if (ckbToShannons(amountCkb) !== amountShannons)
+      return { ok: false, message: "derived CKB display does not match the canonical shannon amount" };
     if (BigInt(amountShannons) > 100000000000000000n)
       return { ok: false, message: "Fiber amount exceeds safety limit" };
     return { ok: true, message: "ready" };
@@ -401,7 +402,6 @@ export function EvidenceProvider({
 
   const evidenceActionBody = useCallback(() => ({
     endpoint: state.selected,
-    amountCkb: state.parameters.amountCkb,
     amountShannons: state.parameters.amountShannons,
     payerProfileId: state.profileSelection.payer,
     payeeProfileId: state.profileSelection.payee,
@@ -556,7 +556,7 @@ export function EvidenceProvider({
     const normalized = normalizeApiBase(base);
     if (!normalized) return;
     setApiBaseState(normalized);
-    writeStorage("fiberMppApi", normalized);
+    writeStorage("fiberPaidHttpApi", normalized);
     api.setApiBase(normalized);
     configLoadedRef.current = false;
   }, [api]);
@@ -577,14 +577,14 @@ export function EvidenceProvider({
     setState((prev) => { const next = { ...prev, profileSelection: { ...prev.profileSelection, [role]: id } }; persist(next); return next; });
   }, [persist]);
 
-  const setAmountCkb = useCallback((v: string) => {
-    const sanitized = sanitizeAmountInput(v, true);
-    setState((prev) => { const next = { ...prev, parameters: { ...prev.parameters, amountCkb: sanitized } }; persist(next); return next; });
-  }, [persist]);
-
   const setAmountShannons = useCallback((v: string) => {
     const sanitized = sanitizeAmountInput(v, false);
-    setState((prev) => { const next = { ...prev, parameters: { ...prev.parameters, amountShannons: sanitized } }; persist(next); return next; });
+    setState((prev) => {
+      const amountCkb = /^\d+$/.test(sanitized) ? shannonsToCkb(sanitized) : "";
+      const next = { ...prev, parameters: { amountCkb, amountShannons: sanitized } };
+      persist(next);
+      return next;
+    });
   }, [persist]);
 
   const setBootstrapDraft = useCallback((key: string, value: string | boolean) => {
@@ -655,7 +655,6 @@ export function EvidenceProvider({
     setDensity,
     setAutoRefresh,
     setProfileSelection,
-    setAmountCkb,
     setAmountShannons,
     setBootstrapDraft,
     setActiveTab,

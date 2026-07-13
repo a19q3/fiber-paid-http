@@ -67,7 +67,8 @@ export type BattlecodeTicket = {
   entryAmount: string;
   prizeAmount: string;
   map: string;
-  receiptId: string;
+  receiptReference: string;
+  challengeId: string;
   paymentHash?: string;
   issuedAt: string;
   status: "paid";
@@ -208,7 +209,7 @@ const DEFAULT_JDK_HOME = "/home/arthur/a19q3/.toolchains/jdk-21.0.11+10";
 const DEFAULT_ENGINE_VERSION = "1.0.0";
 const HASH_PREFIX = "sha256:";
 const BATTLECODE_MAX_SOURCE_BYTES = 128_000;
-const BATTLECODE_LEDGER_SCHEMA_VERSION = 1;
+const BATTLECODE_LEDGER_SCHEMA_VERSION = 2;
 const DISALLOWED_BOT_PATTERNS = [
   "java.net.",
   "java.nio.file.",
@@ -364,22 +365,7 @@ export function battlecodeEntryPrice(input: BattlecodeRegistrationInput): { valu
 }
 
 export async function readBattlecodeLedger(repoRoot: string, env: NodeJS.ProcessEnv = process.env): Promise<BattlecodeLedger> {
-  return withBattlecodeLedgerDb(repoRoot, env, async (db) => {
-    const ledger = readBattlecodeLedgerFromDb(db);
-    if (!battlecodeLedgerIsEmpty(ledger) || !existsSync(legacyBattlecodeLedgerPath(repoRoot))) {
-      return ledger;
-    }
-    try {
-      const legacy = normalizeLedger(JSON.parse(await readFile(legacyBattlecodeLedgerPath(repoRoot), "utf8")));
-      if (!battlecodeLedgerIsEmpty(legacy)) {
-        writeBattlecodeLedgerToDb(db, legacy);
-        return readBattlecodeLedgerFromDb(db);
-      }
-    } catch {
-      return ledger;
-    }
-    return ledger;
-  });
+  return withBattlecodeLedgerDb(repoRoot, env, async (db) => readBattlecodeLedgerFromDb(db));
 }
 
 export async function battlecodeLedgerHealth(repoRoot: string, env: NodeJS.ProcessEnv = process.env): Promise<{
@@ -388,8 +374,6 @@ export async function battlecodeLedgerHealth(repoRoot: string, env: NodeJS.Proce
   journalMode: string | null;
   foreignKeys: boolean;
   integrityCheck: string;
-  legacyJsonPath: string;
-  legacyJsonPresent: boolean;
   counts: {
     submissions: number;
     tickets: number;
@@ -402,15 +386,12 @@ export async function battlecodeLedgerHealth(repoRoot: string, env: NodeJS.Proce
     const journalRow = db.prepare("PRAGMA journal_mode").get() as { journal_mode?: string } | undefined;
     const foreignKeysRow = db.prepare("PRAGMA foreign_keys").get() as { foreign_keys?: number } | undefined;
     const integrityRow = db.prepare("PRAGMA integrity_check").get() as { integrity_check?: string } | undefined;
-    const legacyJsonPath = legacyBattlecodeLedgerPath(repoRoot);
     return {
       path,
       schemaVersion: battlecodeLedgerUserVersion(db),
       journalMode: journalRow?.journal_mode ?? null,
       foreignKeys: foreignKeysRow?.foreign_keys === 1,
       integrityCheck: integrityRow?.integrity_check ?? "unknown",
-      legacyJsonPath,
-      legacyJsonPresent: existsSync(legacyJsonPath),
       counts: {
         submissions: ledger.submissions.length,
         tickets: ledger.tickets.length,
@@ -431,10 +412,6 @@ export function battlecodeLedgerPath(repoRoot: string, env: NodeJS.ProcessEnv = 
   return resolve(repoRoot, env.BATTLECODE_LEDGER_PATH ?? env.BATTLECODE_TOURNAMENT_LEDGER_PATH ?? ".tmp/battlecode-tournament-ledger.sqlite");
 }
 
-export function legacyBattlecodeLedgerPath(repoRoot: string): string {
-  return resolve(repoRoot, ".tmp/battlecode-tournament-ledger.json");
-}
-
 async function withBattlecodeLedgerDb<T>(
   repoRoot: string,
   env: NodeJS.ProcessEnv,
@@ -445,14 +422,20 @@ async function withBattlecodeLedgerDb<T>(
   const { DatabaseSync } = loadNodeSqlite();
   const db = new DatabaseSync(path) as SqliteDatabase;
   try {
-    applyBattlecodeLedgerMigrations(db);
+    initializeBattlecodeLedgerSchema(db);
     return await fn(db, path);
   } finally {
     db.close?.();
   }
 }
 
-function applyBattlecodeLedgerMigrations(db: SqliteDatabase): void {
+function initializeBattlecodeLedgerSchema(db: SqliteDatabase): void {
+  const currentVersion = battlecodeLedgerUserVersion(db);
+  if (currentVersion !== 0 && currentVersion !== BATTLECODE_LEDGER_SCHEMA_VERSION) {
+    throw new Error(
+      `unsupported Battlecode ledger schema ${currentVersion}; create a new schema ${BATTLECODE_LEDGER_SCHEMA_VERSION} database`
+    );
+  }
   db.exec(`
     PRAGMA journal_mode = WAL;
     PRAGMA synchronous = NORMAL;
@@ -476,7 +459,8 @@ function applyBattlecodeLedgerMigrations(db: SqliteDatabase): void {
       ticket_id TEXT PRIMARY KEY,
       submission_id TEXT NOT NULL,
       player_id TEXT NOT NULL,
-      receipt_id TEXT NOT NULL,
+      receipt_reference TEXT NOT NULL,
+      challenge_id TEXT NOT NULL,
       payment_hash TEXT,
       issued_at TEXT NOT NULL,
       ticket_json TEXT NOT NULL
@@ -548,8 +532,8 @@ function writeBattlecodeLedgerToDb(db: SqliteDatabase, ledger: BattlecodeLedger)
     `);
     const insertTicket = db.prepare(`
       INSERT OR REPLACE INTO battlecode_tickets
-        (ticket_id, submission_id, player_id, receipt_id, payment_hash, issued_at, ticket_json)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+        (ticket_id, submission_id, player_id, receipt_reference, challenge_id, payment_hash, issued_at, ticket_json)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
     const insertMatch = db.prepare(`
       INSERT OR REPLACE INTO battlecode_matches
@@ -578,7 +562,8 @@ function writeBattlecodeLedgerToDb(db: SqliteDatabase, ledger: BattlecodeLedger)
         ticket.ticketId,
         ticket.submissionId,
         ticket.playerId,
-        ticket.receiptId,
+        ticket.receiptReference,
+        ticket.challengeId,
         ticket.paymentHash ?? null,
         ticket.issuedAt,
         JSON.stringify(ticket)
@@ -673,7 +658,8 @@ export function issueBattlecodeTicket(input: {
   registration: BattlecodeRegistrationInput;
   submission: BattlecodeSubmission;
   fairnessManifest: BattlecodeFairnessManifest;
-  receiptId: string;
+  receiptReference: string;
+  challengeId: string;
   paymentHash?: string;
 }): BattlecodeTicket {
   assertBattlecodeFairnessCommitment(input.registration, input.fairnessManifest, input.submission);
@@ -689,7 +675,8 @@ export function issueBattlecodeTicket(input: {
     entryAmount: input.registration.entryAmount,
     prizeAmount: input.registration.prizeAmount,
     map: input.registration.map,
-    receiptId: input.receiptId,
+    receiptReference: input.receiptReference,
+    challengeId: input.challengeId,
     paymentHash: input.paymentHash,
     issuedAt: new Date().toISOString(),
     status: "paid"

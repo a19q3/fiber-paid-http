@@ -1,14 +1,15 @@
 {
   "input": {
-    "case": "fiber.local-e2e.receipt",
-    "evidence": true,
-    "source_report": "reports/fiber-local-e2e-success.json",
-    "receipt_source": "reports/fiber-local-e2e-success.json",
-    "receipt_id": "rcpt_d6368f6113b2a81e262fdf1c79a4e44d",
-    "payment_hash": "0x4de4574f1f2dd2ec47933506822860d3af3decbe4651de3f861ff81b9d61effc",
-    "receipt_signature_verification": "receipt body unavailable; report-level payment hash and receipt id retained"
+    "case": "fiber.evidence.receipt",
+    "receipt": {
+      "status": "success",
+      "method": "fiber",
+      "timestamp": "2026-07-13T00:00:00.000Z",
+      "reference": "0x4cb08a82c282537b5e3dcb1405b9568251b024c0317d762f56b457ee22668693",
+      "challengeId": "GUgn0RDJiirijVH3IDRkd3s4s_HhXCtXAyb_rig50b0"
+    }
   },
-  "expected_canonical_hash": "c3c864da2b11a57ec0ea14663fc5f3c25d1255985d7d79c0ff33ecf2425377aa",
+  "expected_canonical_hash": "a1644667f2e3aca70c2d6453f46fd7e824aa559025b819d43f99b1b2a18a9d36",
   "expected_verification_result": "accepted",
-  "notes": "Evidence copied from the latest successful local Fiber E2E run; this is not a deterministic fixture."
+  "notes": "Local Fiber MPP-draft receipt evidence."
 }

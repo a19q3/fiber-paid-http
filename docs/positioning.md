@@ -1,35 +1,18 @@
 # Positioning
 
-Fiber Paid HTTP is a paid-HTTP protocol-family implementation for Fiber. The repo and CLI names stay stable, while the product surface is broader than one protocol acronym:
+Fiber Paid HTTP is a paid HTTP gateway and protocol toolkit. Its HTTP wire contract follows the current MPP draft; its proposed payment-method identifier is `fiber`; its production verifier is Rust.
 
-```text
-Rust       = canonical protocol core, vector verifier, and production gateway path
-TypeScript = SDK, middleware, compatibility adapters, demos, evidence console, vector tooling
-test-vectors = shared protocol truth across Rust and TypeScript
-```
+| Layer | Role |
+| --- | --- |
+| MPP | External HTTP challenge, credential, and receipt contract |
+| Proposed `fiber` method profile | Invoice creation, payment execution, and settlement evidence |
+| Rust gateway | Trusted binding, settlement, replay, delivery, and receipt verifier |
+| TypeScript | Client SDK, Evidence Console, adapters, vectors |
+| F402 / F-L402 | Optional ingress mappings into the MPP-draft verifier; F-L402 is experimental and disabled by default |
+| x402 v2 | Independent `exact`/Fiber format converter using official HTTP codecs; not a facilitator or settlement path |
 
-## Protocol Family
+The project does not define a competing paid-HTTP envelope. It also does not claim to be a wallet, checkout system, marketplace, custody service, or x402 node implementation.
 
-| Surface | Implementation | Boundary |
-| --- | --- | --- |
-| MPP + Fiber | `packages/core`, `packages/server-middleware`, `crates/fiber-paid-http-core`, `crates/fiber-paid-http-server` | Primary paid HTTP envelope and receipt format. |
-| F402 | `packages/f402-compat`, `crates/fiber-paid-http-f402` | Compatibility conversion for Fiber invoice/payment-hash 402 applications. |
-| F-L402 | `packages/fl402-compat`, `crates/fiber-paid-http-fl402`, TS middleware, Rust gateway | Application-level `L402 macaroon:preimage` adapter backed by Fiber invoice settlement. |
-| x402 | Future adapter | Wait for stable Fiber node verify/settle support before adding native x402 headers. |
+The user-facing pitch is:
 
-## Nearby Projects
-
-- Infern: an AI model compute marketplace using F402 over Fiber.
-- fiber-pay: AI-friendly CLI and payment UX for Fiber.
-- fiber-l402: application-level Fiber L402 precedent.
-- fiber-x402-blog: native x402 direction once Fiber node support is available.
-- Fiber-checkout: React checkout/payment component.
-- Fiber Paid HTTP: reusable paid HTTP infrastructure for APIs, agents, and metered services.
-
-## Boundary
-
-Fiber Paid HTTP should serve Infern-like projects and other paid API developers. It should not duplicate their product surfaces. It does not provide model discovery, inference routing, wallet UX, checkout UX, slashing, staking, or a marketplace.
-
-The TypeScript stack is maintained integration code, but it is not the production trusted verifier. Trusted verification flows go through Rust. TypeScript remains valuable as the JS ecosystem layer, middleware surface, compatibility adapter layer, evidence console, and historical conformance-vector harness.
-
-The Rust HTTP server now issues signed challenges, stores replay/receipt state, verifies Fiber settlement, and accepts optional F-L402 `Authorization: L402` retries. It is still deliberately scoped as a paid HTTP gateway, not a wallet, checkout product, Fiber node dashboard, or x402 node implementation.
+> Put an MPP-draft paywall in front of any HTTP API and settle it through Fiber, with a Rust verifier and inspectable evidence.

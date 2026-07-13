@@ -4,9 +4,25 @@ set -euo pipefail
 mkdir -p reports
 export PATH="${PWD}/node_modules/.bin:${PATH}"
 
+without_live_fiber_env() {
+  env \
+    -u RUN_FIBER_E2E \
+    -u FIBER_MODE \
+    -u FIBER_RPC_URL \
+    -u FIBER_PAYEE_RPC_URL \
+    -u FIBER_PAYER_RPC_URL \
+    -u FIBER_ROUTER_RPC_URL \
+    -u FIBER_RPC_AUTH \
+    -u FIBER_PAYEE_RPC_AUTH \
+    -u FIBER_PAYER_RPC_AUTH \
+    -u FIBER_PAID_HTTP_SECRET \
+    -u FIBER_PAID_HTTP_EVIDENCE_API_BASE \
+    "$@"
+}
+
 pnpm typecheck
 pnpm test
-pnpm test:integration
+without_live_fiber_env pnpm test:integration
 pnpm test:fiber
 pnpm build
 pnpm exec fiber-paid-http vectors verify
@@ -24,15 +40,12 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { execFileSync } = require("node:child_process");
 const { productionBootstrapReadiness } = require("./scripts/lib/production-bootstrap-readiness.cjs");
-const {
-  normalizePreservedTestnetEvidence,
-  verifyPreservedTestnetEvidence
-} = require("./scripts/lib/testnet-fiber-evidence-readiness.cjs");
+const { verifyPreservedTestnetEvidence } = require("./scripts/lib/testnet-fiber-evidence-readiness.cjs");
 const ts = JSON.parse(fs.readFileSync("reports/ts-conformance.json", "utf8"));
 const rust = JSON.parse(fs.readFileSync("reports/rust-conformance.json", "utf8"));
 const ops = JSON.parse(fs.readFileSync("reports/production-operations-matrix.json", "utf8"));
 const testnetEvidencePath = "reports/fiber-testnet-e2e-success.json";
-let testnetEvidenceReport = fs.existsSync(testnetEvidencePath)
+const testnetEvidenceReport = fs.existsSync(testnetEvidencePath)
   ? JSON.parse(fs.readFileSync(testnetEvidencePath, "utf8"))
   : null;
 const productionBootstrap = fs.existsSync("reports/production-bootstrap-e2e.json")
@@ -70,22 +83,25 @@ const fl402Vectors = [
   "fl402.challenge.valid.json",
   "fl402.credential.valid.json",
   "attack.fl402-wrong-preimage.json",
-  "attack.fl402-tampered-macaroon.json"
+  "attack.fl402-tampered-capability.json"
 ];
-const expectedSharedVectorTotal = 18;
+const x402Vectors = [
+  "x402.required.valid.json",
+  "x402.payload.valid.json",
+  "x402.settlement.valid.json",
+  "attack.x402-tampered-requirement.json"
+];
+const expectedSharedVectorTotal = 22;
 const vectorPassed = (report, file) => report.results.some((result) => result.file === file && result.passed);
 const currentFiberCommit = readFiberCommit();
-const testnetEvidenceRecordedAt = readTestnetEvidenceRecordedAt(testnetEvidenceReport);
-testnetEvidenceReport = normalizePreservedTestnetEvidence(testnetEvidenceReport, {
-  fallbackRecordedAt: testnetEvidenceRecordedAt
-});
 const testnetEvidenceCheck = verifyPreservedTestnetEvidence(testnetEvidenceReport, {
   path: testnetEvidencePath,
-  expectedFiberCommit: currentFiberCommit,
-  fallbackRecordedAt: testnetEvidenceRecordedAt
+  expectedFiberCommit: currentFiberCommit
 });
 const testnetFiberE2e = testnetEvidenceCheck.verified;
-const productionBootstrapCheck = productionBootstrapReadiness(productionBootstrap);
+const productionBootstrapCheck = productionBootstrapReadiness(productionBootstrap, {
+  expectedFiberCommit: currentFiberCommit
+});
 const productionBootstrapReady = productionBootstrapCheck.ready;
 const productionBlockers = [
   ...(testnetFiberE2e ? [] : ["testnet Fiber E2E evidence still pending"]),
@@ -104,6 +120,7 @@ const report = {
   canonical_hash_parity: mismatches.length === 0,
   receipt_format_parity: receiptVectors.every((file) => vectorPassed(ts, file) && vectorPassed(rust, file)),
   f402_parity: f402Vectors.every((file) => vectorPassed(ts, file) && vectorPassed(rust, file)),
+  x402_parity: x402Vectors.every((file) => vectorPassed(ts, file) && vectorPassed(rust, file)),
   fl402_parity: fl402Vectors.every((file) => vectorPassed(ts, file) && vectorPassed(rust, file)),
   fiber_rpc_semantics_parity: fiberRpcSemanticsParity,
   production_operations: ops.production_ops_ready === true,
@@ -121,7 +138,7 @@ const report = {
   testnet_fiber_e2e_evidence_blockers: testnetEvidenceCheck.blockers,
   fiber_commit: currentFiberCommit,
   canonical_engine: "rust",
-  typescript_role: "sdk-evidence-f402-compat-vector-harness",
+  typescript_role: "sdk-evidence-compatibility-vector-harness",
   production_ready_for_fiber_method: productionReady,
   production_blockers: productionBlockers,
   mismatches
@@ -141,6 +158,7 @@ if (
   !report.canonical_hash_parity ||
   !report.receipt_format_parity ||
   !report.f402_parity ||
+  !report.x402_parity ||
   !report.fl402_parity ||
   !report.fiber_rpc_semantics_parity ||
   !report.production_operations ||
@@ -173,21 +191,4 @@ function fiberRepoCandidates() {
   ].filter(Boolean)));
 }
 
-function readTestnetEvidenceRecordedAt(report) {
-  if (report && typeof report === "object") {
-    const direct =
-      report.testnet_evidence_recorded_at ||
-      report.generated_at ||
-      report.gate_report?.testnet_evidence_recorded_at ||
-      report.gate_report?.generated_at;
-    if (direct) {
-      return direct;
-    }
-  }
-  const wrapperPath = "reports/fiber-testnet-e2e/testnet-e2e-report.json";
-  if (!fs.existsSync(wrapperPath)) {
-    return null;
-  }
-  return JSON.parse(fs.readFileSync(wrapperPath, "utf8")).generated_at || null;
-}
 JSON

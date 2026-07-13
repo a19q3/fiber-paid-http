@@ -49,7 +49,7 @@ That makes it a horizontal gateway for other Fiber applications rather than a co
 
 The committed reports demonstrate the current boundary:
 
-- `reports/canonical-core-parity.json`: Rust/TypeScript canonical parity across 18 shared vector files.
+- `reports/canonical-core-parity.json`: Rust/TypeScript canonical parity across 22 shared vector files.
 - `reports/fiber-paid-http-rust-gate.json`: Rust gateway production path, storage, receipt, and replay evidence.
 - `reports/fiber-testnet-e2e-evidence.json`: preserved testnet Fiber payment evidence.
 - `reports/production-bootstrap-e2e.json`: production-like gateway bootstrap and SQLite integrity evidence.

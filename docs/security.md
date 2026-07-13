@@ -1,33 +1,29 @@
 # Security
 
-Fiber Paid HTTP is built around explicit challenge, credential, payment, and receipt binding.
+## Enforced invariants
 
-Implemented checks:
+- Standard MPP challenges are server-bound with HMAC-SHA256 and verified in constant time.
+- Credentials must exactly echo the stored challenge.
+- Resource URL and method are bound; non-GET/HEAD requests also bind an RFC 9530 body digest.
+- Challenge expiry is mandatory.
+- Fiber payment hash, amount, currency, invoice, network, and settlement status are checked.
+- SQLite redemption is atomic; challenge, credential hash, and payment hash cannot be reused.
+- Upstream failure never produces a receipt.
+- Upstream-supplied `Payment-Receipt` is removed.
+- Authentication material and payment secrets are redacted from logs and omitted from storage.
+- Internal RPC and upstream errors are not returned to clients.
+- Production resource binding uses configured HTTPS `public_base_url`.
 
-- resource binding,
-- method binding,
-- amount binding for Fiber shannons,
-- expiry,
-- nonce,
-- challenge HMAC,
-- single-use challenge redemption,
-- single-use credential hash,
-- replay rejection,
-- wrong resource rejection,
-- wrong method rejection,
-- wrong payment hash rejection,
-- wrong amount rejection,
-- `Cache-Control: no-store` on 402 responses,
-- signed receipts,
-- durable storage requirement for replay and receipt state.
+## Secret handling
 
-Partial mitigations:
+Gateway secrets, previous challenge-binding secrets, F-L402 root keys, and RPC credentials are environment-only and must contain at least 32 characters. Rotate challenge secrets by configuring a new active secret and a short previous-secret window; all newly issued challenges use only the active secret.
 
-- Paid-but-denied: the middleware redeems before serving to prevent unpaid-service replay. This does not make handler execution atomic with payment settlement.
-- Unpaid-service: protected handlers run only after credential and payment proof verification.
-- Clock skew: configurable skew is available; demos use low skew.
-- PII minimization: challenges carry only route/resource/payment metadata by default.
+Never log or persist authorization credentials, capabilities, preimages, invoices, or RPC authentication.
 
-Tests cover the required security cases in `tests/unit` and `tests/integration`.
+## Delivery semantics
 
-For the attack-by-attack evidence map, see [security-matrix.md](security-matrix.md) and `reports/security-matrix.json`. The matrix links each covered attack to the expected rejection code, implemented test, and vector file.
+Payment settlement and service delivery are separate facts. The redemption is consumed before the upstream request to prevent double execution. If delivery fails after payment, the durable delivery outcome is marked failed and operators reconcile by `challengeId` and payment-hash `reference`. A retry cannot silently execute the service again.
+
+## Evidence boundary
+
+Only the Rust gateway is a trusted production verifier. TypeScript tests and vector tooling are parity evidence, not an authorization authority. Production readiness also requires live Fiber evidence for the current Fiber commit and current protocol receipt schema.

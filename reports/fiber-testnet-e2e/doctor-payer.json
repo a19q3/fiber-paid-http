@@ -4,17 +4,17 @@
   "blockers": [],
   "checks": {
     "fiber_mode": "testnet",
-    "payer_rpc_url": "http://127.0.0.1:18727",
+    "payer_rpc_url": "http://127.0.0.1:8227",
     "rpc_probe": "node_info ok",
-    "rpc_node_pubkey": "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798",
-    "rpc_node_version": "0.9.0-rc4",
-    "rpc_node_commit_hash": "3c25bcf 2026-06-22",
-    "rpc_node_info_peers": 2,
-    "rpc_node_info_channels": 1,
-    "rpc_peer_count": 2,
-    "rpc_channel_count": 1,
-    "rpc_ready_channel_count": 1,
-    "rpc_channel_states": "ChannelReady:1"
+    "rpc_node_pubkey": "033d8737adc53dbe4c84bcae4480069d9d9131b5986eca450c3ee6ca1d513089ef",
+    "rpc_node_version": "0.9.0-rc7",
+    "rpc_node_commit_hash": "e00d0e3 2026-07-13",
+    "rpc_node_info_peers": 4,
+    "rpc_node_info_channels": 3,
+    "rpc_peer_count": 4,
+    "rpc_channel_count": 3,
+    "rpc_ready_channel_count": 2,
+    "rpc_channel_states": "NegotiatingFunding:1, ChannelReady:2"
   },
   "next_steps": [
     "run a paid request or role-specific RPC check"

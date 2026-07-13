@@ -159,7 +159,7 @@ Set a durable path explicitly for production-like runs:
 BATTLECODE_LEDGER_PATH=/var/lib/fiber-paid-http/battlecode-tournament-ledger.sqlite
 ```
 
-The API also accepts `BATTLECODE_TOURNAMENT_LEDGER_PATH` for the same purpose. On first read, an old `.tmp/battlecode-tournament-ledger.json` file is imported into SQLite if the SQLite ledger is empty; the JSON file is left in place as migration evidence.
+The API also accepts `BATTLECODE_TOURNAMENT_LEDGER_PATH` for the same purpose. The file must be a new schema-versioned SQLite database; unsupported schema versions fail closed.
 
 Locked submission sources are written under:
 

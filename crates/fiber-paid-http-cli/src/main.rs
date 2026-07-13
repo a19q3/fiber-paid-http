@@ -1,8 +1,8 @@
 use anyhow::{bail, Context, Result};
 use clap::{Args, Parser, Subcommand};
 use fiber_paid_http_core::{
-    canonical_json, resource_hash, sha256_hex, verify_receipt, verify_vectors_dir,
-    ConformanceReport,
+    canonical_json, decode_fiber_charge_request, sha256_hex, validate_receipt, verify_vectors_dir,
+    ConformanceReport, PaymentChallenge, PaymentReceipt,
 };
 use serde_json::{json, Value};
 use std::fs;
@@ -12,7 +12,7 @@ use std::path::{Path, PathBuf};
 #[command(
     name = "fiber-paid-http-rs",
     version,
-    about = "Rust primary stack for Fiber Paid HTTP"
+    about = "Rust production gateway and verifier for Fiber Paid HTTP"
 )]
 struct Cli {
     #[command(subcommand)]
@@ -45,11 +45,7 @@ enum VectorCommands {
 
 #[derive(Debug, Subcommand)]
 enum ReceiptCommands {
-    Verify {
-        file: PathBuf,
-        #[arg(long)]
-        secret: Option<String>,
-    },
+    Verify { file: PathBuf },
 }
 
 #[derive(Debug, Subcommand)]
@@ -70,8 +66,8 @@ async fn main() -> Result<()> {
             command: VectorCommands::Verify,
         } => vectors_verify(),
         Commands::Receipt {
-            command: ReceiptCommands::Verify { file, secret },
-        } => receipt_verify(&file, secret),
+            command: ReceiptCommands::Verify { file },
+        } => receipt_verify(&file),
         Commands::Challenge {
             command: ChallengeCommands::Inspect { file },
         } => challenge_inspect(&file),
@@ -118,7 +114,7 @@ fn vectors_verify() -> Result<()> {
     Ok(())
 }
 
-fn receipt_verify(file: &Path, secret: Option<String>) -> Result<()> {
+fn receipt_verify(file: &Path) -> Result<()> {
     let value: Value = serde_json::from_str(&fs::read_to_string(file)?)?;
     let receipt = if value.get("input").is_some() {
         value
@@ -129,10 +125,8 @@ fn receipt_verify(file: &Path, secret: Option<String>) -> Result<()> {
     } else {
         value
     };
-    let secret = secret
-        .or_else(|| env_var_with_legacy("FIBER_PAID_HTTP_SECRET", "FIBER_MPP_SECRET"))
-        .context("provide --secret or FIBER_PAID_HTTP_SECRET")?;
-    let valid = verify_receipt(&receipt, &secret)?;
+    let receipt: PaymentReceipt = serde_json::from_value(receipt)?;
+    let valid = validate_receipt(&receipt).is_ok();
     println!(
         "{}",
         serde_json::to_string_pretty(&json!({
@@ -141,41 +135,24 @@ fn receipt_verify(file: &Path, secret: Option<String>) -> Result<()> {
         }))?
     );
     if !valid {
-        bail!("receipt signature is invalid");
+        bail!("receipt schema is invalid");
     }
     Ok(())
-}
-
-fn env_var_with_legacy(primary: &str, legacy: &str) -> Option<String> {
-    std::env::var(primary)
-        .ok()
-        .or_else(|| std::env::var(legacy).ok())
 }
 
 fn challenge_inspect(file: &Path) -> Result<()> {
     let value: Value = serde_json::from_str(&fs::read_to_string(file)?)?;
     let input = value.get("input").unwrap_or(&value);
-    let challenge = input.get("challenge").unwrap_or(input);
-    let signature = input.get("signature").and_then(Value::as_str);
-    let secret = input.get("secret").and_then(Value::as_str);
-    let signature_valid = match (signature, secret) {
-        (Some(signature), Some(secret)) => {
-            Some(fiber_paid_http_core::sign_value(challenge, secret)? == signature)
-        }
-        _ => None,
-    };
-    let resource = challenge.get("resource");
+    let challenge_value = input.get("challenge").unwrap_or(input);
+    let challenge: PaymentChallenge = serde_json::from_value(challenge_value.clone())?;
+    let charge = decode_fiber_charge_request(&challenge.request)?;
     println!(
         "{}",
         serde_json::to_string_pretty(&json!({
             "engine": "rust",
-            "canonical_hash": sha256_hex(canonical_json(challenge)?.as_bytes()),
-            "signature_valid": signature_valid,
-            "resource_hash": match resource {
-                Some(resource) => Some(resource_hash(resource)?),
-                None => None
-            },
-            "challenge": challenge
+            "canonical_hash": sha256_hex(canonical_json(challenge_value)?.as_bytes()),
+            "challenge": challenge,
+            "charge_request": charge
         }))?
     );
     Ok(())

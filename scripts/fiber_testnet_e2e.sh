@@ -6,6 +6,7 @@ PREFLIGHT_JSON="${REPORT_DIR}/preflight.json"
 PAYER_DOCTOR_JSON="${REPORT_DIR}/doctor-payer.json"
 PAYEE_DOCTOR_JSON="${REPORT_DIR}/doctor-payee.json"
 CANONICAL_LOG="${REPORT_DIR}/canonical-gate.log"
+BOOTSTRAP_LOG="${REPORT_DIR}/production-bootstrap-e2e.log"
 SUMMARY_JSON="${REPORT_DIR}/testnet-e2e-report.json"
 
 usage() {
@@ -18,11 +19,12 @@ open channels. Prepare funded payer/payee FNN nodes first, then set:
 
   FIBER_PAYER_RPC_URL=http://127.0.0.1:8227
   FIBER_PAYEE_RPC_URL=http://127.0.0.1:8237
+  FIBER_PAYER_RPC_AUTH='Bearer ...'
+  FIBER_PAYEE_RPC_AUTH='Bearer ...'
 
 Optional:
 
-  FIBER_PAYER_RPC_AUTH='Bearer ...'
-  FIBER_PAYEE_RPC_AUTH='Bearer ...'
+  FIBER_RPC_AUTH='Bearer ...' # shared fallback for both role-specific auth values
   FIBER_PAID_HTTP_SECRET='<32+ char random secret>'
   FIBER_E2E_AMOUNT_SHANNONS=100
   FIBER_SETTLEMENT_TIMEOUT_MS=60000
@@ -37,7 +39,7 @@ if [[ "${1:-}" == "-h" || "${1:-}" == "--help" || "${1:-}" == "help" ]]; then
 fi
 
 mkdir -p "${REPORT_DIR}"
-export PREFLIGHT_JSON PAYER_DOCTOR_JSON PAYEE_DOCTOR_JSON CANONICAL_LOG SUMMARY_JSON
+export PREFLIGHT_JSON PAYER_DOCTOR_JSON PAYEE_DOCTOR_JSON CANONICAL_LOG BOOTSTRAP_LOG SUMMARY_JSON
 
 export RUN_FIBER_E2E=1
 export FIBER_MODE="${FIBER_MODE:-testnet}"
@@ -51,9 +53,6 @@ if [[ -z "${FIBER_PAYEE_RPC_URL:-}" && -n "${FIBER_RPC_URL:-}" ]]; then
 fi
 
 secret_generated=false
-if [[ -z "${FIBER_PAID_HTTP_SECRET:-}" && -n "${FIBER_MPP_SECRET:-}" ]]; then
-  export FIBER_PAID_HTTP_SECRET="${FIBER_MPP_SECRET}"
-fi
 if [[ -z "${FIBER_PAID_HTTP_SECRET:-}" ]]; then
   export FIBER_PAID_HTTP_SECRET="$(node -e 'process.stdout.write(require("node:crypto").randomBytes(32).toString("hex"))')"
   secret_generated=true
@@ -84,17 +83,26 @@ NODE
 
 write_preflight
 
-if [[ "${FIBER_MODE}" != "testnet" ]]; then
-  node <<'NODE'
+if ! node <<'NODE'
 const fs = require("node:fs");
+const blockers = [
+  ...(process.env.FIBER_MODE === "testnet" ? [] : ["set FIBER_MODE=testnet; this script is only for separate testnet evidence"]),
+  ...(process.env.FIBER_PAYER_RPC_URL ? [] : ["set FIBER_PAYER_RPC_URL"]),
+  ...(process.env.FIBER_PAYEE_RPC_URL ? [] : ["set FIBER_PAYEE_RPC_URL or FIBER_RPC_URL"]),
+  ...(process.env.FIBER_PAYER_RPC_AUTH || process.env.FIBER_RPC_AUTH ? [] : ["set FIBER_PAYER_RPC_AUTH or FIBER_RPC_AUTH"]),
+  ...(process.env.FIBER_PAYEE_RPC_AUTH || process.env.FIBER_RPC_AUTH ? [] : ["set FIBER_PAYEE_RPC_AUTH or FIBER_RPC_AUTH"])
+];
+if (blockers.length === 0) process.exit(0);
 const summary = {
   status: "blocked",
-  blockers: ["set FIBER_MODE=testnet; this script is only for separate testnet evidence"],
+  blockers,
   preflight: process.env.PREFLIGHT_JSON
 };
 fs.writeFileSync(process.env.SUMMARY_JSON, `${JSON.stringify(summary, null, 2)}\n`);
-console.error(summary.blockers[0]);
+console.error(summary.blockers.join("; "));
+process.exit(1);
 NODE
+then
   exit 1
 fi
 
@@ -122,6 +130,8 @@ NODE
 
 run_doctor payer "${PAYER_DOCTOR_JSON}"
 run_doctor payee "${PAYEE_DOCTOR_JSON}"
+
+node scripts/fiber_production_bootstrap_e2e.mjs 2>&1 | tee "${BOOTSTRAP_LOG}"
 
 rm -f reports/fiber-e2e-result.json
 set +e
@@ -170,6 +180,8 @@ const summary = {
     payer_doctor: process.env.PAYER_DOCTOR_JSON,
     payee_doctor: process.env.PAYEE_DOCTOR_JSON,
     canonical_gate_log: process.env.CANONICAL_LOG,
+    production_bootstrap_log: process.env.BOOTSTRAP_LOG,
+    production_bootstrap: "reports/production-bootstrap-e2e.json",
     fiber_paid_http_gate: "reports/fiber-paid-http-gate.json",
     canonical_core_parity: "reports/canonical-core-parity.json",
     testnet_success: "reports/fiber-testnet-e2e-success.json",

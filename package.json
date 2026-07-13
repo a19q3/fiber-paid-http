@@ -5,7 +5,7 @@
   "type": "module",
   "packageManager": "pnpm@10.12.1",
   "license": "MIT",
-  "description": "Rust-first Fiber paid HTTP gateway with MPP, F402, and F-L402 compatibility envelopes.",
+  "description": "Rust-first MPP paid HTTP gateway with a proposed Fiber payment method profile and explicit F402/F-L402 adapters.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/a19q3/fiber-paid-http.git"
@@ -15,7 +15,7 @@
     "pnpm": ">=10.12.1"
   },
   "scripts": {
-    "lint": "pnpm -r --if-present lint",
+    "lint": "tsc -p tsconfig.json --noEmit && pnpm --filter @fiber-paid-http/evidence-web lint",
     "typecheck": "tsc -p tsconfig.json --noEmit && pnpm --filter @fiber-paid-http/evidence-web exec tsc -p tsconfig.json --noEmit",
     "test": "vitest run --config vitest.unit.config.ts",
     "test:integration": "vitest run --config vitest.integration.config.ts",
@@ -24,13 +24,18 @@
     "gate": "bash scripts/fiber_paid_http_gate.sh",
     "evidence:api": "pnpm --filter @fiber-paid-http/evidence-api start",
     "evidence:web": "pnpm --filter @fiber-paid-http/evidence-web start",
+    "evidence:production-bootstrap": "node scripts/fiber_production_bootstrap_e2e.mjs",
     "battlecode:tournament": "node scripts/battlecode_paid_http_tournament.mjs"
   },
   "dependencies": {
-    "@fiber-paid-http/cli": "workspace:*"
+    "@fiber-paid-http/cli": "workspace:*",
+    "@fiber-paid-http/core": "workspace:*",
+    "@fiber-paid-http/fiber-method": "workspace:*",
+    "@fiber-paid-http/storage": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
+    "mppx": "0.8.6",
     "tsx": "^4.20.0",
     "typescript": "^5.8.0",
     "vitest": "^3.2.0"

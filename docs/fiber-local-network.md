@@ -45,7 +45,15 @@ cd "$(git rev-parse --show-toplevel)"
 scripts/fiber_local_network.sh up
 ```
 
-The wrapper uses `ckb` and `ckb-cli`. If they are not already on `PATH`, it auto-detects the portable binaries at `$HOME/ckb-bin/ckb_v0.207.0_x86_64-unknown-linux-gnu-portable` or next to `$FIBER_REPO`.
+The wrapper requires CKB `0.202.0`, matching the version pinned by Fiber's E2E workflow and `ckb-sdk v5` response types. It rejects a different CKB version instead of attempting a best-effort boot. Set `FIBER_CKB_BIN` and, when needed, `FIBER_CKB_CLI_BIN` explicitly; the wrapper also auto-detects `.tmp/ckb-v0.202.0/target/release/ckb`, `$HOME/ckb-bin/ckb_v0.202.0_x86_64-unknown-linux-gnu-portable`, and the adjacent source checkouts.
+
+For a parent CKB checkout on another revision, build the pinned tag without changing that checkout:
+
+```bash
+git clone --shared --branch v0.202.0 --single-branch ../ckb .tmp/ckb-v0.202.0
+cargo build --locked --release --bin ckb \
+  --manifest-path .tmp/ckb-v0.202.0/Cargo.toml
+```
 
 The wrapper also uses Fiber's supported `sqlite` cargo feature for the local FNN binary build. This avoids the default RocksDB C++ build in constrained local environments while still running the current Fiber node implementation.
 
@@ -56,7 +64,9 @@ The wrapper also uses Fiber's supported `sqlite` cargo feature for the local FNN
 The two local shims are:
 
 - `scripts/bin/cargo`: delegates to the real Cargo binary and prints the delegated command. When Fiber's repo root runs `cargo build`, it adds `--no-default-features --features sqlite` so the local FNN binary uses Fiber's supported SQLite feature instead of requiring a RocksDB C++ build.
-- `scripts/bin/nc`: implements the `nc -z HOST PORT` check used by Fiber's wait script through Bash `/dev/tcp`, and prints the delegated check before running it.
+- `scripts/bin/nc`: implements the `nc -z HOST PORT` check used by Fiber's wait script. It delegates to the system `nc` with a two-second timeout when available and otherwise uses Bash `/dev/tcp`.
+
+On Linux the launcher uses `setsid`; on macOS it uses Bash job-control process groups plus `nohup`. In both cases the pid file identifies the whole local stack for a scoped shutdown.
 
 The production gate records observed shim use in `toolchain_shims_used` from `reports/fiber-local-network/start.log` and `reports/fiber-local-network/wait.log`.
 

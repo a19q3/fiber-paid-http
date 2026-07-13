@@ -8,10 +8,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { execFileSync } = require("node:child_process");
 const { productionBootstrapReadiness } = require("./scripts/lib/production-bootstrap-readiness.cjs");
-const {
-  normalizePreservedTestnetEvidence,
-  verifyPreservedTestnetEvidence
-} = require("./scripts/lib/testnet-fiber-evidence-readiness.cjs");
+const { verifyPreservedTestnetEvidence } = require("./scripts/lib/testnet-fiber-evidence-readiness.cjs");
 
 const requiredFiles = [
   "docs/production-operations.md",
@@ -90,21 +87,18 @@ const productionBootstrap = fs.existsSync("reports/production-bootstrap-e2e.json
   ? JSON.parse(fs.readFileSync("reports/production-bootstrap-e2e.json", "utf8"))
   : {};
 const testnetEvidencePath = "reports/fiber-testnet-e2e-success.json";
-let testnetEvidenceReport = fs.existsSync(testnetEvidencePath)
+const testnetEvidenceReport = fs.existsSync(testnetEvidencePath)
   ? JSON.parse(fs.readFileSync(testnetEvidencePath, "utf8"))
   : null;
 const currentFiberCommit = readFiberCommit();
-const testnetEvidenceRecordedAt = readTestnetEvidenceRecordedAt(testnetEvidenceReport);
-testnetEvidenceReport = normalizePreservedTestnetEvidence(testnetEvidenceReport, {
-  fallbackRecordedAt: testnetEvidenceRecordedAt
-});
 const testnetEvidenceCheck = verifyPreservedTestnetEvidence(testnetEvidenceReport, {
   path: testnetEvidencePath,
-  expectedFiberCommit: currentFiberCommit,
-  fallbackRecordedAt: testnetEvidenceRecordedAt
+  expectedFiberCommit: currentFiberCommit
 });
 const testnetEvidence = testnetEvidenceCheck.verified;
-const productionBootstrapCheck = productionBootstrapReadiness(productionBootstrap);
+const productionBootstrapCheck = productionBootstrapReadiness(productionBootstrap, {
+  expectedFiberCommit: currentFiberCommit
+});
 const productionBootstrapReady = productionBootstrapCheck.ready;
 const remainingBlockers = [
   ...(testnetEvidence ? [] : ["testnet Fiber E2E evidence still pending"]),
@@ -162,21 +156,4 @@ function fiberRepoCandidates() {
   ].filter(Boolean)));
 }
 
-function readTestnetEvidenceRecordedAt(report) {
-  if (report && typeof report === "object") {
-    const direct =
-      report.testnet_evidence_recorded_at ||
-      report.generated_at ||
-      report.gate_report?.testnet_evidence_recorded_at ||
-      report.gate_report?.generated_at;
-    if (direct) {
-      return direct;
-    }
-  }
-  const wrapperPath = "reports/fiber-testnet-e2e/testnet-e2e-report.json";
-  if (!fs.existsSync(wrapperPath)) {
-    return null;
-  }
-  return JSON.parse(fs.readFileSync(wrapperPath, "utf8")).generated_at || null;
-}
 JSON

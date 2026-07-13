@@ -1,0 +1,59 @@
+{
+  "input": {
+    "case": "x402.payload",
+    "payment_payload": {
+      "x402Version": 2,
+      "resource": {
+        "url": "https://conformance.example.com/paid/weather"
+      },
+      "accepted": {
+        "scheme": "exact",
+        "network": "fiber:testnet",
+        "amount": "1001",
+        "asset": "fiber:ckb",
+        "payTo": "03fiberconformancepayee",
+        "maxTimeoutSeconds": 120,
+        "extra": {
+          "fiber": {
+            "profile": "fiber-charge-v1",
+            "currency": "ckb",
+            "description": "Conformance charge",
+            "invoice": "fibt1qconformancepayment0001",
+            "paymentHash": "0xabababababababababababababababababababababababababababababababab",
+            "hashAlgorithm": "ckb_hash"
+          }
+        }
+      },
+      "payload": {
+        "paymentHash": "0xabababababababababababababababababababababababababababababababab"
+      }
+    },
+    "challenge": {
+      "id": "oISllrpItMxR5hXIPpbShsi8o9-HYE7T56NVKOfkTBI",
+      "realm": "conformance.example.com",
+      "method": "fiber",
+      "intent": "charge",
+      "request": "eyJhbW91bnQiOiIxMDAwIiwiY3VycmVuY3kiOiJja2IiLCJkZXNjcmlwdGlvbiI6IkNvbmZvcm1hbmNlIGNoYXJnZSIsIm1ldGhvZERldGFpbHMiOnsiaGFzaEFsZ29yaXRobSI6ImNrYl9oYXNoIiwiaW52b2ljZSI6ImZpYnQxcWNvbmZvcm1hbmNlcGF5bWVudDAwMDEiLCJuZXR3b3JrIjoidGVzdG5ldCIsInBheW1lbnRIYXNoIjoiMHhhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiIn0sInJlY2lwaWVudCI6IjAzZmliZXJjb25mb3JtYW5jZXBheWVlIn0",
+      "expires": "2030-01-01T00:00:00.000Z"
+    },
+    "expected_resource_url": "https://conformance.example.com/paid/weather",
+    "expected_credential": {
+      "challenge": {
+        "id": "oISllrpItMxR5hXIPpbShsi8o9-HYE7T56NVKOfkTBI",
+        "realm": "conformance.example.com",
+        "method": "fiber",
+        "intent": "charge",
+        "request": "eyJhbW91bnQiOiIxMDAwIiwiY3VycmVuY3kiOiJja2IiLCJkZXNjcmlwdGlvbiI6IkNvbmZvcm1hbmNlIGNoYXJnZSIsIm1ldGhvZERldGFpbHMiOnsiaGFzaEFsZ29yaXRobSI6ImNrYl9oYXNoIiwiaW52b2ljZSI6ImZpYnQxcWNvbmZvcm1hbmNlcGF5bWVudDAwMDEiLCJuZXR3b3JrIjoidGVzdG5ldCIsInBheW1lbnRIYXNoIjoiMHhhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiIn0sInJlY2lwaWVudCI6IjAzZmliZXJjb25mb3JtYW5jZXBheWVlIn0",
+        "expires": "2030-01-01T00:00:00.000Z"
+      },
+      "source": "x402",
+      "payload": {
+        "paymentHash": "0xabababababababababababababababababababababababababababababababab"
+      }
+    }
+  },
+  "expected_canonical_hash": "a8d006583fddb0cb6201da58a392971632a75e49953159f49afb21be87023cc6",
+  "expected_verification_result": "rejected",
+  "expected_error_code": "x402-fiber-requirement-mismatch",
+  "notes": "Changed x402 accepted requirement."
+}

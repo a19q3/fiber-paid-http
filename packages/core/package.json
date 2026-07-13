@@ -2,7 +2,7 @@
   "name": "@fiber-paid-http/core",
   "version": "0.1.0",
   "type": "module",
-  "description": "Core Fiber Paid HTTP protocol types, signing, serialization, and HTTP helpers.",
+  "description": "MPP Payment authentication types, Fiber charge method schemas, JCS encoding, and HTTP helpers.",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -15,6 +15,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "json-canonicalize": "^2.0.0",
     "zod": "^3.25.0"
   }
 }

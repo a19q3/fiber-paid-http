@@ -1,0 +1,91 @@
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.07s
+(node:76271) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+{
+  "schema": "fiber-paid-http-production-bootstrap-v1",
+  "generated_at": "2026-07-13T10:16:46.909Z",
+  "fiber_commit": "e00d0e3c9a9284ea1c7705d360be615cfce1a5c6",
+  "status": "passed",
+  "mode": "testnet",
+  "engine": "rust",
+  "transport": {
+    "tls": true,
+    "protocol": "TLSv1.3",
+    "public_base_url": "https://127.0.0.1:52135",
+    "self_signed_test_certificate": true
+  },
+  "payer_bootstrap": {
+    "status": "ready",
+    "node_id": "033d8737adc53dbe4c84bcae4480069d9d9131b5986eca450c3ee6ca1d513089ef",
+    "rpc_auth_from_env": true,
+    "rpc_auth_enforced": true,
+    "missing_auth_rejected": true,
+    "invalid_auth_rejected": true,
+    "peers": 4,
+    "channels": 3,
+    "ready_channels": 2
+  },
+  "payee_bootstrap": {
+    "status": "ready",
+    "node_id": "02760bbfc04ff9b01fc241d866b915fc6a0c796e831a45d9c55e37c4b7aa760614",
+    "rpc_auth_from_env": true,
+    "rpc_auth_enforced": true,
+    "missing_auth_rejected": true,
+    "invalid_auth_rejected": true,
+    "peers": 4,
+    "channels": 2,
+    "ready_channels": 2
+  },
+  "gateway_bootstrap": {
+    "status": "ready",
+    "server_id": "fiber-paid-http-production-bootstrap-e2e",
+    "engine": "rust",
+    "rust_gateway": true,
+    "rpc_auth_from_env": true,
+    "log_redaction_enabled": true,
+    "rate_limit_enforced": true,
+    "body_limit_enforced": true,
+    "upstream_timeout_enforced": true,
+    "upstream_response_limit_enforced": true,
+    "graceful_shutdown": true,
+    "graceful_shutdown_duration_ms": 5
+  },
+  "unpaid_request_status": 402,
+  "paid_request": {
+    "status": 200,
+    "receipt_reference": "0xc7e900f1e59b3312f955170b8782607c4ad66a44e9f652be5e6c75a309cbc10b",
+    "challenge_id": "pnSiL_EM-NzhPWxjD92PkKusuB3eFLXbLnPcsPy0Emk",
+    "payment_hash": "0xc7e900f1e59b3312f955170b8782607c4ad66a44e9f652be5e6c75a309cbc10b",
+    "receipt_schema_valid": true,
+    "settlement_status": "settled",
+    "delivery_status": "delivered",
+    "delivery_response_status": 200
+  },
+  "replay": {
+    "status": 402,
+    "receipt_reissued": false,
+    "service_executions": 1
+  },
+  "operational_limits": {
+    "body_limit_status": 413,
+    "rate_limit_status": 429,
+    "retry_after_present": true,
+    "upstream_response_limit_status": 502,
+    "upstream_response_limit_receipt_reissued": false,
+    "upstream_timeout_status": 502,
+    "upstream_timeout_receipt_reissued": false
+  },
+  "storage": {
+    "schema_version": 1,
+    "journal_mode": "wal",
+    "foreign_keys": true,
+    "integrity_check": "ok",
+    "receipts": 1,
+    "valid_receipts": 1,
+    "invalid_receipts": 0,
+    "failed_deliveries": 2,
+    "expected_probe_failed_deliveries": 2,
+    "unexpected_failed_deliveries": 0
+  },
+  "blockers": []
+}

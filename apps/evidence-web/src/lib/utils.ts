@@ -43,6 +43,13 @@ export function ckbToShannons(value: string): string {
   return (BigInt(whole || "0") * 100000000n + BigInt(fraction.padEnd(8, "0"))).toString();
 }
 
+export function shannonsToCkb(value: string): string {
+  const amount = BigInt(value || "0");
+  const whole = amount / 100000000n;
+  const fraction = (amount % 100000000n).toString().padStart(8, "0").replace(/0+$/, "");
+  return fraction ? `${whole}.${fraction}` : whole.toString();
+}
+
 export function normalizeApiBase(value: string): string {
   let text = String(value || "").trim().replace(/\/+$/, "");
   if (!text) return "";

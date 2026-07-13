@@ -1,9 +1,9 @@
 {
   "engine": "typescript",
-  "verified": 18,
+  "verified": 22,
   "failed": 0,
-  "shared_vectors_total": 18,
-  "shared_vectors_passed": 18,
+  "shared_vectors_total": 22,
+  "shared_vectors_passed": 22,
   "results": [
     {
       "file": "attack.expired-challenge.json",
@@ -12,16 +12,16 @@
       "actual": "rejected",
       "expected_error_code": "expired-challenge",
       "actual_error_code": "expired-challenge",
-      "canonical_hash": "8089afe25f5744364e5dfb5b03b923559ef50d8d4e9ad55fd3aec41db8f20718"
+      "canonical_hash": "078fb951df4f80dfb1fde2957806587a4692c5907fed4b5d09a97a9c3c73e98b"
     },
     {
-      "file": "attack.fl402-tampered-macaroon.json",
+      "file": "attack.fl402-tampered-capability.json",
       "passed": true,
       "expected": "rejected",
       "actual": "rejected",
-      "expected_error_code": "bad-fl402-macaroon-signature",
-      "actual_error_code": "bad-fl402-macaroon-signature",
-      "canonical_hash": "f7a6770fee93696b69e877e26edf4184f9c68a2d77e779f1f3a5d93aa0592e00"
+      "expected_error_code": "bad-fl402-capability-signature",
+      "actual_error_code": "bad-fl402-capability-signature",
+      "canonical_hash": "97c427edef2f3f16ef4d65d8f05f122e9e8418d6919af05c6487e928e582c128"
     },
     {
       "file": "attack.fl402-wrong-preimage.json",
@@ -30,7 +30,16 @@
       "actual": "rejected",
       "expected_error_code": "wrong-preimage",
       "actual_error_code": "wrong-preimage",
-      "canonical_hash": "f9e553be8e0cb7b3430a0a02fb691167672deb5eaf1d6ddda7226b198d504651"
+      "canonical_hash": "ab47c784add5c0a4128d4902440b1cf5c587b9bc829254f1aeeec959f671a3d5"
+    },
+    {
+      "file": "attack.receipt-on-error.json",
+      "passed": true,
+      "expected": "rejected",
+      "actual": "rejected",
+      "expected_error_code": "receipt-on-error-response",
+      "actual_error_code": "receipt-on-error-response",
+      "canonical_hash": "892a53107af6345acb33fd7b602aec258ea366e8312040874e097188269c63ed"
     },
     {
       "file": "attack.replay.json",
@@ -39,16 +48,7 @@
       "actual": "rejected",
       "expected_error_code": "replay",
       "actual_error_code": "replay",
-      "canonical_hash": "a77dc9b750d6420ff77f419bd2554716d7f1fb166b11640d0fd4c2169de93497"
-    },
-    {
-      "file": "attack.tampered-receipt.json",
-      "passed": true,
-      "expected": "rejected",
-      "actual": "rejected",
-      "expected_error_code": "bad-receipt-signature",
-      "actual_error_code": "bad-receipt-signature",
-      "canonical_hash": "d1c8378de496ddaec3947905d84c201fd56a1dfbd5b0901f3c678fc9b7662b10"
+      "canonical_hash": "f26c9a310d3c32af61d7a799bfa647fa0ff789d19ab97e7f56e0e661e2b09fee"
     },
     {
       "file": "attack.wrong-amount.json",
@@ -57,7 +57,7 @@
       "actual": "rejected",
       "expected_error_code": "wrong-amount",
       "actual_error_code": "wrong-amount",
-      "canonical_hash": "e62f9e8bccf2b01b2db3bb27d4726796d5d7a9d7c981281d9a605c36aea3fe42"
+      "canonical_hash": "91c3b9687d00ffa6f75f3a8aaaaaac5e61e5a8efbf8b736069d30972d6144be5"
     },
     {
       "file": "attack.wrong-method.json",
@@ -66,7 +66,7 @@
       "actual": "rejected",
       "expected_error_code": "wrong-method",
       "actual_error_code": "wrong-method",
-      "canonical_hash": "c9b9918a163cc938e166c8fe5b6ddf1b3222df987dddda809de1083618d43eee"
+      "canonical_hash": "ebcb2feff7f1f27d230c9528b09edd639f3475e403a96dfee9293766968b72d1"
     },
     {
       "file": "attack.wrong-resource.json",
@@ -75,77 +75,107 @@
       "actual": "rejected",
       "expected_error_code": "wrong-resource",
       "actual_error_code": "wrong-resource",
-      "canonical_hash": "5b0504376e9d5d41afcb9193b42310591b2bca912b5eb3a7872c1817d0d90f2d"
+      "canonical_hash": "94b98b6ff831fd41f87426a2ce84925de6e9c8a396b22b00dc89cf431baaec7d"
+    },
+    {
+      "file": "attack.x402-tampered-requirement.json",
+      "passed": true,
+      "expected": "rejected",
+      "actual": "rejected",
+      "expected_error_code": "x402-fiber-requirement-mismatch",
+      "actual_error_code": "x402-fiber-requirement-mismatch",
+      "canonical_hash": "a8d006583fddb0cb6201da58a392971632a75e49953159f49afb21be87023cc6"
     },
     {
       "file": "challenge.valid.json",
       "passed": true,
       "expected": "accepted",
       "actual": "accepted",
-      "canonical_hash": "39929801fb5edc2dcc4070d06450f67037a0216246ceba334c4eeb90b942875d"
+      "canonical_hash": "6b6257d0d870a95ceea87cfff5b8cf51d075b60d6defa9940a4bd2656e266485"
     },
     {
       "file": "credential.valid.json",
       "passed": true,
       "expected": "accepted",
       "actual": "accepted",
-      "canonical_hash": "bc7e48cc5815e879c7188e72f911966d2426ae64cbf00d703b5b446fb98c99fd"
+      "canonical_hash": "175a9e2d01016b07552f4a99e4a704583b43b2cef85c9e8aaec27b8ad263a040"
     },
     {
       "file": "f402.challenge.valid.json",
       "passed": true,
       "expected": "accepted",
       "actual": "accepted",
-      "canonical_hash": "24680e201fce4e106157a8c47f9fe8785ea6e196598eaba4e130edec3ddd249a"
+      "canonical_hash": "1bec04203a18be033b9994299f67e35734ae351ebc74dc3d122059e63c61a337"
     },
     {
       "file": "f402.credential.valid.json",
       "passed": true,
       "expected": "accepted",
       "actual": "accepted",
-      "canonical_hash": "f60cdf07bb309b0edd6fb395b4e6eaf8e18da10b81f34e76d2fb773af19d2ede"
+      "canonical_hash": "0d0547f00006b5ffdba75a77372474c584abe3f470df42a683c7f99f25148db6"
     },
     {
       "file": "fiber.local-e2e.receipt.json",
       "passed": true,
       "expected": "accepted",
       "actual": "accepted",
-      "canonical_hash": "c3c864da2b11a57ec0ea14663fc5f3c25d1255985d7d79c0ff33ecf2425377aa"
+      "canonical_hash": "a1644667f2e3aca70c2d6453f46fd7e824aa559025b819d43f99b1b2a18a9d36"
     },
     {
       "file": "fiber.local-e2e.report.json",
       "passed": true,
       "expected": "accepted",
       "actual": "accepted",
-      "canonical_hash": "98b137e8e8227ff2547e4691cd9be558c3c879677bcd2ebe0410e4d127093aad"
+      "canonical_hash": "17b8827dcd2691a8a6a0179c93b4908789fefdfb78e9bea9455037d248dd1fe0"
     },
     {
       "file": "fl402.challenge.valid.json",
       "passed": true,
       "expected": "accepted",
       "actual": "accepted",
-      "canonical_hash": "905c7c0e5120561641d67615c1962ff381362e9239afde5e3500c447b971f908"
+      "canonical_hash": "ce2aa23916600f729a52041511b2c18df3a58af995e13d5c4935dc74a156583b"
     },
     {
       "file": "fl402.credential.valid.json",
       "passed": true,
       "expected": "accepted",
       "actual": "accepted",
-      "canonical_hash": "72cf6af73f10e8d6f925fe3e77542e14ff4717ac52fdf8540e7f3323d75f1220"
+      "canonical_hash": "379126dfe429d2c692d9263cceb0ee896b3ef17ac5511500c7640c95591bf0ab"
     },
     {
       "file": "receipt.valid.json",
       "passed": true,
       "expected": "accepted",
       "actual": "accepted",
-      "canonical_hash": "3c39c6c889c4babde996e8fd17cfc67753366c304f7488b20891ac18cebdc1e2"
+      "canonical_hash": "299ab67c8bb7be2d3211ae9b3539e0725c8d7940603073caadb9061478e6f6e5"
     },
     {
       "file": "resource.hash.valid.json",
       "passed": true,
       "expected": "accepted",
       "actual": "accepted",
-      "canonical_hash": "1a46318cf6aea460733f14322a782a3f84975539ce31844c83b832d428b988b8"
+      "canonical_hash": "15073d9e9e6045fe67847fa7a4861438a3f6d8655609e3ddf2cac99625b485fa"
+    },
+    {
+      "file": "x402.payload.valid.json",
+      "passed": true,
+      "expected": "accepted",
+      "actual": "accepted",
+      "canonical_hash": "51d3fb41c5c35729abca902100939f699ab5829f51a3ad923ff93eeb8dac4999"
+    },
+    {
+      "file": "x402.required.valid.json",
+      "passed": true,
+      "expected": "accepted",
+      "actual": "accepted",
+      "canonical_hash": "cfeed4cf0fb982877bfaf497a73fadd973028bd9b8301f4900a8b61f6c47dcab"
+    },
+    {
+      "file": "x402.settlement.valid.json",
+      "passed": true,
+      "expected": "accepted",
+      "actual": "accepted",
+      "canonical_hash": "e8dfb4a39b8a769de6c0eae2ab1b37c91ea55378039a2e279c51712666867300"
     }
   ]
 }

@@ -1,40 +1,17 @@
 {
   "input": {
-    "case": "challenge.valid",
+    "case": "mpp.challenge",
     "secret": "fiber-paid-http-conformance-secret",
     "challenge": {
-      "domain": "fiber-paid-http-challenge-v1",
-      "challengeId": "chal_conformance_0001",
-      "resource": {
-        "method": "GET",
-        "url": "http://conformance.local/paid/weather"
-      },
-      "amount": {
-        "value": "1000",
-        "currency": "CKB"
-      },
-      "methods": [
-        {
-          "method": "fiber",
-          "intent": "charge",
-          "asset": "CKB",
-          "amountShannons": "1000",
-          "paymentHash": "0xabababababababababababababababababababababababababababababababab",
-          "invoice": "fibd1qconformancepayment0001",
-          "fiberNodeId": "fiber-node-conformance-payee",
-          "fiberRpcLabel": "conformance-local",
-          "expiresAt": "2030-01-01T00:00:00.000Z"
-        }
-      ],
-      "nonce": "0123456789abcdef0123456789abcdef",
-      "issuedAt": "2026-06-24T00:00:00.000Z",
-      "expiresAt": "2030-01-01T00:00:00.000Z",
-      "serverId": "fiber-paid-http-ts-conformance",
-      "maxUses": 1
-    },
-    "signature": "3c24d7c4122d7892c469f17b0695cd914661451db344832e2be4940341f890db"
+      "id": "-KveO8VNE_AFk50OGn2xSnKMokF5HweGjq-fmeyj4Rg",
+      "realm": "conformance.example.com",
+      "method": "fiber",
+      "intent": "charge",
+      "request": "eyJhbW91bnQiOiIxMDAwIiwiY3VycmVuY3kiOiJja2IiLCJkZXNjcmlwdGlvbiI6IkNvbmZvcm1hbmNlIGNoYXJnZSIsIm1ldGhvZERldGFpbHMiOnsiaGFzaEFsZ29yaXRobSI6ImNrYl9oYXNoIiwiaW52b2ljZSI6ImZpYnQxcWNvbmZvcm1hbmNlcGF5bWVudDAwMDEiLCJuZXR3b3JrIjoidGVzdG5ldCIsInBheW1lbnRIYXNoIjoiMHhhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiYWJhYmFiIn19",
+      "expires": "2030-01-01T00:00:00.000Z"
+    }
   },
-  "expected_canonical_hash": "39929801fb5edc2dcc4070d06450f67037a0216246ceba334c4eeb90b942875d",
+  "expected_canonical_hash": "6b6257d0d870a95ceea87cfff5b8cf51d075b60d6defa9940a4bd2656e266485",
   "expected_verification_result": "accepted",
-  "notes": "Signed Fiber Paid HTTP challenge with a deterministic Fiber method and HMAC signature."
+  "notes": "Bound MPP-draft challenge."
 }

@@ -1,40 +1,20 @@
-# Rust Architecture
+# Rust architecture
 
-The Rust workspace under `crates/` is the canonical protocol core and verifier target. The core, storage traits, Fiber RPC method-shape parity, F402/F-L402 helpers, Axum gateway, and CLI vector/receipt verification are the current trusted Rust surfaces.
+Rust owns the production authorization decision.
 
 ```text
-crates/fiber-paid-http-core     canonical hashes, signatures, vector verification
-crates/fiber-paid-http-storage  replay storage trait and SQLite durable store
-crates/fiber-paid-http-fiber    Fiber JSON-RPC method names, hex quantities, status semantics
-crates/fiber-paid-http-f402     F402 proof/credential compatibility helpers
-crates/fiber-paid-http-fl402    F-L402 macaroon/preimage verification helpers
-crates/fiber-paid-http-server   Axum/Tower HTTP 402 gateway with optional L402 authorization
-crates/fiber-paid-http-cli      fiber-paid-http-rs binary
+fiber-paid-http-core     MPP model, JCS, headers, bindings, vectors
+fiber-paid-http-fiber    Fiber JSON-RPC and settlement polling
+fiber-paid-http-storage  SQLite state and atomic redemption
+fiber-paid-http-f402     F402 mapping
+fiber-paid-http-x402     x402 v2 exact/Fiber boundary mapping
+fiber-paid-http-fl402    F-L402 capability and preimage verification
+fiber-paid-http-server   Axum gateway and upstream delivery
+fiber-paid-http-cli      Verification and server commands
 ```
 
-## Trusted Boundary
+The server performs async Fiber RPC without holding the SQLite mutex. It reacquires the store only for the atomic redemption and later delivery/receipt writes.
 
-Rust owns the intended production verification boundary:
+Dynamic protocol extensions use flattened `BTreeMap<String, Value>` fields so serialization order is deterministic. HMACs use the `hmac` crate; JSON canonicalization uses `serde_jcs`; dynamic vector input uses `serde_json::Value`.
 
-- canonical JSON hashing,
-- challenge HMAC verification,
-- receipt HMAC verification,
-- resource binding,
-- amount binding,
-- method binding,
-- expiry rejection,
-- replay store boundary,
-- F-L402 macaroon/preimage verification,
-- Fiber RPC method-shape parity.
-
-Current Rust server status:
-
-- returns visible `402 Payment Required` responses,
-- sets `Cache-Control: no-store`,
-- issues signed MPP challenges,
-- optionally issues F-L402 challenge bodies and `WWW-Authenticate: L402`,
-- accepts `Authorization: Payment` and optional `Authorization: L402`,
-- persists challenges, receipts, and replay state in SQLite,
-- calls the Fiber RPC adapter for settlement checks.
-
-TypeScript remains a maintained JS integration layer, middleware package, compatibility adapter layer, evidence console, and vector harness. It must continue to pass its own compatibility gate, but production verification should use Rust.
+The Rust CLI exposes `vectors verify`, `receipt verify`, `challenge inspect`, `doctor`, and `server --config`. There is one binary name: `fiber-paid-http-rs`.

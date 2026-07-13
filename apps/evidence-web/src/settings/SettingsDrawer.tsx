@@ -98,20 +98,19 @@ export function SettingsDrawer() {
                 const ep = endpoints.find((item) => item.path === e.target.value);
                 if (!ep || ev.busy) return;
                 ev.setSelected(ep.path);
-                if (ep.price.value) ev.setAmountCkb(ep.price.value);
-                if (ep.fiberAmountShannons) ev.setAmountShannons(ep.fiberAmountShannons);
+                ev.setAmountShannons(ep.charge.amount);
                 await ev.resetEvidenceFlow("resource selected in settings");
               }}>
-                {endpoints.map((ep) => <option key={ep.path} value={ep.path}>{ep.label} · {ep.price.display}</option>)}
+                {endpoints.map((ep) => <option key={ep.path} value={ep.path}>{ep.label} · {ep.charge.display}</option>)}
               </select>
             </div>
             <div className="field-grid">
               <div className="field">
-                <span><Icon name="Price" /> Price (CKB)</span>
-                <input id="settings-amount-ckb" value={ev.parameters.amountCkb} onChange={(e) => ev.setAmountCkb(e.target.value)} inputMode="decimal" />
+                <span><Icon name="Price" /> Derived amount (CKB)</span>
+                <input id="settings-amount-ckb" value={ev.parameters.amountCkb} readOnly />
               </div>
               <div className="field">
-                <span><Icon name="ResourceHash" /> Fiber amount (shannons)</span>
+                <span><Icon name="ResourceHash" /> Charge amount (shannons)</span>
                 <input id="settings-amount-shannons" value={ev.parameters.amountShannons} onChange={(e) => ev.setAmountShannons(e.target.value)} inputMode="numeric" />
               </div>
             </div>

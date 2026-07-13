@@ -65,7 +65,7 @@ export class ApiClient {
 }
 
 export function readConsoleSessionId(routeParams: URLSearchParams): string {
-  const key = "fiberMppConsoleSessionId";
+  const key = "fiberPaidHttpConsoleSessionId";
   try {
     const requested = normalizeConsoleSessionId(routeParams.get("sessionId"));
     if (requested) {
@@ -92,7 +92,7 @@ export function getInitialApiBase(savedApiBase?: string | null): string {
     const metaApiBase = document.querySelector('meta[name="api-base"]')?.getAttribute("content");
     if (metaApiBase) return metaApiBase.replace(/\/+$/, "");
     if (savedApiBase) return savedApiBase.replace(/\/+$/, "");
-    const localStorageApi = localStorage.getItem("fiberMppApi");
+    const localStorageApi = localStorage.getItem("fiberPaidHttpApi");
     if (localStorageApi) return localStorageApi.replace(/\/+$/, "");
     return DEFAULT_API_BASE;
   } catch {

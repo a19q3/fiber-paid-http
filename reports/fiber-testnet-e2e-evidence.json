@@ -1,12 +1,12 @@
 {
   "evidence": true,
   "source_report": "reports/fiber-testnet-e2e-success.json",
-  "testnet_evidence_recorded_at": "2026-06-25T03:14:53.023Z",
-  "testnet_evidence_digest": "sha256:9b353342ec232458e48ab0a39f66828180935de17fbbda08db4804090f26d5ed",
-  "payment_hash": "0x8adaeeb1c27b698d5a63447588f3de62568f94e23effeda973ff70281a545f9b",
-  "receipt_id": "rcpt_9ff3edb34ee30f56d20c3c6bf01fb453",
-  "fiber_commit": "3c25bcf16200e5d641dcd9b79f086f391e976172",
-  "production_bootstrap_e2e": true,
+  "testnet_evidence_recorded_at": "2026-07-13T10:18:23.785Z",
+  "testnet_evidence_digest": "sha256:3c3bd52c3da7e7f78e37eda480d053c66bcc2f2d292ccc4e1ae9299b91d461d9",
+  "payment_hash": "0x40c26ad40908a0e1e684d7de77766ed2d5cd171e884f870d1d52d44e2ed06df0",
+  "receipt_reference": "0x40c26ad40908a0e1e684d7de77766ed2d5cd171e884f870d1d52d44e2ed06df0",
+  "challenge_id": "dPwvrAdOjOrfg-oI_ZTlc3cTjKUOG8xRP_RPPyL71wY",
+  "fiber_commit": "e00d0e3c9a9284ea1c7705d360be615cfce1a5c6",
   "production_ready_for_fiber_method": true,
   "blockers": []
 }

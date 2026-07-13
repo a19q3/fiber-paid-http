@@ -1,0 +1,22 @@
+{
+  "name": "@fiber-paid-http/x402-compat",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Strict x402 v2 exact-scheme converters for the proposed Fiber payment method.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@fiber-paid-http/core": "workspace:*",
+    "@x402/core": "2.18.0",
+    "zod": "^3.25.0"
+  }
+}

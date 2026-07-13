@@ -1,26 +1,18 @@
-import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import {
   PaymentChallengeSchema,
-  PaymentReceiptSchema,
-  PaymentReceiptUnsignedSchema,
   type PaymentChallenge,
   type PaymentCredential,
-  type PaymentReceipt,
-  type PaymentReceiptUnsigned,
   type ResourceDescriptor
 } from "./types.js";
 import { canonicalJson } from "./canonical.js";
 
-export function randomId(prefix: string): string {
-  return `${prefix}_${randomBytes(16).toString("hex")}`;
-}
-
-export function randomNonce(): string {
-  return randomBytes(16).toString("hex");
-}
-
 export function sha256Hex(input: string | Buffer): string {
   return createHash("sha256").update(input).digest("hex");
+}
+
+export function sha256Base64(input: string | Buffer): string {
+  return createHash("sha256").update(input).digest("base64");
 }
 
 export function hmacHex(secret: string, value: unknown): string {
@@ -36,56 +28,32 @@ export function timingSafeEqualString(a: string, b: string): boolean {
   return timingSafeEqual(left, right);
 }
 
-export function signChallenge(challenge: PaymentChallenge, secret: string): string {
-  PaymentChallengeSchema.parse(challenge);
-  return hmacHex(secret, challenge);
+export function challengeBindingInput(challenge: Omit<PaymentChallenge, "id"> | PaymentChallenge): string {
+  return [
+    challenge.realm,
+    challenge.method,
+    challenge.intent,
+    challenge.request,
+    challenge.expires ?? "",
+    challenge.digest ?? "",
+    challenge.opaque ?? ""
+  ].join("|");
 }
 
-export function verifyChallengeSignature(
+export function bindChallengeId(challenge: Omit<PaymentChallenge, "id">, secret: string): string {
+  return createHmac("sha256", secret).update(challengeBindingInput(challenge)).digest("base64url");
+}
+
+export function verifyChallengeId(
   challenge: PaymentChallenge,
-  signature: string,
   secret: string
 ): boolean {
-  const expected = signChallenge(challenge, secret);
-  return timingSafeEqualString(expected, signature);
+  const parsed = PaymentChallengeSchema.parse(challenge);
+  return timingSafeEqualString(parsed.id, bindChallengeId(parsed, secret));
 }
 
-export function verifyChallengeSignatureWithAnySecret(
-  challenge: PaymentChallenge,
-  signature: string,
-  secrets: string[]
-): boolean {
-  return secrets.some((secret) => verifyChallengeSignature(challenge, signature, secret));
-}
-
-export function unsignedReceipt(receipt: PaymentReceipt): PaymentReceiptUnsigned {
-  const { signature: _signature, ...unsigned } = receipt;
-  return PaymentReceiptUnsignedSchema.parse(unsigned);
-}
-
-export function signReceipt(receipt: PaymentReceiptUnsigned, secret: string): string {
-  PaymentReceiptUnsignedSchema.parse(receipt);
-  return hmacHex(secret, receipt);
-}
-
-export function attachReceiptSignature(
-  receipt: PaymentReceiptUnsigned,
-  secret: string
-): PaymentReceipt {
-  return PaymentReceiptSchema.parse({
-    ...receipt,
-    signature: signReceipt(receipt, secret)
-  });
-}
-
-export function verifyReceiptSignature(receipt: PaymentReceipt, secret: string): boolean {
-  const parsed = PaymentReceiptSchema.parse(receipt);
-  const signature = signReceipt(unsignedReceipt(parsed), secret);
-  return timingSafeEqualString(signature, parsed.signature);
-}
-
-export function verifyReceiptSignatureWithAnySecret(receipt: PaymentReceipt, secrets: string[]): boolean {
-  return secrets.some((secret) => verifyReceiptSignature(receipt, secret));
+export function verifyChallengeIdWithAnySecret(challenge: PaymentChallenge, secrets: string[]): boolean {
+  return secrets.some((secret) => verifyChallengeId(challenge, secret));
 }
 
 export function resourceHash(resource: ResourceDescriptor): string {

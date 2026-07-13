@@ -5,6 +5,16 @@ import { describe, expect, it } from "vitest";
 
 const repoRoot = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const blockedTerm = `${"mo"}${"ck"}`;
+const removedContractTerms = [
+  `${"leg"}${"acy"}`,
+  `${"receipt"}${"Id"}`,
+  `${"receipt"}_${"id"}`,
+  `${"FIBER"}_${"MPP"}`,
+  `${"fiber"}_${"mpp"}`,
+  `${"fl402"}-${"macaroon"}`,
+  `${"signed"} ${"receipt"}`,
+  `${"signed"} ${"challenge"}`
+];
 const scanRoots = [
   "AGENTS.md",
   "README.md",
@@ -54,6 +64,23 @@ describe("product surface wording", () => {
       lines.forEach((line, index) => {
         if (line.toLowerCase().includes(blockedTerm)) {
           violations.push(`${file}:${index + 1}: ${line.trim()}`);
+        }
+      });
+    }
+    expect(violations).toEqual([]);
+  });
+
+  it("does not reintroduce removed protocol contracts", async () => {
+    const files = await collectScannedFiles();
+    const violations: string[] = [];
+    for (const file of files) {
+      const text = await readFile(join(repoRoot, file), "utf8");
+      const lines = text.split(/\r?\n/);
+      lines.forEach((line, index) => {
+        for (const term of removedContractTerms) {
+          if (line.toLowerCase().includes(term.toLowerCase())) {
+            violations.push(`${file}:${index + 1}: ${term}: ${line.trim()}`);
+          }
         }
       });
     }

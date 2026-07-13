@@ -8,6 +8,7 @@ export const aliases = {
   "@fiber-paid-http/storage": resolve(root, "packages/storage/src/index.ts"),
   "@fiber-paid-http/fiber-method": resolve(root, "packages/fiber-method/src/index.ts"),
   "@fiber-paid-http/f402-compat": resolve(root, "packages/f402-compat/src/index.ts"),
+  "@fiber-paid-http/x402-compat": resolve(root, "packages/x402-compat/src/index.ts"),
   "@fiber-paid-http/fl402-compat": resolve(root, "packages/fl402-compat/src/index.ts"),
   "@fiber-paid-http/server-middleware": resolve(root, "packages/server-middleware/src/index.ts"),
   "@fiber-paid-http/client": resolve(root, "packages/client/src/index.ts"),

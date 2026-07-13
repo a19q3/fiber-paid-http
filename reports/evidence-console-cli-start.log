@@ -2,4 +2,4 @@
 > @fiber-paid-http/evidence-web@0.2.0 check-cli-start /Users/arthur/RustroverProjects/fiber-mpp/apps/evidence-web
 > node scripts/check-cli-start.mjs
 
-evidence console CLI start smoke passed: api=62023, web=62024
+evidence console CLI start smoke passed: api=52547, web=52548

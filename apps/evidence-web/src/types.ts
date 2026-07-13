@@ -14,8 +14,7 @@ export type ApiConnection = "refreshing" | "connected" | "error";
 export interface Endpoint {
   path: string;
   label: string;
-  price: { display: string; value?: string };
-  fiberAmountShannons: string;
+  charge: { amount: string; currency: string; display: string };
 }
 
 export interface Profile {

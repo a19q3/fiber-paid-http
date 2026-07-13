@@ -39,9 +39,7 @@ without_live_fiber_env() {
     -u FIBER_PAYEE_RPC_AUTH \
     -u FIBER_PAYER_RPC_AUTH \
     -u FIBER_PAID_HTTP_SECRET \
-    -u FIBER_MPP_SECRET \
     -u FIBER_PAID_HTTP_EVIDENCE_API_BASE \
-    -u FIBER_MPP_EVIDENCE_API_BASE \
     "$@"
 }
 
@@ -108,9 +106,14 @@ const reportPath = "reports/evidence-console-browser-smoke.json";
 const report = JSON.parse(fs.readFileSync(reportPath, "utf8"));
 const evidence = report.completed_flow_evidence || {};
 const missing = [];
-for (const field of ["challenge_id", "resource_hash", "payment_hash", "receipt_id"]) {
+for (const field of ["challenge_id", "resource_hash", "payment_hash", "receipt_reference"]) {
   if (!evidence[field]) missing.push(`completed_flow_evidence.${field}`);
 }
+if (!/^[A-Za-z0-9_-]{43}$/.test(evidence.challenge_id || "")) missing.push("completed_flow_evidence.challenge_id_format");
+if (!/^[0-9a-f]{64}$/i.test(evidence.resource_hash || "")) missing.push("completed_flow_evidence.resource_hash_format");
+if (!/^0x[0-9a-f]{64}$/i.test(evidence.payment_hash || "")) missing.push("completed_flow_evidence.payment_hash_format");
+if (!/^0x[0-9a-f]{64}$/i.test(evidence.receipt_reference || "")) missing.push("completed_flow_evidence.receipt_reference_format");
+if ((evidence.payment_hash || "").toLowerCase() !== (evidence.receipt_reference || "").toLowerCase()) missing.push("completed_flow_evidence.payment_receipt_reference_match");
 if (evidence.service_executed !== "executed after receipt") missing.push("completed_flow_evidence.service_executed");
 if (evidence.replay_status !== "blocked") missing.push("completed_flow_evidence.replay_status");
 if (evidence.receipt_reissued !== "false") missing.push("completed_flow_evidence.receipt_reissued");
@@ -139,7 +142,7 @@ integration_tests=true
 fiber_mode="${FIBER_MODE:-}"
 payee_rpc_url="${FIBER_PAYEE_RPC_URL:-${FIBER_RPC_URL:-}}"
 payer_rpc_url="${FIBER_PAYER_RPC_URL:-}"
-fiber_paid_http_secret="${FIBER_PAID_HTTP_SECRET:-${FIBER_MPP_SECRET:-}}"
+fiber_paid_http_secret="${FIBER_PAID_HTTP_SECRET:-}"
 
 if [[ "${RUN_FIBER_E2E:-}" != "1" ]]; then
   fiber_e2e_blockers+=("Fiber live E2E skipped: set RUN_FIBER_E2E=1")
@@ -239,7 +242,8 @@ const path = require("node:path");
 const { execFileSync } = require("node:child_process");
 const { productionBootstrapReadiness } = require("./scripts/lib/production-bootstrap-readiness.cjs");
 const {
-  normalizePreservedTestnetEvidence,
+  TESTNET_EVIDENCE_SCHEMA,
+  computeTestnetEvidenceDigest,
   verifyPreservedTestnetEvidence
 } = require("./scripts/lib/testnet-fiber-evidence-readiness.cjs");
 const bool = (name) => process.env[name] === "true";
@@ -257,19 +261,16 @@ const productionBootstrapPath = "reports/production-bootstrap-e2e.json";
 const productionBootstrapReport = fs.existsSync(productionBootstrapPath)
   ? JSON.parse(fs.readFileSync(productionBootstrapPath, "utf8"))
   : {};
-const productionBootstrapCheck = productionBootstrapReadiness(productionBootstrapReport);
-const productionBootstrapReady = productionBootstrapCheck.ready;
 const testnetEvidencePath = "reports/fiber-testnet-e2e-success.json";
-let testnetEvidenceReport = readJsonIfExists(testnetEvidencePath);
+const testnetEvidenceReport = readJsonIfExists(testnetEvidencePath);
 const currentFiberCommit = readFiberCommit();
-const testnetEvidenceRecordedAt = readTestnetEvidenceRecordedAt(testnetEvidenceReport);
-testnetEvidenceReport = normalizePreservedTestnetEvidence(testnetEvidenceReport, {
-  fallbackRecordedAt: testnetEvidenceRecordedAt
+const productionBootstrapCheck = productionBootstrapReadiness(productionBootstrapReport, {
+  expectedFiberCommit: currentFiberCommit
 });
+const productionBootstrapReady = productionBootstrapCheck.ready;
 const testnetEvidenceCheck = verifyPreservedTestnetEvidence(testnetEvidenceReport, {
   path: testnetEvidencePath,
-  expectedFiberCommit: currentFiberCommit,
-  fallbackRecordedAt: testnetEvidenceRecordedAt
+  expectedFiberCommit: currentFiberCommit
 });
 const opsBlockers = opsReady
   ? []
@@ -353,10 +354,14 @@ const evidencePaymentHash =
   result.fiber_e2e_payment_hash ||
   testnetEvidenceCheck.paymentHash ||
   previousReport.fiber_e2e_payment_hash;
-const evidenceReceiptId =
-  result.fiber_e2e_receipt_id ||
-  testnetEvidenceCheck.receiptId ||
-  previousReport.fiber_e2e_receipt_id;
+const evidenceReceiptReference =
+  result.fiber_e2e_receipt_reference ||
+  testnetEvidenceCheck.receiptReference ||
+  previousReport.fiber_e2e_receipt_reference;
+const evidenceChallengeId =
+  result.fiber_e2e_challenge_id ||
+  testnetEvidenceCheck.challengeId ||
+  previousReport.fiber_e2e_challenge_id;
 let productionBlockers;
 if (testnetFiberE2eEvidence) {
   productionBlockers = withProductionBlockers([
@@ -384,7 +389,7 @@ if (testnetFiberE2eEvidence) {
   ]);
 }
 const productionReady = testnetFiberE2eEvidence && productionBootstrapReady && productionBlockers.length === 0 && opsReady;
-const fiberMppGateBlockers = [
+const fiberPaidHttpGateBlockers = [
   ...productionBlockers,
   ...layoutBlockers,
   ...actionCoverageBlockers,
@@ -394,7 +399,7 @@ const fiberMppGateBlockers = [
   ...browserSmokeBlockers,
   ...(fiberStatus === "failed" ? fiberBlockers : [])
 ];
-const fiberMppGateReady =
+const fiberPaidHttpGateReady =
   productionReady &&
   bool("EVIDENCE_CONSOLE_LAYOUT") &&
   bool("EVIDENCE_CONSOLE_ACTION_COVERAGE") &&
@@ -403,7 +408,7 @@ const fiberMppGateReady =
   cliStartVerified &&
   bool("EVIDENCE_CONSOLE_BROWSER_SMOKE") &&
   fiberStatus !== "failed" &&
-  fiberMppGateBlockers.length === 0;
+  fiberPaidHttpGateBlockers.length === 0;
 
 function readIfExists(path, maxBytes = 1024 * 1024) {
   if (!fs.existsSync(path)) {
@@ -426,21 +431,6 @@ function readIfExists(path, maxBytes = 1024 * 1024) {
 
 function readJsonIfExists(path) {
   return fs.existsSync(path) ? JSON.parse(fs.readFileSync(path, "utf8")) : null;
-}
-
-function readTestnetEvidenceRecordedAt(report) {
-  if (report && typeof report === "object") {
-    const direct =
-      report.testnet_evidence_recorded_at ||
-      report.generated_at ||
-      report.gate_report?.testnet_evidence_recorded_at ||
-      report.gate_report?.generated_at;
-    if (direct) {
-      return direct;
-    }
-  }
-  const wrapper = readJsonIfExists("reports/fiber-testnet-e2e/testnet-e2e-report.json");
-  return wrapper?.generated_at || null;
 }
 
 function detectToolchainShimsUsed() {
@@ -475,10 +465,11 @@ function withProductionBlockers(blockers) {
 function completedBrowserSmokeEvidence(evidence) {
   return Boolean(
     evidence &&
-    evidence.challenge_id &&
-    evidence.resource_hash &&
-    evidence.payment_hash &&
-    evidence.receipt_id &&
+    /^[A-Za-z0-9_-]{43}$/.test(evidence.challenge_id || "") &&
+    /^[0-9a-f]{64}$/i.test(evidence.resource_hash || "") &&
+    /^0x[0-9a-f]{64}$/i.test(evidence.payment_hash || "") &&
+    /^0x[0-9a-f]{64}$/i.test(evidence.receipt_reference || "") &&
+    evidence.payment_hash.toLowerCase() === evidence.receipt_reference.toLowerCase() &&
     evidence.service_executed === "executed after receipt" &&
     evidence.replay_status === "blocked" &&
     evidence.receipt_reissued === "false"
@@ -561,8 +552,8 @@ const report = {
   toolchain_shims_used: detectToolchainShimsUsed(),
   production_ready_for_fiber_method: productionReady,
   production_blockers: productionBlockers,
-  fiber_paid_http_gate_ready: fiberMppGateReady,
-  fiber_paid_http_gate_blockers: fiberMppGateBlockers
+  fiber_paid_http_gate_ready: fiberPaidHttpGateReady,
+  fiber_paid_http_gate_blockers: fiberPaidHttpGateBlockers
 };
 if (fiberError) {
   report.fiber_e2e_error = fiberError;
@@ -570,8 +561,19 @@ if (fiberError) {
 if (evidencePaymentHash) {
   report.fiber_e2e_payment_hash = evidencePaymentHash;
 }
-if (evidenceReceiptId) {
-  report.fiber_e2e_receipt_id = evidenceReceiptId;
+if (evidenceReceiptReference) {
+  report.fiber_e2e_receipt_reference = evidenceReceiptReference;
+}
+if (evidenceChallengeId) {
+  report.fiber_e2e_challenge_id = evidenceChallengeId;
+}
+let currentTestnetSuccessEvidence = null;
+if (liveFiberTestnetE2e) {
+  currentTestnetSuccessEvidence = createTestnetSuccessEvidence(report);
+  currentTestnetSuccessEvidence.testnet_evidence_digest = computeTestnetEvidenceDigest(
+    currentTestnetSuccessEvidence
+  ).digest;
+  report.testnet_evidence_digest = currentTestnetSuccessEvidence.testnet_evidence_digest;
 }
 fs.writeFileSync("reports/fiber-paid-http-gate.json", `${JSON.stringify(report, null, 2)}\n`);
 fs.writeFileSync("reports/fiber-paid-http-ts-gate.json", `${JSON.stringify({
@@ -588,45 +590,40 @@ if (liveFiberLocalE2e) {
     evidence: true,
     source_report: "reports/fiber-paid-http-gate.local.json",
     payment_hash: report.fiber_e2e_payment_hash,
-    receipt_id: report.fiber_e2e_receipt_id,
+    receipt_reference: report.fiber_e2e_receipt_reference,
+    challenge_id: report.fiber_e2e_challenge_id,
     fiber_commit: report.fiber_commit,
     production_ready_for_fiber_method: false,
     blockers: productionBlockers
   }, null, 2)}\n`);
 	} else if (liveFiberTestnetE2e) {
-	  report.testnet_evidence_digest = normalizePreservedTestnetEvidence(report).testnet_evidence_digest;
-	  fs.writeFileSync("reports/fiber-testnet-e2e-success.json", `${JSON.stringify(report, null, 2)}\n`);
-	  fs.writeFileSync("reports/fiber-testnet-e2e-evidence.json", `${JSON.stringify({
-	    evidence: true,
-	    source_report: "reports/fiber-paid-http-gate.json",
-	    testnet_evidence_recorded_at: report.testnet_evidence_recorded_at,
-	    testnet_evidence_digest: report.testnet_evidence_digest,
-	    payment_hash: report.fiber_e2e_payment_hash,
-	    receipt_id: report.fiber_e2e_receipt_id,
-	    fiber_commit: report.fiber_commit,
-    production_ready_for_fiber_method: productionReady,
-    blockers: productionBlockers
-  }, null, 2)}\n`);
-} else if (fs.existsSync("reports/fiber-testnet-e2e-success.json")) {
-	  const success = JSON.parse(fs.readFileSync("reports/fiber-testnet-e2e-success.json", "utf8"));
-	  success.testnet_evidence_recorded_at = testnetEvidenceCheck.recordedAt;
-	  success.testnet_evidence_digest = testnetEvidenceCheck.evidenceDigest;
-	  success.production_bootstrap_e2e = productionBootstrapReady;
-	  success.production_bootstrap_report = productionBootstrapPath;
-	  success.production_ready_for_fiber_method = productionReady;
-  success.production_blockers = productionBlockers;
-  fs.writeFileSync("reports/fiber-testnet-e2e-success.json", `${JSON.stringify(success, null, 2)}\n`);
+	  const success = currentTestnetSuccessEvidence;
+	  fs.writeFileSync("reports/fiber-testnet-e2e-success.json", `${JSON.stringify(success, null, 2)}\n`);
 	  fs.writeFileSync("reports/fiber-testnet-e2e-evidence.json", `${JSON.stringify({
 	    evidence: true,
 	    source_report: "reports/fiber-testnet-e2e-success.json",
 	    testnet_evidence_recorded_at: success.testnet_evidence_recorded_at,
 	    testnet_evidence_digest: success.testnet_evidence_digest,
 	    payment_hash: success.fiber_e2e_payment_hash,
-	    receipt_id: success.fiber_e2e_receipt_id,
-    fiber_commit: success.fiber_commit,
-    production_bootstrap_e2e: productionBootstrapReady,
+	    receipt_reference: success.fiber_e2e_receipt_reference,
+	    challenge_id: success.fiber_e2e_challenge_id,
+	    fiber_commit: success.fiber_commit,
     production_ready_for_fiber_method: productionReady,
     blockers: productionBlockers
+  }, null, 2)}\n`);
+} else if (fs.existsSync("reports/fiber-testnet-e2e-success.json")) {
+	  fs.writeFileSync("reports/fiber-testnet-e2e-evidence.json", `${JSON.stringify({
+	    evidence: testnetEvidenceCheck.verified,
+	    source_report: "reports/fiber-testnet-e2e-success.json",
+	    testnet_evidence_recorded_at: testnetEvidenceCheck.recordedAt,
+	    testnet_evidence_digest: testnetEvidenceCheck.evidenceDigest,
+	    payment_hash: testnetEvidenceCheck.paymentHash,
+	    receipt_reference: testnetEvidenceCheck.receiptReference,
+	    challenge_id: testnetEvidenceCheck.challengeId,
+    fiber_commit: testnetEvidenceCheck.fiberCommit,
+    production_bootstrap_e2e: productionBootstrapReady,
+    production_ready_for_fiber_method: productionReady,
+    blockers: [...testnetEvidenceCheck.blockers, ...productionBlockers]
   }, null, 2)}\n`);
 } else if (fs.existsSync("reports/fiber-local-e2e-success.json")) {
   const success = JSON.parse(fs.readFileSync("reports/fiber-local-e2e-success.json", "utf8"));
@@ -641,110 +638,35 @@ if (liveFiberLocalE2e) {
     evidence: true,
     source_report: "reports/fiber-paid-http-gate.local.json",
     payment_hash: success.fiber_e2e_payment_hash,
-    receipt_id: success.fiber_e2e_receipt_id,
+    receipt_reference: success.fiber_e2e_receipt_reference,
+    challenge_id: success.fiber_e2e_challenge_id,
     fiber_commit: success.fiber_commit,
     production_ready_for_fiber_method: false,
     blockers: success.production_blockers
   }, null, 2)}\n`);
 }
 
-function patchProductionReadinessFields(data, includeGateFields = false) {
-  if (!data || typeof data !== "object") {
-    return data;
-  }
-  const next = {
-    ...data,
-    production_bootstrap_e2e: productionBootstrapReady,
-    production_bootstrap_report: productionBootstrapPath,
-    production_bootstrap_e2e_blockers: productionBootstrapCheck.missing,
-    production_ready_for_fiber_method: productionReady,
-    production_blockers: productionBlockers
+function createTestnetSuccessEvidence(gateReport) {
+  return {
+    schema: TESTNET_EVIDENCE_SCHEMA,
+    testnet_evidence_recorded_at: gateReport.testnet_evidence_recorded_at,
+    fiber_commit: gateReport.fiber_commit,
+    fiber_preflight_test_loaded: gateReport.fiber_preflight_test_loaded,
+    fiber_live_test_selected: gateReport.fiber_live_test_selected,
+    fiber_live_test_loaded: gateReport.fiber_live_test_loaded,
+    fiber_e2e_mode: gateReport.fiber_e2e_mode,
+    fiber_e2e_status: gateReport.fiber_e2e_status,
+    fiber_e2e_blockers: gateReport.fiber_e2e_blockers,
+    live_fiber_testnet_e2e: gateReport.live_fiber_testnet_e2e,
+    testnet_fiber_e2e: gateReport.testnet_fiber_e2e,
+    testnet_fiber_e2e_evidence: gateReport.testnet_fiber_e2e_evidence,
+    fiber_e2e_payment_hash: gateReport.fiber_e2e_payment_hash,
+    fiber_e2e_receipt_reference: gateReport.fiber_e2e_receipt_reference,
+    fiber_e2e_challenge_id: gateReport.fiber_e2e_challenge_id,
+    testnet_evidence_digest: null
   };
-  if (includeGateFields) {
-    next.evidence_console_layout = bool("EVIDENCE_CONSOLE_LAYOUT");
-    next.evidence_console_layout_report = process.env.EVIDENCE_CONSOLE_LAYOUT_REPORT || "reports/evidence-console-layout.log";
-    next.evidence_console_layout_blockers = layoutBlockers;
-    next.evidence_console_action_coverage = bool("EVIDENCE_CONSOLE_ACTION_COVERAGE");
-    next.evidence_console_action_coverage_report = process.env.EVIDENCE_CONSOLE_ACTION_COVERAGE_REPORT || "reports/evidence-console-action-coverage.json";
-    next.evidence_console_action_coverage_blockers = actionCoverageBlockers;
-    next.evidence_console_server_hardening = bool("EVIDENCE_CONSOLE_SERVER_HARDENING");
-    next.evidence_console_server_hardening_report = process.env.EVIDENCE_CONSOLE_SERVER_HARDENING_REPORT || "reports/evidence-console-server-hardening.log";
-    next.evidence_console_server_hardening_blockers = serverHardeningBlockers;
-    next.evidence_console_browser_smoke = bool("EVIDENCE_CONSOLE_BROWSER_SMOKE");
-    next.evidence_console_browser_smoke_report = process.env.EVIDENCE_CONSOLE_BROWSER_SMOKE_REPORT || "reports/evidence-console-browser-smoke.json";
-    next.evidence_console_browser_smoke_blockers = browserSmokeBlockers;
-    next.fiber_paid_http_gate_ready = fiberMppGateReady;
-    next.fiber_paid_http_gate_blockers = fiberMppGateBlockers;
-  }
-  return next;
 }
 
-function readJsonOrNull(path) {
-  return fs.existsSync(path) ? JSON.parse(fs.readFileSync(path, "utf8")) : null;
-}
-
-function writeJson(path, data) {
-  fs.writeFileSync(path, `${JSON.stringify(data, null, 2)}\n`);
-}
-
-function syncProductionBootstrapReport() {
-  if (!fs.existsSync(productionBootstrapPath)) {
-    return;
-  }
-  const bootstrap = readJsonOrNull(productionBootstrapPath);
-  if (!bootstrap) {
-    return;
-  }
-  writeJson(productionBootstrapPath, {
-    ...bootstrap,
-    production_bootstrap_e2e: productionBootstrapReady,
-    production_bootstrap_e2e_blockers: productionBootstrapCheck.missing,
-    production_ready_for_fiber_method: productionReady,
-    production_readiness_source: "reports/fiber-paid-http-gate.json",
-    production_blockers: productionBlockers,
-    production_operations: opsReady,
-    production_operations_report: opsReportPath,
-    blockers_remaining_for_production_ready: productionBlockers
-  });
-}
-
-function syncArchivedTestnetEvidence() {
-  const archiveDir = "reports/fiber-testnet-e2e";
-  if (!fs.existsSync(archiveDir)) {
-    return;
-  }
-  const archivedGatePath = `${archiveDir}/fiber-paid-http-gate.testnet.json`;
-  const archivedCanonicalPath = `${archiveDir}/canonical-core-parity.testnet.json`;
-  const archivedSummaryPath = `${archiveDir}/testnet-e2e-report.json`;
-  const archivedGate = readJsonOrNull(archivedGatePath);
-  const archivedCanonical = readJsonOrNull(archivedCanonicalPath);
-  const updatedGate = patchProductionReadinessFields(archivedGate, true);
-  const updatedCanonical = patchProductionReadinessFields(archivedCanonical, false);
-  if (updatedGate) {
-    writeJson(archivedGatePath, updatedGate);
-  }
-  if (updatedCanonical) {
-    writeJson(archivedCanonicalPath, updatedCanonical);
-  }
-  const summary = readJsonOrNull(archivedSummaryPath);
-  if (summary) {
-    writeJson(archivedSummaryPath, {
-      ...summary,
-      production_bootstrap_e2e: productionBootstrapReady,
-      production_bootstrap_report: productionBootstrapPath,
-      production_bootstrap_e2e_blockers: productionBootstrapCheck.missing,
-      production_ready_for_fiber_method: productionReady,
-      production_blockers: productionBlockers,
-      fiber_paid_http_gate_ready: fiberMppGateReady,
-      fiber_paid_http_gate_blockers: fiberMppGateBlockers,
-      gate_report: updatedGate || summary.gate_report,
-      canonical_report: updatedCanonical || summary.canonical_report
-    });
-  }
-}
-
-syncProductionBootstrapReport();
-syncArchivedTestnetEvidence();
 console.log(JSON.stringify(report, null, 2));
 JSON
 

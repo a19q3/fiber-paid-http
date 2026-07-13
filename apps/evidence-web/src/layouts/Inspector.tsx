@@ -38,7 +38,7 @@ export function Inspector() {
 
   const replayRejected = ev.phase === "replay_rejected" || ev.flow?.replayStatus === 402;
   const receipt = ev.flow?.receipt;
-  const paymentHash = ev.flow?.fiberChallenge?.paymentHash || receipt?.settlement?.paymentHash || "pending";
+  const paymentHash = ev.flow?.fiberChallenge?.paymentHash || receipt?.reference || "pending";
 
   const actuatorState = (() => {
     if (ev.status?.mode === "api-unreachable") return { state: "error", detail: "API unreachable", service: "not executed", replay: "not attempted", reissued: "false", health: "offline" };
@@ -99,8 +99,9 @@ export function Inspector() {
           <div className="attack-grid">
             <div><span>Status</span><strong>{replayRejected ? "REPLAY REJECTED" : "PENDING"}</strong></div>
             <div><span>Reason</span><strong>{replayRejected ? "Receipt not reused" : "Awaiting replay"}</strong></div>
-            <div><span>receipt_id</span><strong>{receipt?.receiptId || "pending"}</strong></div>
-            <div><span>payment_hash</span><strong>{paymentHash}</strong></div>
+            <div><span>receipt_reference</span><strong id="inspector-receipt-reference">{receipt?.reference || "pending"}</strong></div>
+            <div><span>challenge_id</span><strong id="inspector-challenge-id">{receipt?.challengeId || "pending"}</strong></div>
+            <div><span>payment_hash</span><strong id="inspector-payment-hash">{paymentHash}</strong></div>
             <div><span>Service</span><strong>{replayRejected ? "not re-executed" : "awaiting replay"}</strong></div>
           </div>
         </div>

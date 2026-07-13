@@ -1,0 +1,52 @@
+{
+  "input": {
+    "case": "fl402.credential",
+    "root_key": "fiber-paid-http-fl402-conformance-root-key",
+    "now": "2026-07-13T00:00:00.000Z",
+    "fl402": {
+      "challengeId": "fl402-conformance-challenge",
+      "capability": "fiber-l402-capability-v1.eyJjYXZlYXRzIjp7ImFtb3VudCI6IjEwMDAiLCJjaGFsbGVuZ2VJZCI6ImZsNDAyLWNvbmZvcm1hbmNlLWNoYWxsZW5nZSIsImN1cnJlbmN5IjoiY2tiIiwiZXhwaXJlc0F0IjoiMjAzMC0wMS0wMVQwMDowMDowMC4wMDBaIiwiaGFzaEFsZ29yaXRobSI6InNoYTI1NiIsImludm9pY2UiOiJmaWJ0MXFjb25mb3JtYW5jZXBheW1lbnQwMDAxIiwiaXNzdWVyIjoiY29uZm9ybWFuY2UuZXhhbXBsZS5jb20iLCJtZXRob2QiOiJHRVQiLCJuZXR3b3JrIjoidGVzdG5ldCIsInBheW1lbnRIYXNoIjoiMHgwMmQ0NDlhMzFmYmIyNjdjOGYzNTJlOTk2OGE3OWUzZTVmYzk1YzFiYmVhYTUwMmZkNjQ1NGViZGU1YTRiZWRjIiwicmVzb3VyY2VIYXNoIjoiMjhkYzhmMzBiNzBhNzdiYzE4ODEyNGIxN2QxOTdlMGU0OGY1ODZkZDI3ZDA5MjgxOWU5ODA0ZDlhN2M3YjIzNSIsInVybCI6Imh0dHBzOi8vY29uZm9ybWFuY2UuZXhhbXBsZS5jb20vcGFpZC93ZWF0aGVyIn0sImRvbWFpbiI6ImZpYmVyLWw0MDItY2FwYWJpbGl0eS12MSIsImlzc3VlZEF0IjoiMjAyNi0wNy0xM1QwMDowMDowMC4wMDBaIiwibm9uY2UiOiIwMDExMjIzMzQ0NTU2Njc3ODg5OWFhYmJjY2RkZWVmZiJ9.88d1e4e0faf41958d813f573cb9bc19646ed219249556f5dc7f56c4f65f47d10",
+      "invoice": "fibt1qconformancepayment0001",
+      "paymentHash": "0x02d449a31fbb267c8f352e9968a79e3e5fc95c1bbeaa502fd6454ebde5a4bedc",
+      "amount": "1000",
+      "currency": "ckb",
+      "expiresAt": "2030-01-01T00:00:00.000Z",
+      "resource": "https://conformance.example.com/paid/weather",
+      "resourceHash": "28dc8f30b70a77bc188124b17d197e0e48f586dd27d092819e9804d9a7c7b235",
+      "issuer": "conformance.example.com",
+      "network": "testnet",
+      "hashAlgorithm": "sha256"
+    },
+    "proof": {
+      "capability": "fiber-l402-capability-v1.eyJjYXZlYXRzIjp7ImFtb3VudCI6IjEwMDAiLCJjaGFsbGVuZ2VJZCI6ImZsNDAyLWNvbmZvcm1hbmNlLWNoYWxsZW5nZSIsImN1cnJlbmN5IjoiY2tiIiwiZXhwaXJlc0F0IjoiMjAzMC0wMS0wMVQwMDowMDowMC4wMDBaIiwiaGFzaEFsZ29yaXRobSI6InNoYTI1NiIsImludm9pY2UiOiJmaWJ0MXFjb25mb3JtYW5jZXBheW1lbnQwMDAxIiwiaXNzdWVyIjoiY29uZm9ybWFuY2UuZXhhbXBsZS5jb20iLCJtZXRob2QiOiJHRVQiLCJuZXR3b3JrIjoidGVzdG5ldCIsInBheW1lbnRIYXNoIjoiMHgwMmQ0NDlhMzFmYmIyNjdjOGYzNTJlOTk2OGE3OWUzZTVmYzk1YzFiYmVhYTUwMmZkNjQ1NGViZGU1YTRiZWRjIiwicmVzb3VyY2VIYXNoIjoiMjhkYzhmMzBiNzBhNzdiYzE4ODEyNGIxN2QxOTdlMGU0OGY1ODZkZDI3ZDA5MjgxOWU5ODA0ZDlhN2M3YjIzNSIsInVybCI6Imh0dHBzOi8vY29uZm9ybWFuY2UuZXhhbXBsZS5jb20vcGFpZC93ZWF0aGVyIn0sImRvbWFpbiI6ImZpYmVyLWw0MDItY2FwYWJpbGl0eS12MSIsImlzc3VlZEF0IjoiMjAyNi0wNy0xM1QwMDowMDowMC4wMDBaIiwibm9uY2UiOiIwMDExMjIzMzQ0NTU2Njc3ODg5OWFhYmJjY2RkZWVmZiJ9.88d1e4e0faf41958d813f573cb9bc19646ed219249556f5dc7f56c4f65f47d10",
+      "preimage": "0x1111111111111111111111111111111111111111111111111111111111111111",
+      "paymentHash": "0x02d449a31fbb267c8f352e9968a79e3e5fc95c1bbeaa502fd6454ebde5a4bedc",
+      "hashAlgorithm": "sha256"
+    },
+    "challenge": {
+      "id": "V4v2ngoileWQJvqicqd6Bd5791JENrdv9PkhwoDUUwg",
+      "realm": "conformance.example.com",
+      "method": "fiber",
+      "intent": "charge",
+      "request": "eyJhbW91bnQiOiIxMDAwIiwiY3VycmVuY3kiOiJja2IiLCJtZXRob2REZXRhaWxzIjp7Imhhc2hBbGdvcml0aG0iOiJzaGEyNTYiLCJpbnZvaWNlIjoiZmlidDFxY29uZm9ybWFuY2VwYXltZW50MDAwMSIsIm5ldHdvcmsiOiJ0ZXN0bmV0IiwicGF5bWVudEhhc2giOiIweDAyZDQ0OWEzMWZiYjI2N2M4ZjM1MmU5OTY4YTc5ZTNlNWZjOTVjMWJiZWFhNTAyZmQ2NDU0ZWJkZTVhNGJlZGMifX0",
+      "expires": "2030-01-01T00:00:00.000Z"
+    },
+    "expected_credential": {
+      "challenge": {
+        "id": "V4v2ngoileWQJvqicqd6Bd5791JENrdv9PkhwoDUUwg",
+        "realm": "conformance.example.com",
+        "method": "fiber",
+        "intent": "charge",
+        "request": "eyJhbW91bnQiOiIxMDAwIiwiY3VycmVuY3kiOiJja2IiLCJtZXRob2REZXRhaWxzIjp7Imhhc2hBbGdvcml0aG0iOiJzaGEyNTYiLCJpbnZvaWNlIjoiZmlidDFxY29uZm9ybWFuY2VwYXltZW50MDAwMSIsIm5ldHdvcmsiOiJ0ZXN0bmV0IiwicGF5bWVudEhhc2giOiIweDAyZDQ0OWEzMWZiYjI2N2M4ZjM1MmU5OTY4YTc5ZTNlNWZjOTVjMWJiZWFhNTAyZmQ2NDU0ZWJkZTVhNGJlZGMifX0",
+        "expires": "2030-01-01T00:00:00.000Z"
+      },
+      "payload": {
+        "paymentHash": "0x02d449a31fbb267c8f352e9968a79e3e5fc95c1bbeaa502fd6454ebde5a4bedc"
+      }
+    }
+  },
+  "expected_canonical_hash": "97c427edef2f3f16ef4d65d8f05f122e9e8418d6919af05c6487e928e582c128",
+  "expected_verification_result": "rejected",
+  "expected_error_code": "bad-fl402-capability-signature",
+  "notes": "Tampered F-L402 capability."
+}

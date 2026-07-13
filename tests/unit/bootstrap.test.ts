@@ -17,7 +17,7 @@ describe("Fiber Paid HTTP bootstrap helpers", () => {
     const report = buildBootstrapReport("gateway", {
       env: {},
       storage: "sqlite://./fiber-paid-http.sqlite",
-      methods: ["fiber"]
+      ...gatewayProtocolFields()
     });
     expect(report.status).toBe("blocked");
     expect(report.blockers).toContain("set FIBER_MODE=local or FIBER_MODE=testnet");
@@ -32,7 +32,7 @@ describe("Fiber Paid HTTP bootstrap helpers", () => {
     expect(report.blockers).toEqual(["set FIBER_PAYER_RPC_URL or FIBER_RPC_URL for the payer node"]);
   });
 
-  it("blocks non-CKB gateway price currency", () => {
+  it("blocks insecure public origins unless explicitly allowed", () => {
     const report = buildBootstrapReport("gateway", {
       env: {
         FIBER_MODE: "local",
@@ -41,11 +41,11 @@ describe("Fiber Paid HTTP bootstrap helpers", () => {
       upstream: "http://localhost:8080",
       storage: "sqlite://./fiber-paid-http.sqlite",
       secret: "a".repeat(64),
-      methods: ["fiber"],
-      price: { value: "0.01", currency: "USD", display: "$0.01" }
+      ...gatewayProtocolFields(),
+      publicBaseUrl: "http://paid.example.com"
     });
     expect(report.status).toBe("blocked");
-    expect(report.blockers).toContain("gateway price currency must be CKB");
+    expect(report.blockers).toContain("gateway public_base_url must use https; loopback http must be explicitly enabled");
   });
 
   it("blocks wildcard gateway CORS origins", () => {
@@ -57,8 +57,7 @@ describe("Fiber Paid HTTP bootstrap helpers", () => {
       upstream: "http://localhost:8080",
       storage: "sqlite://./fiber-paid-http.sqlite",
       secret: "a".repeat(64),
-      methods: ["fiber"],
-      price: { value: "1", currency: "CKB", display: "1 CKB" },
+      ...gatewayProtocolFields(),
       cors: {
         allowedOrigins: ["*"],
         allowedHeaders: ["authorization", "content-type"],
@@ -81,13 +80,14 @@ describe("Fiber Paid HTTP bootstrap helpers", () => {
       upstream: "http://localhost:8080",
       storage: "sqlite://./fiber-paid-http.sqlite",
       secret: "a".repeat(64),
-      methods: ["fiber"],
-      price: { value: "1", currency: "CKB", display: "1 CKB" },
+      ...gatewayProtocolFields(),
       operations: {
         healthPath: "healthz",
         readinessPath: "/readyz",
         metricsPath: "/metrics",
         requestBodyLimitBytes: 512,
+        upstreamResponseLimitBytes: 512,
+        upstreamTimeoutMs: 0,
         shutdownGraceMs: 100,
         logRedaction: {
           enabled: false,
@@ -102,6 +102,8 @@ describe("Fiber Paid HTTP bootstrap helpers", () => {
     expect(report.status).toBe("blocked");
     expect(report.blockers).toContain("gateway operation paths must start with /");
     expect(report.blockers).toContain("gateway request_body_limit_bytes must be at least 1024");
+    expect(report.blockers).toContain("gateway upstream_response_limit_bytes must be at least 1024");
+    expect(report.blockers).toContain("gateway upstream_timeout_ms must be positive");
     expect(report.blockers).toContain("gateway shutdown_grace_ms must be at least 1000");
     expect(report.blockers).toContain("gateway log_redaction.enabled must not be false");
     expect(report.blockers).toContain("gateway rate_limit.window_ms must be at least 1000 and max_requests at least 1");
@@ -121,8 +123,7 @@ describe("Fiber Paid HTTP bootstrap helpers", () => {
       previousSecrets: [],
       missingPreviousSecretEnvs: ["FIBER_PAID_HTTP_PREVIOUS_SECRET"],
       shortPreviousSecretEnvs: ["FIBER_PAID_HTTP_SHORT_PREVIOUS_SECRET"],
-      methods: ["fiber"],
-      price: { value: "1", currency: "CKB", display: "1 CKB" }
+      ...gatewayProtocolFields()
     });
     expect(report.status).toBe("blocked");
     expect(report.checks.secret_previous_env_count).toBe(2);
@@ -141,8 +142,7 @@ describe("Fiber Paid HTTP bootstrap helpers", () => {
       storage: "sqlite://./fiber-paid-http.sqlite",
       secret: "a".repeat(64),
       literalRpcAuth: true,
-      methods: ["fiber"],
-      price: { value: "1", currency: "CKB", display: "1 CKB" }
+      ...gatewayProtocolFields()
     });
     expect(report.status).toBe("blocked");
     expect(report.checks.rpc_auth_from_env).toBe(false);
@@ -155,7 +155,9 @@ describe("Fiber Paid HTTP bootstrap helpers", () => {
       FIBER_PAID_HTTP_SECRET: "a".repeat(64)
     });
     expect(resolved.upstream).toBe("http://localhost:8080");
-    expect(resolved.price).toEqual({ value: "1", currency: "CKB", display: "1 CKB" });
+    expect(resolved.realm).toBe("paid.example.com");
+    expect(resolved.publicBaseUrl).toBe("https://paid.example.com");
+    expect(resolved.charge).toEqual({ amount: "100000000", currency: "CKB", description: "Paid HTTP request" });
     expect(resolved.port).toBe(8790);
     expect(resolved.secret).toBe("a".repeat(64));
     expect(resolved.fiberEnv.FIBER_MODE).toBe("local");
@@ -171,6 +173,8 @@ describe("Fiber Paid HTTP bootstrap helpers", () => {
     expect(resolved.operations.readinessPath).toBe("/readyz");
     expect(resolved.operations.metricsPath).toBe("/metrics");
     expect(resolved.operations.requestBodyLimitBytes).toBe(1_048_576);
+    expect(resolved.operations.upstreamResponseLimitBytes).toBe(8_388_608);
+    expect(resolved.operations.upstreamTimeoutMs).toBe(30_000);
     expect(resolved.operations.shutdownGraceMs).toBe(10_000);
     expect(resolved.operations.logRedaction).toEqual({ enabled: true, extraKeys: [] });
     expect(resolved.operations.rateLimit).toEqual({ windowMs: 60_000, maxRequests: 300 });
@@ -186,10 +190,10 @@ describe("Fiber Paid HTTP bootstrap helpers", () => {
     };
     const resolved = resolveGatewayConfig({ config }, {
       FIBER_PAID_HTTP_SECRET: "a".repeat(64),
-      FIBER_PAID_HTTP_FL402_ROOT_KEY: "fl402-root-key-at-least-16"
+      FIBER_PAID_HTTP_FL402_ROOT_KEY: "fl402-root-key-at-least-32-characters"
     });
     expect(resolved.fl402).toEqual({
-      rootKey: "fl402-root-key-at-least-16",
+      rootKey: "fl402-root-key-at-least-32-characters",
       rootKeyEnv: "FIBER_PAID_HTTP_FL402_ROOT_KEY",
       hashAlgorithm: "sha256"
     });
@@ -204,15 +208,14 @@ describe("Fiber Paid HTTP bootstrap helpers", () => {
       upstream: "http://localhost:8080",
       storage: "sqlite://./fiber-paid-http.sqlite",
       secret: "a".repeat(64),
-      methods: ["fiber"],
-      price: { value: "1", currency: "CKB", display: "1 CKB" },
+      ...gatewayProtocolFields(),
       fl402Configured: true,
       fl402RootKeyEnv: "FIBER_PAID_HTTP_FL402_ROOT_KEY",
       fl402HashAlgorithm: "sha256"
     });
     expect(report.status).toBe("blocked");
     expect(report.checks.fl402_enabled).toBe(true);
-    expect(report.blockers).toContain("set FIBER_PAID_HTTP_FL402_ROOT_KEY to an F-L402 root key of at least 16 characters");
+    expect(report.blockers).toContain("set FIBER_PAID_HTTP_FL402_ROOT_KEY to an F-L402 root key of at least 32 characters");
   });
 
   it("resolves Fiber RPC auth from configured env names", () => {
@@ -271,6 +274,9 @@ describe("Fiber Paid HTTP bootstrap helpers", () => {
     await writeGatewayConfigTemplate(path);
     const contents = await readFile(path, "utf8");
     expect(contents).toContain("\"secret_env\": \"FIBER_PAID_HTTP_SECRET\"");
+    expect(contents).toContain("\"realm\": \"paid.example.com\"");
+    expect(contents).toContain("\"public_base_url\": \"https://paid.example.com\"");
+    expect(contents).toContain("\"charge\": {");
     expect(contents).toContain("\"previous_secret_envs\": []");
     expect(contents).toContain("\"allowed_origins\": []");
     expect(contents).toContain("\"allowed_headers\": [");
@@ -381,4 +387,12 @@ function fiberProbeResult(method: string): unknown {
     };
   }
   throw new Error(`Unexpected probe method ${method}`);
+}
+
+function gatewayProtocolFields() {
+  return {
+    realm: "paid.example.com",
+    publicBaseUrl: "https://paid.example.com",
+    charge: { amount: "100000000", currency: "CKB", description: "Paid HTTP request" }
+  };
 }

@@ -1,192 +1,160 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   PAYMENT_RECEIPT_HEADER,
   buildAuthorizationPaymentHeader,
+  decodeFiberChargeRequest,
   decodeReceipt,
   parseAuthorizationPaymentHeader,
-  resourceHashFromRequest,
-  verifyReceiptSignature
+  parseWwwAuthenticatePaymentHeader
 } from "@fiber-paid-http/core";
 import { buildAuthorizationL402Header, hashPaymentPreimage } from "@fiber-paid-http/fl402-compat";
 import { createFiberPaidHttpMiddleware } from "@fiber-paid-http/server-middleware";
 import { createFiberFixtureAdapters, createSqliteTestStore } from "../helpers/fiber-fixture.js";
 
-const secret = "middleware-secret-at-least-16";
+const secret = "middleware-secret-at-least-32-characters";
 const url = "http://localhost/paid/weather";
 
 describe("Fiber Paid HTTP middleware security", () => {
-  it("unpaid request returns 402 with no-store and Payment challenge", async () => {
+  afterEach(() => vi.useRealTimers());
+  it("returns a standard MPP 402 with no-store", async () => {
     const { handler } = makeHandler();
     const response = await handler(new Request(url));
     expect(response.status).toBe(402);
     expect(response.headers.get("cache-control")).toBe("no-store");
-    expect(response.headers.get("www-authenticate")).toContain("Payment ");
-    const body = (await response.json()) as { methods: unknown[] };
-    expect(body.methods).toHaveLength(1);
+    const challenge = challengeFrom(response);
+    expect(challenge).toMatchObject({ realm: "unit.example.test", method: "fiber", intent: "charge" });
+    expect(decodeFiberChargeRequest(challenge.request).amount).toBe("1000");
+    expect(await response.json()).toMatchObject({ status: 402, title: "Payment Required" });
   });
 
-  it("accepts Authorization: L402 macaroon preimage when F-L402 is enabled", async () => {
+  it("accepts the explicit F-L402 capability entrance", async () => {
     const rootKey = "middleware-fl402-root-key-at-least-16";
     const preimage = `0x${"11".repeat(32)}`;
     const paymentHash = hashPaymentPreimage(preimage, "sha256");
     const { handler } = makeHandler(
-      {
-        fl402: {
-          rootKey,
-          hashAlgorithm: "sha256"
-        }
-      },
+      { fl402: { rootKey, hashAlgorithm: "sha256" } },
       () => Response.json({ fl402: true }),
       { paymentHash }
     );
     const unpaid = await handler(new Request(url));
-    expect(unpaid.status).toBe(402);
-    expect(unpaid.headers.get("www-authenticate")).toContain("L402 ");
-    const body = (await unpaid.json()) as {
-      challengeId: string;
-      fl402: { challengeId?: string; macaroon: string; paymentHash: string; hashAlgorithm: "sha256" };
-    };
-    expect(body.fl402.challengeId).toBe(body.challengeId);
-    expect(body.fl402.paymentHash).toBe(paymentHash);
-
-    const paid = await handler(
-      new Request(url, {
-        headers: {
-          authorization: buildAuthorizationL402Header({
-            macaroon: body.fl402.macaroon,
-            preimage
-          })
-        }
-      })
-    );
+    const authenticate = unpaid.headers.get("www-authenticate") ?? "";
+    const capability = authenticate.match(/capability="([^"]+)"/)?.[1];
+    expect(capability).toMatch(/^fiber-l402-capability-v1\./);
+    const paid = await handler(new Request(url, {
+      headers: { authorization: buildAuthorizationL402Header({ capability: capability!, preimage }) }
+    }));
     expect(paid.status).toBe(200);
-    expect(await paid.json()).toEqual({ fl402: true });
-    const receipt = decodeReceipt(paid.headers.get(PAYMENT_RECEIPT_HEADER)!);
-    expect(receipt.settlement.paymentHash).toBe(paymentHash);
+    expect(decodeReceipt(paid.headers.get(PAYMENT_RECEIPT_HEADER)!).reference).toBe(paymentHash);
   });
 
-  it("paid retry returns resource and Payment-Receipt", async () => {
+  it("returns a standard receipt only for 2xx delivery", async () => {
     const { handler, middleware } = makeHandler();
     const auth = await issueAuth(handler, url);
     const paid = await handler(new Request(url, { headers: { authorization: auth } }));
     expect(paid.status).toBe(200);
-    expect(await paid.json()).toEqual({ ok: true });
+    expect(paid.headers.get("cache-control")).toBe("private");
     const receipt = decodeReceipt(paid.headers.get(PAYMENT_RECEIPT_HEADER)!);
-    expect(receipt.settlement.status).toBe("settled");
-    await expect(middleware.store.listDeliveryOutcomes()).resolves.toMatchObject([
-      {
-        receiptId: receipt.receiptId,
-        challengeId: receipt.challengeId,
-        status: "delivered",
-        responseStatus: 200
-      }
-    ]);
+    expect(receipt).toMatchObject({ status: "success", method: "fiber" });
+    await expect(middleware.store.listDeliveryOutcomes()).resolves.toMatchObject([{
+      challengeId: receipt.challengeId,
+      paymentHash: receipt.reference,
+      receiptReference: receipt.reference,
+      status: "delivered",
+      responseStatus: 200
+    }]);
   });
 
-  it("replayed credential is rejected", async () => {
+  it("atomically accepts exactly one of 64 concurrent redemptions and executes upstream once", async () => {
+    let executions = 0;
+    const { handler } = makeHandler({}, () => {
+      executions += 1;
+      return Response.json({ ok: true });
+    });
+    const auth = await issueAuth(handler, url);
+    const responses = await Promise.all(Array.from({ length: 64 }, () =>
+      handler(new Request(url, { headers: { authorization: auth } }))
+    ));
+    expect(responses.filter((response) => response.status === 200)).toHaveLength(1);
+    expect(responses.filter((response) => response.status === 402)).toHaveLength(63);
+    expect(executions).toBe(1);
+  });
+
+  it("rejects replay, wrong resource, and tampered challenge echoes with a fresh 402", async () => {
     const { handler } = makeHandler();
     const auth = await issueAuth(handler, url);
     expect((await handler(new Request(url, { headers: { authorization: auth } }))).status).toBe(200);
-    const replay = await handler(new Request(url, { headers: { authorization: auth } }));
-    expect(replay.status).toBe(402);
-    expect(await replay.text()).toContain("replay");
+    expect((await handler(new Request(url, { headers: { authorization: auth } }))).status).toBe(402);
+
+    const { handler: other } = makeHandler();
+    const otherAuth = await issueAuth(other, url);
+    expect((await other(new Request("http://localhost/paid/file", { headers: { authorization: otherAuth } }))).status).toBe(402);
+    const credential = parseAuthorizationPaymentHeader(otherAuth)!;
+    const tampered = buildAuthorizationPaymentHeader({
+      ...credential,
+      challenge: { ...credential.challenge, realm: "evil.example.test" }
+    });
+    expect((await other(new Request(url, { headers: { authorization: tampered } }))).status).toBe(402);
   });
 
-  it("wrong resource is rejected before redemption", async () => {
+  it("binds non-GET bodies with an RFC 9530 digest", async () => {
     const { handler } = makeHandler();
+    const unpaid = await handler(new Request(url, { method: "POST", body: "alpha" }));
+    const challenge = challengeFrom(unpaid);
+    expect(challenge.digest).toMatch(/^sha-256=:/);
+    const auth = authFromChallenge(challenge);
+    const tampered = await handler(new Request(url, {
+      method: "POST",
+      body: "beta",
+      headers: { authorization: auth }
+    }));
+    expect(tampered.status).toBe(402);
+  });
+
+  it("rejects expired challenges", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-13T00:00:00.000Z"));
+    const { handler } = makeHandler({ challengeTtlSeconds: 1, clockSkewSeconds: 0 });
     const auth = await issueAuth(handler, url);
-    const wrong = await handler(new Request("http://localhost/paid/file", { headers: { authorization: auth } }));
-    expect(wrong.status).toBe(402);
-    expect(await wrong.text()).toContain("wrong-resource");
+    vi.setSystemTime(new Date("2026-07-13T00:00:02.000Z"));
+    expect((await handler(new Request(url, { headers: { authorization: auth } }))).status).toBe(402);
   });
 
-  it("wrong method is rejected", async () => {
-    const { handler } = makeHandler();
-    const auth = await issueAuth(handler, url);
-    const credential = parseAuthorizationPaymentHeader(auth)!;
-    const wrongAuth = buildAuthorizationPaymentHeader({ ...credential, method: "unsupported-method" });
-    const response = await handler(new Request(url, { headers: { authorization: wrongAuth } }));
-    expect(response.status).toBe(402);
-    expect(await response.text()).toContain("wrong-method");
-  });
-
-  it("wrong amount is rejected", async () => {
-    const { handler } = makeHandler();
-    const auth = await issueAuth(handler, url, { amountShannons: "999" });
-    const response = await handler(new Request(url, { headers: { authorization: auth } }));
-    expect(response.status).toBe(402);
-    expect(await response.text()).toContain("wrong-amount");
-  });
-
-  it("expired challenge is rejected", async () => {
-    const { handler } = makeHandler({ challengeTtlSeconds: -5, clockSkewSeconds: 0 });
-    const auth = await issueAuth(handler, url);
-    const response = await handler(new Request(url, { headers: { authorization: auth } }));
-    expect(response.status).toBe(402);
-    expect(await response.text()).toContain("expired-challenge");
-  });
-
-  it("bad challenge signature is rejected", async () => {
-    const store = createSqliteTestStore();
-    const { handler } = makeHandler({ store });
-    const first = await handler(new Request(url));
-    const body = (await first.clone().json()) as { challengeId: string };
-    const record = await store.getChallenge(body.challengeId);
-    await store.saveChallenge({ ...record!, signature: "0".repeat(64) });
-    const auth = await authFromBody(body.challengeId, first, url);
-    const response = await handler(new Request(url, { headers: { authorization: auth } }));
-    expect(response.status).toBe(402);
-    expect(await response.text()).toContain("bad-challenge-signature");
-  });
-
-  it("accepts a previous challenge secret while signing receipts with the current secret", async () => {
+  it("accepts challenges bound by a configured previous secret", async () => {
     const store = createSqliteTestStore();
     const oldSecret = "previous-middleware-secret-at-least-16";
     const newSecret = "current-middleware-secret-at-least-16";
     const { handler: oldHandler } = makeHandler({ store, secret: oldSecret });
-    const first = await oldHandler(new Request(url));
-    const body = (await first.clone().json()) as { challengeId: string };
-    const auth = await authFromBody(body.challengeId, first, url);
-    const { handler: newHandler } = makeHandler({
-      store,
-      secret: newSecret,
-      previousSecrets: [oldSecret]
-    });
-
+    const auth = await issueAuth(oldHandler, url);
+    const { handler: newHandler } = makeHandler({ store, secret: newSecret, previousSecrets: [oldSecret] });
     const paid = await newHandler(new Request(url, { headers: { authorization: auth } }));
     expect(paid.status).toBe(200);
-    const receipt = decodeReceipt(paid.headers.get(PAYMENT_RECEIPT_HEADER)!);
-    expect(verifyReceiptSignature(receipt, newSecret)).toBe(true);
-    expect(verifyReceiptSignature(receipt, oldSecret)).toBe(false);
+    expect(decodeReceipt(paid.headers.get(PAYMENT_RECEIPT_HEADER)!).status).toBe("success");
   });
 
-  it("records paid-but-denied delivery failures with the payment receipt", async () => {
-    const { handler, middleware } = makeHandler({}, () => {
-      throw new Error("handler failed after payment");
-    });
+  it("never emits a receipt when the protected handler fails", async () => {
+    const { handler, middleware } = makeHandler({}, () => { throw new Error("handler failed after payment"); });
     const auth = await issueAuth(handler, url);
     const response = await handler(new Request(url, { headers: { authorization: auth } }));
-
     expect(response.status).toBe(500);
-    const receipt = decodeReceipt(response.headers.get(PAYMENT_RECEIPT_HEADER)!);
-    await expect(middleware.store.listDeliveryOutcomes()).resolves.toMatchObject([
-      {
-        receiptId: receipt.receiptId,
-        challengeId: receipt.challengeId,
-        status: "failed",
-        responseStatus: 500,
-        errorCode: "internal-error",
-        errorMessage: "handler failed after payment"
-      }
-    ]);
+    expect(response.headers.get(PAYMENT_RECEIPT_HEADER)).toBeNull();
+    await expect(middleware.store.listDeliveryOutcomes()).resolves.toMatchObject([{
+      status: "failed",
+      responseStatus: 500,
+      errorCode: "internal-error",
+      errorMessage: "protected handler failed"
+    }]);
   });
 
-  it("durable storage is required", () => {
-    expect(() =>
-      makeHandler({
-        store: undefined
-      })
-    ).toThrow(/durable store/);
+  it("requires durable storage", () => {
+    const { payeeFiber } = createFiberFixtureAdapters();
+    expect(() => createFiberPaidHttpMiddleware({
+      secret,
+      realm: "unit.example.test",
+      serverId: "unit-server",
+      publicBaseUrl: "https://unit.example.test",
+      store: undefined as never,
+      fiber: payeeFiber
+    })).toThrow(/durable store/);
   });
 });
 
@@ -198,57 +166,36 @@ function makeHandler(
   const { payeeFiber } = createFiberFixtureAdapters(fixtureOptions);
   const middleware = createFiberPaidHttpMiddleware({
     secret,
+    realm: "unit.example.test",
     serverId: "unit-server",
+    publicBaseUrl: "https://unit.example.test",
     store: createSqliteTestStore(),
     fiber: payeeFiber,
-    defaultFiberAmountShannons: "1000",
     challengeTtlSeconds: 120,
     clockSkewSeconds: 0,
     ...overrides
   });
   const handler = middleware.protect({
-    price: { value: "1", currency: "CKB" },
-    methods: ["fiber"],
-    fiberAmountShannons: "1000",
+    charge: { amount: "1000", currency: "ckb", description: "Unit charge" },
     handler: routeHandler
   });
   return { middleware, handler };
 }
 
-async function issueAuth(
-  handler: (request: Request) => Promise<Response>,
-  targetUrl: string,
-  overrides: { status?: string; amountShannons?: string } = {}
-): Promise<string> {
-  const first = await handler(new Request(targetUrl));
-  const body = (await first.clone().json()) as { challengeId: string };
-  return authFromBody(body.challengeId, first, targetUrl, overrides);
+function challengeFrom(response: Response) {
+  const challenge = parseWwwAuthenticatePaymentHeader(response.headers.get("www-authenticate"));
+  if (!challenge) throw new Error("missing Payment challenge");
+  return challenge;
 }
 
-async function authFromBody(
-  challengeId: string,
-  response: Response,
-  targetUrl: string,
-  overrides: { status?: string; amountShannons?: string } = {}
-): Promise<string> {
-  const body = (await response.clone().json()) as {
-    challenge: { methods: Array<{ method: string; paymentHash: string; invoice?: string; amountShannons?: string }> };
-  };
-  const fiber = body.challenge.methods.find((method) => method.method === "fiber")!;
+async function issueAuth(handler: (request: Request) => Promise<Response>, targetUrl: string): Promise<string> {
+  return authFromChallenge(challengeFrom(await handler(new Request(targetUrl))));
+}
+
+function authFromChallenge(challenge: ReturnType<typeof challengeFrom>): string {
+  const charge = decodeFiberChargeRequest(challenge.request);
   return buildAuthorizationPaymentHeader({
-    domain: "fiber-paid-http-credential-v1",
-    challengeId,
-    method: "fiber",
-    resourceHash: await resourceHashFromRequest(new Request(targetUrl)),
-    paymentProof: {
-      kind: "fiber-payment-proof-v1",
-      mode: "local",
-      paymentHash: fiber.paymentHash,
-      invoice: fiber.invoice,
-      amountShannons: overrides.amountShannons ?? fiber.amountShannons,
-      status: overrides.status ?? "settled",
-      observedAt: new Date().toISOString()
-    },
-    submittedAt: new Date().toISOString()
+    challenge,
+    payload: { paymentHash: charge.methodDetails.paymentHash }
   });
 }

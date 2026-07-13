@@ -1,7 +1,10 @@
 import {
   FiberPaidHttpError,
-  FiberMethodChallengeSchema,
-  type FiberMethodChallenge,
+  FiberChargeRequestSchema,
+  FiberCredentialPayloadSchema,
+  FiberUdtTypeScriptSchema,
+  type FiberChargeRequest,
+  type FiberCredentialPayload,
   type FiberUdtTypeScript,
   type Settlement
 } from "@fiber-paid-http/core";
@@ -9,24 +12,12 @@ import {
 export type FiberMode = "local" | "testnet";
 export type FiberEnvRole = "payee" | "payer";
 
-export type FiberCreateChallengeInput = {
-  challengeId: string;
-  amountShannons: string;
-  expiresAt: string;
+export type FiberCreateChargeInput = {
+  amount: string;
+  currency?: string;
   description?: string;
+  externalId?: string;
   udtTypeScript?: FiberUdtTypeScript;
-};
-
-export type FiberPaymentProof = {
-  kind: "fiber-payment-proof-v1";
-  mode: FiberMode;
-  paymentHash: string;
-  invoice?: string;
-  amountShannons?: string;
-  udtTypeScript?: FiberUdtTypeScript;
-  status?: string;
-  observedAt: string;
-  evidence?: unknown;
 };
 
 export type FiberReceiptEvidence = {
@@ -42,6 +33,7 @@ export type FiberRpcClientOptions = {
   auth?: string;
   label?: string;
   fetchImpl?: typeof fetch;
+  timeoutMs?: number;
 };
 
 export class FiberRpcClient {
@@ -49,6 +41,7 @@ export class FiberRpcClient {
   public readonly url: string;
   public readonly auth?: string;
   public readonly label?: string;
+  private readonly timeoutMs: number;
   private id = 0;
 
   public constructor(options: FiberRpcClientOptions) {
@@ -56,6 +49,10 @@ export class FiberRpcClient {
     this.auth = options.auth;
     this.label = options.label;
     this.fetchImpl = options.fetchImpl ?? fetch;
+    this.timeoutMs = options.timeoutMs ?? 30_000;
+    if (!Number.isSafeInteger(this.timeoutMs) || this.timeoutMs <= 0) {
+      throw new Error("Fiber RPC timeout must be a positive integer");
+    }
   }
 
   public async request<T>(method: string, params: unknown[] = []): Promise<T> {
@@ -63,12 +60,14 @@ export class FiberRpcClient {
     if (this.auth) {
       headers.set("authorization", this.auth);
     }
+    const requestId = ++this.id;
     const response = await this.fetchImpl(this.url, {
       method: "POST",
       headers,
+      signal: AbortSignal.timeout(this.timeoutMs),
       body: JSON.stringify({
         jsonrpc: "2.0",
-        id: ++this.id,
+        id: requestId,
         method,
         params
       })
@@ -77,12 +76,18 @@ export class FiberRpcClient {
       throw new FiberPaidHttpError("fiber-rpc-http-error", `Fiber RPC returned HTTP ${response.status}`, 502);
     }
     const payload = (await response.json()) as JsonRpcResponse<T>;
+    if (payload.jsonrpc !== "2.0" || payload.id !== requestId) {
+      throw new FiberPaidHttpError("fiber-rpc-invalid-response", "Fiber RPC returned an invalid JSON-RPC envelope", 502);
+    }
     if (payload.error) {
       throw new FiberPaidHttpError(
         "fiber-rpc-error",
         `Fiber RPC ${method} failed: ${payload.error.message ?? JSON.stringify(payload.error)}`,
         502
       );
+    }
+    if (!Object.hasOwn(payload, "result")) {
+      throw new FiberPaidHttpError("fiber-rpc-invalid-response", `Fiber RPC ${method} response omitted result`, 502);
     }
     return payload.result as T;
   }
@@ -197,6 +202,15 @@ export class FiberMethodAdapter {
     this.udtTypeScript = options.udtTypeScript;
     this.settlementTimeoutMs = options.settlementTimeoutMs ?? 30_000;
     this.settlementPollMs = options.settlementPollMs ?? 250;
+    if (
+      !Number.isSafeInteger(this.settlementTimeoutMs) ||
+      !Number.isSafeInteger(this.settlementPollMs) ||
+      this.settlementTimeoutMs <= 0 ||
+      this.settlementPollMs <= 0 ||
+      this.settlementPollMs > this.settlementTimeoutMs
+    ) {
+      throw new Error("Fiber settlement polling must satisfy 0 < poll <= timeout using integer milliseconds");
+    }
   }
 
   public static fromEnv(env: NodeJS.ProcessEnv = process.env, role: FiberEnvRole = "payee"): FiberMethodAdapter {
@@ -233,82 +247,97 @@ export class FiberMethodAdapter {
     });
   }
 
-  public async createChallenge(input: FiberCreateChallengeInput): Promise<FiberMethodChallenge> {
-    const expirySeconds = Math.max(
-      1,
-      Math.ceil((new Date(input.expiresAt).getTime() - Date.now()) / 1000)
-    );
+  public async createChargeRequest(input: FiberCreateChargeInput, expirySeconds: number): Promise<FiberChargeRequest> {
     const invoice = await this.rpc!.newInvoice({
-      amount: input.amountShannons,
-      description: input.description ?? `Fiber Paid HTTP challenge ${input.challengeId}`,
+      amount: input.amount,
+      description: input.description ?? "Fiber Paid HTTP charge",
       currency: this.currency,
       udtTypeScript: input.udtTypeScript ?? this.udtTypeScript,
       expirySeconds
     });
     const paymentHash = extractInvoicePaymentHash(invoice);
-    return FiberMethodChallengeSchema.parse({
-      method: "fiber",
-      intent: "charge",
-      asset: this.asset,
-      amountShannons: input.amountShannons,
-      paymentHash,
-      invoice: invoice.invoice_address,
-      udtTypeScript: input.udtTypeScript ?? this.udtTypeScript,
-      fiberNodeId: this.nodeId,
-      fiberRpcLabel: this.rpcLabel,
-      expiresAt: input.expiresAt
+    if (!invoice.invoice_address) {
+      throw new FiberPaidHttpError("fiber-invoice-missing", "Fiber new_invoice did not return invoice_address", 502);
+    }
+    assertInvoiceMatches({
+      invoice,
+      expectedPaymentHash: paymentHash,
+      expectedAmount: input.amount,
+      expectedCurrency: this.currency,
+      expectedNetwork: this.mode === "testnet" ? "testnet" : "dev",
+      expectedHashAlgorithm: invoiceHashAlgorithm(invoice),
+      expectedUdtTypeScript: input.udtTypeScript ?? this.udtTypeScript,
+      requireUnexpired: true
+    });
+    const invoiceExpiresAt = extractInvoiceExpiresAt(invoice);
+    const invoiceUdtScript = extractInvoiceUdtScript(invoice);
+    return FiberChargeRequestSchema.parse({
+      amount: input.amount,
+      currency: input.currency ?? this.asset.toLowerCase(),
+      recipient: this.nodeId,
+      description: input.description,
+      externalId: input.externalId,
+      methodDetails: {
+        invoice: invoice.invoice_address,
+        paymentHash,
+        network: fiberNetworkFromCurrency(this.currency),
+        hashAlgorithm: invoiceHashAlgorithm(invoice),
+        invoiceCurrency: this.currency,
+        invoiceExpiresAt,
+        invoiceUdtScript,
+        udtTypeScript: input.udtTypeScript ?? this.udtTypeScript
+      }
     });
   }
 
-  public async payChallenge(challenge: FiberMethodChallenge): Promise<FiberPaymentProof> {
+  public async payCharge(request: FiberChargeRequest): Promise<FiberCredentialPayload> {
+    const parsed = FiberChargeRequestSchema.parse(request);
+    const expectedNetwork = this.mode === "testnet" ? "testnet" : "dev";
+    if (parsed.methodDetails.network !== expectedNetwork) {
+      throw new FiberPaidHttpError("wrong-network", "Fiber invoice network does not match the configured payer", 402);
+    }
+    const decoded = await this.rpc!.parseInvoice(parsed.methodDetails.invoice);
+    assertInvoiceMatches({
+      invoice: decoded,
+      expectedPaymentHash: parsed.methodDetails.paymentHash,
+      expectedAmount: parsed.amount,
+      expectedCurrency: parsed.methodDetails.invoiceCurrency ?? this.currency,
+      expectedNetwork,
+      expectedHashAlgorithm: parsed.methodDetails.hashAlgorithm,
+      expectedUdtTypeScript: parsed.methodDetails.udtTypeScript,
+      expectedInvoiceExpiresAt: parsed.methodDetails.invoiceExpiresAt,
+      expectedInvoiceUdtScript: parsed.methodDetails.invoiceUdtScript,
+      requireUnexpired: true
+    });
     const result = await this.rpc!.sendPayment({
-      invoice: challenge.invoice,
+      invoice: parsed.methodDetails.invoice,
       timeoutSeconds: Math.ceil(this.settlementTimeoutMs / 1000)
     });
-    const paymentHash = result.payment_hash ?? challenge.paymentHash;
+    const paymentHash = result.payment_hash ?? parsed.methodDetails.paymentHash;
+    if (!sameHex32(paymentHash, parsed.methodDetails.paymentHash)) {
+      throw new FiberPaidHttpError("wrong-payment-hash", "Fiber send_payment returned a different payment hash", 502);
+    }
     const settled = await waitForFiberPaymentSuccess(this.rpc!, paymentHash, {
       timeoutMs: this.settlementTimeoutMs,
       pollMs: this.settlementPollMs
     });
-    return {
-      kind: "fiber-payment-proof-v1",
-      mode: this.mode,
-      paymentHash,
-      invoice: challenge.invoice,
-      amountShannons: challenge.amountShannons,
-      udtTypeScript: challenge.udtTypeScript,
-      status: settled.status,
-      observedAt: new Date().toISOString(),
-      evidence: {
-        sendResult: result,
-        settledPayment: settled
-      }
-    };
+    if (!isPaymentSuccessStatus(settled.status)) {
+      throw new FiberPaidHttpError("fiber-payment-not-settled", "Fiber payment did not reach Success", 402);
+    }
+    return FiberCredentialPayloadSchema.parse({ paymentHash });
   }
 
-  public async verifyProof(
-    challenge: FiberMethodChallenge,
-    proof: unknown
+  public async verifyPayload(
+    request: FiberChargeRequest,
+    payload: unknown
   ): Promise<FiberReceiptEvidence> {
-    const normalized = normalizeProof(proof);
-    if (normalized.paymentHash !== challenge.paymentHash) {
+    const parsedRequest = FiberChargeRequestSchema.parse(request);
+    const normalized = FiberCredentialPayloadSchema.parse(payload);
+    if (normalized.paymentHash !== parsedRequest.methodDetails.paymentHash) {
       throw new FiberPaidHttpError("wrong-payment-hash", "Fiber payment hash does not match the challenge", 402);
     }
-    if (challenge.amountShannons && normalized.amountShannons && normalized.amountShannons !== challenge.amountShannons) {
-      throw new FiberPaidHttpError("wrong-amount", "Fiber payment amount does not match the challenge", 402);
-    }
-    if (normalized.mode !== this.mode) {
-      throw new FiberPaidHttpError(
-        "wrong-fiber-mode",
-        `Fiber payment proof mode ${normalized.mode} does not match configured ${this.mode} mode`,
-        402
-      );
-    }
-    if (JSON.stringify(normalized.udtTypeScript ?? null) !== JSON.stringify(challenge.udtTypeScript ?? null)) {
-      throw new FiberPaidHttpError("wrong-fiber-udt", "Fiber UDT type script does not match the challenge", 402);
-    }
 
-    const invoiceRecord = await waitForFiberInvoicePaid(this.rpc!, challenge.paymentHash, {
+    const invoiceRecord = await waitForFiberInvoicePaid(this.rpc!, parsedRequest.methodDetails.paymentHash, {
       timeoutMs: this.settlementTimeoutMs,
       pollMs: this.settlementPollMs
     });
@@ -320,14 +349,26 @@ export class FiberMethodAdapter {
         402
       );
     }
+    assertInvoiceMatches({
+      invoice: invoiceRecord,
+      expectedInvoiceAddress: parsedRequest.methodDetails.invoice,
+      expectedPaymentHash: parsedRequest.methodDetails.paymentHash,
+      expectedAmount: parsedRequest.amount,
+      expectedCurrency: parsedRequest.methodDetails.invoiceCurrency ?? this.currency,
+      expectedNetwork: parsedRequest.methodDetails.network,
+      expectedHashAlgorithm: parsedRequest.methodDetails.hashAlgorithm,
+      expectedUdtTypeScript: parsedRequest.methodDetails.udtTypeScript,
+      expectedInvoiceExpiresAt: parsedRequest.methodDetails.invoiceExpiresAt,
+      expectedInvoiceUdtScript: parsedRequest.methodDetails.invoiceUdtScript
+    });
 
     return {
-      paymentHash: challenge.paymentHash,
-      amountShannons: challenge.amountShannons,
+      paymentHash: parsedRequest.methodDetails.paymentHash,
+      amountShannons: parsedRequest.amount,
       settlement: {
         status: "settled",
-        paymentHash: challenge.paymentHash,
-        invoiceId: challenge.invoice,
+        paymentHash: parsedRequest.methodDetails.paymentHash,
+        invoiceId: parsedRequest.methodDetails.invoice,
         provider: this.rpcLabel ?? "fiber-rpc",
         observedAt: new Date().toISOString()
       },
@@ -351,11 +392,11 @@ export function isSettledStatus(value: unknown): boolean {
 }
 
 export function isPaymentSuccessStatus(value: unknown): boolean {
-  return typeof value === "string" && value.toLowerCase() === "success";
+  return value === "Success";
 }
 
 export function isInvoicePaidStatus(value: unknown): boolean {
-  return typeof value === "string" && value.toLowerCase() === "paid";
+  return value === "Paid";
 }
 
 export function normalizeFiberPaymentStatus(value: unknown): "settled" | "pending" | "failed" {
@@ -375,6 +416,7 @@ export async function waitForFiberPaymentSuccess(
 ): Promise<FiberPaymentResult> {
   const timeoutMs = options.timeoutMs ?? 30_000;
   const pollMs = options.pollMs ?? 250;
+  assertPollingConfiguration(timeoutMs, pollMs);
   const started = Date.now();
   let last: FiberPaymentResult | null = null;
   while (Date.now() - started <= timeoutMs) {
@@ -382,7 +424,7 @@ export async function waitForFiberPaymentSuccess(
     if (isPaymentSuccessStatus(last.status)) {
       return last;
     }
-    if (typeof last.status === "string" && last.status.toLowerCase() === "failed") {
+    if (last.status === "Failed") {
       throw new FiberPaidHttpError(
         "fiber-payment-failed",
         `Fiber payment ${paymentHash} failed: ${last.failed_error ?? "unknown error"}`,
@@ -405,6 +447,7 @@ export async function waitForFiberInvoicePaid(
 ): Promise<FiberInvoiceStatusResult> {
   const timeoutMs = options.timeoutMs ?? 30_000;
   const pollMs = options.pollMs ?? 250;
+  assertPollingConfiguration(timeoutMs, pollMs);
   const started = Date.now();
   let last: FiberInvoiceStatusResult | null = null;
   while (Date.now() - started <= timeoutMs) {
@@ -412,7 +455,7 @@ export async function waitForFiberInvoicePaid(
     if (isInvoicePaidStatus(last.status)) {
       return last;
     }
-    if (typeof last.status === "string" && ["cancelled", "expired"].includes(last.status.toLowerCase())) {
+    if (last.status === "Cancelled" || last.status === "Expired") {
       throw new FiberPaidHttpError(
         "fiber-invoice-not-payable",
         `Fiber invoice ${paymentHash} reached terminal status ${last.status}`,
@@ -432,9 +475,11 @@ export type FiberInvoiceResult = {
   invoice_address?: string;
   invoice?: {
     amount?: string | number;
+    currency?: string;
     data?: {
       payment_hash?: string;
-      attrs?: unknown[];
+      timestamp?: string | number;
+      attrs?: Array<Record<string, unknown>>;
     };
   };
 };
@@ -515,36 +560,148 @@ type JsonRpcResponse<T> = {
   };
 };
 
-function normalizeProof(proof: unknown): FiberPaymentProof {
-  if (!proof || typeof proof !== "object") {
-    throw new FiberPaidHttpError("invalid-fiber-proof", "Fiber payment proof must be an object", 402);
-  }
-  const candidate = proof as Partial<FiberPaymentProof>;
-  if (candidate.kind !== "fiber-payment-proof-v1" || !candidate.paymentHash || !candidate.observedAt) {
-    throw new FiberPaidHttpError("invalid-fiber-proof", "Fiber payment proof is missing required fields", 402);
-  }
-  if (candidate.mode !== "local" && candidate.mode !== "testnet") {
-    throw new FiberPaidHttpError("invalid-fiber-proof", "Fiber payment proof mode must be local or testnet", 402);
-  }
-  return {
-    kind: "fiber-payment-proof-v1",
-    mode: candidate.mode,
-    paymentHash: candidate.paymentHash,
-    invoice: candidate.invoice,
-    amountShannons: candidate.amountShannons,
-    udtTypeScript: normalizeFiberUdtTypeScript(candidate.udtTypeScript),
-    status: candidate.status,
-    observedAt: candidate.observedAt,
-    evidence: candidate.evidence
-  };
-}
-
 export function extractInvoicePaymentHash(invoice: FiberInvoiceResult): string {
   const paymentHash = invoice.invoice?.data?.payment_hash;
   if (!paymentHash) {
     throw new FiberPaidHttpError("fiber-invoice-missing-payment-hash", "Fiber new_invoice did not return a payment hash", 502);
   }
   return paymentHash;
+}
+
+export function extractInvoiceAmount(invoice: FiberInvoiceResult): string | undefined {
+  const amount = invoice.invoice?.amount;
+  if (typeof amount === "number") {
+    return String(amount);
+  }
+  if (typeof amount === "string") {
+    return amount.startsWith("0x") ? BigInt(amount).toString(10) : amount;
+  }
+  return undefined;
+}
+
+export function extractInvoiceUdtScript(invoice: FiberInvoiceResult): string | undefined {
+  return invoiceAttribute(invoice, "udt_script", "udtScript");
+}
+
+export function extractInvoiceExpiresAt(invoice: FiberInvoiceResult): string | undefined {
+  const timestamp = invoice.invoice?.data?.timestamp;
+  const expiry = invoiceAttribute(invoice, "expiry_time", "expiryTime");
+  if ((typeof timestamp !== "string" && typeof timestamp !== "number") || !expiry) return undefined;
+  try {
+    const timestampMs = parseFiberQuantity(timestamp);
+    const expirySeconds = parseFiberQuantity(expiry);
+    const expiresMs = timestampMs + expirySeconds * 1000n;
+    if (expiresMs > BigInt(Number.MAX_SAFE_INTEGER)) return undefined;
+    return new Date(Number(expiresMs)).toISOString();
+  } catch {
+    return undefined;
+  }
+}
+
+export function serializeFiberUdtTypeScript(script: FiberUdtTypeScript): string {
+  const parsed = FiberUdtTypeScriptSchema.parse(script);
+  const codeHash = Buffer.from(parsed.code_hash.slice(2), "hex");
+  const args = Buffer.from(parsed.args.slice(2), "hex");
+  const hashType = new Map<string, number>([["data", 0], ["type", 1], ["data1", 2], ["data2", 4]])
+    .get(parsed.hash_type.toLowerCase());
+  if (typeof hashType === "undefined") throw new Error("Unsupported CKB script hash_type");
+  const argsBytes = Buffer.allocUnsafe(4 + args.length);
+  argsBytes.writeUInt32LE(args.length, 0);
+  args.copy(argsBytes, 4);
+  const total = 4 + (3 * 4) + codeHash.length + 1 + argsBytes.length;
+  const encoded = Buffer.allocUnsafe(total);
+  encoded.writeUInt32LE(total, 0);
+  encoded.writeUInt32LE(16, 4);
+  encoded.writeUInt32LE(48, 8);
+  encoded.writeUInt32LE(49, 12);
+  codeHash.copy(encoded, 16);
+  encoded[48] = hashType;
+  argsBytes.copy(encoded, 49);
+  return `0x${encoded.toString("hex")}`;
+}
+
+export function fiberNetworkFromCurrency(currency: string): "mainnet" | "testnet" | "dev" {
+  const normalized = currency.toLowerCase();
+  if (normalized === "fibb") return "mainnet";
+  if (normalized === "fibt") return "testnet";
+  if (normalized === "fibd") return "dev";
+  throw new FiberPaidHttpError("wrong-network", `Unknown Fiber invoice currency ${currency}`, 402);
+}
+
+function assertInvoiceMatches(input: {
+  invoice: FiberInvoiceResult;
+  expectedInvoiceAddress?: string;
+  expectedPaymentHash: string;
+  expectedAmount: string;
+  expectedCurrency: string;
+  expectedNetwork: "mainnet" | "testnet" | "dev";
+  expectedHashAlgorithm: "ckb_hash" | "sha256";
+  expectedUdtTypeScript?: FiberUdtTypeScript;
+  expectedInvoiceExpiresAt?: string;
+  expectedInvoiceUdtScript?: string;
+  requireUnexpired?: boolean;
+}): void {
+  if (input.expectedInvoiceAddress && input.invoice.invoice_address !== input.expectedInvoiceAddress) {
+    throw new FiberPaidHttpError("wrong-invoice", "Fiber invoice address does not match the challenge", 402);
+  }
+  if (!sameHex32(extractInvoicePaymentHash(input.invoice), input.expectedPaymentHash)) {
+    throw new FiberPaidHttpError("wrong-payment-hash", "Fiber invoice payment hash does not match the challenge", 402);
+  }
+  const amount = extractInvoiceAmount(input.invoice);
+  if (!amount || amount !== input.expectedAmount) {
+    throw new FiberPaidHttpError("wrong-amount", "Fiber invoice amount does not match the challenge", 402);
+  }
+  const currency = input.invoice.invoice?.currency;
+  if (!currency || currency.toLowerCase() !== input.expectedCurrency.toLowerCase()) {
+    throw new FiberPaidHttpError("wrong-currency", "Fiber invoice currency does not match the challenge", 402);
+  }
+  if (fiberNetworkFromCurrency(currency) !== input.expectedNetwork) {
+    throw new FiberPaidHttpError("wrong-network", "Fiber invoice network does not match the challenge", 402);
+  }
+  if (invoiceHashAlgorithm(input.invoice) !== input.expectedHashAlgorithm) {
+    throw new FiberPaidHttpError("wrong-hash-algorithm", "Fiber invoice hash algorithm does not match the challenge", 402);
+  }
+  const actualUdt = extractInvoiceUdtScript(input.invoice)?.toLowerCase();
+  const expectedUdt = input.expectedUdtTypeScript
+    ? serializeFiberUdtTypeScript(input.expectedUdtTypeScript).toLowerCase()
+    : undefined;
+  if (actualUdt !== expectedUdt || (input.expectedInvoiceUdtScript && actualUdt !== input.expectedInvoiceUdtScript.toLowerCase())) {
+    throw new FiberPaidHttpError("wrong-udt", "Fiber invoice UDT type script does not match the challenge", 402);
+  }
+  const expiresAt = extractInvoiceExpiresAt(input.invoice);
+  if (!expiresAt) {
+    throw new FiberPaidHttpError("wrong-expiry", "Fiber invoice expiry metadata is missing", 402);
+  }
+  if (input.expectedInvoiceExpiresAt && expiresAt !== input.expectedInvoiceExpiresAt) {
+    throw new FiberPaidHttpError("wrong-expiry", "Fiber invoice expiry does not match the challenge", 402);
+  }
+  if (input.requireUnexpired && Date.parse(expiresAt) <= Date.now()) {
+    throw new FiberPaidHttpError("expired-challenge", "Fiber invoice has expired", 402);
+  }
+}
+
+function invoiceAttribute(invoice: FiberInvoiceResult, snake: string, camel: string): string | undefined {
+  for (const attr of invoice.invoice?.data?.attrs ?? []) {
+    const value = attr[snake] ?? attr[camel];
+    if (typeof value === "string") return value;
+  }
+  return undefined;
+}
+
+function parseFiberQuantity(value: string | number): bigint {
+  if (typeof value === "number" && !Number.isSafeInteger(value)) throw new Error("invalid Fiber quantity");
+  return BigInt(value);
+}
+
+function invoiceHashAlgorithm(invoice: FiberInvoiceResult): "ckb_hash" | "sha256" {
+  const attrs = invoice.invoice?.data?.attrs ?? [];
+  for (const attr of attrs) {
+    const value = attr.hash_algorithm ?? attr.hashAlgorithm;
+    if (typeof value === "string" && value.toLowerCase() === "sha256") {
+      return "sha256";
+    }
+  }
+  return "ckb_hash";
 }
 
 function normalizeFiberUdtTypeScript(input: unknown): FiberUdtTypeScript | undefined {
@@ -575,10 +732,15 @@ function normalizeFiberUdtTypeScript(input: unknown): FiberUdtTypeScript | undef
 }
 
 export function toFiberHexQuantity(value: string | number | bigint): string {
-  if (typeof value === "string" && value.startsWith("0x")) {
-    return value.toLowerCase();
+  if (typeof value === "number" && !Number.isSafeInteger(value)) {
+    throw new Error("Fiber quantity number must be a safe integer");
   }
-  const parsed = BigInt(value);
+  let parsed: bigint;
+  try {
+    parsed = BigInt(value);
+  } catch {
+    throw new Error("Fiber quantity must be an integer");
+  }
   if (parsed < 0n) {
     throw new Error("Fiber quantity cannot be negative");
   }
@@ -589,8 +751,30 @@ function parseOptionalInt(value: string | undefined): number | undefined {
   if (!value) {
     return undefined;
   }
-  const parsed = Number.parseInt(value, 10);
-  return Number.isFinite(parsed) ? parsed : undefined;
+  if (!/^[1-9]\d*$/.test(value)) {
+    throw new Error("Fiber millisecond settings must be positive decimal integers");
+  }
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed)) {
+    throw new Error("Fiber millisecond settings exceed the safe integer range");
+  }
+  return parsed;
+}
+
+function sameHex32(left: string, right: string): boolean {
+  return left.toLowerCase() === right.toLowerCase();
+}
+
+function assertPollingConfiguration(timeoutMs: number, pollMs: number): void {
+  if (
+    !Number.isSafeInteger(timeoutMs) ||
+    !Number.isSafeInteger(pollMs) ||
+    timeoutMs <= 0 ||
+    pollMs <= 0 ||
+    pollMs > timeoutMs
+  ) {
+    throw new Error("Fiber settlement polling must satisfy 0 < poll <= timeout using integer milliseconds");
+  }
 }
 
 function sleep(ms: number): Promise<void> {

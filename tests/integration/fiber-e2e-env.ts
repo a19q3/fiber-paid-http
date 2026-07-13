@@ -44,7 +44,8 @@ export type FiberE2eResult = {
   fiber_e2e_blockers?: string[];
   fiber_e2e_error?: string;
   fiber_e2e_payment_hash?: string;
-  fiber_e2e_receipt_id?: string;
+  fiber_e2e_receipt_reference?: string;
+  fiber_e2e_challenge_id?: string;
 };
 
 export function readFiberE2ePreflight(env: NodeJS.ProcessEnv = process.env): FiberE2ePreflight {
@@ -119,7 +120,8 @@ export function writeFiberE2eResult(patch: FiberE2eResult): FiberE2eResult {
   };
   if (next.fiber_e2e_status !== "passed") {
     delete next.fiber_e2e_payment_hash;
-    delete next.fiber_e2e_receipt_id;
+    delete next.fiber_e2e_receipt_reference;
+    delete next.fiber_e2e_challenge_id;
   }
   writeFileSync(path, `${JSON.stringify(next, null, 2)}\n`);
   return next;

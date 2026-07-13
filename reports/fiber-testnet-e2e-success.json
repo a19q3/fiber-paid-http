@@ -1,45 +1,18 @@
 {
-  "unit_tests": true,
-  "integration_tests": true,
-  "security_tests": true,
-  "conformance_vectors": true,
-  "security_matrix": true,
-  "production_operations": true,
-  "production_operations_report": "reports/production-operations-matrix.json",
-  "rust_gateway_production_path": true,
-  "fiber_e2e_mode": "testnet",
+  "schema": "fiber-paid-http-testnet-e2e-evidence-v1",
+  "testnet_evidence_recorded_at": "2026-07-13T10:18:23.785Z",
+  "fiber_commit": "e00d0e3c9a9284ea1c7705d360be615cfce1a5c6",
   "fiber_preflight_test_loaded": true,
   "fiber_live_test_selected": true,
   "fiber_live_test_loaded": true,
+  "fiber_e2e_mode": "testnet",
   "fiber_e2e_status": "passed",
   "fiber_e2e_blockers": [],
-  "f402_compatibility": true,
-  "live_fiber_local_e2e": false,
   "live_fiber_testnet_e2e": true,
   "testnet_fiber_e2e": true,
   "testnet_fiber_e2e_evidence": true,
-  "local_fiber_e2e_evidence": true,
-  "fiber_commit": "3c25bcf16200e5d641dcd9b79f086f391e976172",
-  "toolchain_shims_used": [
-    {
-      "name": "cargo",
-      "path": "scripts/bin/cargo",
-      "scope": "scripts/fiber_local_network.sh",
-      "evidence": "reports/fiber-local-network/start.log"
-    },
-    {
-      "name": "nc",
-      "path": "scripts/bin/nc",
-      "scope": "scripts/fiber_local_network.sh",
-      "evidence": "reports/fiber-local-network/wait.log present; Fiber wait script uses nc -z"
-    }
-  ],
-  "production_ready_for_fiber_method": true,
-  "production_blockers": [],
-  "fiber_e2e_payment_hash": "0x8adaeeb1c27b698d5a63447588f3de62568f94e23effeda973ff70281a545f9b",
-  "fiber_e2e_receipt_id": "rcpt_9ff3edb34ee30f56d20c3c6bf01fb453",
-  "production_bootstrap_e2e": true,
-  "production_bootstrap_report": "reports/production-bootstrap-e2e.json",
-  "testnet_evidence_recorded_at": "2026-06-25T03:14:53.023Z",
-  "testnet_evidence_digest": "sha256:9b353342ec232458e48ab0a39f66828180935de17fbbda08db4804090f26d5ed"
+  "fiber_e2e_payment_hash": "0x40c26ad40908a0e1e684d7de77766ed2d5cd171e884f870d1d52d44e2ed06df0",
+  "fiber_e2e_receipt_reference": "0x40c26ad40908a0e1e684d7de77766ed2d5cd171e884f870d1d52d44e2ed06df0",
+  "fiber_e2e_challenge_id": "dPwvrAdOjOrfg-oI_ZTlc3cTjKUOG8xRP_RPPyL71wY",
+  "testnet_evidence_digest": "sha256:3c3bd52c3da7e7f78e37eda480d053c66bcc2f2d292ccc4e1ae9299b91d461d9"
 }

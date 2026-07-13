@@ -4,9 +4,7 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { dirname, resolve } from "node:path";
 import { Command } from "commander";
 import {
-  resourceHash,
-  verifyReceiptSignatureWithAnySecret,
-  type PaymentReceipt,
+  PaymentReceiptSchema,
   type ResourceDescriptor
 } from "@fiber-paid-http/core";
 import { paidFetch, inspectChallenge } from "@fiber-paid-http/client";
@@ -57,26 +55,19 @@ const program = new Command();
 program
   .name("fiber-paid-http")
   .description("Fiber Paid HTTP gateway, SDK, evidence, and compatibility tooling")
-  .version("0.1.0")
-  .option("--engine <engine>", "execution engine", "typescript")
-  .hook("preAction", (command) => {
-    const engine = command.opts<{ engine: string }>().engine;
-    if (engine !== "typescript") {
-      throw new Error("The TypeScript CLI only supports --engine typescript. Use fiber-paid-http-rs for the Rust engine.");
-    }
-  });
+  .version("0.1.0");
 
 program
   .command("serve")
   .option("--config <path>", "gateway config JSON")
   .option("--upstream <url>", "upstream server URL")
-  .option("--price-ckb <amount>", "CKB price")
-  .option("--methods <methods>", "comma-separated methods")
+  .option("--amount <amount>", "charge amount in the asset's smallest unit")
+  .option("--currency <currency>", "charge currency")
   .option("--storage <uri>", "sqlite://path")
   .option("--port <port>", "port")
   .option("--server-id <id>", "server id")
-  .description("Run Fiber Paid HTTP as a reverse proxy in front of an upstream HTTP service")
-  .action(async (opts: { config?: string; upstream?: string; priceCkb?: string; methods?: string; storage?: string; port?: string; serverId?: string }) => {
+  .description("Run the TypeScript reference reverse proxy; use fiber-paid-http-rs for production")
+  .action(async (opts: { config?: string; upstream?: string; amount?: string; currency?: string; storage?: string; port?: string; serverId?: string }) => {
     const config = opts.config ? parseGatewayConfig(await readJson(opts.config)) : undefined;
     const resolved = resolveGatewayConfig({ ...opts, config }, process.env);
     await assertGatewayRpcReady(resolved);
@@ -101,7 +92,7 @@ program
       next_steps: [
         `edit ${opts.out}`,
         `fiber-paid-http doctor --role gateway --config ${opts.out}`,
-        `fiber-paid-http serve --config ${opts.out}`
+        `fiber-paid-http-rs server --config ${opts.out}`
       ]
     }, null, 2));
   });
@@ -129,21 +120,6 @@ program
   });
 
 program
-  .command("server")
-  .option("--config <path>", "config file")
-  .option("--port <port>", "port")
-  .description("Start a configured Fiber Paid HTTP gateway")
-  .action(async (opts: { config?: string; port?: string }) => {
-    if (!opts.config) {
-      throw new Error("fiber-paid-http server requires --config. Use `fiber-paid-http evidence start` for the local evidence API.");
-    }
-    const config = parseGatewayConfig(await readJson(opts.config));
-    const resolved = resolveGatewayConfig({ config, port: opts.port }, process.env);
-    await assertGatewayRpcReady(resolved);
-    startGateway(resolved);
-  });
-
-program
   .command("challenge")
   .argument("<action>", "inspect")
   .argument("<url>")
@@ -152,24 +128,38 @@ program
     if (action !== "inspect") {
       throw new Error("Only `fiber-paid-http challenge inspect <url>` is supported");
     }
-    const signed = await inspectChallenge(url);
-    console.log(JSON.stringify(signed, null, 2));
+    const inspected = await inspectChallenge(url);
+    console.log(JSON.stringify(inspected, null, 2));
   });
 
 program
   .command("pay")
   .argument("<url>")
   .option("--method <method>", "payment method", "fiber")
+  .requiredOption("--max-amount <amount>", "maximum authorized amount in the currency's smallest unit")
+  .requiredOption("--currency <currency>", "expected MPP charge currency")
+  .option("--recipient <recipient>", "expected Fiber recipient/node id")
   .description("Pay an MPP endpoint and print the response")
-  .action(async (url: string, opts: { method: string }) => {
+  .action(async (url: string, opts: { method: string; maxAmount: string; currency: string; recipient?: string }) => {
     if (opts.method !== "fiber") {
       throw new Error("Only --method fiber is implemented");
+    }
+    if (!/^[1-9]\d*$/.test(opts.maxAmount) || !opts.currency.trim()) {
+      throw new Error("--max-amount must be a positive integer and --currency must be non-empty");
     }
     const report = buildBootstrapReport("payer");
     if (report.status === "blocked") {
       throw new BootstrapError(report);
     }
-    const result = await paidFetch(url, {}, { fiber: FiberMethodAdapter.fromEnv(process.env, "payer") });
+    const result = await paidFetch(url, {}, {
+      fiber: FiberMethodAdapter.fromEnv(process.env, "payer"),
+      authorizePayment: ({ charge }) => {
+        if (BigInt(charge.amount) > BigInt(opts.maxAmount)) return false;
+        if (charge.currency.toLowerCase() !== opts.currency.toLowerCase()) return false;
+        if (opts.recipient && charge.recipient !== opts.recipient) return false;
+        return true;
+      }
+    });
     console.log(
       JSON.stringify(
         {
@@ -200,19 +190,15 @@ program
     const challenge = f402ChallengeToMpp({
       f402,
       resource,
-      serverId: "fiber-paid-http-cli"
+      realm: f402.issuer ?? "fiber-paid-http-cli",
+      secret: requiredEnv("FIBER_PAID_HTTP_SECRET")
     });
     const credential = f402ProofToCredential({
       proof: {
         paymentHash: f402.paymentHash,
-        invoice: f402.invoice,
-        amountShannons: f402.amount,
-        mode: process.env.FIBER_MODE === "testnet" ? "testnet" : "local",
-        status: "settled",
         token: f402.token
       },
-      challengeId: challenge.challengeId,
-      resourceHash: resourceHash(resource)
+      challenge
     });
     console.log(JSON.stringify({ challenge, credential }, null, 2));
   });
@@ -240,7 +226,7 @@ program
         currency: typeof input.currency === "string" ? input.currency : "CKB",
         expiresAt: stringInput(input, "expiresAt"),
         resource,
-        challengeId: typeof input.challengeId === "string" ? input.challengeId : undefined,
+        challengeId: stringInput(input, "challengeId"),
         issuer: typeof input.issuer === "string" ? input.issuer : opts.serverId,
         fiberNodeId: typeof input.fiberNodeId === "string" ? input.fiberNodeId : undefined,
         hashAlgorithm: input.hashAlgorithm === "sha256" ? "sha256" : "ckb_hash"
@@ -264,15 +250,14 @@ program
       const challenge = fl402ChallengeToMpp({
         fl402,
         resource,
-        serverId: opts.serverId,
-        challengeId: fl402.challengeId
+        realm: opts.serverId,
+        secret: requiredEnv("FIBER_PAID_HTTP_SECRET")
       });
       const proof = input.proof && typeof input.proof === "object" ? FL402ProofSchema.parse(input.proof) : null;
       const credential = proof
         ? fl402ProofToCredential({
             proof,
-            challengeId: fl402.challengeId ?? challenge.challengeId,
-            resourceHash: resourceHash(resource)
+            challenge
           })
         : undefined;
       console.log(JSON.stringify({ challenge, ...(credential ? { credential } : {}) }, null, 2));
@@ -285,16 +270,14 @@ program
   .command("receipt")
   .argument("<action>", "verify")
   .argument("<file>")
-  .option("--secret <secret>", "receipt HMAC secret")
-  .option("--previous-secret <secret...>", "previous receipt HMAC secret accepted during rotation")
   .description("Verify a Payment-Receipt JSON file")
-  .action(async (action: string, file: string, opts: { secret?: string; previousSecret?: string[] }) => {
+  .action(async (action: string, file: string) => {
     if (action !== "verify") {
       throw new Error("Only `fiber-paid-http receipt verify <receipt.json>` is supported");
     }
-    const receipt = (await readJson(file)) as PaymentReceipt;
-    const secrets = receiptAuditSecrets(undefined, opts.secret, opts.previousSecret, true);
-    console.log(JSON.stringify({ valid: verifyReceiptSignatureWithAnySecret(receipt, secrets) }, null, 2));
+    const parsed = PaymentReceiptSchema.safeParse(await readJson(file));
+    console.log(JSON.stringify({ valid: parsed.success, receipt: parsed.success ? parsed.data : undefined }, null, 2));
+    if (!parsed.success) process.exitCode = 1;
   });
 
 program
@@ -304,11 +287,9 @@ program
   .option("--storage <uri>", "sqlite://path")
   .option("--out <path>", "backup destination path")
   .option("--from <path>", "restore source backup path")
-  .option("--secret <secret>", "receipt HMAC secret for receipt export/audit")
-  .option("--previous-secret <secret...>", "previous receipt HMAC secret accepted during rotation")
   .option("--force", "overwrite restore destination")
   .description("Operate on Fiber Paid HTTP durable storage")
-  .action(async (action: string, opts: { config?: string; storage?: string; out?: string; from?: string; secret?: string; previousSecret?: string[]; force?: boolean }) => {
+  .action(async (action: string, opts: { config?: string; storage?: string; out?: string; from?: string; force?: boolean }) => {
     const config = opts.config ? parseGatewayConfig(await readJson(opts.config)) : undefined;
     const storagePath = storagePathFromOptions(opts.storage, config);
     if (action === "backup") {
@@ -342,20 +323,17 @@ program
       if (!opts.out) {
         throw new Error("fiber-paid-http storage export-receipts requires --out <path>");
       }
-      const secrets = receiptAuditSecrets(config, opts.secret, opts.previousSecret, false);
-      const result = await exportSqliteReceipts(storagePath, opts.out, secrets.length > 0 ? { secrets } : {});
+      const result = await exportSqliteReceipts(storagePath, opts.out);
       console.log(JSON.stringify({
         storage: "sqlite",
         action,
-        receipt_signature_checked: secrets.length > 0,
-        receipt_signature_secret_count: secrets.length,
+        receipt_schema_checked: true,
         ...result
       }, null, 2));
       return;
     }
     if (action === "audit-receipts") {
-      const secrets = receiptAuditSecrets(config, opts.secret, opts.previousSecret, true);
-      const result = await auditSqliteReceipts(storagePath, secrets);
+      const result = await auditSqliteReceipts(storagePath);
       console.log(JSON.stringify({ storage: "sqlite", action, ...result }, null, 2));
       if (result.invalid > 0) {
         process.exitCode = 1;
@@ -409,9 +387,6 @@ program
     if (url && role === "payer" && report.status === "ready") {
       const challenge = await inspectChallenge(url);
       output.challenge = challenge;
-      const result = await paidFetch(url, {}, { fiber: FiberMethodAdapter.fromEnv(process.env, "payer") });
-      output.responseStatus = result.response.status;
-      output.receiptPresent = Boolean(result.receipt);
     }
     console.log(JSON.stringify(output, null, 2));
   });
@@ -459,6 +434,14 @@ function stringInput(input: Record<string, unknown>, field: string): string {
   return value;
 }
 
+function requiredEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`set ${name}`);
+  }
+  return value;
+}
+
 function unwrapVectorInput(input: Record<string, unknown>): Record<string, unknown> {
   const nested = input.input;
   if (nested && typeof nested === "object" && !Array.isArray(nested)) {
@@ -477,8 +460,8 @@ function fl402Resource(input: Record<string, unknown>, fallbackUrl = "http://fl4
         method,
         url,
         ...(
-          typeof (resource as { bodyHash?: unknown }).bodyHash === "string"
-            ? { bodyHash: (resource as { bodyHash: string }).bodyHash }
+          typeof (resource as { digest?: unknown }).digest === "string"
+            ? { digest: (resource as { digest: string }).digest }
             : {}
         ),
         ...(
@@ -514,6 +497,9 @@ function startGateway(config: ResolvedGatewayConfig): void {
     secret: config.secret,
     previousSecrets: config.previousSecrets,
     serverId: config.serverId,
+    realm: config.realm,
+    publicBaseUrl: config.publicBaseUrl,
+    allowInsecureHttp: config.allowInsecureHttp,
     store,
     fiber: FiberMethodAdapter.fromEnv(config.fiberEnv, "payee"),
     fl402: config.fl402
@@ -525,8 +511,9 @@ function startGateway(config: ResolvedGatewayConfig): void {
   });
   const handler = createReverseProxyHandler(middleware, {
     upstream: config.upstream,
-    price: config.price,
-    methods: config.methods as never
+    charge: config.charge,
+    upstreamTimeoutMs: config.operations.upstreamTimeoutMs,
+    upstreamResponseLimitBytes: config.operations.upstreamResponseLimitBytes
   });
   const server = createServer(async (req, res) => {
     const requestStarted = Date.now();
@@ -623,8 +610,6 @@ function startGateway(config: ResolvedGatewayConfig): void {
 async function doctorReport(role: BootstrapRole, config: GatewayConfig | undefined) {
   if (role === "gateway") {
     const fiberEnv = fiberEnvFromGatewayConfig(config, process.env);
-    const methods = config?.methods ?? ["fiber"];
-    const price = config?.price ?? { value: "1", currency: "CKB", display: "1 CKB" };
     const report = buildBootstrapReport(role, {
       env: fiberEnv,
       secret: readPaidHttpEnv(process.env, config?.secret_env ?? "FIBER_PAID_HTTP_SECRET"),
@@ -636,8 +621,10 @@ async function doctorReport(role: BootstrapRole, config: GatewayConfig | undefin
       literalRpcAuth: gatewayConfigHasLiteralRpcAuth(config),
       storage: config?.storage ?? "sqlite://./fiber-paid-http.sqlite",
       upstream: config?.upstream,
-      methods,
-      price,
+      realm: config?.realm,
+      publicBaseUrl: config?.public_base_url,
+      allowInsecureHttp: config?.allow_insecure_http,
+      charge: config?.charge,
       cors: resolveGatewayCorsPolicy(config),
       operations: resolveGatewayOperations(config)
     });
@@ -670,31 +657,6 @@ function storagePathFromOptions(storage: string | undefined, config: GatewayConf
   return path;
 }
 
-function receiptAuditSecrets(
-  config: GatewayConfig | undefined,
-  explicitSecret: string | undefined,
-  explicitPreviousSecrets: string[] | undefined,
-  required: boolean
-): string[] {
-  const previous = previousSecretsFromGatewayConfig(config, process.env);
-  if (previous.missing.length > 0) {
-    throw new Error(`Configured previous secret env var(s) are missing: ${previous.missing.join(", ")}`);
-  }
-  if (previous.short.length > 0) {
-    throw new Error(`Configured previous secret env var(s) must be at least 32 characters: ${previous.short.join(", ")}`);
-  }
-  const currentSecret = explicitSecret ?? readPaidHttpEnv(process.env, config?.secret_env ?? "FIBER_PAID_HTTP_SECRET");
-  const secrets = [
-    ...(currentSecret ? [currentSecret] : []),
-    ...(explicitPreviousSecrets ?? []),
-    ...previous.secrets
-  ].filter(Boolean);
-  if (secrets.length === 0 && required) {
-    throw new Error("Provide --secret, --previous-secret, FIBER_PAID_HTTP_SECRET, or configured previous_secret_envs");
-  }
-  return Array.from(new Set(secrets));
-}
-
 async function assertGatewayRpcReady(config: ResolvedGatewayConfig): Promise<void> {
   const report = await probeIfStructurallyReady(buildBootstrapReport("gateway", {
     env: config.fiberEnv,
@@ -705,8 +667,10 @@ async function assertGatewayRpcReady(config: ResolvedGatewayConfig): Promise<voi
     literalRpcAuth: false,
     storage: config.storage,
     upstream: config.upstream,
-    methods: config.methods,
-    price: config.price,
+    realm: config.realm,
+    publicBaseUrl: config.publicBaseUrl,
+    allowInsecureHttp: config.allowInsecureHttp,
+    charge: config.charge,
     cors: config.cors,
     operations: config.operations
   }), config.fiberEnv, "payee");
@@ -754,7 +718,7 @@ async function writeReferenceStarterNotes(cwd: string): Promise<{ written: strin
     ["docs/refs/fiber.md", "# Fiber References\n\nTrack Fiber JSON-RPC invoice creation, payment sending, invoice status, payment status, and settlement semantics used by Fiber Paid HTTP.\n"],
     ["docs/refs/mpp.md", "# MPP References\n\nTrack the HTTP 402 challenge, credential, receipt, replay, and resource-binding lifecycle used by Fiber Paid HTTP.\n"],
     ["docs/refs/infern.md", "# Infern / F402 References\n\nTrack F402 compatibility boundaries and integration assumptions for Fiber-backed paid access flows.\n"],
-    ["docs/refs/l402.md", "# L402 References\n\nTrack macaroon, preimage, and paid-access precedent relevant to Authorization-bound receipts.\n"],
+    ["docs/refs/l402.md", "# L402 References\n\nTrack capability, preimage, and paid-access precedent relevant to Authorization-bound receipts.\n"],
     ["docs/refs/security.md", "# Security References\n\nTrack replay, wrong-resource, wrong-method, wrong-amount, expired-challenge, paid-but-denied, and unpaid-service attack coverage.\n"]
   ]);
   const written: string[] = [];
@@ -791,8 +755,10 @@ async function gatewayReadinessReport(config: ResolvedGatewayConfig) {
     literalRpcAuth: false,
     storage: config.storage,
     upstream: config.upstream,
-    methods: config.methods,
-    price: config.price,
+    realm: config.realm,
+    publicBaseUrl: config.publicBaseUrl,
+    allowInsecureHttp: config.allowInsecureHttp,
+    charge: config.charge,
     cors: config.cors,
     operations: config.operations
   }), config.fiberEnv, "payee");

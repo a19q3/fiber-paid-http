@@ -10,6 +10,14 @@ This index records the external sources inspected before implementation. Referen
 - Fiber Paid HTTP behavior learned: MPP is for charging API requests, tool calls, and content in the same HTTP flow. Fiber can be introduced as a custom payment method.
 - What not to copy: do not duplicate the whole MPP SDK surface. Fiber Paid HTTP implements only the pieces needed for Fiber and local demos.
 
+## Payment HTTP Authentication drafts
+
+- URLs: https://paymentauth.org/draft-httpauth-payment-00.txt, https://paymentauth.org/draft-payment-intent-charge-00.txt, https://paymentauth.org/draft-lightning-charge-00.txt
+- Local repo path: none
+- Why it matters: primary work-in-progress definitions for the `Payment` auth scheme, `charge` intent, HMAC challenge binding, credentials, receipts, TLS, replay, concurrency, caching, and payment-method profiles.
+- Fiber Paid HTTP behavior learned: implement the draft core exactly where applicable and publish `fiber` honestly as a proposed project method profile until registration/standardization exists.
+- What not to claim: these are Internet-Drafts rather than final RFCs, and `fiber` is not claimed as a registered HTTP payment method.
+
 ## Cloudflare Agents MPP overview
 
 - URL: https://developers.cloudflare.com/agents/tools/payments/mpp/
@@ -31,7 +39,7 @@ This index records the external sources inspected before implementation. Referen
 - URL: https://talk.nervos.org/t/introducing-infern-serve-an-ai-model-from-your-own-machine-and-get-paid-per-request-over-fiber/10408
 - Local repo path: `<reference-workspace>/infern`
 - Why it matters: describes F402: HTTP 402 carrying a Fiber invoice, payment over Fiber, retry with proof, and serving the response.
-- Fiber Paid HTTP behavior learned: F402 should be an adapter, not the primary protocol. Fiber Paid HTTP should provide infrastructure that Infern-like apps can use.
+- Fiber Paid HTTP behavior learned: F402 should map into the same MPP-draft verifier. Fiber Paid HTTP should provide infrastructure that Infern-like apps can use.
 - What not to copy: do not build an AI inference marketplace, routing marketplace, registry, stake/slashing system, or model UI.
 
 ## Fiber infrastructure hackathon announcement
@@ -55,7 +63,7 @@ This index records the external sources inspected before implementation. Referen
 - URL: https://github.com/nervosnetwork/fiber/blob/develop/crates/fiber-lib/src/rpc/README.md
 - Local repo path: `<reference-workspace>/fiber/crates/fiber-lib/src/rpc/README.md`
 - Why it matters: current method names, parameter shapes, statuses, and warnings.
-- Fiber Paid HTTP behavior learned: the RPC port must be treated as trusted-only; invoice status `Received` or `Paid` and payment status success-like states can count as settled.
+- Fiber Paid HTTP behavior learned: the RPC port must be treated as trusted-only; the production verifier waits for invoice status exactly `Paid`, while the payer waits for payment status exactly `Success`.
 - What not to copy: do not expose Fiber RPC directly to browsers or untrusted networks.
 
 ## Fiber glossary
@@ -72,7 +80,7 @@ This index records the external sources inspected before implementation. Referen
 - Local repo path: `<reference-workspace>/l402`
 - Why it matters: precedent for combining HTTP 402, invoices, and bearer credentials.
 - Fiber Paid HTTP behavior learned: challenge tokens should bind challenge id, resource, amount, payment hash, expiration, and issuer. Replay must be tracked when credentials are bearer-like.
-- What not to copy: do not use Lightning-specific macaroon or BOLT11 assumptions as Fiber requirements.
+- What not to copy: do not use Lightning-specific token formats or BOLT11 assumptions as Fiber requirements.
 
 ## Fewsats awesome-L402
 
