@@ -32,8 +32,6 @@ F402 and x402 v2 are optional explicit entrances. F-L402 is experimental and dis
 6. Open the parity view to inspect all 22 shared Rust/TypeScript fixtures.
 7. Open Examples to see which parts of the Battlecode reference integration are READY, BLOCKED, or UNCONFIGURED on the current machine.
 
-The timed narration and operator checklist are in [`demo-script.md`](demo-script.md).
-
 ### Demo availability
 
 The repository currently claims a **local runnable demo and preserved evidence**, not a public hosted URL. Do not add a hosted URL to the submission until that deployment exists and passes the same status and replay checks. The live lane fails closed unless real local or testnet Fiber RPC configuration is present; the deterministic browser smoke report is labeled `STATIC DEMO`, never `LIVE`.

@@ -9,7 +9,6 @@ This index maps the repo documentation by reader intent. Start with the shortest
 - [`positioning.md`](positioning.md): project boundary against nearby Fiber, F402, L402, x402, wallet, checkout, and marketplace work.
 - [`service-metering.md`](service-metering.md): why paid APIs, agents, and merchant resources need a reusable service-metering layer on Fiber.
 - [`hackathon-submission.md`](hackathon-submission.md): current hackathon submission packet and final checklist.
-- [`demo-script.md`](demo-script.md): 90-second Gateway Lab demo, evidence-label rules, and runnable lanes.
 
 ## Building A Paid Resource
 
@@ -44,7 +43,6 @@ This index maps the repo documentation by reader intent. Start with the shortest
 
 ## Demos
 
-- [`demo-script.md`](demo-script.md): judge-facing service-metering walkthrough with honest live, preserved, static, blocked, and experimental labels.
 - [`battlecode-paid-http-tournament.md`](battlecode-paid-http-tournament.md): paid-entry xUDT tournament demo flow.
 
 ## External References
