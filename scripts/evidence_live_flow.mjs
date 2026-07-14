@@ -9,8 +9,8 @@ const apiBase = stripTrailingSlash(args["api-base"] || process.env.FIBER_PAID_HT
 const webUrl = stripTrailingSlash(args["web-url"] || process.env.FIBER_PAID_HTTP_EVIDENCE_WEB_URL || "http://127.0.0.1:8788");
 const sessionId = normalizeSessionId(args.session || process.env.FIBER_PAID_HTTP_DEMO_SESSION || "live-demo");
 const endpoint = args.endpoint || process.env.FIBER_PAID_HTTP_DEMO_ENDPOINT || "/paid/protocol-service";
-const amountCkb = args["amount-ckb"] || process.env.FIBER_PAID_HTTP_DEMO_AMOUNT_CKB || "100";
 const amountShannons = args["amount-shannons"] || process.env.FIBER_PAID_HTTP_DEMO_AMOUNT_SHANNONS || process.env.FIBER_E2E_AMOUNT_SHANNONS || "100";
+const amountCkb = shannonsToCkb(amountShannons);
 const stepDelayMs = boundedInteger(args["delay-ms"] || process.env.FIBER_PAID_HTTP_DEMO_STEP_DELAY_MS, 0, 120000, 3500);
 const reportPath = resolve(repoRoot, args.report || process.env.FIBER_PAID_HTTP_DEMO_REPORT || "reports/evidence-live-demo-flow.json");
 const startedAt = new Date().toISOString();
@@ -36,7 +36,6 @@ try {
 
   const unpaid = await postStep("unpaid", "/api/evidence/unpaid", {
     endpoint,
-    amountCkb,
     amountShannons
   });
   if (unpaid.body?.status !== 402 || !unpaid.body?.fiberChallenge) {
@@ -227,6 +226,13 @@ function boundedInteger(value, min, max, fallback) {
   const parsed = Number.parseInt(String(value || ""), 10);
   if (!Number.isFinite(parsed)) return fallback;
   return Math.min(max, Math.max(min, parsed));
+}
+
+function shannonsToCkb(value) {
+  const amount = BigInt(String(value || "0"));
+  const whole = amount / 100000000n;
+  const fraction = (amount % 100000000n).toString().padStart(8, "0").replace(/0+$/, "");
+  return fraction ? `${whole}.${fraction}` : whole.toString();
 }
 
 function errorMessage(error) {

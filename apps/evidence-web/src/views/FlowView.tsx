@@ -41,7 +41,7 @@ export function Timeline() {
   const proofMode = ev.flow?.proof?.mode || ev.status?.mode || "unconfigured";
 
   const mkStep = (actor: string, label: string, snippet: string, passed: boolean, icon: string, time?: string): TimelineStep => ({
-    actor, label, snippet: snippet || "pending", status: passed ? "passed" : "idle", statusLabel: passed ? "passed" : "idle", time, icon,
+    actor, label, snippet: snippet || "not issued", status: passed ? "passed" : "idle", statusLabel: passed ? "passed" : "idle", time, icon,
   });
 
   let steps: TimelineStep[] = [
@@ -90,8 +90,8 @@ export function FlowView() {
   const ev = useEvidence();
   const endpoints = ev.status?.endpoints || fallbackEndpoints;
   const selected = endpoints.find((e) => e.path === ev.selected) || fallbackEndpoints[0]!;
-  const challengeId = flowChallengeId(ev.flow) || "pending";
-  const resourceHash = flowResourceHash(ev.flow) || "pending";
+  const challengeId = flowChallengeId(ev.flow) || "not issued";
+  const resourceHash = flowResourceHash(ev.flow) || "not issued";
   const routeValue = ev.status?.localFiberNetwork?.route;
   const route = Array.isArray(routeValue) ? routeValue.map((name) => String(name)) : [];
   const apiUnavailable = ev.status?.mode === "api-unreachable";
@@ -168,6 +168,14 @@ export function FlowView() {
                 <span className="kv-label"><Icon name="ResourceHash" />Resource Hash</span>
                 <strong id="resource-hash">{resourceHash}</strong>
                 <button className="copy-btn" onClick={async () => { await copyTextToClipboard(resourceHash); }} aria-label="Copy resource hash"><Icon name="Copy" /></button>
+              </div>
+              <div className="kv-row">
+                <span className="kv-label"><Icon name="ActionPay" />Payment Hash</span>
+                <strong id="payment-hash">{ev.flow?.fiberChallenge?.paymentHash || "not recorded"}</strong>
+              </div>
+              <div className="kv-row">
+                <span className="kv-label"><Icon name="PaymentReceipt" />Receipt Reference</span>
+                <strong id="receipt-reference">{ev.flow?.receipt?.reference || "not recorded"}</strong>
               </div>
               <div className="kv-row">
                 <span className="kv-label"><Icon name="Route" />Route</span>

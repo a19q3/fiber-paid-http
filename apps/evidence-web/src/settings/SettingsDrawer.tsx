@@ -65,8 +65,8 @@ export function SettingsDrawer() {
       <aside ref={drawerRef} className="settings-drawer" role="dialog" aria-modal="true" aria-labelledby="settings-title" aria-describedby="settings-description">
         <div className="settings-head">
           <div>
-            <h2 id="settings-title">Gateway Lab Settings</h2>
-            <p id="settings-description">Gateway Lab preferences. Live execution still goes through the configured backend roles.</p>
+            <h2 id="settings-title">Gateway Lab settings</h2>
+            <p id="settings-description">Display, connection, and live Fiber runtime controls.</p>
           </div>
           <button ref={closeButtonRef} className="icon-btn" id="close-settings" onClick={() => ev.setSettingsOpen(false)} aria-label="Close settings">
             <Icon name="StatusFailed" />
@@ -117,6 +117,10 @@ export function SettingsDrawer() {
                 </select>
               </label>
             </div>
+            <label className="settings-checkbox" htmlFor="show-inspector">
+              <input id="show-inspector" type="checkbox" checked={ev.inspectorOpen} onChange={(e) => ev.setInspectorOpen(e.target.checked)} />
+              Show technical event inspector
+            </label>
             <div className="settings-note">
               <strong>{consolePersonas[ev.persona].title}</strong>
               <br />{consolePersonas[ev.persona].summary}
@@ -205,15 +209,15 @@ export function SettingsDrawer() {
                 </label>
                 <label className="field" htmlFor="bootstrap-payer-rpc">
                   <span><Icon name="ActorClient" /> Payer FNN RPC</span>
-                  <input id="bootstrap-payer-rpc" value={ev.bootstrapDraft.payerRpcUrl} onChange={(e) => ev.setBootstrapDraft("payerRpcUrl", e.target.value)} autoComplete="off" spellCheck={false} placeholder="http://127.0.0.1:21714" />
+                  <input id="bootstrap-payer-rpc" value={ev.bootstrapDraft.payerRpcUrl} onChange={(e) => ev.setBootstrapDraft("payerRpcUrl", e.target.value)} autoComplete="off" spellCheck={false} />
                 </label>
                 <label className="field" htmlFor="bootstrap-payee-rpc">
                   <span><Icon name="ActorFiber" /> Payee FNN RPC</span>
-                  <input id="bootstrap-payee-rpc" value={ev.bootstrapDraft.payeeRpcUrl} onChange={(e) => ev.setBootstrapDraft("payeeRpcUrl", e.target.value)} autoComplete="off" spellCheck={false} placeholder="http://127.0.0.1:21716" />
+                  <input id="bootstrap-payee-rpc" value={ev.bootstrapDraft.payeeRpcUrl} onChange={(e) => ev.setBootstrapDraft("payeeRpcUrl", e.target.value)} autoComplete="off" spellCheck={false} />
                 </label>
                 <label className="field" htmlFor="bootstrap-router-rpc">
-                  <span><Icon name="FiberNetwork" /> Router RPC</span>
-                  <input id="bootstrap-router-rpc" value={ev.bootstrapDraft.routerRpcUrl} onChange={(e) => ev.setBootstrapDraft("routerRpcUrl", e.target.value)} autoComplete="off" spellCheck={false} placeholder="optional http://127.0.0.1:21715" />
+                  <span><Icon name="FiberNetwork" /> Router RPC (optional)</span>
+                  <input id="bootstrap-router-rpc" value={ev.bootstrapDraft.routerRpcUrl} onChange={(e) => ev.setBootstrapDraft("routerRpcUrl", e.target.value)} autoComplete="off" spellCheck={false} />
                 </label>
                 <label className="field" htmlFor="bootstrap-amount-shannons">
                   <span><Icon name="Price" /> Fiber amount</span>

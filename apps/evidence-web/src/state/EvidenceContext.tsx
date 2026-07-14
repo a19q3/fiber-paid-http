@@ -274,9 +274,7 @@ export function EvidenceProvider({
     persona: mergeConsoleSettings(savedPrefs.consoleSettings).persona,
     density: mergeConsoleSettings(savedPrefs.consoleSettings).density,
     settingsOpen: false,
-    inspectorOpen: typeof savedPrefs.inspectorOpen === "boolean"
-      ? savedPrefs.inspectorOpen
-      : window.matchMedia("(min-width: 1280px)").matches,
+    inspectorOpen: savedPrefs.inspectorOpen === true,
     flow: { events: [] },
     activeTab: "chain",
     phase: "idle",
@@ -391,9 +389,6 @@ export function EvidenceProvider({
               endpoints: fallbackEndpoints,
               badges: { rustCanonicalEngine: null, tsVectorHarness: null, f402Compatibility: null, productionReady: false },
               localFiberNetwork: {
-                node1: { role: "payer", rpc: "127.0.0.1:21714", status: "unconfigured" },
-                node2: { role: "router", rpc: "127.0.0.1:21715", status: "unconfigured" },
-                node3: { role: "payee", rpc: "127.0.0.1:21716", status: "unconfigured" },
                 route: [], routeSource: "unavailable", channelCount: null, channelCountSource: "unavailable", routeStatus: "api unreachable",
               },
             };

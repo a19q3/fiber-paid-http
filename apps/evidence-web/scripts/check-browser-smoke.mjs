@@ -114,6 +114,7 @@ async function runSmoke(client, apiBase, webUrl) {
   await waitFor(client, `document.querySelector("#api-base-input")?.value === ${JSON.stringify(apiBase)}`, "injected API base");
   await setInputAndChange(client, "#amount-shannons", "200");
   await waitFor(client, `document.querySelector("#amount-ckb")?.value === "0.000002"`, "CKB amount stored");
+  await client.evaluate(`(() => { const input = document.querySelector("#show-inspector"); if (input && !input.checked) input.click(); })()`);
   await click(client, "#close-settings");
   await waitFor(client, `!document.querySelector("#settings-overlay")`, "settings closed");
   await waitFor(client, `document.activeElement?.id === "open-settings"`, "settings restores opener focus");
@@ -136,8 +137,8 @@ async function runSmoke(client, apiBase, webUrl) {
   steps.push(await snapshot(client, "resource-selected"));
 
   await click(client, "#send");
-  await waitFor(client, `document.querySelector("#challenge-id")?.textContent !== "pending"`, "challenge received");
-  await waitFor(client, `document.querySelector("#resource-hash")?.textContent !== "pending"`, "resource hash rendered");
+  await waitFor(client, `document.querySelector("#challenge-id")?.textContent !== "not issued"`, "challenge received");
+  await waitFor(client, `document.querySelector("#resource-hash")?.textContent !== "not issued"`, "resource hash rendered");
   await waitFor(client, `document.querySelector("#timeline")?.textContent?.includes("payment_hash")`, "challenge payment hash rendered");
   await waitFor(client, `document.querySelector("#pay")?.disabled === false`, "pay enabled after challenge");
   steps.push(await snapshot(client, "unpaid-request"));
@@ -180,11 +181,11 @@ async function runSmoke(client, apiBase, webUrl) {
   await waitFor(client, `Array.from(document.querySelectorAll("#battlecode-readiness [data-capability-state]")).every((node) => node.dataset.capabilityState !== "CHECKING")`, "Battlecode capability status settled");
   const exampleStates = await client.evaluate(`Object.fromEntries(Array.from(document.querySelectorAll("#battlecode-readiness [data-capability]")).map((node) => [node.dataset.capability, node.dataset.capabilityState]))`);
   assertSmoke(exampleStates.scaffold === "BLOCKED"
-    && exampleStates["jdk-21"] === "BLOCKED"
+    && exampleStates["jdk-21+"] === "BLOCKED"
     && exampleStates["engine-jar"] === "BLOCKED"
     && exampleStates["fiber-payment"] === "UNCONFIGURED"
     && exampleStates["prize-mode"] === "LOCAL LEDGER", `Examples must expose deterministic blockers and local prize mode: ${JSON.stringify(exampleStates)}`);
-  assertSmoke(await client.evaluate(`document.querySelector('[data-panel-id="example-input"] .btn.primary')?.disabled === true`), "bot lock must remain disabled without JDK 21 and the engine jar");
+  assertSmoke(await client.evaluate(`document.querySelector('[data-panel-id="example-input"] .btn.primary')?.disabled === true`), "bot lock must remain disabled without JDK 21+ and the engine jar");
   const examplesText = await client.evaluate(`document.querySelector(".app-main")?.textContent?.replace(/\\s+/g, " ").trim() || ""`);
   const pendingIndex = examplesText.indexOf("pending");
   assertSmoke(!examplesText.includes("Battlecode 2025") && pendingIndex === -1, `Examples must not fabricate an engine or pending evidence: ${examplesText.slice(Math.max(0, pendingIndex - 160), pendingIndex + 240)}`);
@@ -264,11 +265,11 @@ async function evidenceSnapshot(client) {
     };
     const visibleChallenge = text("#challenge-id");
     const visibleResourceHash = text("#resource-hash");
-    const visiblePaymentHash = text("#inspector-payment-hash");
-    const visibleReceiptReference = text("#inspector-receipt-reference");
+    const visiblePaymentHash = text("#payment-hash");
+    const visibleReceiptReference = text("#receipt-reference");
     return {
-      challenge_id: visibleChallenge && visibleChallenge !== "pending" ? visibleChallenge : findCapture(json, /"challenge_id":\\s*"([^"]+)"/i),
-      resource_hash: visibleResourceHash && visibleResourceHash !== "pending" ? visibleResourceHash : findCapture(json, /"resource_hash":\\s*"([^"]+)"/i),
+      challenge_id: visibleChallenge && visibleChallenge !== "not issued" ? visibleChallenge : findCapture(json, /"challenge_id":\\s*"([^"]+)"/i),
+      resource_hash: visibleResourceHash && visibleResourceHash !== "not issued" ? visibleResourceHash : findCapture(json, /"resource_hash":\\s*"([^"]+)"/i),
       payment_hash: /^0x[0-9a-f]{64}$/i.test(visiblePaymentHash) ? visiblePaymentHash : findCapture(json, /"paymentHash":\\s*"(0x[0-9a-f]{64})"/i),
       receipt_reference: /^0x[0-9a-f]{64}$/i.test(visibleReceiptReference) ? visibleReceiptReference : findCapture(json, /"reference":\\s*"(0x[0-9a-f]{64})"/i),
       service_executed: text("#actuator-service"),

@@ -95,7 +95,7 @@ export function TournamentView() {
   const [runtime, setRuntime] = useState<BattlecodeStatus | null>(null);
   const [statusError, setStatusError] = useState("");
   const [form, setForm] = useState<TournamentRegistration>(() => ({
-    playerId: "demo-player",
+    playerId: "local-player",
     submissionId: "",
     botPackage: "fiberchamp",
     botScriptHash: "",
@@ -232,8 +232,8 @@ export function TournamentView() {
     <>
       <div className="workspace-header examples-header">
         <div>
-          <div className="workspace-title"><Icon name="Tournament" /> Examples</div>
-          <p className="workspace-subtitle">Reference integration · Battlecode xUDT paid entry</p>
+          <div className="workspace-title"><Icon name="Tournament" /> Battlecode paid entry</div>
+          <p className="workspace-subtitle">Reference integration · real engine, one Fiber-paid ticket</p>
         </div>
         <div className="btn-row">
           <button className="btn" onClick={exportTournament} disabled={disabled}><Icon name="Evidence" /> Export evidence</button>
@@ -250,10 +250,10 @@ export function TournamentView() {
       </div>
 
       <div className="panel capability-panel" data-panel-id="example-capabilities">
-        <div className="panel-title"><Icon name="Activity" /> Runtime capability</div>
+        <div className="panel-title"><Icon name="Activity" /> Demo readiness</div>
         <div className="panel-body capability-grid" id="battlecode-readiness">
           <CapabilityCard label="Scaffold" capability={readiness?.scaffold} readyLabel="READY" emptyLabel="BLOCKED" />
-          <CapabilityCard label="JDK 21" capability={readiness?.jdk} readyLabel="READY" emptyLabel="BLOCKED" />
+          <CapabilityCard label="JDK 21+" capability={readiness?.jdk} readyLabel="READY" emptyLabel="BLOCKED" />
           <CapabilityCard label="Engine jar" capability={readiness?.engineJar} readyLabel="READY" emptyLabel="BLOCKED" />
           <CapabilityCard label="Fiber payment" capability={readiness?.fiberPayment} readyLabel="LIVE" emptyLabel="UNCONFIGURED" />
           <CapabilityCard
@@ -267,14 +267,11 @@ export function TournamentView() {
 
       <div className="tournament-grid">
         <div className="panel tournament-panel" data-panel-id="example-input">
-          <div className="panel-title"><Icon name="Tournament" /> Demo input</div>
+          <div className="panel-title"><Icon name="Tournament" /> Match input</div>
           <div className="panel-body">
             <div className="form-grid compact">
               <label><span>PLAYER</span><input value={form.playerId} onChange={(e) => setForm({ ...form, playerId: e.target.value })} /></label>
               <label><span>BOT</span><input value={form.botPackage} onChange={(e) => setForm({ ...form, botPackage: e.target.value })} /></label>
-              <label><span>SUBMISSION</span><input value={form.submissionId || "not submitted"} readOnly /></label>
-              <label><span>BOT HASH</span><input value={form.botScriptHash || "not committed"} readOnly /></label>
-              <label><span>CLIENT HASH</span><input value={form.clientHash || "not committed"} readOnly /></label>
               <label><span>xUDT ASSET</span><input value={form.xudtAsset} onChange={(e) => setForm({ ...form, xudtAsset: e.target.value })} /></label>
               <label><span>ENTRY</span><input value={form.entryAmount} onChange={(e) => setForm({ ...form, entryAmount: e.target.value })} /></label>
               <label><span>PRIZE</span><input value={form.prizeAmount} onChange={(e) => setForm({ ...form, prizeAmount: e.target.value })} /></label>

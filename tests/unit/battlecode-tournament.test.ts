@@ -50,7 +50,7 @@ const unitManifest = {
   notes: []
 };
 
-async function createBattlecodeToolchainFixture(root: string): Promise<{
+async function createBattlecodeToolchainFixture(root: string, jdkVersion = "21.0.6"): Promise<{
   jdkHome: string;
   engineJar: string;
   engineVersion: string;
@@ -60,6 +60,7 @@ async function createBattlecodeToolchainFixture(root: string): Promise<{
   await mkdir(join(jdkHome, "bin"), { recursive: true });
   await writeFile(join(jdkHome, "bin", "java"), "#!/bin/sh\n");
   await writeFile(join(jdkHome, "bin", "javac"), "#!/bin/sh\n");
+  await writeFile(join(jdkHome, "release"), `JAVA_VERSION="${jdkVersion}"\n`);
   await writeFile(engineJar, "unit battlecode engine jar\n");
   return { jdkHome, engineJar, engineVersion: "unit" };
 }
@@ -136,7 +137,7 @@ describe("Battlecode tournament helpers", () => {
   it("reports Battlecode runtime capabilities independently", async () => {
     const root = await mkdtemp(join(tmpdir(), "fiber-paid-http-battlecode-status-"));
     try {
-      const toolchain = await createBattlecodeToolchainFixture(root);
+      const toolchain = await createBattlecodeToolchainFixture(root, "23.0.2");
       const scaffold = join(root, "battlecode25-scaffold", "java");
       await mkdir(join(scaffold, "src"), { recursive: true });
       await writeFile(join(scaffold, "build.gradle"), "apply plugin: 'java'\n");
@@ -153,9 +154,27 @@ describe("Battlecode tournament helpers", () => {
       };
       expect(status.readiness.scaffold!.status).toBe("ready");
       expect(status.readiness.jdk!.status).toBe("ready");
+      expect((status.readiness.jdk as { version?: string }).version).toBe("23.0.2");
       expect(status.readiness.engineJar!.status).toBe("ready");
       expect(status.readiness.fiberPayment!.status).toBe("unconfigured");
       expect(status.readiness.prizeSettlement!.mode).toBe("local-ledger");
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects a JDK older than 21", async () => {
+    const root = await mkdtemp(join(tmpdir(), "fiber-paid-http-battlecode-old-jdk-"));
+    try {
+      const toolchain = await createBattlecodeToolchainFixture(root, "17.0.12");
+      const status = await battlecodeStatus(root, {
+        HOME: root,
+        BATTLECODE_JDK_HOME: toolchain.jdkHome,
+        BATTLECODE_ENGINE_JAR: toolchain.engineJar,
+        BATTLECODE_ENGINE_VERSION: toolchain.engineVersion
+      }) as { readiness: Record<string, { status: string; blockers: string[] }> };
+      expect(status.readiness.jdk!.status).toBe("blocked");
+      expect(status.readiness.jdk!.blockers.join("\n")).toContain("JDK 21 or newer");
     } finally {
       await rm(root, { recursive: true, force: true });
     }

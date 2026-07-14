@@ -21,10 +21,10 @@ export const evidenceTabs = [
 
 export const workspaceTabs = [
   { id: "overview", label: "Overview", icon: "Overview", group: "Build" },
-  { id: "flow", label: "Live flow", icon: "Timeline", group: "Build" },
+  { id: "flow", label: "Payment demo", icon: "Timeline", group: "Build" },
   { id: "evidence", label: "Verifier", icon: "Evidence", group: "Verify" },
   { id: "attacks", label: "Security", icon: "AttackReplay", group: "Verify" },
-  { id: "tournament", label: "Examples", icon: "Tournament", group: "Explore" },
+  { id: "tournament", label: "Battlecode", icon: "Tournament", group: "Explore" },
   { id: "bootstrap", label: "Runtime setup", icon: "FiberNetwork", group: "Operate" },
   { id: "network", label: "Network health", icon: "Activity", group: "Operate" },
 ] as const;

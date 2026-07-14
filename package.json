@@ -25,6 +25,11 @@
     "evidence:api": "pnpm --filter @fiber-paid-http/evidence-api start",
     "evidence:web": "pnpm --filter @fiber-paid-http/evidence-web start",
     "evidence:production-bootstrap": "node scripts/fiber_production_bootstrap_e2e.mjs",
+    "battlecode:setup": "bash scripts/battlecode_setup.sh",
+    "battlecode:engine-smoke": "tsx scripts/battlecode_engine_smoke.ts",
+    "battlecode:demo:start": "bash scripts/battlecode_demo.sh start",
+    "battlecode:demo:run": "bash scripts/battlecode_demo.sh run",
+    "battlecode:demo:stop": "bash scripts/battlecode_demo.sh stop",
     "battlecode:tournament": "node scripts/battlecode_paid_http_tournament.mjs"
   },
   "dependencies": {

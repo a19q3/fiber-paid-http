@@ -200,12 +200,13 @@ async function runLayoutChecks(client) {
     mobile: false
   });
   await client.evaluate("document.querySelector('#close-inspector')?.click()");
-  await client.evaluate("document.querySelector('[aria-label=\"Open preferences\"]')?.click()");
-  await client.evaluate(`Array.from(document.querySelectorAll('.popover .toggle-btn')).find((button) => button.textContent.trim() === 'Hidden')?.click()`);
+  await client.evaluate("document.querySelector('#open-settings')?.click()");
+  await client.evaluate(`(() => { const input = document.querySelector('#show-inspector'); if (input && !input.checked) input.click(); })()`);
+  await client.evaluate("document.querySelector('#close-settings')?.click()");
   await client.evaluate("new Promise((resolve) => setTimeout(resolve, 250))");
   const inspectorOpen = await client.evaluate(inspectorVisibilityExpression());
   if (!inspectorOpen.visible || !inspectorOpen.openClass) {
-    failures.push(`1024: inspector preference did not open the responsive panel ${JSON.stringify(inspectorOpen)}`);
+    failures.push(`1024: inspector setting did not open the responsive panel ${JSON.stringify(inspectorOpen)}`);
   }
   await client.evaluate("document.querySelector('#close-inspector')?.click()");
   await client.evaluate("new Promise((resolve) => setTimeout(resolve, 250))");
@@ -214,6 +215,8 @@ async function runLayoutChecks(client) {
     failures.push(`1024: inspector close control did not hide the responsive panel ${JSON.stringify(inspectorClosed)}`);
   }
 
+  await client.evaluate("document.querySelector('[data-workspace-tab=\"overview\"]')?.click()");
+  await client.evaluate("new Promise((resolve) => setTimeout(resolve, 250))");
   const screenshot = await client.send("Page.captureScreenshot", { format: "png", captureBeyondViewport: false, fromSurface: true });
   await writeFile(resolve(screenshotDir, "layout-check-final.png"), Buffer.from(screenshot.data, "base64"));
 

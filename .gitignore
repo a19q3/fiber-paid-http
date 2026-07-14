@@ -7,5 +7,7 @@ target/
 *.sqlite
 reports/*.tmp
 reports/evidence-console-*.png
+reports/battlecode-paid-http-tournament.json
+reports/evidence-live-demo-flow.json
 reports/fiber-local-network/*.pid
 reports/fiber-local-network/*.log

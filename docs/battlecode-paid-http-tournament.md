@@ -12,7 +12,13 @@ This flow turns a local Battlecode match into a paid-entry tournament:
 8. The local Battlecode engine materializes that locked submission and runs it against `baselinebot`.
 9. If the submitted bot wins, the tournament either records a local claimable xUDT prize award or, when explicitly enabled, pays the prize through a live Fiber xUDT payment.
 
-The Battlecode engine is an external AGPL-3.0 dependency. Keep it outside this repository. From the Fiber Paid HTTP checkout, clone the scaffold into the parent directory:
+The Battlecode engine is an external AGPL-3.0 dependency. Keep it outside this repository. The setup command clones the scaffold into the parent directory when needed, discovers JDK 21+, and builds the pinned engine:
+
+```bash
+pnpm battlecode:setup
+```
+
+The equivalent manual setup is:
 
 ```bash
 git clone --depth 1 https://github.com/battlecode/battlecode25-scaffold.git ../battlecode25-scaffold
@@ -25,13 +31,13 @@ The API runner does not copy Battlecode scaffold code into Fiber Paid HTTP. It s
 
 ## Toolchain
 
-Use JDK 21. A local user-level JDK is preferred:
+Use JDK 21 or newer. The runner automatically discovers a compatible JDK on `PATH`; set an explicit home when recording reproducible evidence:
 
 ```bash
-export BATTLECODE_JDK_HOME=/path/to/jdk-21
+export BATTLECODE_JDK_HOME=/path/to/jdk-21-or-newer
 ```
 
-The pinned scaffold currently declares engine version `1.0.0` in `java/engine_version.txt`. Build it with JDK 21 so Gradle resolves the matching engine jar:
+The pinned scaffold currently declares engine version `1.0.0` in `java/engine_version.txt`. Build it with JDK 21 or newer so Gradle resolves the matching engine jar:
 
 ```bash
 cd "$BATTLECODE_DIR"
@@ -46,7 +52,23 @@ export BATTLECODE_ENGINE_JAR=/absolute/path/to/battlecode25-java-1.0.0.jar
 export BATTLECODE_ENGINE_VERSION=1.0.0
 ```
 
-The status endpoint checks scaffold files, an actual JDK 21 home, the exact engine jar, Fiber payment configuration, and prize settlement mode separately. A cloned scaffold alone is not reported as a runnable match engine.
+The status endpoint checks scaffold files, an actual JDK 21+ home, the exact engine jar, Fiber payment configuration, and prize settlement mode separately. A cloned scaffold alone is not reported as a runnable match engine.
+
+Before a recording, run the real headless engine smoke:
+
+```bash
+pnpm battlecode:engine-smoke
+```
+
+This compiles the bundled bot, runs `DefaultSmall` against `baselinebot`, verifies the fairness commitments, and checks that a non-empty replay was written. It deliberately marks payment execution as `not-exercised`; it is not a substitute for the live paid tournament flow below.
+
+For the complete recording environment, the recommended entrypoint is:
+
+```bash
+pnpm battlecode:demo:start
+```
+
+It performs the setup and engine smoke, starts or reuses the forward xUDT Fiber network, and launches the live Dashboard. Use `pnpm battlecode:demo:stop` after recording.
 
 ## Live Fiber Prerequisites
 
@@ -56,13 +78,14 @@ Start the local Fiber network first. For the basic CKB payment lane:
 bash scripts/fiber_local_network.sh up
 ```
 
-For xUDT entry and prize payments, the Fiber local network must have UDT channels. Use the xUDT variant:
+For the recording lane, use forward xUDT channels for the paid entry and keep the prize as an explicitly labeled local ledger award:
 
 ```bash
 FIBER_LOCAL_ASSET=xudt \
-FIBER_LOCAL_PRIZE_ROUTE=1 \
 bash scripts/fiber_local_network.sh up
 ```
+
+`FIBER_LOCAL_PRIZE_ROUTE=1` also creates reverse funding channels for experimental live prize payout. Do not add it to the critical recording path unless the resulting parallel-channel topology has passed an end-to-end routing check with the pinned FNN build. The reliable submission story is real Fiber xUDT entry settlement followed by a local claimable prize record.
 
 The local xUDT type script used by Fiber's dev network is:
 
@@ -142,7 +165,7 @@ BATTLECODE_MAP=DefaultSmall \
 pnpm battlecode:tournament
 ```
 
-To require live Fiber xUDT prize payout, add:
+To test optional live Fiber xUDT prize payout outside the critical recording path, add:
 
 ```bash
 BATTLECODE_AWARD_SETTLEMENT=fiber-xudt \

@@ -6,11 +6,10 @@ import { channelEvidenceText } from "../lib/utils.js";
 export function NetworkView() {
   const ev = useEvidence();
   const network = ev.status?.localFiberNetwork || {};
-  const nodes = [
-    ["node1", (network.node1 as Record<string, string>)?.role || "payer", (network.node1 as Record<string, string>)?.rpc || "127.0.0.1:21714", (network.node1 as Record<string, string>)?.status || "unconfigured"],
-    ["node2", (network.node2 as Record<string, string>)?.role || "router", (network.node2 as Record<string, string>)?.rpc || "127.0.0.1:21715", (network.node2 as Record<string, string>)?.status || "unconfigured"],
-    ["node3", (network.node3 as Record<string, string>)?.role || "payee", (network.node3 as Record<string, string>)?.rpc || "127.0.0.1:21716", (network.node3 as Record<string, string>)?.status || "unconfigured"],
-  ];
+  const nodes = ["node1", "node2", "node3"].flatMap((name) => {
+    const node = network[name] as Record<string, string> | undefined;
+    return node?.rpc ? [[name, node.role || "node", node.rpc, node.status || "unknown"]] : [];
+  });
 
   return (
     <>
@@ -21,6 +20,7 @@ export function NetworkView() {
       <div className="panel network-panel" data-panel-id="network">
         <div className="panel-title"><Icon name="FiberNetwork" /> Local Route</div>
         <div className="panel-body network" id="network">
+          {nodes.length === 0 && <div className="empty-state">No live network topology has been reported by the evidence API.</div>}
           {nodes.map(([name, role, rpc, status]) => (
             <div className="node-row" key={name}>
               <span style={{ fontWeight: 600 }}>{name}</span>

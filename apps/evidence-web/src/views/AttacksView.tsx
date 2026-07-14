@@ -6,7 +6,7 @@ export function AttacksView() {
   const ev = useEvidence();
   const replayRejected = ev.phase === "replay_rejected" || ev.flow?.replayStatus === 402;
   const receipt = ev.flow?.receipt;
-  const paymentHash = ev.flow?.fiberChallenge?.paymentHash || receipt?.reference || "pending";
+  const paymentHash = ev.flow?.fiberChallenge?.paymentHash || receipt?.reference || "not recorded";
 
   return (
     <>
@@ -18,7 +18,7 @@ export function AttacksView() {
         <div className="panel-title">
           <Icon name="AttackReplay" /> Replay Attack Demonstration
           <span className={"chip " + (replayRejected ? "green" : "orange")} style={{ marginLeft: "auto" }}>
-            {replayRejected ? "REJECTED" : "PENDING"}
+            {replayRejected ? "REJECTED" : "NOT TESTED"}
           </span>
         </div>
         <div className="panel-body">
@@ -27,9 +27,9 @@ export function AttacksView() {
               <div className="panel-title"><Icon name="StatusPassed" /> Result</div>
               <div className="panel-body">
                 <div className="kv">
-                  <div className="kv-row"><span className="kv-label">Status</span><strong style={{ color: replayRejected ? "var(--green)" : "var(--orange)" }}>{replayRejected ? "REPLAY REJECTED" : "PENDING"}</strong></div>
-                  <div className="kv-row"><span className="kv-label">Reason</span><strong>{replayRejected ? "Receipt not reused" : "Awaiting replay"}</strong></div>
-                  <div className="kv-row"><span className="kv-label">Service</span><strong>{replayRejected ? "not re-executed" : "awaiting replay"}</strong></div>
+                  <div className="kv-row"><span className="kv-label">Status</span><strong style={{ color: replayRejected ? "var(--green)" : "var(--muted)" }}>{replayRejected ? "REPLAY REJECTED" : "NOT TESTED"}</strong></div>
+                  <div className="kv-row"><span className="kv-label">Reason</span><strong>{replayRejected ? "Receipt not reused" : "Run the replay step"}</strong></div>
+                  <div className="kv-row"><span className="kv-label">Service</span><strong>{replayRejected ? "not re-executed" : "not observed"}</strong></div>
                   <div className="kv-row"><span className="kv-label">Receipt reissued</span><strong style={{ color: "var(--red)" }}>false</strong></div>
                 </div>
               </div>
@@ -38,8 +38,8 @@ export function AttacksView() {
               <div className="panel-title"><Icon name="ResourceHash" /> Evidence</div>
               <div className="panel-body">
                 <div className="kv">
-                  <div className="kv-row"><span className="kv-label">receipt_reference</span><strong>{receipt?.reference || "pending"}</strong></div>
-                  <div className="kv-row"><span className="kv-label">challenge_id</span><strong>{receipt?.challengeId || "pending"}</strong></div>
+                  <div className="kv-row"><span className="kv-label">receipt_reference</span><strong>{receipt?.reference || "not recorded"}</strong></div>
+                  <div className="kv-row"><span className="kv-label">challenge_id</span><strong>{receipt?.challengeId || "not recorded"}</strong></div>
                   <div className="kv-row"><span className="kv-label">payment_hash</span><strong>{paymentHash}</strong></div>
                   <div className="kv-row"><span className="kv-label">replay_status</span><strong>{replayRejected ? "402 rejected" : "not attempted"}</strong></div>
                 </div>

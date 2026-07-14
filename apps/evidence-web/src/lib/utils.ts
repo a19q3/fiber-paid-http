@@ -16,7 +16,7 @@ export function formatTime(value?: string): string {
 }
 
 export function short(value?: string | null): string {
-  if (!value) return "pending";
+  if (!value) return "—";
   const text = String(value);
   return text.length > 26 ? `${text.slice(0, 12)}...${text.slice(-8)}` : text;
 }

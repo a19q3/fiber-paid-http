@@ -8,7 +8,6 @@ import { Header } from "./layouts/Header.js";
 import { Sidebar } from "./layouts/Sidebar.js";
 import { Inspector } from "./layouts/Inspector.js";
 import { SettingsDrawer } from "./settings/SettingsDrawer.js";
-import { PreferencesPopover } from "./settings/PreferencesPopover.js";
 import { FlowView } from "./views/FlowView.js";
 import { TournamentView } from "./views/TournamentView.js";
 import { BootstrapView } from "./views/BootstrapView.js";
@@ -19,7 +18,6 @@ import { OverviewView } from "./views/OverviewView.js";
 
 function ConsoleApp() {
   const ev = useEvidence();
-  const [prefsOpen, setPrefsOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [mobileViewport, setMobileViewport] = useState(() => window.matchMedia("(max-width: 767px)").matches);
@@ -81,7 +79,7 @@ function ConsoleApp() {
     <div className={shellClass} data-workspace={ev.workspaceTab}>
       <a className="skip-link" href="#main-content">Skip to content</a>
       <div className="app-header" inert={ev.settingsOpen ? true : undefined} aria-hidden={ev.settingsOpen ? true : undefined}>
-        <Header onToggleSidebar={toggleNavigation} navigationExpanded={navigationExpanded} onOpenPrefs={() => setPrefsOpen(true)} />
+        <Header onToggleSidebar={toggleNavigation} navigationExpanded={navigationExpanded} />
       </div>
       <div className={bodyClass} inert={ev.settingsOpen ? true : undefined} aria-hidden={ev.settingsOpen ? true : undefined}>
         <Sidebar onNavigate={mobileViewport ? () => closeMobileNav(true) : undefined} />
@@ -98,7 +96,6 @@ function ConsoleApp() {
         <Inspector />
       </div>
       {ev.settingsOpen && <SettingsDrawer />}
-      {prefsOpen && <PreferencesPopover onClose={() => setPrefsOpen(false)} />}
     </div>
   );
 }

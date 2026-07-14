@@ -15,7 +15,7 @@
   "evidence_console_server_hardening_blockers": [],
   "evidence_console_cli_start": true,
   "evidence_console_cli_start_report": "reports/evidence-console-cli-start.json",
-  "evidence_console_cli_start_api_base": "http://127.0.0.1:64452",
+  "evidence_console_cli_start_api_base": "http://127.0.0.1:58212",
   "evidence_console_cli_start_blockers": [],
   "evidence_console_browser_smoke": true,
   "evidence_console_browser_smoke_report": "reports/evidence-console-browser-smoke.json",
@@ -55,7 +55,14 @@
   "testnet_fiber_e2e_evidence_blockers": [],
   "local_fiber_e2e_evidence": true,
   "fiber_commit": null,
-  "toolchain_shims_used": [],
+  "toolchain_shims_used": [
+    {
+      "name": "nc",
+      "path": "scripts/bin/nc",
+      "scope": "scripts/fiber_local_network.sh",
+      "evidence": "reports/fiber-local-network/wait.log present; Fiber wait script uses nc -z"
+    }
+  ],
   "production_ready_for_fiber_method": true,
   "production_blockers": [],
   "fiber_paid_http_gate_ready": true,

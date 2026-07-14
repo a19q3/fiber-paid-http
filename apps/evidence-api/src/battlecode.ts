@@ -887,7 +887,7 @@ export async function battlecodeStatus(repoRoot: string, env: NodeJS.ProcessEnv 
     : { error: [...jdk.blockers, ...engineJar.blockers].join("; ") };
   const fairnessManifest = jdk.status === "ready" && engineJar.status === "ready"
     ? await buildBattlecodeFairnessManifest(repoRoot, env).catch((error: unknown) => ({ error: errorMessage(error) }))
-    : { error: "Battlecode fairness manifest requires a ready JDK 21 and engine jar" };
+    : { error: "Battlecode fairness manifest requires a ready JDK 21+ and engine jar" };
   const fiberPayment = battlecodeFiberPaymentReadiness(env);
   const awardSettlement = battlecodeAwardSettlementPlan(env);
   return {
@@ -1174,24 +1174,72 @@ async function inspectBattlecodeJdk(repoRoot: string, env: NodeJS.ProcessEnv): P
   source: "BATTLECODE_JDK_HOME" | "JAVA_HOME" | "discovered" | "unconfigured";
   blockers: string[];
 }> {
-  const discovered = [resolve(repoRoot, "../.toolchains/jdk-21"), resolve(repoRoot, "../../../.toolchains/jdk-21")]
-    .find((candidate) => existsSync(resolve(candidate, "bin/java")) && existsSync(resolve(candidate, "bin/javac")));
+  const discovered = await discoverBattlecodeJdkHome(repoRoot, env);
   const home = env.BATTLECODE_JDK_HOME ? resolve(env.BATTLECODE_JDK_HOME) : env.JAVA_HOME ? resolve(env.JAVA_HOME) : discovered ?? "";
   const source = env.BATTLECODE_JDK_HOME ? "BATTLECODE_JDK_HOME" : env.JAVA_HOME ? "JAVA_HOME" : discovered ? "discovered" : "unconfigured";
   if (!home || !existsSync(resolve(home, "bin/java")) || !existsSync(resolve(home, "bin/javac"))) {
-    return { status: "blocked", home, version: null, source, blockers: ["Battlecode JDK 21 is missing; set BATTLECODE_JDK_HOME to a JDK 21 installation"] };
+    return { status: "blocked", home, version: null, source, blockers: ["Battlecode requires JDK 21 or newer; set BATTLECODE_JDK_HOME or put a compatible JDK on PATH"] };
   }
   let version: string | null = null;
   try {
     const release = await readFile(resolve(home, "release"), "utf8");
     version = release.match(/^JAVA_VERSION="([^"]+)"/m)?.[1] ?? null;
   } catch {
-    version = /(?:^|[\\/_.-])jdk[_.-]?21(?:[\\/_.-]|$)/i.test(home) ? "21 (path marker)" : null;
+    version = /(?:^|[\\/_.-])jdk[_.-]?(\d+)(?:[\\/_.-]|$)/i.exec(home)?.[1] ?? null;
   }
-  if (!version || !/^21(?:\D|$)/.test(version)) {
-    return { status: "blocked", home, version, source, blockers: [`Battlecode requires JDK 21; ${home} reports ${version ?? "an unknown version"}`] };
+  const major = javaMajorVersion(version);
+  if (major === null || major < 21) {
+    return { status: "blocked", home, version, source, blockers: [`Battlecode requires JDK 21 or newer; ${home} reports ${version ?? "an unknown version"}`] };
   }
   return { status: "ready", home, version, source, blockers: [] };
+}
+
+async function discoverBattlecodeJdkHome(repoRoot: string, env: NodeJS.ProcessEnv): Promise<string | null> {
+  const local = [resolve(repoRoot, "../.toolchains/jdk-21"), resolve(repoRoot, "../../../.toolchains/jdk-21")]
+    .find((candidate) => existsSync(resolve(candidate, "bin/java")) && existsSync(resolve(candidate, "bin/javac")));
+  if (local) return local;
+
+  const probe = await captureCommand("java", ["-XshowSettings:properties", "-version"], env).catch(() => "");
+  const javaHome = probe.match(/^\s*java\.home\s*=\s*(.+)$/m)?.[1]?.trim();
+  if (javaHome && existsSync(resolve(javaHome, "bin/java")) && existsSync(resolve(javaHome, "bin/javac"))) {
+    return javaHome;
+  }
+  return null;
+}
+
+async function captureCommand(command: string, args: string[], env: NodeJS.ProcessEnv): Promise<string> {
+  return new Promise((resolveCommand, reject) => {
+    const child = spawn(command, args, {
+      env: { ...process.env, ...env },
+      stdio: ["ignore", "pipe", "pipe"]
+    });
+    let output = "";
+    const timer = setTimeout(() => {
+      child.kill("SIGTERM");
+      reject(new Error(`${command} probe timed out`));
+    }, 5_000);
+    child.stdout.setEncoding("utf8");
+    child.stderr.setEncoding("utf8");
+    child.stdout.on("data", (chunk: string) => { output += chunk; });
+    child.stderr.on("data", (chunk: string) => { output += chunk; });
+    child.on("error", (error) => {
+      clearTimeout(timer);
+      reject(error);
+    });
+    child.on("close", (code) => {
+      clearTimeout(timer);
+      if (code === 0) resolveCommand(output);
+      else reject(new Error(`${command} probe exited with ${code}`));
+    });
+  });
+}
+
+function javaMajorVersion(version: string | null): number | null {
+  if (!version) return null;
+  const match = version.match(/^(?:1\.)?(\d+)/);
+  if (!match?.[1]) return null;
+  const major = Number.parseInt(match[1], 10);
+  return Number.isFinite(major) ? major : null;
 }
 
 async function resolveBattlecodeEngineJar(repoRoot: string, env: NodeJS.ProcessEnv): Promise<{
@@ -1221,7 +1269,7 @@ async function resolveBattlecodeEngineJar(repoRoot: string, env: NodeJS.ProcessE
   if (cached) {
     return { path: cached, version, source: "gradle-cache" };
   }
-  throw new Error(`Battlecode engine jar ${version} is missing; set BATTLECODE_ENGINE_JAR or run the Battlecode scaffold Gradle build with JDK 21`);
+  throw new Error(`Battlecode engine jar ${version} is missing; set BATTLECODE_ENGINE_JAR or run the Battlecode scaffold Gradle build with JDK 21 or newer`);
 }
 
 async function findCachedBattlecodeJar(version: string, env: NodeJS.ProcessEnv): Promise<string | null> {

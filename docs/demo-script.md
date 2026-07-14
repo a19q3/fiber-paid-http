@@ -14,7 +14,7 @@ Say only what the active source proves:
 - `BLOCKED`: a prerequisite is absent or a check failed. Read the blocker; do not click through or substitute sample output.
 - `EXPERIMENTAL`: an opt-in surface is disabled by default and is not a production-readiness claim. F-L402 is the current example.
 
-If Overview says `BLOCKED`, present the preserved or static evidence lane by its actual label. If Examples reports missing JDK 21 or engine jar, leave match actions disabled and show that blocker.
+If Overview says `BLOCKED`, present the preserved or static evidence lane by its actual label. If Battlecode reports a missing JDK 21+ or engine jar, leave match actions disabled and show that blocker.
 
 ## Before recording
 
@@ -23,6 +23,22 @@ Choose one lane and keep its label visible:
 1. **Live Fiber:** start the configured local/testnet operator lane with `bash scripts/evidence_live_demo.sh all`.
 2. **Local inspection:** run `pnpm evidence:api` and `pnpm evidence:web`; unconfigured live dependencies remain visibly blocked while committed reports remain preserved evidence.
 3. **Static regression:** run `pnpm --filter @fiber-paid-http/evidence-web check-browser-smoke`; this regenerates the explicitly static browser report with deterministic in-process Fiber adapters.
+
+The shortest reliable setup for the full local xUDT recording lane is:
+
+```bash
+pnpm battlecode:demo:start
+```
+
+This clones/builds the external scaffold when necessary, runs the real engine smoke, reuses or starts the forward xUDT Fiber network, builds the workspace, and starts the live Dashboard. It prints the exact recording URL. The engine smoke must report `scope: "battlecode-engine-only"`, `paymentExecution: "not-exercised"`, a non-zero replay size, and `fairness: "verified"`; the Dashboard still uses live Fiber for the paid ticket.
+
+For a backend preflight without consuming the recording session:
+
+```bash
+FIBER_PAID_HTTP_TOURNAMENT_SESSION=battlecode-preflight pnpm battlecode:demo:run
+```
+
+Then record with the URL printed by `battlecode:demo:start` (the default session is `battlecode-live`). Stop all local processes afterward with `pnpm battlecode:demo:stop`.
 
 There is no public hosted URL claimed in this repository. Do not invent one for a submission. Publish one only after the deployment passes the same health, payment, receipt, and replay checks.
 
@@ -34,11 +50,11 @@ Open **Overview**.
 
 > Fiber already settles fast off-chain payments. The missing infrastructure is enforcing what one payment unlocks: this exact HTTP request, once, followed by a receipt only if delivery succeeds.
 
-Point to the audience chips and the four-step enforcement lifecycle. Do not describe the Gateway Lab as a wallet, node dashboard, or participant UI.
+Point to the audience chips and the five-step recording order. Do not describe the Gateway Lab as a wallet, node dashboard, or participant UI.
 
 ### 12–25 seconds — integration boundary
 
-Point to the protocol boundary cards.
+Expand **Protocol and ecosystem boundary** once.
 
 > MPP draft is the primary HTTP wire contract and `fiber` is our proposed settlement profile. F402 and x402 v2 are explicit adapters. They all terminate at the same Rust verifier; this is not another facilitator or settlement rail.
 
@@ -46,7 +62,7 @@ Point to the current readiness labels. Name the label exactly: `LIVE`, `PRESERVE
 
 ### 25–55 seconds — paid delivery
 
-Open **Live flow** and select a protected resource.
+Open **Payment demo** and select a protected resource.
 
 1. Click **Send unpaid request** and show `402` plus the bound challenge and resource hash.
 2. Click **Pay with Fiber** only when the action is enabled by the active lane.
@@ -62,7 +78,7 @@ Click **Replay same credential**.
 
 > The second request returns a fresh 402. The service is not executed again and no receipt is reissued. This is the part an invoice-only demo does not solve.
 
-Show `replay_status: blocked` and `receipt_reissued: false` in the inspector or Verifier.
+Open **Security** and show `replay_status: 402 rejected` plus `Receipt reissued: false`. The technical inspector is optional and is off by default.
 
 ### 68–80 seconds — reusable infrastructure
 
@@ -74,11 +90,11 @@ Do not imply that TypeScript is trusted production verification. It is SDK, adap
 
 ### 80–90 seconds — reference integration
 
-Open **Examples**.
+Open **Battlecode**.
 
 > Battlecode is a reference integration, not the product. It demonstrates a paid xUDT entry binding an external service to the same challenge, one-time redemption, delivery, and receipt evidence.
 
-Point to scaffold, JDK 21, engine jar, Fiber payment, and prize mode. If any item is blocked, stop there and read the exact blocker. A local award ledger is not a Fiber xUDT payout and is labeled separately.
+Point to scaffold, JDK 21+, engine jar, Fiber payment, and prize mode. Then follow the buttons from left to right: **Submit / lock bot → Request 402 → Pay ticket → Claim ticket → Run match**. If any item is blocked, stop there and read the exact blocker. A local award ledger is not a Fiber xUDT payout and is labeled separately.
 
 ## Closing line
 

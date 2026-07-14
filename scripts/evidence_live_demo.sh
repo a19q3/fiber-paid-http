@@ -51,11 +51,22 @@ start_server() {
     pnpm build
   fi
   echo "Starting Evidence API/Web on ${API_BASE} and ${WEB_URL}..."
-  setsid env \
-    FIBER_PAID_HTTP_EVIDENCE_API_BASE="${API_BASE}" \
-    pnpm exec fiber-paid-http evidence start --port "${API_PORT}" --web-port "${WEB_PORT}" \
-    >"${LOG_FILE}" 2>&1 &
-  echo "$!" > "${PID_FILE}"
+  if command -v setsid >/dev/null 2>&1; then
+    setsid env \
+      FIBER_PAID_HTTP_EVIDENCE_API_BASE="${API_BASE}" \
+      pnpm exec fiber-paid-http evidence start --port "${API_PORT}" --web-port "${WEB_PORT}" \
+      >"${LOG_FILE}" 2>&1 &
+    echo "$!" > "${PID_FILE}"
+  else
+    (
+      set -m
+      nohup env \
+        FIBER_PAID_HTTP_EVIDENCE_API_BASE="${API_BASE}" \
+        pnpm exec fiber-paid-http evidence start --port "${API_PORT}" --web-port "${WEB_PORT}" \
+        >"${LOG_FILE}" 2>&1 &
+      echo "$!" > "${PID_FILE}"
+    )
+  fi
   wait_url "${API_BASE}/healthz" "Evidence API"
   wait_url "${WEB_URL}/" "Evidence Web"
 }
