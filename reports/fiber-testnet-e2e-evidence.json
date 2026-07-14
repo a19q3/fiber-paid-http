@@ -7,6 +7,7 @@
   "receipt_reference": "0x40c26ad40908a0e1e684d7de77766ed2d5cd171e884f870d1d52d44e2ed06df0",
   "challenge_id": "dPwvrAdOjOrfg-oI_ZTlc3cTjKUOG8xRP_RPPyL71wY",
   "fiber_commit": "e00d0e3c9a9284ea1c7705d360be615cfce1a5c6",
+  "production_bootstrap_e2e": true,
   "production_ready_for_fiber_method": true,
   "blockers": []
 }

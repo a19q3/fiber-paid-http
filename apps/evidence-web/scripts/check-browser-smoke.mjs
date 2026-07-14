@@ -75,7 +75,7 @@ try {
     await mkdir(screenshotDir, { recursive: true });
     const screenshot = await client.send("Page.captureScreenshot", { format: "png", captureBeyondViewport: false, fromSurface: true });
     await writeFile(resolve(screenshotDir, "browser-smoke-final.png"), Buffer.from(screenshot.data, "base64"));
-    console.log(`evidence console browser smoke passed: ${result.steps.length} UI checks, api=${smokeApiLabel}`);
+    console.log(`Gateway Lab browser smoke passed: ${result.steps.length} UI checks, api=${smokeApiLabel}`);
   } finally {
     client.close();
   }

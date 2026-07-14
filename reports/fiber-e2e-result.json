@@ -1,11 +1,14 @@
 {
   "fiber_preflight_test_loaded": true,
-  "fiber_live_test_selected": true,
-  "fiber_live_test_loaded": true,
-  "fiber_e2e_mode": "testnet",
-  "fiber_e2e_blockers": [],
-  "fiber_e2e_status": "passed",
-  "fiber_e2e_payment_hash": "0x40c26ad40908a0e1e684d7de77766ed2d5cd171e884f870d1d52d44e2ed06df0",
-  "fiber_e2e_receipt_reference": "0x40c26ad40908a0e1e684d7de77766ed2d5cd171e884f870d1d52d44e2ed06df0",
-  "fiber_e2e_challenge_id": "dPwvrAdOjOrfg-oI_ZTlc3cTjKUOG8xRP_RPPyL71wY"
+  "fiber_live_test_selected": false,
+  "fiber_live_test_loaded": false,
+  "fiber_e2e_mode": "skipped",
+  "fiber_e2e_status": "skipped",
+  "fiber_e2e_blockers": [
+    "Fiber live E2E skipped: set RUN_FIBER_E2E=1",
+    "Fiber live E2E skipped: set FIBER_MODE=local or FIBER_MODE=testnet",
+    "Fiber live E2E skipped: set FIBER_RPC_URL or FIBER_PAYEE_RPC_URL for the invoice/payee node",
+    "Fiber live E2E skipped: set FIBER_PAYER_RPC_URL for the paying node",
+    "Fiber live E2E skipped: set FIBER_PAID_HTTP_SECRET to a random secret of at least 32 characters"
+  ]
 }

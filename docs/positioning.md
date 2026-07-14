@@ -11,7 +11,7 @@ The product is the **server-side enforcement layer**, not the payment rail or an
 | MPP | External HTTP challenge, credential, and receipt contract |
 | Proposed `fiber` method profile | Invoice creation, payment execution, and settlement evidence |
 | Rust gateway | Trusted binding, settlement, replay, delivery, and receipt verifier |
-| TypeScript | Client SDK, Evidence Console, adapters, vectors |
+| TypeScript | Client SDK, Gateway Lab, adapters, vectors |
 | F402 / F-L402 | Optional ingress mappings into the MPP-draft verifier; F-L402 is experimental and disabled by default |
 | x402 v2 | Independent `exact`/Fiber format converter using official HTTP codecs; not a facilitator or settlement path |
 
@@ -36,3 +36,17 @@ The project does not define a competing paid-HTTP envelope. It is not a Fiber no
 The integration pitch is:
 
 > Protect an HTTP route, settle through Fiber, consume the credential once, and issue a receipt only after successful delivery.
+
+## Evidence language
+
+The Gateway Lab uses evidence labels as claims with defined sources:
+
+| Label | Meaning |
+| --- | --- |
+| `LIVE` | The current API process reports a configured live Fiber runtime and the evidence belongs to the current session |
+| `PRESERVED EVIDENCE` | A committed report verifies a prior run; it is not represented as current live execution |
+| `STATIC DEMO` | A deterministic fixture or in-process adapter demonstrates UI and protocol behavior without real Fiber settlement |
+| `BLOCKED` | A required runtime, artifact, or configuration is absent or failed |
+| `EXPERIMENTAL` | An explicit opt-in surface, such as F-L402, that is disabled by default and does not imply production readiness |
+
+Unknown and loading states are never promoted to ready. Battlecode capabilities are read from `/api/tournament/battlecode/status`; canonical and production claims are read from the report-backed status API.

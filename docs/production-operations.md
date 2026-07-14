@@ -79,7 +79,7 @@ Required binding policy:
 - Browser clients never receive privileged FNN RPC auth.
 - Gateway config must use `fiber.payee_rpc_auth_env`, `fiber.payer_rpc_auth_env`, or process env variables; literal RPC auth in config is rejected.
 - Restrict `/healthz`, `/readyz`, and `/metrics` to operators or private monitoring networks when deployed behind a public reverse proxy.
-- Serve the Evidence Console over loopback/private HTTP(S); `Origin: null` / `file://` access is disabled by default and should only be enabled with `FIBER_PAID_HTTP_ALLOW_FILE_ORIGIN=1` for local debugging.
+- Serve the Gateway Lab over loopback/private HTTP(S); `Origin: null` / `file://` access is disabled by default and should only be enabled with `FIBER_PAID_HTTP_ALLOW_FILE_ORIGIN=1` for local debugging.
 - Use firewall/security-group rules to reject inbound traffic to FNN RPC from untrusted networks.
 
 Quick checks:

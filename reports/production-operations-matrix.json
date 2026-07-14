@@ -7,7 +7,7 @@
   "testnet_evidence_digest": "sha256:3c3bd52c3da7e7f78e37eda480d053c66bcc2f2d292ccc4e1ae9299b91d461d9",
   "testnet_fiber_e2e_evidence_verified": true,
   "testnet_fiber_e2e_evidence_blockers": [],
-  "fiber_commit": "e00d0e3c9a9284ea1c7705d360be615cfce1a5c6",
+  "fiber_commit": null,
   "production_bootstrap_e2e": true,
   "production_bootstrap_e2e_blockers": [],
   "production_ready_for_fiber_method": true,

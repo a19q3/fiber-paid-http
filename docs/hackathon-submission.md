@@ -32,6 +32,35 @@ F402 and x402 v2 are optional explicit entrances. F-L402 is experimental and dis
 6. Open the parity view to inspect all 22 shared Rust/TypeScript fixtures.
 7. Open Examples to see which parts of the Battlecode reference integration are READY, BLOCKED, or UNCONFIGURED on the current machine.
 
+The timed narration and operator checklist are in [`demo-script.md`](demo-script.md).
+
+### Demo availability
+
+The repository currently claims a **local runnable demo and preserved evidence**, not a public hosted URL. Do not add a hosted URL to the submission until that deployment exists and passes the same status and replay checks. The live lane fails closed unless real local or testnet Fiber RPC configuration is present; the deterministic browser smoke report is labeled `STATIC DEMO`, never `LIVE`.
+
+Local Gateway Lab:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm build
+pnpm evidence:api
+# second shell
+pnpm evidence:web
+```
+
+Live Fiber operator lane:
+
+```bash
+RUN_FIBER_E2E=1 \
+FIBER_MODE=local \
+FIBER_PAYER_RPC_URL=http://127.0.0.1:21714 \
+FIBER_PAYEE_RPC_URL=http://127.0.0.1:21716 \
+FIBER_CURRENCY=Fibd \
+FIBER_E2E_AMOUNT_SHANNONS=100 \
+FIBER_PAID_HTTP_SECRET="$(openssl rand -hex 32)" \
+bash scripts/evidence_live_demo.sh all
+```
+
 ## Engineering evidence
 
 - Rust canonical production boundary.

@@ -84,8 +84,8 @@ export function startEvidenceWeb(port = Number(process.env.PORT || "8788"), opti
     }
   });
   server.listen(port, () => {
-    console.log(`Fiber Paid HTTP evidence console listening on http://localhost:${port}`);
-    console.log(`Fiber Paid HTTP evidence console API base ${apiBase}`);
+    console.log(`Fiber Paid HTTP Gateway Lab listening on http://localhost:${port}`);
+    console.log(`Fiber Paid HTTP Gateway Lab API base ${apiBase}`);
   });
   return server;
 }

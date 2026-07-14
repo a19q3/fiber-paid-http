@@ -1,11 +1,11 @@
 {
   "ok": true,
   "command": "fiber-paid-http evidence start",
-  "api_port": 52547,
-  "web_port": 52548,
+  "api_port": 64452,
+  "web_port": 64453,
   "api_health_status": "healthy",
   "api_service": "fiber-paid-http-evidence-api",
-  "injected_api_base": "http://127.0.0.1:52547",
+  "injected_api_base": "http://127.0.0.1:64452",
   "web_served_console": true,
   "api_and_web_started_by_single_cli_command": true
 }

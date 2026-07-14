@@ -59,7 +59,7 @@ set -e
 if [[ "${layout_exit}" -eq 0 ]]; then
   evidence_console_layout=true
 else
-  evidence_console_layout_blockers+=("Evidence console layout check failed: see ${layout_output}")
+  evidence_console_layout_blockers+=("Gateway Lab layout check failed: see ${layout_output}")
 fi
 action_coverage_output="reports/evidence-console-action-coverage.log"
 set +e
@@ -69,7 +69,7 @@ set -e
 if [[ "${action_coverage_exit}" -eq 0 ]]; then
   evidence_console_action_coverage=true
 else
-  evidence_console_action_coverage_blockers+=("Evidence console action coverage check failed: see ${action_coverage_output}")
+  evidence_console_action_coverage_blockers+=("Gateway Lab action coverage check failed: see ${action_coverage_output}")
 fi
 server_hardening_output="reports/evidence-console-server-hardening.log"
 set +e
@@ -79,7 +79,7 @@ set -e
 if [[ "${server_hardening_exit}" -eq 0 ]]; then
   evidence_console_server_hardening=true
 else
-  evidence_console_server_hardening_blockers+=("Evidence console server hardening check failed: see ${server_hardening_output}")
+  evidence_console_server_hardening_blockers+=("Gateway Lab server hardening check failed: see ${server_hardening_output}")
 fi
 cli_start_output="reports/evidence-console-cli-start.log"
 cli_start_report="reports/evidence-console-cli-start.json"
@@ -90,7 +90,7 @@ set -e
 if [[ "${cli_start_exit}" -eq 0 ]]; then
   evidence_console_cli_start=true
 else
-  evidence_console_cli_start_blockers+=("Evidence console CLI start check failed: see ${cli_start_output}")
+  evidence_console_cli_start_blockers+=("Gateway Lab CLI start check failed: see ${cli_start_output}")
 fi
 browser_smoke_output="reports/evidence-console-browser-smoke.log"
 browser_smoke_report="reports/evidence-console-browser-smoke.json"
@@ -122,7 +122,7 @@ if (report.api_base !== "temporary-local-api") missing.push("api_base");
 if (report.web_origin !== "served-local-web-server") missing.push("web_origin");
 if (report.api_base_source !== "served HTML injected by evidence web server") missing.push("api_base_source");
 if (missing.length > 0) {
-  console.error(`Evidence console browser smoke report missing semantic proof: ${missing.join(", ")}`);
+  console.error(`Gateway Lab browser smoke report missing semantic proof: ${missing.join(", ")}`);
   process.exit(1);
 }
 JSON
@@ -131,10 +131,10 @@ JSON
   if [[ "${browser_smoke_report_exit}" -eq 0 ]]; then
     evidence_console_browser_smoke=true
   else
-    evidence_console_browser_smoke_blockers+=("Evidence console browser smoke report is incomplete: see ${browser_smoke_report}")
+    evidence_console_browser_smoke_blockers+=("Gateway Lab browser smoke report is incomplete: see ${browser_smoke_report}")
   fi
 else
-  evidence_console_browser_smoke_blockers+=("Evidence console browser smoke check failed: see ${browser_smoke_output}")
+  evidence_console_browser_smoke_blockers+=("Gateway Lab browser smoke check failed: see ${browser_smoke_output}")
 fi
 without_live_fiber_env pnpm test:integration
 integration_tests=true
@@ -395,7 +395,7 @@ const fiberPaidHttpGateBlockers = [
   ...actionCoverageBlockers,
   ...serverHardeningBlockers,
   ...cliStartBlockers,
-  ...(bool("EVIDENCE_CONSOLE_CLI_START") && !cliStartVerified ? ["Evidence console CLI start report is incomplete"] : []),
+  ...(bool("EVIDENCE_CONSOLE_CLI_START") && !cliStartVerified ? ["Gateway Lab CLI start report is incomplete"] : []),
   ...browserSmokeBlockers,
   ...(fiberStatus === "failed" ? fiberBlockers : [])
 ];
@@ -680,6 +680,9 @@ if node -e 'const r=require("./reports/fiber-paid-http-gate.json"); process.exit
   exit 1
 fi
 if node -e 'const r=require("./reports/fiber-paid-http-gate.json"); process.exit(r.evidence_console_server_hardening === false ? 0 : 1)'; then
+  exit 1
+fi
+if node -e 'const r=require("./reports/fiber-paid-http-gate.json"); process.exit(r.evidence_console_cli_start === false ? 0 : 1)'; then
   exit 1
 fi
 if node -e 'const r=require("./reports/fiber-paid-http-gate.json"); process.exit(r.evidence_console_browser_smoke === false ? 0 : 1)'; then

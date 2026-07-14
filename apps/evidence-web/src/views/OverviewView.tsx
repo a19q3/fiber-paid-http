@@ -75,7 +75,7 @@ export function OverviewView() {
 
       <section className="overview-section" aria-labelledby="readiness-title">
         <div className="section-heading">
-          <div><span>Current API and committed reports</span><h3 id="readiness-title">Readiness, without theatre</h3></div>
+          <div><span>Current API and committed reports</span><h3 id="readiness-title">Verified readiness</h3></div>
           <button className="btn" onClick={() => ev.refreshAll("overview refresh")} disabled={ev.refreshing}>
             <Icon name="ActionRetry" /> Refresh
           </button>

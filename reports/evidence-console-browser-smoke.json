@@ -8,8 +8,8 @@
   "api_backing": "temporary local evidence API process with in-process Fiber adapters",
   "mode": "connected temporary-local-api · <time>",
   "completed_flow_evidence": {
-    "challenge_id": "wY_nnOJfKsy70orNo32Ri3n7rg5JA4oFITbYtRbWyZs",
-    "resource_hash": "cc0546f515a34b6f29332de2d7779ab20c173a8c148f1e587d8ceb7c3b75e4dd",
+    "challenge_id": "qHSfbsTPIpgakTdu522HJWn10CRAxMKOXmINIM7bSvs",
+    "resource_hash": "eacb298c7ede9b536717c4c86000cf57b8c08e7b857da0714338e84187685907",
     "payment_hash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
     "receipt_reference": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
     "service_executed": "executed after receipt",
@@ -22,12 +22,12 @@
   "steps": [
     {
       "step": "connected-api",
-      "workspace": "flow",
+      "workspace": "overview",
       "api_state": "connected temporary-local-api · <time>",
-      "selected_resource": "GET /paid/protocol-service",
-      "action_hint": "Send an unpaid request to receive a Fiber challenge first.",
+      "selected_resource": "",
+      "action_hint": "",
       "send_disabled": false,
-      "pay_disabled": true,
+      "pay_disabled": false,
       "evidence": {
         "challenge_id": "",
         "resource_hash": "",
@@ -89,8 +89,8 @@
       "send_disabled": false,
       "pay_disabled": false,
       "evidence": {
-        "challenge_id": "wY_nnOJfKsy70orNo32Ri3n7rg5JA4oFITbYtRbWyZs",
-        "resource_hash": "cc0546f515a34b6f29332de2d7779ab20c173a8c148f1e587d8ceb7c3b75e4dd",
+        "challenge_id": "qHSfbsTPIpgakTdu522HJWn10CRAxMKOXmINIM7bSvs",
+        "resource_hash": "eacb298c7ede9b536717c4c86000cf57b8c08e7b857da0714338e84187685907",
         "payment_hash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
         "receipt_reference": "",
         "service_executed": "awaiting receipt",
@@ -109,8 +109,8 @@
       "send_disabled": false,
       "pay_disabled": false,
       "evidence": {
-        "challenge_id": "wY_nnOJfKsy70orNo32Ri3n7rg5JA4oFITbYtRbWyZs",
-        "resource_hash": "cc0546f515a34b6f29332de2d7779ab20c173a8c148f1e587d8ceb7c3b75e4dd",
+        "challenge_id": "qHSfbsTPIpgakTdu522HJWn10CRAxMKOXmINIM7bSvs",
+        "resource_hash": "eacb298c7ede9b536717c4c86000cf57b8c08e7b857da0714338e84187685907",
         "payment_hash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
         "receipt_reference": "",
         "service_executed": "awaiting receipt",
@@ -129,8 +129,8 @@
       "send_disabled": false,
       "pay_disabled": false,
       "evidence": {
-        "challenge_id": "wY_nnOJfKsy70orNo32Ri3n7rg5JA4oFITbYtRbWyZs",
-        "resource_hash": "cc0546f515a34b6f29332de2d7779ab20c173a8c148f1e587d8ceb7c3b75e4dd",
+        "challenge_id": "qHSfbsTPIpgakTdu522HJWn10CRAxMKOXmINIM7bSvs",
+        "resource_hash": "eacb298c7ede9b536717c4c86000cf57b8c08e7b857da0714338e84187685907",
         "payment_hash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
         "receipt_reference": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
         "service_executed": "executed after receipt",
@@ -149,8 +149,8 @@
       "send_disabled": false,
       "pay_disabled": false,
       "evidence": {
-        "challenge_id": "wY_nnOJfKsy70orNo32Ri3n7rg5JA4oFITbYtRbWyZs",
-        "resource_hash": "cc0546f515a34b6f29332de2d7779ab20c173a8c148f1e587d8ceb7c3b75e4dd",
+        "challenge_id": "qHSfbsTPIpgakTdu522HJWn10CRAxMKOXmINIM7bSvs",
+        "resource_hash": "eacb298c7ede9b536717c4c86000cf57b8c08e7b857da0714338e84187685907",
         "payment_hash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
         "receipt_reference": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
         "service_executed": "executed after receipt",
@@ -169,8 +169,8 @@
       "send_disabled": true,
       "pay_disabled": true,
       "evidence": {
-        "challenge_id": "wY_nnOJfKsy70orNo32Ri3n7rg5JA4oFITbYtRbWyZs",
-        "resource_hash": "cc0546f515a34b6f29332de2d7779ab20c173a8c148f1e587d8ceb7c3b75e4dd",
+        "challenge_id": "qHSfbsTPIpgakTdu522HJWn10CRAxMKOXmINIM7bSvs",
+        "resource_hash": "eacb298c7ede9b536717c4c86000cf57b8c08e7b857da0714338e84187685907",
         "payment_hash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
         "receipt_reference": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
         "service_executed": "executed after receipt",
@@ -198,6 +198,26 @@
         "receipt_reissued": "false",
         "actuator_health": "guard active",
         "replay_blocked": "replay blocked"
+      }
+    },
+    {
+      "step": "examples-blocked-runtime",
+      "workspace": "tournament",
+      "api_state": "connected temporary-local-api · <time>",
+      "selected_resource": "",
+      "action_hint": "",
+      "send_disabled": false,
+      "pay_disabled": false,
+      "evidence": {
+        "challenge_id": "",
+        "resource_hash": "",
+        "payment_hash": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        "receipt_reference": "0xcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcdcd",
+        "service_executed": "executed after receipt",
+        "replay_status": "blocked",
+        "receipt_reissued": "false",
+        "actuator_health": "guard active",
+        "replay_blocked": ""
       }
     },
     {

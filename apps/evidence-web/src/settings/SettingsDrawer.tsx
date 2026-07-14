@@ -65,8 +65,8 @@ export function SettingsDrawer() {
       <aside ref={drawerRef} className="settings-drawer" role="dialog" aria-modal="true" aria-labelledby="settings-title" aria-describedby="settings-description">
         <div className="settings-head">
           <div>
-            <h2 id="settings-title">Console Settings</h2>
-            <p id="settings-description">Evidence console preferences. Live execution still goes through the configured backend roles.</p>
+            <h2 id="settings-title">Gateway Lab Settings</h2>
+            <p id="settings-description">Gateway Lab preferences. Live execution still goes through the configured backend roles.</p>
           </div>
           <button ref={closeButtonRef} className="icon-btn" id="close-settings" onClick={() => ev.setSettingsOpen(false)} aria-label="Close settings">
             <Icon name="StatusFailed" />

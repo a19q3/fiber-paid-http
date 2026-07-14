@@ -93,7 +93,7 @@ try {
   await rm(profileDir, { recursive: true, force: true, maxRetries: 8, retryDelay: 250 });
 }
 
-console.log(`evidence console layout checks passed: ${viewports.length} viewports, tab jitter stable across all checked viewports`);
+console.log(`Gateway Lab layout checks passed: ${viewports.length} viewports, tab jitter stable across all checked viewports`);
 
 async function runLayoutChecks(client) {
   const failures = [];

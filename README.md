@@ -4,7 +4,7 @@
 
 Fiber Paid HTTP is a Rust-first paid HTTP gateway for API developers and service operators. It implements the current MPP `Payment` draft core and proposes a `fiber` charge-method profile using Fiber invoices and settlement.
 
-The project has one production verifier: Rust. TypeScript provides the SDK, Evidence Console, vector generation, and explicit F402/F-L402 ingress adapters.
+The project has one production verifier: Rust. TypeScript provides the SDK, Gateway Lab, vector generation, and explicit F402/F-L402 ingress adapters.
 
 The project is the server-side enforcement layer between a paid HTTP request and a protected upstream. It does not operate a Fiber node, authorize a payer's wallet, facilitate x402 settlement, or define application policy. The browser application is a Gateway Lab for integration, operations, and audit evidence; machines use the HTTP protocol and SDKs directly.
 
@@ -112,7 +112,7 @@ The envelope codecs are exercised bidirectionally against the pinned current SDK
 | `packages/x402-compat` | x402 v2 exact/Fiber conversion boundary |
 | `packages/fl402-compat` | F-L402 capability ingress |
 | `apps/evidence-api` | Live flow and report API |
-| `apps/evidence-web` | Evidence Console |
+| `apps/evidence-web` | Gateway Lab for integration, operations, and audit evidence |
 | `test-vectors` | 22 shared TS/Rust conformance fixtures |
 
 ## Quick start

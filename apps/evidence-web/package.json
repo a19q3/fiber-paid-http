@@ -2,7 +2,7 @@
   "name": "@fiber-paid-http/evidence-web",
   "version": "0.2.0",
   "type": "module",
-  "description": "Fiber Paid HTTP evidence console UI (React + Vite).",
+  "description": "Fiber Paid HTTP Gateway Lab for integration and evidence (React + Vite).",
   "exports": {
     ".": {
       "types": "./server.d.ts",

@@ -43,13 +43,13 @@ export function Header({ onToggleSidebar, navigationExpanded, onOpenPrefs }: Hea
           <span className={"conn-dot " + connClass} />
           <span id="api-state-text">{ev.apiMessage || "not connected"}{ev.lastRefreshedAt ? ` · ${formatTime(ev.lastRefreshedAt)}` : ""}</span>
         </div>
-        <button className={"icon-btn" + (ev.refreshing ? " is-busy" : "")} onClick={() => ev.refreshAll("manual refresh")} disabled={isBusy} title="Refresh" aria-label="Refresh console">
+        <button className={"icon-btn" + (ev.refreshing ? " is-busy" : "")} onClick={() => ev.refreshAll("manual refresh")} disabled={isBusy} title="Refresh" aria-label="Refresh Gateway Lab">
           <Icon name="ActionRetry" />
         </button>
         <button className="icon-btn" onClick={onOpenPrefs} title="Preferences" aria-label="Open preferences">
           <Icon name="Settings" />
         </button>
-        <button id="open-settings" className={"icon-btn" + (ev.settingsOpen ? " active" : "")} onClick={() => ev.setSettingsOpen(!ev.settingsOpen)} title="Console settings" aria-label="Open console settings">
+        <button id="open-settings" className={"icon-btn" + (ev.settingsOpen ? " active" : "")} onClick={() => ev.setSettingsOpen(!ev.settingsOpen)} title="Gateway Lab settings" aria-label="Open Gateway Lab settings">
           <Icon name="Method" />
         </button>
       </div>

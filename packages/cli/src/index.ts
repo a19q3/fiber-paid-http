@@ -998,7 +998,7 @@ async function loadEvidenceWeb(): Promise<{ startEvidenceWeb: (port?: number, op
     startEvidenceWeb?: (port?: number, options?: { apiBase?: string }) => unknown;
   };
   if (!mod.startEvidenceWeb) {
-    throw new Error("@fiber-paid-http/evidence-web does not export startEvidenceWeb; run pnpm install and pnpm build before using the evidence console");
+    throw new Error("@fiber-paid-http/evidence-web does not export startEvidenceWeb; run pnpm install and pnpm build before using the Gateway Lab");
   }
   return { startEvidenceWeb: mod.startEvidenceWeb };
 }

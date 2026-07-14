@@ -279,7 +279,7 @@ export function TournamentView() {
               <label><span>ENTRY</span><input value={form.entryAmount} onChange={(e) => setForm({ ...form, entryAmount: e.target.value })} /></label>
               <label><span>PRIZE</span><input value={form.prizeAmount} onChange={(e) => setForm({ ...form, prizeAmount: e.target.value })} /></label>
               <label><span>MAP</span><input value={form.map} onChange={(e) => setForm({ ...form, map: e.target.value })} /></label>
-              <label className="wide-field"><span>BOT SOURCE (OPTIONAL)</span><textarea value={botSource} onChange={(e) => setBotSource(e.target.value)} placeholder="Paste RobotPlayer.java, or leave empty to use the bundled fiberchamp source." spellCheck={false} /></label>
+              <label className="wide-field"><span>BOT SOURCE (OPTIONAL — paste RobotPlayer.java or leave blank for bundled fiberchamp)</span><textarea value={botSource} onChange={(e) => setBotSource(e.target.value)} spellCheck={false} /></label>
             </div>
             <div className="actions btn-row tournament-actions">
               <button className="btn primary" disabled={disabled || !engineReady} title={engineReady ? "Lock the exact source and engine commitment" : readiness?.jdk?.blockers[0] || readiness?.engineJar?.blockers[0]} onClick={submitBot}>

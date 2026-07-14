@@ -11,7 +11,7 @@
     },
     {
       "id": "refresh-all",
-      "label": "Refresh console",
+      "label": "Refresh Gateway Lab",
       "surfaceFound": true,
       "endpointFound": true,
       "testFound": true,
@@ -100,5 +100,5 @@
       "status": "passed"
     }
   ],
-  "timestamp": "2026-07-13T15:27:52.725Z"
+  "timestamp": "2026-07-14T06:30:42.974Z"
 }

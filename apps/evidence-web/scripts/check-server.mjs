@@ -22,12 +22,12 @@ try {
   const index = await fetch(`${baseUrl}/`);
   assert(index.status === 200, `GET / returned ${index.status}`);
   assert((index.headers.get("content-type") || "").includes("text/html"), "GET / must serve HTML");
-  assert(index.headers.get("cache-control") === "no-store", "Evidence console HTML must be no-store");
+  assert(index.headers.get("cache-control") === "no-store", "Gateway Lab HTML must be no-store");
   assert((index.headers.get("content-security-policy") || "").includes("default-src 'self'"), "CSP must restrict default-src to self");
   const indexHtml = await index.text();
-  assert(indexHtml.includes("Fiber Paid HTTP Evidence Console"), "GET / must serve the evidence console");
-  assert(indexHtml.includes("http://127.0.0.1:9876"), "Evidence console HTML must receive the configured API base");
-  assert(!indexHtml.includes("http://localhost:8787"), "Evidence console HTML must not keep the default API base after injection");
+  assert(indexHtml.includes("Fiber Paid HTTP Gateway Lab"), "GET / must serve the Gateway Lab");
+  assert(indexHtml.includes("http://127.0.0.1:9876"), "Gateway Lab HTML must receive the configured API base");
+  assert(!indexHtml.includes("http://localhost:8787"), "Gateway Lab HTML must not keep the default API base after injection");
   const csp = index.headers.get("content-security-policy") || "";
   assert(csp.includes("connect-src 'self' http://127.0.0.1:9876"), "CSP must allow the configured Evidence API origin");
   assert(csp.includes("style-src 'self'"), "CSP must allow bundled stylesheet assets from self");

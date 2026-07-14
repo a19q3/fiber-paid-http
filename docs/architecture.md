@@ -2,7 +2,7 @@
 
 ## Trust boundary
 
-Rust is the production verification boundary. TypeScript is SDK, Evidence Console, adapters, and conformance tooling. The canonical gate asserts `typescript_trusted_boundary: false`.
+Rust is the production verification boundary. TypeScript is SDK, Gateway Lab, adapters, and conformance tooling. The canonical gate asserts `typescript_trusted_boundary: false`.
 
 The browser UI is the **Fiber Paid HTTP Gateway Lab**. Backend integrators, service operators, judges, and auditors use it to exercise and inspect the gateway. It is not a wallet, participant application, Fiber node control plane, or machine-facing runtime. Automated clients integrate through HTTP and the SDKs.
 

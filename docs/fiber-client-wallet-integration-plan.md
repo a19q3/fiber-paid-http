@@ -439,7 +439,7 @@ This gives the cleanest user-owned wallet story, but it is heavier:
 - Stores node/channel state in browser storage, so backup/recovery language must be explicit.
 - Needs relay/public-node guidance.
 
-This path should be lazy-loaded and isolated from the Evidence Console's protocol visualization.
+This path should be lazy-loaded and isolated from the Gateway Lab's protocol visualization.
 
 ### Phase 4: CCC / WalletConnect For External Funding
 

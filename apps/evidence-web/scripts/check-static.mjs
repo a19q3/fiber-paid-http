@@ -69,7 +69,7 @@ const requiredBundleFragments = [
   "challenge_received",
   "productionReady",
   "gateway-lab",
-  "Readiness, without theatre",
+  "Verified readiness",
   "Protocol perspective",
   "REFERENCE INTEGRATION",
 ];

@@ -30,7 +30,7 @@ const commandSurface = [html, builtJs].join("\n");
 
 const controls = [
   { id: "api-apply", label: "Connect API", endpoint: "/api/status", surface: ["api-settings", "api-apply"] },
-  { id: "refresh-all", label: "Refresh console", endpoint: "/api/status", surface: ["refresh-all"] },
+  { id: "refresh-all", label: "Refresh Gateway Lab", endpoint: "/api/status", surface: ["refresh-all"] },
   { id: "send", label: "Send unpaid request", endpoint: "/api/evidence/unpaid", surface: ["send", "evidence/"] },
   { id: "pay", label: "Pay with Fiber", endpoint: "/api/evidence/pay", surface: ["pay"] },
   { id: "retry", label: "Retry with Authorization", endpoint: "/api/evidence/retry", surface: ["retry"] },
@@ -73,4 +73,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log(`evidence console action coverage passed: ${results.length} controls verified`);
+console.log(`Gateway Lab action coverage passed: ${results.length} controls verified`);

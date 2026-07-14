@@ -95,7 +95,7 @@ describe("production gate scripts", () => {
     expect(source).toContain("serverHardeningBlockers");
   });
 
-  it("keeps one-command Evidence Console startup in the main gate", () => {
+  it("keeps one-command Gateway Lab startup in the main gate", () => {
     const source = readFileSync("scripts/fiber_paid_http_gate.sh", "utf8");
 
     expect(source).toContain("check-cli-start");
@@ -105,9 +105,10 @@ describe("production gate scripts", () => {
     expect(source).toContain("evidence_console_cli_start");
     expect(source).toContain("cliStartVerified");
     expect(source).toContain("api_and_web_started_by_single_cli_command");
+    expect(source).toContain("r.evidence_console_cli_start === false");
   });
 
-  it("requires the browser smoke to use the served Evidence Console", () => {
+  it("requires the browser smoke to use the served Gateway Lab", () => {
     const source = readFileSync("scripts/fiber_paid_http_gate.sh", "utf8");
 
     expect(source).toContain('report.web_origin !== "served-local-web-server"');
