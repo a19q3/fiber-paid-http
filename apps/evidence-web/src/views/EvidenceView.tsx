@@ -78,7 +78,10 @@ export function EvidenceView() {
         <div className="panel-body">
           <div className="evidence-tabs" id="tabs">
             {evidenceTabs.map((tab) => (
-              <button key={tab.id} className={"tab-btn tab" + (ev.activeTab === tab.id ? " active" : "")} onClick={() => ev.setActiveTab(tab.id)}>
+              <button key={tab.id} className={"tab-btn tab" + (ev.activeTab === tab.id ? " active" : "")} onClick={() => {
+                document.getElementById("main-content")?.scrollTo({ top: 0 });
+                ev.setActiveTab(tab.id);
+              }}>
                 <Icon name={tab.icon as never} /> {tab.label}
               </button>
             ))}

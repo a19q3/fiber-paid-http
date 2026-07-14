@@ -52,6 +52,8 @@ const requiredUrlFragments = [
   "evidence/export",
   "bootstrap/runtime",
   "bootstrap/runtime/reset",
+  "tournament/battlecode/status",
+  "tournament/battlecode/manifest",
 ];
 
 // Other constants that must survive minification as string literals in the
@@ -66,6 +68,10 @@ const requiredBundleFragments = [
   "replay_rejected",
   "challenge_received",
   "productionReady",
+  "gateway-lab",
+  "Readiness, without theatre",
+  "Protocol perspective",
+  "REFERENCE INTEGRATION",
 ];
 
 for (const fragment of requiredHtmlFragments) {

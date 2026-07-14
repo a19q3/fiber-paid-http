@@ -35,6 +35,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
                 data-workspace-tab={tab.id}
                 onClick={() => {
                   ev.setWorkspaceTab(tab.id as WorkspaceTab);
+                  document.getElementById("main-content")?.scrollTo({ top: 0 });
                   onNavigate?.();
                 }}
               >

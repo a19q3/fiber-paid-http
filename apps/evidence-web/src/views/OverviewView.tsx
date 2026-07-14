@@ -24,11 +24,14 @@ export function OverviewView() {
   const deliveryLabel: EvidenceLabel = status?.badges?.gateReady === true ? "PRESERVED EVIDENCE" : "BLOCKED";
   const blockers = status?.blockers || [];
 
-  const navigate = (tab: WorkspaceTab) => ev.setWorkspaceTab(tab);
+  const navigate = (tab: WorkspaceTab) => {
+    ev.setWorkspaceTab(tab);
+    document.getElementById("main-content")?.scrollTo({ top: 0 });
+  };
 
   return (
     <div className="overview" data-overview="gateway-lab">
-      <section className="overview-hero" aria-labelledby="overview-title">
+      <section className="overview-hero" aria-labelledby="overview-title" data-panel-id="overview">
         <div className="overview-kicker">Server-side payment enforcement</div>
         <h2 id="overview-title">Turn Fiber settlement into replay-safe HTTP delivery.</h2>
         <p>

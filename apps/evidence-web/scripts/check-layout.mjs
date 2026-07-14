@@ -23,11 +23,13 @@ const viewports = [
 ];
 const maxAllowedTabJitterPx = 1;
 const expectedPanels = {
+  overview: ["overview"],
   flow: ["request", "timeline"],
   bootstrap: ["bootstrap"],
   evidence: ["parity", "evidence"],
   attacks: ["attacks"],
-  network: ["network"]
+  network: ["network"],
+  tournament: ["example-capabilities", "example-input", "example-evidence", "example-match"]
 };
 
 const chromeBin = process.env.CHROME_BIN || await findChrome();

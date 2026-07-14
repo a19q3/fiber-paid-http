@@ -12,11 +12,14 @@ This flow turns a local Battlecode match into a paid-entry tournament:
 8. The local Battlecode engine materializes that locked submission and runs it against `baselinebot`.
 9. If the submitted bot wins, the tournament either records a local claimable xUDT prize award or, when explicitly enabled, pays the prize through a live Fiber xUDT payment.
 
-The Battlecode engine is an external AGPL-3.0 dependency. Keep it outside this repository:
+The Battlecode engine is an external AGPL-3.0 dependency. Keep it outside this repository. From the Fiber Paid HTTP checkout, clone the scaffold into the parent directory:
 
 ```bash
-git clone --depth 1 https://github.com/battlecode/battlecode25-scaffold.git "$HOME/battlecode25-scaffold"
+git clone --depth 1 https://github.com/battlecode/battlecode25-scaffold.git ../battlecode25-scaffold
+export BATTLECODE_DIR="$(cd ../battlecode25-scaffold/java && pwd)"
 ```
+
+The API also discovers `../battlecode25-scaffold/java` (including the equivalent path from a repository worktree). `/api/tournament/battlecode/status` reports the resolved path and fails visibly when the scaffold is absent.
 
 The API runner does not copy Battlecode scaffold code into Fiber Paid HTTP. It stores submitted bot sources under `.tmp/battlecode-tournament/submissions/`, records tournament state in a SQLite ledger, materializes each match under `.tmp/battlecode-tournament/runs/`, and runs `battlecode.server.Main` headlessly.
 
@@ -28,14 +31,22 @@ Use JDK 21. A local user-level JDK is preferred:
 export BATTLECODE_JDK_HOME=/path/to/jdk-21
 ```
 
-Use either a downloaded Battlecode engine jar:
+The pinned scaffold currently declares engine version `1.0.0` in `java/engine_version.txt`. Build it with JDK 21 so Gradle resolves the matching engine jar:
 
 ```bash
-export BATTLECODE_ENGINE_JAR=/path/to/battlecode25-java-3.1.0.jar
-export BATTLECODE_ENGINE_VERSION=3.1.0
+cd "$BATTLECODE_DIR"
+./gradlew version
+./gradlew build
 ```
 
-or let the runner fall back to a cached Gradle jar if present.
+The runner discovers the matching Gradle cache entry. To use an independently provisioned jar instead, set both values explicitly:
+
+```bash
+export BATTLECODE_ENGINE_JAR=/absolute/path/to/battlecode25-java-1.0.0.jar
+export BATTLECODE_ENGINE_VERSION=1.0.0
+```
+
+The status endpoint checks scaffold files, an actual JDK 21 home, the exact engine jar, Fiber payment configuration, and prize settlement mode separately. A cloned scaffold alone is not reported as a runnable match engine.
 
 ## Live Fiber Prerequisites
 

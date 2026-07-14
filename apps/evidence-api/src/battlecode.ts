@@ -204,8 +204,6 @@ type RunOptions = {
   env?: NodeJS.ProcessEnv;
 };
 
-const DEFAULT_BATTLECODE_DIR = "/home/arthur/a19q3/battlecode25-scaffold/java";
-const DEFAULT_JDK_HOME = "/home/arthur/a19q3/.toolchains/jdk-21.0.11+10";
 const DEFAULT_ENGINE_VERSION = "1.0.0";
 const HASH_PREFIX = "sha256:";
 const BATTLECODE_MAX_SOURCE_BYTES = 128_000;
@@ -876,17 +874,48 @@ export async function runBattlecodeTournament(options: RunOptions): Promise<Batt
 export async function battlecodeStatus(repoRoot: string, env: NodeJS.ProcessEnv = process.env): Promise<Record<string, unknown>> {
   const ledger = await readBattlecodeLedger(repoRoot, env);
   const ledgerHealth = await battlecodeLedgerHealth(repoRoot, env).catch((error: unknown) => ({ error: errorMessage(error) }));
-  const engine = await resolveBattlecodeEngine(repoRoot, env).catch((error: unknown) => ({ error: errorMessage(error) }));
-  const fairnessManifest = await buildBattlecodeFairnessManifest(repoRoot, env).catch((error: unknown) => ({ error: errorMessage(error) }));
+  const scaffoldDir = resolveBattlecodeScaffoldDir(repoRoot, env);
+  const scaffoldReady = existsSync(resolve(scaffoldDir, "build.gradle"))
+    && existsSync(resolve(scaffoldDir, "gradlew"))
+    && existsSync(resolve(scaffoldDir, "src"));
+  const jdk = await inspectBattlecodeJdk(repoRoot, env);
+  const engineJar = await resolveBattlecodeEngineJar(repoRoot, env)
+    .then((resolved) => ({ status: "ready" as const, ...resolved, blockers: [] as string[] }))
+    .catch((error: unknown) => ({ status: "blocked" as const, path: env.BATTLECODE_ENGINE_JAR ?? null, version: env.BATTLECODE_ENGINE_VERSION ?? null, source: "unavailable", blockers: [errorMessage(error)] }));
+  const engine = jdk.status === "ready" && engineJar.status === "ready"
+    ? { jdkHome: jdk.home, engineJar: engineJar.path, version: engineJar.version }
+    : { error: [...jdk.blockers, ...engineJar.blockers].join("; ") };
+  const fairnessManifest = jdk.status === "ready" && engineJar.status === "ready"
+    ? await buildBattlecodeFairnessManifest(repoRoot, env).catch((error: unknown) => ({ error: errorMessage(error) }))
+    : { error: "Battlecode fairness manifest requires a ready JDK 21 and engine jar" };
+  const fiberPayment = battlecodeFiberPaymentReadiness(env);
+  const awardSettlement = battlecodeAwardSettlementPlan(env);
   return {
     enabled: true,
-    scaffoldDir: env.BATTLECODE_DIR ?? DEFAULT_BATTLECODE_DIR,
+    scaffoldDir,
     ledgerPath: battlecodeLedgerPath(repoRoot, env),
     ledgerStorage: "sqlite",
     ledgerHealth,
     engine,
     fairnessManifest,
-    awardSettlement: battlecodeAwardSettlementPlan(env),
+    awardSettlement,
+    readiness: {
+      scaffold: {
+        status: scaffoldReady ? "ready" : "blocked",
+        path: scaffoldDir,
+        source: env.BATTLECODE_DIR ? "env" : "discovered",
+        blockers: scaffoldReady ? [] : [`Battlecode scaffold is missing at ${scaffoldDir}; clone battlecode25-scaffold beside the Fiber Paid HTTP repository or set BATTLECODE_DIR`]
+      },
+      jdk,
+      engineJar,
+      fiberPayment,
+      prizeSettlement: {
+        status: awardSettlement.mode === "local-ledger" || awardSettlement.live ? "ready" : "blocked",
+        mode: awardSettlement.mode,
+        live: awardSettlement.live,
+        blockers: awardSettlement.blockers
+      }
+    },
     tickets: ledger.tickets.length,
     submissions: ledger.submissions.length,
     matches: ledger.matches.length,
@@ -1121,35 +1150,105 @@ async function resolveBattlecodeEngine(repoRoot: string, env: NodeJS.ProcessEnv)
   engineJar: string;
   version: string;
 }> {
-  const jdkHome = env.BATTLECODE_JDK_HOME ?? DEFAULT_JDK_HOME;
-  const javaBin = resolve(jdkHome, "bin/java");
-  const javacBin = resolve(jdkHome, "bin/javac");
-  if (!existsSync(javaBin) || !existsSync(javacBin)) {
-    throw new Error(`Battlecode JDK 21 is missing; set BATTLECODE_JDK_HOME or install ${DEFAULT_JDK_HOME}`);
-  }
-  const explicitJar = env.BATTLECODE_ENGINE_JAR;
-  if (explicitJar && existsSync(explicitJar)) {
-    return { jdkHome, engineJar: explicitJar, version: env.BATTLECODE_ENGINE_VERSION ?? "custom" };
-  }
-  const toolchainJar = resolve(repoRoot, "../.toolchains/battlecode25/battlecode25-java-3.1.0.jar");
-  if (existsSync(toolchainJar)) {
-    return { jdkHome, engineJar: toolchainJar, version: "3.1.0" };
-  }
-  const cached = await findCachedBattlecodeJar(DEFAULT_ENGINE_VERSION);
-  if (cached) {
-    return { jdkHome, engineJar: cached, version: DEFAULT_ENGINE_VERSION };
-  }
-  throw new Error("Battlecode engine jar is missing; set BATTLECODE_ENGINE_JAR or download battlecode25-java-3.1.0.jar");
+  const jdk = await inspectBattlecodeJdk(repoRoot, env);
+  if (jdk.status !== "ready") throw new Error(jdk.blockers.join("; "));
+  const engine = await resolveBattlecodeEngineJar(repoRoot, env);
+  return { jdkHome: jdk.home, engineJar: engine.path, version: engine.version };
 }
 
-async function findCachedBattlecodeJar(version: string): Promise<string | null> {
-  const root = `${process.env.HOME ?? "/home/arthur"}/.gradle/caches/modules-2/files-2.1/org.battlecode/battlecode25-java/${version}`;
+function resolveBattlecodeScaffoldDir(repoRoot: string, env: NodeJS.ProcessEnv): string {
+  if (env.BATTLECODE_DIR) return resolve(env.BATTLECODE_DIR);
+  const home = env.HOME;
+  const candidates = [
+    resolve(repoRoot, "../battlecode25-scaffold/java"),
+    resolve(repoRoot, "../../../battlecode25-scaffold/java"),
+    ...(home ? [resolve(home, "RustroverProjects/battlecode25-scaffold/java"), resolve(home, "battlecode25-scaffold/java")] : [])
+  ];
+  return candidates.find((candidate) => existsSync(resolve(candidate, "build.gradle"))) ?? candidates[0]!;
+}
+
+async function inspectBattlecodeJdk(repoRoot: string, env: NodeJS.ProcessEnv): Promise<{
+  status: "ready" | "blocked";
+  home: string;
+  version: string | null;
+  source: "BATTLECODE_JDK_HOME" | "JAVA_HOME" | "discovered" | "unconfigured";
+  blockers: string[];
+}> {
+  const discovered = [resolve(repoRoot, "../.toolchains/jdk-21"), resolve(repoRoot, "../../../.toolchains/jdk-21")]
+    .find((candidate) => existsSync(resolve(candidate, "bin/java")) && existsSync(resolve(candidate, "bin/javac")));
+  const home = env.BATTLECODE_JDK_HOME ? resolve(env.BATTLECODE_JDK_HOME) : env.JAVA_HOME ? resolve(env.JAVA_HOME) : discovered ?? "";
+  const source = env.BATTLECODE_JDK_HOME ? "BATTLECODE_JDK_HOME" : env.JAVA_HOME ? "JAVA_HOME" : discovered ? "discovered" : "unconfigured";
+  if (!home || !existsSync(resolve(home, "bin/java")) || !existsSync(resolve(home, "bin/javac"))) {
+    return { status: "blocked", home, version: null, source, blockers: ["Battlecode JDK 21 is missing; set BATTLECODE_JDK_HOME to a JDK 21 installation"] };
+  }
+  let version: string | null = null;
+  try {
+    const release = await readFile(resolve(home, "release"), "utf8");
+    version = release.match(/^JAVA_VERSION="([^"]+)"/m)?.[1] ?? null;
+  } catch {
+    version = /(?:^|[\\/_.-])jdk[_.-]?21(?:[\\/_.-]|$)/i.test(home) ? "21 (path marker)" : null;
+  }
+  if (!version || !/^21(?:\D|$)/.test(version)) {
+    return { status: "blocked", home, version, source, blockers: [`Battlecode requires JDK 21; ${home} reports ${version ?? "an unknown version"}`] };
+  }
+  return { status: "ready", home, version, source, blockers: [] };
+}
+
+async function resolveBattlecodeEngineJar(repoRoot: string, env: NodeJS.ProcessEnv): Promise<{
+  path: string;
+  version: string;
+  source: "BATTLECODE_ENGINE_JAR" | "toolchain" | "gradle-cache";
+}> {
+  const explicitJar = env.BATTLECODE_ENGINE_JAR;
+  if (explicitJar) {
+    const path = resolve(explicitJar);
+    if (!existsSync(path)) throw new Error(`BATTLECODE_ENGINE_JAR does not exist: ${path}`);
+    return { path, version: env.BATTLECODE_ENGINE_VERSION ?? "custom", source: "BATTLECODE_ENGINE_JAR" };
+  }
+  const scaffoldVersion = await readFile(resolve(resolveBattlecodeScaffoldDir(repoRoot, env), "engine_version.txt"), "utf8")
+    .then((value) => value.trim())
+    .catch(() => "");
+  const version = (env.BATTLECODE_ENGINE_VERSION ?? scaffoldVersion) || DEFAULT_ENGINE_VERSION;
+  const toolchainJars = [
+    resolve(repoRoot, `../.toolchains/battlecode25/battlecode25-java-${version}.jar`),
+    resolve(repoRoot, `../../../.toolchains/battlecode25/battlecode25-java-${version}.jar`)
+  ];
+  const toolchainJar = toolchainJars.find((candidate) => existsSync(candidate));
+  if (toolchainJar) {
+    return { path: toolchainJar, version, source: "toolchain" };
+  }
+  const cached = await findCachedBattlecodeJar(version, env);
+  if (cached) {
+    return { path: cached, version, source: "gradle-cache" };
+  }
+  throw new Error(`Battlecode engine jar ${version} is missing; set BATTLECODE_ENGINE_JAR or run the Battlecode scaffold Gradle build with JDK 21`);
+}
+
+async function findCachedBattlecodeJar(version: string, env: NodeJS.ProcessEnv): Promise<string | null> {
+  const home = env.HOME;
+  if (!home) return null;
+  const root = resolve(home, `.gradle/caches/modules-2/files-2.1/org.battlecode/battlecode25-java/${version}`);
   try {
     const files = await listFiles(root, ".jar");
     return files[0] ?? null;
   } catch {
     return null;
   }
+}
+
+function battlecodeFiberPaymentReadiness(env: NodeJS.ProcessEnv): {
+  status: "ready" | "unconfigured";
+  mode: "local" | "testnet" | "unconfigured";
+  blockers: string[];
+} {
+  const blockers: string[] = [];
+  let mode: "local" | "testnet" | "unconfigured" = "unconfigured";
+  try { mode = parseFiberMode(env.FIBER_MODE); } catch { blockers.push("Set FIBER_MODE=local or FIBER_MODE=testnet"); }
+  if (env.RUN_FIBER_E2E !== "1") blockers.push("Set RUN_FIBER_E2E=1");
+  if (!(env.FIBER_PAYEE_RPC_URL ?? env.FIBER_RPC_URL)) blockers.push("Set FIBER_PAYEE_RPC_URL or FIBER_RPC_URL");
+  if (!env.FIBER_PAYER_RPC_URL) blockers.push("Set FIBER_PAYER_RPC_URL");
+  if (!env.FIBER_PAID_HTTP_SECRET || env.FIBER_PAID_HTTP_SECRET.length < 32) blockers.push("Set FIBER_PAID_HTTP_SECRET to at least 32 characters");
+  return { status: blockers.length === 0 ? "ready" : "unconfigured", mode, blockers };
 }
 
 async function writeBotSources(srcDir: string, submission: BattlecodeSubmission): Promise<void> {

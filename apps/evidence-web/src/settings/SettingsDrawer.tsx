@@ -101,12 +101,12 @@ export function SettingsDrawer() {
             <h3>Appearance</h3>
             <div className="field-grid">
               <label className="field" htmlFor="settings-persona">
-                <span><Icon name="Settings" /> Console perspective</span>
+                <span><Icon name="Settings" /> Protocol perspective</span>
                 <select id="settings-persona" value={ev.persona} onChange={(e) => ev.setPersona(e.target.value as Persona)}>
-                  <option value="operator">Operator / evidence auditor</option>
-                  <option value="payer">Payer client</option>
-                  <option value="payee">Payee / gateway operator</option>
-                  <option value="auditor">Security auditor</option>
+                  <option value="operator">Full payment flow</option>
+                  <option value="payer">Payer perspective</option>
+                  <option value="payee">Payee perspective</option>
+                  <option value="auditor">Read-only audit</option>
                 </select>
               </label>
               <label className="field" htmlFor="settings-density">
@@ -120,6 +120,7 @@ export function SettingsDrawer() {
             <div className="settings-note">
               <strong>{consolePersonas[ev.persona].title}</strong>
               <br />{consolePersonas[ev.persona].summary}
+              <br /><span className="settings-clarification">This changes action availability and log emphasis only. It is not identity, wallet selection, authentication, or RBAC.</span>
             </div>
           </section>
 

@@ -11,6 +11,7 @@ import {
   battlecodeEntryPrice,
   battlecodeLedgerHealth,
   battlecodeLedgerPath,
+  battlecodeStatus,
   createBattlecodeSubmission,
   issueBattlecodeTicket,
   normalizeBattlecodeRegistration,
@@ -127,6 +128,34 @@ describe("Battlecode tournament helpers", () => {
           awards: 0
         }
       });
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
+  it("reports Battlecode runtime capabilities independently", async () => {
+    const root = await mkdtemp(join(tmpdir(), "fiber-paid-http-battlecode-status-"));
+    try {
+      const toolchain = await createBattlecodeToolchainFixture(root);
+      const scaffold = join(root, "battlecode25-scaffold", "java");
+      await mkdir(join(scaffold, "src"), { recursive: true });
+      await writeFile(join(scaffold, "build.gradle"), "apply plugin: 'java'\n");
+      await writeFile(join(scaffold, "gradlew"), "#!/bin/sh\n");
+      await writeFile(join(scaffold, "engine_version.txt"), "1.0.0\n");
+      const status = await battlecodeStatus(root, {
+        HOME: root,
+        BATTLECODE_DIR: scaffold,
+        BATTLECODE_JDK_HOME: toolchain.jdkHome,
+        BATTLECODE_ENGINE_JAR: toolchain.engineJar,
+        BATTLECODE_ENGINE_VERSION: toolchain.engineVersion
+      }) as {
+        readiness: Record<string, { status: string; mode?: string }>;
+      };
+      expect(status.readiness.scaffold!.status).toBe("ready");
+      expect(status.readiness.jdk!.status).toBe("ready");
+      expect(status.readiness.engineJar!.status).toBe("ready");
+      expect(status.readiness.fiberPayment!.status).toBe("unconfigured");
+      expect(status.readiness.prizeSettlement!.mode).toBe("local-ledger");
     } finally {
       await rm(root, { recursive: true, force: true });
     }

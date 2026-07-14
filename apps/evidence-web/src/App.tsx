@@ -46,6 +46,10 @@ function ConsoleApp() {
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [mobileNavOpen]);
 
+  useEffect(() => {
+    document.getElementById("main-content")?.scrollTo({ top: 0 });
+  }, [ev.workspaceTab]);
+
   const closeMobileNav = (focusMain = false) => {
     setMobileNavOpen(false);
     requestAnimationFrame(() => {

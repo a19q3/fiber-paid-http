@@ -94,6 +94,9 @@ try {
 async function runSmoke(client, apiBase, webUrl) {
   const steps = [];
   await waitFor(client, `document.querySelector("#api-state-text")?.textContent?.includes(${JSON.stringify(`connected ${apiBase}`)})`, "connected API state");
+  await waitFor(client, `document.querySelector(".console")?.dataset.workspace === "overview"`, "overview is the default workspace");
+  assertSmoke(await client.evaluate(`document.querySelector('[data-overview="gateway-lab"] h2')?.textContent?.includes("replay-safe HTTP delivery")`), "overview must state the enforcement outcome");
+  assertSmoke(await client.evaluate(`document.querySelectorAll("#overview-readiness [data-readiness-state]").length === 3`), "overview must derive three readiness states");
   steps.push(await snapshot(client, "connected-api"));
 
   await client.evaluate(`document.querySelector("#open-settings")?.focus()`);
@@ -159,7 +162,7 @@ async function runSmoke(client, apiBase, webUrl) {
   await click(client, "#open-settings");
   await waitFor(client, `Boolean(document.querySelector("#settings-overlay"))`, "settings open");
   await client.evaluate(`document.querySelector("#settings-persona").value = "auditor"; document.querySelector("#settings-persona").dispatchEvent(new Event("change", { bubbles: true }))`);
-  await waitFor(client, `document.querySelector(".settings-note")?.textContent?.includes("Security auditor")`, "persona change rendered");
+  await waitFor(client, `document.querySelector(".settings-note")?.textContent?.includes("Read-only audit") && document.querySelector(".settings-note")?.textContent?.includes("not identity")`, "protocol perspective rendered");
   await click(client, "#close-settings");
   await waitFor(client, `!document.querySelector("#settings-overlay")`, "settings closed");
   steps.push(await snapshot(client, "settings-roundtrip"));
@@ -170,6 +173,22 @@ async function runSmoke(client, apiBase, webUrl) {
   await waitFor(client, `document.querySelector("#json")?.textContent?.includes('"reference"') && document.querySelector("#json")?.textContent?.includes('"challengeId"')`, "payment receipt evidence tab");
   steps.push(await snapshot(client, "evidence-tab"));
   assertCompletedFlowEvidence(completedFlowEvidence);
+
+  await click(client, '[data-workspace-tab="tournament"]');
+  await waitFor(client, `document.querySelector(".console")?.dataset.workspace === "tournament"`, "examples workspace");
+  await waitFor(client, `document.querySelectorAll("#battlecode-readiness [data-capability-state]").length === 5`, "Battlecode capability status");
+  await waitFor(client, `Array.from(document.querySelectorAll("#battlecode-readiness [data-capability-state]")).every((node) => node.dataset.capabilityState !== "CHECKING")`, "Battlecode capability status settled");
+  const exampleStates = await client.evaluate(`Object.fromEntries(Array.from(document.querySelectorAll("#battlecode-readiness [data-capability]")).map((node) => [node.dataset.capability, node.dataset.capabilityState]))`);
+  assertSmoke(exampleStates.scaffold === "BLOCKED"
+    && exampleStates["jdk-21"] === "BLOCKED"
+    && exampleStates["engine-jar"] === "BLOCKED"
+    && exampleStates["fiber-payment"] === "UNCONFIGURED"
+    && exampleStates["prize-mode"] === "LOCAL LEDGER", `Examples must expose deterministic blockers and local prize mode: ${JSON.stringify(exampleStates)}`);
+  assertSmoke(await client.evaluate(`document.querySelector('[data-panel-id="example-input"] .btn.primary')?.disabled === true`), "bot lock must remain disabled without JDK 21 and the engine jar");
+  const examplesText = await client.evaluate(`document.querySelector(".app-main")?.textContent?.replace(/\\s+/g, " ").trim() || ""`);
+  const pendingIndex = examplesText.indexOf("pending");
+  assertSmoke(!examplesText.includes("Battlecode 2025") && pendingIndex === -1, `Examples must not fabricate an engine or pending evidence: ${examplesText.slice(Math.max(0, pendingIndex - 160), pendingIndex + 240)}`);
+  steps.push(await snapshot(client, "examples-blocked-runtime"));
 
   await click(client, '[data-workspace-tab="bootstrap"]');
   const refreshTimestampBefore = await client.evaluate(`document.querySelector("#refresh-bootstrap")?.dataset.lastRefreshedAt || ""`);
@@ -344,6 +363,10 @@ function deterministicApiEnv(port) {
   ]) {
     delete env[key];
   }
+  env.BATTLECODE_DIR = resolve(repoRoot, ".tmp/browser-smoke-missing-scaffold");
+  env.BATTLECODE_JDK_HOME = resolve(repoRoot, ".tmp/browser-smoke-missing-jdk-21");
+  env.BATTLECODE_ENGINE_JAR = resolve(repoRoot, ".tmp/browser-smoke-missing-engine.jar");
+  env.BATTLECODE_AWARD_SETTLEMENT = "local-ledger";
   return env;
 }
 
