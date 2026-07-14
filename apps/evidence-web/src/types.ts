@@ -1,6 +1,6 @@
 export type Persona = "operator" | "payer" | "payee" | "auditor";
 export type Density = "standard" | "compact";
-export type WorkspaceTab = "bootstrap" | "flow" | "tournament" | "evidence" | "attacks" | "network";
+export type WorkspaceTab = "overview" | "bootstrap" | "flow" | "tournament" | "evidence" | "attacks" | "network";
 export type Phase =
   | "idle"
   | "unpaid_request_sent"

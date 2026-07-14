@@ -15,6 +15,7 @@ import { BootstrapView } from "./views/BootstrapView.js";
 import { EvidenceView } from "./views/EvidenceView.js";
 import { AttacksView } from "./views/AttacksView.js";
 import { NetworkView } from "./views/NetworkView.js";
+import { OverviewView } from "./views/OverviewView.js";
 
 function ConsoleApp() {
   const ev = useEvidence();
@@ -82,6 +83,7 @@ function ConsoleApp() {
         <Sidebar onNavigate={mobileViewport ? () => closeMobileNav(true) : undefined} />
         <button type="button" className="mobile-nav-backdrop" aria-label="Close navigation" onClick={() => closeMobileNav()} />
         <main className="app-main" id="main-content" tabIndex={-1} inert={mobileNavOpen ? true : undefined} aria-hidden={mobileNavOpen ? true : undefined}>
+          {ev.workspaceTab === "overview" && <OverviewView />}
           {ev.workspaceTab === "flow" && <FlowView />}
           {ev.workspaceTab === "tournament" && <TournamentView />}
           {ev.workspaceTab === "bootstrap" && <BootstrapView />}

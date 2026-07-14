@@ -25,20 +25,24 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <nav className="app-sidebar" id="workspace-navigation" aria-label="Workspace navigation">
       <div className="sidebar-section">
-        <div className="sidebar-label">Navigation</div>
-        {workspaceTabs.map((tab) => (
-          <button
-            key={tab.id}
-            className={"nav-item" + (ev.workspaceTab === tab.id ? " active" : "")}
-            data-workspace-tab={tab.id}
-            onClick={() => {
-              ev.setWorkspaceTab(tab.id as WorkspaceTab);
-              onNavigate?.();
-            }}
-          >
-            <Icon name={tab.icon as never} />
-            <span>{tab.label}</span>
-          </button>
+        {["Build", "Verify", "Explore", "Operate"].map((group) => (
+          <div className="nav-group" key={group}>
+            <div className="sidebar-label">{group}</div>
+            {workspaceTabs.filter((tab) => tab.group === group).map((tab) => (
+              <button
+                key={tab.id}
+                className={"nav-item" + (ev.workspaceTab === tab.id ? " active" : "")}
+                data-workspace-tab={tab.id}
+                onClick={() => {
+                  ev.setWorkspaceTab(tab.id as WorkspaceTab);
+                  onNavigate?.();
+                }}
+              >
+                <Icon name={tab.icon as never} />
+                <span>{tab.label}</span>
+              </button>
+            ))}
+          </div>
         ))}
       </div>
       <div className="sidebar-section status-cluster">

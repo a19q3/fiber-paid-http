@@ -137,6 +137,12 @@ interface EvidenceContextValue extends EvidenceState {
 
 const EvidenceContext = createContext<EvidenceContextValue | null>(null);
 
+const WORKSPACE_TABS = new Set<WorkspaceTab>(["overview", "flow", "evidence", "attacks", "tournament", "bootstrap", "network"]);
+
+function savedWorkspaceTab(tab: WorkspaceTab | undefined): WorkspaceTab {
+  return tab && WORKSPACE_TABS.has(tab) ? tab : "overview";
+}
+
 export function useEvidence(): EvidenceContextValue {
   const ctx = useContext(EvidenceContext);
   if (!ctx) throw new Error("useEvidence must be used within EvidenceProvider");
@@ -264,7 +270,7 @@ export function EvidenceProvider({
     refreshing: false,
     autoRefresh: savedPrefs.autoRefresh !== false,
     reports: {},
-    workspaceTab: (savedPrefs.workspaceTab || "flow") as WorkspaceTab,
+    workspaceTab: savedWorkspaceTab(savedPrefs.workspaceTab),
     persona: mergeConsoleSettings(savedPrefs.consoleSettings).persona,
     density: mergeConsoleSettings(savedPrefs.consoleSettings).density,
     settingsOpen: false,

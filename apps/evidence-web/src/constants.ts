@@ -20,12 +20,13 @@ export const evidenceTabs = [
 ] as const;
 
 export const workspaceTabs = [
-  { id: "flow", label: "Flow", icon: "Timeline" },
-  { id: "bootstrap", label: "Bootstrap", icon: "FiberNetwork" },
-  { id: "tournament", label: "Tournament", icon: "Tournament" },
-  { id: "evidence", label: "Evidence", icon: "Evidence" },
-  { id: "attacks", label: "Attacks", icon: "AttackReplay" },
-  { id: "network", label: "Network", icon: "FiberNetwork" },
+  { id: "overview", label: "Overview", icon: "Overview", group: "Build" },
+  { id: "flow", label: "Live flow", icon: "Timeline", group: "Build" },
+  { id: "evidence", label: "Verifier", icon: "Evidence", group: "Verify" },
+  { id: "attacks", label: "Security", icon: "AttackReplay", group: "Verify" },
+  { id: "tournament", label: "Examples", icon: "Tournament", group: "Explore" },
+  { id: "bootstrap", label: "Runtime setup", icon: "FiberNetwork", group: "Operate" },
+  { id: "network", label: "Network health", icon: "Activity", group: "Operate" },
 ] as const;
 
 export interface ReportEntry {
@@ -54,20 +55,20 @@ export const reportDisplayList: ReadonlyArray<{ key: string; file: string }> = r
 
 export const consolePersonas: Record<Persona, { title: string; summary: string }> = {
   operator: {
-    title: "Operator / evidence auditor",
-    summary: "Runs the full 402 -> Fiber payment -> receipt -> replay rejection evidence flow across payer, payee, and gateway roles.",
+    title: "Full payment flow",
+    summary: "Shows and enables the complete 402 -> Fiber payment -> receipt -> replay rejection sequence across client, Fiber, gateway, and upstream.",
   },
   payer: {
-    title: "Payer client",
-    summary: "Prioritizes the protected request, payer wallet profile, amount, and Authorization: Payment retry path.",
+    title: "Payer perspective",
+    summary: "Emphasizes the protected request, payer profile, amount, payment execution, and Authorization: Payment retry path.",
   },
   payee: {
-    title: "Payee / gateway operator",
-    summary: "Prioritizes invoice issuance, protected resource verification, receipt issuance, and replay-store evidence.",
+    title: "Payee perspective",
+    summary: "Emphasizes invoice issuance, protected resource verification, receipt issuance, and replay-store evidence.",
   },
   auditor: {
-    title: "Security auditor",
-    summary: "Prioritizes evidence artifacts, canonical parity, bootstrap blockers, and replay rejection records.",
+    title: "Read-only audit",
+    summary: "Exposes evidence artifacts, canonical parity, runtime blockers, and replay rejection records without executing payment actions.",
   },
 };
 
@@ -95,7 +96,7 @@ export function personaCan(persona: Persona, action: string): boolean {
 export function personaActionReason(persona: Persona, action: string): string {
   if (personaCan(persona, action)) return "";
   const title = consolePersonas[persona]?.title || persona;
-  return `${title} cannot ${personaActionLabels[action] || action}; switch to Operator if this is an intentional cross-role operation.`;
+  return `${title} cannot ${personaActionLabels[action] || action}; switch to Full payment flow if this is an intentional cross-role operation.`;
 }
 
 export function mergeConsoleSettings(value: unknown): { persona: Persona; density: Density } {

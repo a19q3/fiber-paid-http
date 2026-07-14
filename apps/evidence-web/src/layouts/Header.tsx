@@ -30,9 +30,12 @@ export function Header({ onToggleSidebar, navigationExpanded, onOpenPrefs }: Hea
       <div className="header-brand">
         <div className="header-mark" />
         <div>
-          <h1>Fiber Paid HTTP Evidence Console <span className="header-version">MPP</span></h1>
-          <p>Machine Payments Protocol over Fiber</p>
+          <h1>Fiber Paid HTTP <span className="header-version">Gateway Lab</span></h1>
+          <p>Turn Fiber settlement into replay-safe HTTP delivery.</p>
         </div>
+      </div>
+      <div className="header-protocol-tags" aria-label="Protocol boundaries">
+        <span>MPP draft</span><span>Fiber settlement</span><span>Rust verified</span>
       </div>
       <div className="header-spacer" />
       <div className="header-tools">
