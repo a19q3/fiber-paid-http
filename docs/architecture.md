@@ -4,6 +4,8 @@
 
 Rust is the production verification boundary. TypeScript is SDK, Evidence Console, adapters, and conformance tooling. The canonical gate asserts `typescript_trusted_boundary: false`.
 
+The browser UI is the **Fiber Paid HTTP Gateway Lab**. Backend integrators, service operators, judges, and auditors use it to exercise and inspect the gateway. It is not a wallet, participant application, Fiber node control plane, or machine-facing runtime. Automated clients integrate through HTTP and the SDKs.
+
 ```mermaid
 flowchart LR
     C[Client] -->|MPP HTTP| G[Rust gateway]
@@ -12,6 +14,8 @@ flowchart LR
     G -->|authorized request| U[Upstream]
     A[F402, F-L402, or x402 v2 input] -->|explicit mapping| G
 ```
+
+The diagram has one enforcement path. Adapters normalize input before the Rust verifier; none owns settlement, redemption, upstream delivery, or receipt issuance.
 
 ## Components
 
@@ -47,3 +51,5 @@ The upstream response cannot inject `Payment-Receipt`; the gateway strips it. A 
 ## Compatibility
 
 F402, F-L402, and x402 v2 are boundary adapters only. They terminate before the canonical credential verifier, so they cannot bypass Fiber settlement, resource binding, atomic redemption, or receipt-on-success rules. The x402 package also maps a successful MPP receipt to a `SettleResponse`; it never settles funds itself.
+
+MPP remains the primary draft wire contract and `fiber` remains a proposed method profile. x402 is an independent compatibility boundary, not another name for MPP. F-L402 is experimental and disabled unless an operator explicitly configures it.

@@ -1,6 +1,6 @@
 # Service Metering On Fiber
 
-Fiber Paid HTTP targets the service-metering slice of the Merchant, Liquidity, LSP, and Multi-Asset Infrastructure category.
+Fiber Paid HTTP targets **Category 3: Merchant, Liquidity, LSP, and Multi-Asset Infrastructure**, specifically the service-metering and paid HTTP delivery slice.
 
 The infrastructure gap is simple: Fiber can settle fast off-chain payments, but most API and service developers do not want to write their own payment gateway, receipt verifier, replay store, Fiber RPC polling loop, compatibility adapters, and audit evidence pipeline before they can charge for a resource.
 
@@ -19,7 +19,7 @@ A metered service needs more than "return a `402`":
 - production operations around readiness, metrics, storage, and paid-but-denied reconciliation;
 - compatibility paths for nearby paid-HTTP envelopes.
 
-These are infrastructure concerns, not product UX. Wallets, checkouts, marketplaces, agents, and merchants can all sit above this layer.
+These are infrastructure concerns, not end-user product UX. Wallets, checkouts, marketplaces, agents, merchants, and games can all sit above this layer. The Gateway Lab exists to integrate and audit that layer; it is not the runtime interface used by a machine client.
 
 ## Why Fiber Fits
 
@@ -43,7 +43,15 @@ Fiber Paid HTTP deliberately does not own wallet custody, checkout UX, liquidity
 service request -> Fiber payment challenge -> Fiber settlement -> protected delivery -> receipt -> replay rejection
 ```
 
-That makes it a horizontal gateway for other Fiber applications rather than a competing vertical product.
+That makes it a horizontal gateway for other Fiber applications rather than a competing vertical product. FNN remains responsible for settlement, `fiber-pay` can provide payer or operations tooling, and application projects retain their own access, marketplace, and gameplay policy.
+
+The reusable enforcement sequence is invariant across supported ingress formats:
+
+1. bind the charge to the exact HTTP method, URL, body digest, amount, and payment hash;
+2. verify the corresponding Fiber settlement;
+3. atomically consume the credential once;
+4. forward the protected request;
+5. issue a receipt only after upstream `2xx` delivery.
 
 ## Evidence
 

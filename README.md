@@ -1,8 +1,12 @@
 # Fiber Paid HTTP
 
-Fiber Paid HTTP is a Rust-first paid HTTP gateway for the Fiber Network. It implements the current MPP `Payment` draft core and proposes a `fiber` charge-method profile using Fiber invoices and settlement.
+**Turn Fiber settlement into replay-safe HTTP delivery.**
+
+Fiber Paid HTTP is a Rust-first paid HTTP gateway for API developers and service operators. It implements the current MPP `Payment` draft core and proposes a `fiber` charge-method profile using Fiber invoices and settlement.
 
 The project has one production verifier: Rust. TypeScript provides the SDK, Evidence Console, vector generation, and explicit F402/F-L402 ingress adapters.
+
+The project is the server-side enforcement layer between a paid HTTP request and a protected upstream. It does not operate a Fiber node, authorize a payer's wallet, facilitate x402 settlement, or define application policy. The browser application is a Gateway Lab for integration, operations, and audit evidence; machines use the HTTP protocol and SDKs directly.
 
 ## What it does
 
@@ -88,6 +92,7 @@ A receipt is schema evidence for successful delivery. It is not a second payment
 - F-L402 is an experimental adapter, disabled by default; when explicitly enabled, it uses a project-scoped HMAC capability plus a Fiber preimage and maps into the same MPP-draft credential verifier.
 - Neither adapter changes settlement, resource binding, replay, delivery, or receipt rules.
 - No adapter is silently selected; each ingress has one explicit parser and terminates at the same verifier.
+- x402 v2 is an independent format adapter backed by the official codec. Fiber Paid HTTP is not an x402 facilitator and does not create a second settlement path.
 
 The envelope codecs are exercised bidirectionally against the pinned current SDKs `mppx 0.8.6` and Rust `mpp 0.10.4`.
 
@@ -166,4 +171,4 @@ The canonical gate compares TypeScript and Rust on every deterministic vector fo
 - `Payment-Receipt` is stripped from failed or forged upstream responses and emitted only after a protected `2xx` delivery.
 - Production readiness evidence is valid only for the recorded Fiber commit and current protocol receipt schema.
 
-See [protocol](docs/protocol.md), [Fiber method profile](docs/fiber-method.md), [architecture](docs/architecture.md), [security](docs/security.md), [production readiness](docs/production-readiness.md), and [hackathon submission](docs/hackathon-submission.md).
+See [positioning and ecosystem boundaries](docs/positioning.md), [protocol](docs/protocol.md), [Fiber method profile](docs/fiber-method.md), [architecture](docs/architecture.md), [security](docs/security.md), [production readiness](docs/production-readiness.md), and [hackathon submission](docs/hackathon-submission.md).

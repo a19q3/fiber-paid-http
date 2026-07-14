@@ -2,7 +2,15 @@
 
 ## One sentence
 
-Fiber Paid HTTP proposes and implements a Fiber charge-method profile for the current MPP draft, with a Rust production gateway, atomic replay protection, delivery-aware receipts, and a live evidence console.
+Fiber Paid HTTP turns Fiber settlement into replay-safe HTTP delivery through a Rust production gateway, a proposed Fiber charge-method profile for the current MPP draft, atomic replay protection, and delivery-aware receipts.
+
+## Category and users
+
+- **Category:** Category 3 — Merchant, Liquidity, LSP, and Multi-Asset Infrastructure.
+- **Infrastructure slice:** service metering and paid HTTP delivery.
+- **Primary users:** API developers and service operators.
+- **Evidence users:** judges and security auditors.
+- **Reference applications:** paid APIs, agent tools, and a Battlecode xUDT paid-entry flow.
 
 ## Problem
 
@@ -12,16 +20,17 @@ Fiber can settle fast channel payments, but an API still needs a precise HTTP co
 
 The gateway implements the current MPP-draft `Payment` challenge, credential, and receipt shapes. A Fiber invoice lives inside the `charge` request. The client pays through Fiber and echoes the exact challenge in its credential. The Rust gateway verifies the binding and Fiber settlement, consumes the challenge atomically in SQLite, calls the protected upstream, and emits a receipt only for `2xx` delivery.
 
-F402 and F-L402 are optional explicit entrances. F-L402 is experimental and disabled by default. They map into the same credential verifier and cannot create alternate replay or receipt rules.
+F402 and x402 v2 are optional explicit entrances. F-L402 is experimental and disabled by default. They map into the same credential verifier and cannot create alternate settlement, replay, delivery, or receipt rules. The project is not a facilitator and does not claim that MPP and x402 are the same protocol.
 
 ## Demo
 
-1. Select a protected resource in the Evidence Console.
+1. Open the Gateway Lab and select a protected resource.
 2. Send the unpaid request and inspect `WWW-Authenticate: Payment`.
 3. Pay the Fiber invoice.
 4. Retry with `Authorization: Payment` and observe the MPP-draft receipt.
 5. Replay the same credential and observe a fresh `402` with no second service execution.
 6. Open the parity view to inspect all 22 shared Rust/TypeScript fixtures.
+7. Open Examples to see which parts of the Battlecode reference integration are READY, BLOCKED, or UNCONFIGURED on the current machine.
 
 ## Engineering evidence
 
@@ -60,4 +69,4 @@ pnpm test:fiber
 
 ## Scope
 
-This project is payment infrastructure. It is not a wallet, marketplace, checkout UI, custody service, or Fiber node dashboard. The payer controls payment authorization; the gateway verifies payment and protects HTTP delivery.
+This project is payment infrastructure. FNN owns invoices, channels, routing, and settlement. Wallet and payer tooling owns payment authorization. Applications own product policy. Fiber Paid HTTP owns exact request binding, Fiber settlement verification, atomic redemption, protected delivery, and receipts. It is not a wallet, marketplace, checkout UI, custody service, Fiber node dashboard, x402 facilitator, or Battlecode participant platform.

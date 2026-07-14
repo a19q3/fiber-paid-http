@@ -1,6 +1,10 @@
 # Positioning
 
-Fiber Paid HTTP is a paid HTTP gateway and protocol toolkit. Its HTTP wire contract follows the current MPP draft; its proposed payment-method identifier is `fiber`; its production verifier is Rust.
+> Turn Fiber settlement into replay-safe HTTP delivery.
+
+Fiber Paid HTTP is a Rust-first paid HTTP gateway and proposed Fiber payment-method toolkit. Its primary users are API developers and service operators who need to charge for an HTTP resource without rebuilding request binding, settlement verification, replay storage, delivery accounting, and receipts. Judges and security auditors use the Gateway Lab to inspect the same boundary. Machines, robots, and agents use the HTTP contract and SDKs rather than the GUI.
+
+The product is the **server-side enforcement layer**, not the payment rail or an end-user application.
 
 | Layer | Role |
 | --- | --- |
@@ -11,8 +15,24 @@ Fiber Paid HTTP is a paid HTTP gateway and protocol toolkit. Its HTTP wire contr
 | F402 / F-L402 | Optional ingress mappings into the MPP-draft verifier; F-L402 is experimental and disabled by default |
 | x402 v2 | Independent `exact`/Fiber format converter using official HTTP codecs; not a facilitator or settlement path |
 
-The project does not define a competing paid-HTTP envelope. It also does not claim to be a wallet, checkout system, marketplace, custody service, or x402 node implementation.
+MPP and x402 are not presented as one canonical protocol. The current MPP draft is the primary wire contract. x402 v2 and F402 are explicit ingress adapters into the same Rust enforcement lifecycle; F-L402 remains experimental and disabled by default. `fiber` is a proposed project method profile, not a claimed registered or upstream-adopted method.
 
-The user-facing pitch is:
+## Ecosystem boundary
 
-> Put an MPP-draft paywall in front of any HTTP API and settle it through Fiber, with a Rust verifier and inspectable evidence.
+| Project or layer | Owns | Fiber Paid HTTP relationship |
+| --- | --- | --- |
+| Fiber Network Node (FNN) | Channels, routing, invoices, and off-chain settlement | Required payment rail; the gateway verifies its RPC settlement evidence |
+| `fiber-pay` | Node/payment lifecycle, CLI/SDK, payer and browser tooling | Optional payer or operations connector; never part of the trusted gateway verifier |
+| Fiber x402 backend/facilitator work | x402 facilitation and network-facing settlement services | Complementary; this project only converts supported x402 v2 input at its own ingress |
+| FiberLatch | Application-specific signed access receipts | Separate vertical service; not replaced or reimplemented here |
+| Infern | AI marketplace and F402 application policy | Example upstream/application that can reuse the gateway boundary |
+| Fiber L402/x402 demos | Paywall examples | Compatibility and integration references, not the production verifier |
+| Battlecode reference integration | Paid entry and prize demonstration | Example protected service; not the product or a participant platform |
+
+## Non-goals
+
+The project does not define a competing paid-HTTP envelope. It is not a Fiber node dashboard, wallet, checkout, custody service, marketplace, liquidity router, x402 facilitator, or Battlecode platform. It does not move payer authorization into the gateway and does not put `fiber-pay` or TypeScript inside the trusted verifier.
+
+The integration pitch is:
+
+> Protect an HTTP route, settle through Fiber, consume the credential once, and issue a receipt only after successful delivery.
