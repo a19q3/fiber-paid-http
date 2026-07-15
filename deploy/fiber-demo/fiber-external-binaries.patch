@@ -1,0 +1,42 @@
+diff --git a/tests/deploy/deploy.sh b/tests/deploy/deploy.sh
+index 89926954..4e2d23fb 100755
+--- a/tests/deploy/deploy.sh
++++ b/tests/deploy/deploy.sh
+@@ -28,7 +28,11 @@ fi
+ run_udt_init() {
+-    export NODES_DIR="$nodes_dir"
+-    (
+-        cd "$udt_init_dir" || exit 1
+-        cargo run -- "$@"
+-    )
++    if [[ -n "${FIBER_UDT_INIT_BIN:-}" ]]; then
++        NODES_DIR="$nodes_dir" "$FIBER_UDT_INIT_BIN" "$@"
++    else
++        export NODES_DIR="$nodes_dir"
++        (
++            cd "$udt_init_dir" || exit 1
++            cargo run -- "$@"
++        )
++    fi
+ }
+diff --git a/tests/nodes/start.sh b/tests/nodes/start.sh
+index 4f2b2b03..608382ef 100755
+--- a/tests/nodes/start.sh
++++ b/tests/nodes/start.sh
+@@ -97,5 +97,10 @@ if [[ -n "$fiber_build_features" ]]; then
+ if [[ -n "$fiber_build_features" ]]; then
+     echo "building fnn with features: $fiber_build_features"
+     build_args+=(--features "$fiber_build_features")
+ fi
+-cargo build "${build_args[@]}"
++if [[ -n "${FIBER_FNN_BIN:-}" ]]; then
++    echo "using prebuilt fnn at ${FIBER_FNN_BIN}"
++else
++    cargo build "${build_args[@]}"
++    FIBER_FNN_BIN="$(pwd)/target/${test_env}/fnn"
++fi
+@@ -108,3 +113,3 @@ start_fnn() {
+     echo "logging to ${log_file}"
+-    ../../target/"${test_env}"/fnn "$@" 2>&1 | tee "$log_file"
++    "$FIBER_FNN_BIN" "$@" 2>&1 | tee "$log_file"
+ }

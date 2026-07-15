@@ -1,0 +1,30 @@
+[Unit]
+Description=Isolated Fiber public demo evidence web
+After=network-online.target fiber-demo-sandbox-api.service
+Wants=network-online.target
+Requires=fiber-demo-sandbox-api.service
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/srv/fiber-public-demo/fiber-paid-http/apps/evidence-web
+EnvironmentFile=/etc/fiber-demo-sandbox.env
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+Environment=PORT=8878
+NetworkNamespacePath=/run/netns/fiber-demo-sandbox
+ExecStart=/usr/local/bin/node server.mjs
+Restart=on-failure
+RestartSec=5
+TimeoutStartSec=30
+TimeoutStopSec=15
+KillSignal=SIGTERM
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+MemoryMax=512M
+CPUQuota=100%
+
+[Install]
+WantedBy=multi-user.target

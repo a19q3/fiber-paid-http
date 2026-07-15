@@ -1,0 +1,12 @@
+[Unit]
+Description=Fiber public demo network namespace
+Before=fiber-demo-sandbox-network.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/fiber-demo-netns up
+ExecStop=/usr/local/sbin/fiber-demo-netns down
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,32 @@
+[Unit]
+Description=Isolated Fiber public demo CKB and FNN network
+After=network-online.target fiber-demo-netns.service
+Wants=network-online.target
+Requires=fiber-demo-netns.service
+Before=fiber-demo-sandbox-api.service
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/srv/fiber-public-demo/fiber-paid-http
+EnvironmentFile=/etc/fiber-demo-sandbox.env
+Environment=PATH=/usr/local/bin:/home/ubuntu/.cargo/bin:/usr/bin:/bin
+NetworkNamespacePath=/run/netns/fiber-demo-sandbox
+ExecStart=/usr/bin/bash scripts/fiber_local_network.sh up
+ExecStop=/usr/bin/bash scripts/fiber_local_network.sh stop
+RemainAfterExit=yes
+TimeoutStartSec=900
+TimeoutStopSec=90
+KillMode=control-group
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadOnlyPaths=/srv/fiber-public-demo/runtime/artifacts/fnn
+ReadOnlyPaths=/srv/fiber-public-demo/runtime/artifacts/udt-init
+MemoryMax=5G
+CPUQuota=400%
+
+[Install]
+WantedBy=multi-user.target
