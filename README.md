@@ -8,6 +8,15 @@ The project has one production verifier: Rust. TypeScript provides the SDK, Gate
 
 The project is the server-side enforcement layer between a paid HTTP request and a protected upstream. It does not operate a Fiber node, authorize a payer's wallet, facilitate x402 settlement, or define application policy. The browser application is a Gateway Lab for integration, operations, and audit evidence; machines use the HTTP protocol and SDKs directly.
 
+## Hackathon demo
+
+- **Hosted Gateway Lab:** [http://fiber.avato.online](http://fiber.avato.online)
+- **Video demonstration:** [Fiber Paid HTTP — Gone in 60ms demo](https://github.com/a19q3/fiber-paid-http/releases/download/v0.1.0-hackathon/fiber-paid-http-demo.mp4)
+- **Submission packet:** [docs/hackathon-submission.md](docs/hackathon-submission.md)
+- **Category:** Merchant, Liquidity, LSP, and Multi-Asset Infrastructure — service metering and paid HTTP delivery
+
+The hosted evaluator environment runs real FNN processes on an isolated local Fiber xUDT network with a funded demo payer. Preserved public-testnet and production-bootstrap evidence is committed under `reports/`. The hosted URL is an evaluator console, not a claim that the public endpoint itself is the recorded testnet run.
+
 ## What it does
 
 1. A client requests a protected HTTP resource.
