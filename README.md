@@ -17,6 +17,12 @@ The project is the server-side enforcement layer between a paid HTTP request and
 
 The hosted evaluator environment runs real FNN processes on an isolated local Fiber xUDT network with a funded demo payer. Preserved public-testnet and production-bootstrap evidence is committed under `reports/`. The hosted URL is an evaluator console, not a claim that the public endpoint itself is the recorded testnet run.
 
+### Screenshots
+
+| Bot source commitment | Fiber-paid entry and receipt | Battlecode replay |
+| --- | --- | --- |
+| [![Uploaded bot source is hashed and locked](docs/screenshots/battlecode-upload-lock.jpg)](docs/screenshots/battlecode-upload-lock.jpg) | [![Fiber payment hash, receipt reference, and entry ticket](docs/screenshots/fiber-paid-entry-receipt.jpg)](docs/screenshots/fiber-paid-entry-receipt.jpg) | [![Battlecode 2025 match replay](docs/screenshots/battlecode-match-replay.jpg)](docs/screenshots/battlecode-match-replay.jpg) |
+
 ## What it does
 
 1. A client requests a protected HTTP resource.

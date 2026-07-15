@@ -10,6 +10,7 @@ Fiber Paid HTTP turns Fiber settlement into replay-safe HTTP delivery through a 
 - **Hosted demo:** http://fiber.avato.online
 - **Video:** https://github.com/a19q3/fiber-paid-http/releases/download/v0.1.0-hackathon/fiber-paid-http-demo.mp4
 - **Runnable demo instructions:** this document and the repository `README.md`
+- **Screenshots:** https://github.com/a19q3/fiber-paid-http/tree/main/docs/screenshots
 
 ## Category and users
 
