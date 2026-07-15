@@ -2,7 +2,7 @@ import React from "react";
 import { useEvidence } from "../state/EvidenceContext.js";
 import { Icon } from "../components/Icon.js";
 import { fallbackEndpoints, personaActionReason } from "../constants.js";
-import { short, copyTextToClipboard, flowChallengeId, flowResourceHash } from "../lib/utils.js";
+import { short, copyTextToClipboard } from "../lib/utils.js";
 
 interface TimelineStep {
   actor: string;
@@ -26,7 +26,16 @@ function eventTime(events: { time: string; message: string; detail?: string }[],
   return event ? event.time.slice(11, 23) : undefined;
 }
 
-function isLiveFiberFlow(flow: { proof?: { mode?: string } | null }, status?: { livePaymentEnabled?: boolean; mode?: string }): boolean {
+function flowChallengeId(flow: { challengeId?: string; challengeBody?: { challengeId?: string; challenge?: { challengeId?: string } } | null }): string | undefined {
+  return flow.challengeId || flow.challengeBody?.challengeId || flow.challengeBody?.challenge?.challengeId;
+}
+
+function flowResourceHash(flow: { resourceHash?: string; credential?: { resourceHash?: string } | null; challengeBody?: { resourceHash?: string } | null }): string | undefined {
+  return flow.resourceHash || flow.credential?.resourceHash || flow.challengeBody?.resourceHash;
+}
+
+function isLiveFiberFlow(flow: { proof?: { mode?: string } | null; fiberChallenge?: unknown | null }, status?: { livePaymentEnabled?: boolean; mode?: string }): boolean {
+  if (flow.fiberChallenge) return true;
   const mode = flow.proof?.mode || (status?.livePaymentEnabled ? status?.mode : undefined);
   return mode === "local" || mode === "testnet";
 }
@@ -41,27 +50,21 @@ export function Timeline() {
   const proofMode = ev.flow?.proof?.mode || ev.status?.mode || "unconfigured";
 
   const mkStep = (actor: string, label: string, snippet: string, passed: boolean, icon: string, time?: string): TimelineStep => ({
-    actor, label, snippet: snippet || "not issued", status: passed ? "passed" : "idle", statusLabel: passed ? "passed" : "idle", time, icon,
+    actor, label, snippet: snippet || "pending", status: passed ? "passed" : "idle", statusLabel: passed ? "passed" : "idle", time, icon,
   });
 
-  let steps: TimelineStep[] = [
-    mkStep("CLIENT", "GET /paid/*resource", ev.selected, hasPhase(ev.phase, "challenge_received"), "ActorClient", eventTime(events, "GET")),
+  const steps: TimelineStep[] = [
+    mkStep("CLIENT / AGENT", "Request paid resource", `GET ${ev.selected}`, hasPhase(ev.phase, "challenge_received"), "ActorClient", eventTime(events, "GET")),
     mkStep("SERVER", "402 Payment Required", `challenge: ${short(challengeId)}`, hasPhase(ev.phase, "challenge_received"), "ActorServer", eventTime(events, "402")),
-    mkStep(liveFiberFlow ? "FIBER RPC" : "FIBER METHOD", liveFiberFlow ? "send_payment (invoice)" : "Live Fiber required", `payment_hash: ${short(paymentHash)}`, hasPhase(ev.phase, "payment_settled"), "ActorFiber", eventTime(events, liveFiberFlow ? "send_payment" : "payment proof")),
-    mkStep(liveFiberFlow ? "SETTLEMENT PROOF" : "METHOD VERIFIER", liveFiberFlow ? "Settlement observed" : "No payment executed", liveFiberFlow ? "settlement: success" : `mode: ${proofMode}`, hasPhase(ev.phase, "payment_settled"), "ActorFiber", eventTime(events, liveFiberFlow ? "payment proof returned" : "live Fiber")),
-    mkStep("CLIENT", "Retry with Authorization: Payment", `payment_hash: ${short(paymentHash)}`, hasPhase(ev.phase, "receipt_returned"), "ActorClient", eventTime(events, "retry")),
-    mkStep("SERVER", "Verify Payment & Receipt", `receipt_reference: ${short(receiptReference)}`, hasPhase(ev.phase, "receipt_returned"), "ActorServer", eventTime(events, "payment verified")),
-    mkStep("SERVER", "Payment-Receipt Returned", `challenge_id: ${short(ev.flow?.receipt?.challengeId)}`, hasPhase(ev.phase, "receipt_returned"), "ActorServer", eventTime(events, "service executed")),
-    mkStep("PROTECTED API", "Service executed", "HTTP 200 OK", hasPhase(ev.phase, "receipt_returned"), "ActorProtectedApi", eventTime(events, "service executed")),
-    {
-      actor: "CLIENT", label: "Replay same credential", snippet: `challenge_id: ${short(ev.flow?.receipt?.challengeId)}`,
-      status: hasPhase(ev.phase, "replay_rejected") ? "rejected" : ev.busy && ev.phase === ("replay_attempted" as never) ? "running" : "idle",
-      statusLabel: hasPhase(ev.phase, "replay_rejected") ? "replay rejected" : "idle",
-      time: eventTime(events, "replay rejected"), icon: "ActorClient",
-    },
+    mkStep(liveFiberFlow ? "PAYER FNN" : "FIBER METHOD", liveFiberFlow ? "Authorize & send invoice payment" : "Live Fiber required", `send_payment · ${short(paymentHash)}`, hasPhase(ev.phase, "payment_settled"), "ActorFiber", eventTime(events, liveFiberFlow ? "send_payment" : "payment proof")),
+    mkStep(liveFiberFlow ? "FIBER NETWORK" : "METHOD VERIFIER", liveFiberFlow ? "Observe settlement" : "No payment executed", liveFiberFlow ? "payment Success · invoice Paid" : `mode: ${proofMode}`, hasPhase(ev.phase, "payment_settled"), "ActorFiber", eventTime(events, liveFiberFlow ? "payment payload returned" : "live Fiber")),
+    mkStep("CLIENT / AGENT", "Resume request with payment credential", `Authorization: Payment · ${short(paymentHash)}`, hasPhase(ev.phase, "receipt_returned"), "ActorClient", eventTime(events, "continue with Authorization")),
+    mkStep("SERVER", "Verify payment credential", `receipt_reference: ${short(receiptReference)}`, hasPhase(ev.phase, "receipt_returned"), "ActorServer", eventTime(events, "payment verified")),
+    mkStep("PROTECTED API", "Execute protected service", "HTTP 200 OK", hasPhase(ev.phase, "receipt_returned"), "ActorProtectedApi", eventTime(events, "service executed")),
+    mkStep("SERVER", "Return response + Payment-Receipt", `receipt_reference: ${short(receiptReference)}`, hasPhase(ev.phase, "receipt_returned"), "ActorServer", eventTime(events, "Payment-Receipt returned")),
   ];
 
-  if (ev.phase !== "replay_rejected") {
+  if (!hasPhase(ev.phase, "receipt_returned")) {
     const idx = steps.findIndex((s) => s.status === "idle");
     if (idx >= 0) {
       steps[idx]!.current = true;
@@ -70,7 +73,7 @@ export function Timeline() {
   }
 
   return (
-    <div className="timeline" id="timeline" role="list" aria-label="Protocol payment evidence sequence">
+    <div className="timeline" id="timeline" role="list" aria-label="MPP payment transaction sequence">
       {steps.map((step, i) => {
         const status = step.status === "passed" ? "passed" : step.status === "rejected" ? "rejected" : step.status === "running" ? "running" : "";
         return (
@@ -90,11 +93,12 @@ export function FlowView() {
   const ev = useEvidence();
   const endpoints = ev.status?.endpoints || fallbackEndpoints;
   const selected = endpoints.find((e) => e.path === ev.selected) || fallbackEndpoints[0]!;
-  const challengeId = flowChallengeId(ev.flow) || "not issued";
-  const resourceHash = flowResourceHash(ev.flow) || "not issued";
+  const challengeId = flowChallengeId(ev.flow) || "pending";
+  const resourceHash = flowResourceHash(ev.flow) || "pending";
   const routeValue = ev.status?.localFiberNetwork?.route;
   const route = Array.isArray(routeValue) ? routeValue.map((name) => String(name)) : [];
   const apiUnavailable = ev.status?.mode === "api-unreachable";
+  const guidedMode = ev.flowMode === "guided";
 
   const profileReason = (() => {
     for (const role of ["payer", "payee", "gateway"] as const) {
@@ -109,18 +113,27 @@ export function FlowView() {
 
   const validationReason = ev.validation.ok ? "" : ev.validation.message;
   const sendReason = personaActionReason(ev.persona, "send") || (apiUnavailable ? "Evidence API unreachable." : validationReason || profileReason);
-  const payReason = personaActionReason(ev.persona, "pay") || (apiUnavailable ? "Evidence API unreachable." : validationReason || profileReason || (!ev.flow?.fiberChallenge ? "Send an unpaid request to receive a Fiber challenge first." : ""));
-  const retryReason = personaActionReason(ev.persona, "retry") || (apiUnavailable ? "Evidence API unreachable." : !ev.flow?.authorization ? "Pay with Fiber to create an Authorization: Payment credential first." : "");
-  const replayReason = personaActionReason(ev.persona, "replay") || (apiUnavailable ? "Evidence API unreachable." : !ev.flow?.authorization ? "A replay needs the same paid credential." : "");
-  const hintReason = [sendReason, payReason, retryReason, replayReason].filter(Boolean)[0] || "";
-
+  const paymentComplete = Boolean(ev.flow?.receipt);
   const replayRejected = ev.flow?.replayStatus === 402;
+  const replayAttempted = typeof ev.flow?.replayStatus === "number";
+  const replayFailed = replayAttempted && !replayRejected;
+  const payReason = personaActionReason(ev.persona, "pay") || (apiUnavailable ? "Evidence API unreachable." : validationReason || profileReason || (!ev.flow?.fiberChallenge ? "Send an unpaid request to receive a Fiber challenge first." : ev.flow?.authorization ? "Fiber payment is already settled for this challenge." : ""));
+  const continueReason = personaActionReason(ev.persona, "continue") || (apiUnavailable ? "Evidence API unreachable." : !ev.flow?.authorization ? "Pay with Fiber to create an Authorization: Payment credential first." : paymentComplete ? "Payment and service delivery are already complete." : "");
+  const replayReason = personaActionReason(ev.persona, "replay") || (apiUnavailable ? "Evidence API unreachable." : !paymentComplete ? "Complete the authenticated request and receive Payment-Receipt first." : replayRejected ? "Replay protection is already verified for this credential." : "");
+  const hintReason = [sendReason, payReason, guidedMode ? "" : continueReason].filter(Boolean)[0] || "";
+  const deliveryPending = Boolean(ev.flow?.authorization) && !paymentComplete;
+
   let hintTone = "warn";
   let hintText = hintReason || "Ready to send the unpaid request.";
-  if (replayRejected) { hintTone = "pass"; hintText = "Replay rejected; evidence flow is complete."; }
-  else if (ev.flow?.receipt) { hintTone = "pass"; hintText = "Payment receipt returned; replay test is now available."; }
-  else if (ev.flow?.authorization) { hintTone = "pass"; hintText = "Authorization: Payment is ready for retry."; }
-  else if (ev.flow?.fiberChallenge) { hintTone = ev.status?.livePaymentEnabled ? "pass" : "warn"; hintText = ev.status?.livePaymentEnabled ? "Fiber challenge ready; payer RPC can execute payment." : "Challenge present, but this process is not live Fiber ready."; }
+  if (ev.actionError) { hintTone = "fail"; hintText = ev.actionError; }
+  else if (paymentComplete) { hintTone = "pass"; hintText = "Payment complete: protected service delivered and receipt returned."; }
+  else if (deliveryPending) {
+    hintTone = ev.busy ? "pass" : "warn";
+    hintText = guidedMode
+      ? ev.busy ? "Payment settled; the SDK is resuming the protected request." : "Payment settled, but delivery did not finish. Resume delivery without paying again."
+      : "Payment settled. Continue with the credential in Manual Protocol mode.";
+  }
+  else if (ev.flow?.fiberChallenge) { hintTone = ev.status?.livePaymentEnabled ? "pass" : "warn"; hintText = ev.status?.livePaymentEnabled ? guidedMode ? "Challenge ready. Confirm payment; the SDK will resume the request automatically." : "Challenge ready. Execute the payer step, then continue manually with the credential." : "Challenge present, but this process is not live Fiber ready."; }
   else if (apiUnavailable) { hintTone = "fail"; hintText = "Evidence API unreachable; controls are disabled."; }
 
   return (
@@ -153,7 +166,7 @@ export function FlowView() {
               <div className="kv-row">
                 <span className="kv-label"><Icon name="Price" />Price</span>
                 <strong id="price">{ev.parameters.amountCkb} CKB</strong>
-                <button className="copy-btn" onClick={async () => { await copyTextToClipboard(`${ev.parameters.amountCkb} CKB`); }} aria-label="Copy price"><Icon name="Copy" /></button>
+                <button className="copy-btn" data-copy={`${ev.parameters.amountCkb} CKB`} onClick={async () => { await copyTextToClipboard(`${ev.parameters.amountCkb} CKB`); }} aria-label="Copy price"><Icon name="Copy" /></button>
               </div>
               <div className="kv-row">
                 <span className="kv-label"><Icon name="Method" />Method</span>
@@ -162,20 +175,12 @@ export function FlowView() {
               <div className="kv-row">
                 <span className="kv-label"><Icon name="ResourceHash" />Challenge ID</span>
                 <strong id="challenge-id">{challengeId}</strong>
-                <button className="copy-btn" onClick={async () => { await copyTextToClipboard(challengeId); }} aria-label="Copy challenge ID"><Icon name="Copy" /></button>
+                <button className="copy-btn" data-copy-target="challenge-id" onClick={async () => { await copyTextToClipboard(challengeId); }} aria-label="Copy challenge ID"><Icon name="Copy" /></button>
               </div>
               <div className="kv-row">
                 <span className="kv-label"><Icon name="ResourceHash" />Resource Hash</span>
                 <strong id="resource-hash">{resourceHash}</strong>
-                <button className="copy-btn" onClick={async () => { await copyTextToClipboard(resourceHash); }} aria-label="Copy resource hash"><Icon name="Copy" /></button>
-              </div>
-              <div className="kv-row">
-                <span className="kv-label"><Icon name="ActionPay" />Payment Hash</span>
-                <strong id="payment-hash">{ev.flow?.fiberChallenge?.paymentHash || "not recorded"}</strong>
-              </div>
-              <div className="kv-row">
-                <span className="kv-label"><Icon name="PaymentReceipt" />Receipt Reference</span>
-                <strong id="receipt-reference">{ev.flow?.receipt?.reference || "not recorded"}</strong>
+                <button className="copy-btn" data-copy-target="resource-hash" onClick={async () => { await copyTextToClipboard(resourceHash); }} aria-label="Copy resource hash"><Icon name="Copy" /></button>
               </div>
               <div className="kv-row">
                 <span className="kv-label"><Icon name="Route" />Route</span>
@@ -202,19 +207,43 @@ export function FlowView() {
         </div>
 
         <div className="purchase-action">
-          <div className="actions btn-row" id="flow-actions">
-            <button className="btn" id="send" disabled={ev.busy || Boolean(sendReason)} onClick={() => ev.runAction("unpaid")}>
-              <Icon name="ActionSend" /><span>Send unpaid</span><span className="key">Ctrl+U</span>
+          <div className="flow-mode-switch" role="group" aria-label="Evidence flow mode">
+            <span>Run mode</span>
+            <button id="flow-mode-guided" className={guidedMode ? "active" : ""} aria-pressed={guidedMode} disabled={ev.busy} onClick={() => ev.setFlowMode("guided")}>Guided demo</button>
+            <button id="flow-mode-manual" className={!guidedMode ? "active" : ""} aria-pressed={!guidedMode} disabled={ev.busy} onClick={() => ev.setFlowMode("manual")}>Manual protocol</button>
+          </div>
+          <div className="protocol-run-context">
+            <span>{guidedMode ? "Video-ready guided flow" : "Protocol debugger · not product SOP"}</span>
+            <p>{guidedMode ? "Two intentional actions: request the resource, then approve payment. The SDK resumes delivery automatically." : "Exposes credential continuation as a separate step for protocol inspection and troubleshooting."}</p>
+          </div>
+          <div className={`actions protocol-action-grid ${guidedMode ? "guided" : "manual"}`} id="flow-actions">
+            <button className={"btn protocol-action-step" + (ev.activeAction === "unpaid" ? " is-busy" : "")} id="send" disabled={ev.busy || Boolean(sendReason)} onClick={() => ev.runAction("unpaid")}>
+              <span className="protocol-step-index">1</span>
+              <Icon name="ActionSend" />
+              <span className="protocol-step-copy"><small>Client / AI Agent</small><strong>{ev.activeAction === "unpaid" ? "Requesting…" : "Request paid resource"}</strong><em>Unauthenticated HTTP request</em></span>
+              <span className="key">Ctrl+U</span>
             </button>
-            <button className="btn primary" id="pay" disabled={ev.busy || Boolean(payReason)} onClick={() => ev.runAction("pay")}>
-              <Icon name="ActionPay" /><span>Pay with Fiber</span><span className="key">Ctrl+P</span>
+            <button className={"btn primary protocol-action-step" + (ev.activeAction === "pay" ? " is-busy" : "")} id="pay" disabled={ev.busy || Boolean(payReason)} onClick={() => ev.runAction("pay")}>
+              <span className="protocol-step-index">2</span>
+              <Icon name="ActionPay" />
+              <span className="protocol-step-copy"><small>Payer FNN · Wallet</small><strong>{ev.activeAction === "pay" ? ev.phase === "payment_settled" ? "Delivering protected response…" : "Paying through Payer FNN…" : "Pay with Fiber"}</strong><em>{guidedMode ? "Pay once; SDK resumes delivery" : "Authorize and send invoice payment"}</em></span>
+              <span className="key">Ctrl+P</span>
             </button>
-            <button className="btn" id="retry" disabled={ev.busy || Boolean(retryReason)} onClick={() => ev.runAction("retry")}>
-              <Icon name="ActionRetry" /><span>Retry w/ Auth</span><span className="key">Ctrl+R</span>
-            </button>
-            <button className="btn danger" id="replay" disabled={ev.busy || Boolean(replayReason)} onClick={() => ev.runAction("replay")}>
-              <Icon name="ActionReplay" /><span>Replay credential</span><span className="key">Ctrl+Y</span>
-            </button>
+            {!guidedMode && (
+              <button className={"btn protocol-action-step" + (ev.activeAction === "continue" ? " is-busy" : "")} id="continue" disabled={ev.busy || Boolean(continueReason)} onClick={() => ev.runAction("continue")}>
+                <span className="protocol-step-index">3</span>
+                <Icon name="ActionRetry" />
+                <span className="protocol-step-copy"><small>Client / AI Agent · Debug</small><strong>{ev.activeAction === "continue" ? "Continuing with credential…" : "Continue with credential"}</strong><em>Manual protocol inspection only</em></span>
+                <span className="key">Ctrl+R</span>
+              </button>
+            )}
+            {guidedMode && deliveryPending && !ev.busy && (
+              <button className="btn protocol-action-step recovery" id="resume-delivery" disabled={Boolean(continueReason)} onClick={() => ev.runAction("continue")}>
+                <span className="protocol-step-index">↻</span>
+                <Icon name="ActionRetry" />
+                <span className="protocol-step-copy"><small>Recovery · no new payment</small><strong>Resume delivery</strong><em>Reuse the settled credential</em></span>
+              </button>
+            )}
           </div>
           <div className={"action-hint " + hintTone} id="action-hint">
             <Icon name={hintTone === "pass" ? "StatusPassed" : hintTone === "fail" ? "StatusFailed" : "StatusUnavailable"} />
@@ -224,9 +253,35 @@ export function FlowView() {
       </div>
 
       <div className="panel timeline-panel" data-panel-id="timeline">
-        <div className="panel-title"><Icon name="Timeline" /> Protocol Flow Timeline</div>
+        <div className="panel-title">
+          <Icon name="Timeline" /> MPP payment flow
+          <span className={"chip " + (paymentComplete ? "green" : "orange")} id="payment-completion-state">
+            {paymentComplete ? "COMPLETE" : "IN PROGRESS"}
+          </span>
+        </div>
         <div className="panel-body">
           <Timeline />
+          <section className={"security-check " + (replayRejected ? "verified" : replayFailed ? "failed" : paymentComplete ? "ready" : "locked")} id="replay-security-check" aria-labelledby="replay-security-title">
+            <div className="security-check-copy">
+              <span>Post-transaction security check · optional</span>
+              <strong id="replay-security-title">Single-use credential replay protection</strong>
+              <p>
+                {replayRejected
+                  ? "Verified: reusing the consumed credential returned HTTP 402 without reissuing a receipt or executing the service."
+                  : replayFailed
+                    ? `Expected HTTP 402, but the replay request returned HTTP ${ev.flow?.replayStatus}. Inspect the event log.`
+                    : paymentComplete
+                      ? "The payment transaction is already complete. Run this separate check to prove the consumed credential cannot be reused."
+                      : "Locked until the authenticated request returns Payment-Receipt and completes service delivery."}
+              </p>
+            </div>
+            <span className={"chip " + (replayRejected ? "green" : replayFailed ? "red" : paymentComplete ? "cyan" : "orange")} id="replay-security-state">
+              {replayRejected ? "VERIFIED" : replayFailed ? "FAILED" : paymentComplete ? "READY" : "LOCKED"}
+            </span>
+            <button className="btn" id="replay" disabled={ev.busy || Boolean(replayReason)} onClick={() => ev.runAction("replay")} title={replayReason || "Send the consumed credential again and expect HTTP 402"}>
+              <Icon name="ActionReplay" /><span>Test replay protection</span><span className="key">Ctrl+Y</span>
+            </button>
+          </section>
         </div>
       </div>
     </>

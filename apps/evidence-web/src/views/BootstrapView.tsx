@@ -44,14 +44,7 @@ export function BootstrapView() {
       <div className="workspace-header">
         <div className="workspace-title"><Icon name="FiberNetwork" /> Production Bootstrap</div>
         <div className="btn-row">
-          <button
-            className={"btn" + (ev.refreshing ? " is-busy" : "")}
-            id="refresh-bootstrap"
-            data-refreshing={ev.refreshing ? "true" : "false"}
-            data-last-refreshed-at={ev.lastRefreshedAt || ""}
-            disabled={ev.busy || ev.refreshing}
-            onClick={() => ev.refreshAll("bootstrap refresh")}
-          >
+          <button className="btn" id="refresh-bootstrap" disabled={ev.busy} onClick={() => ev.refreshAll("bootstrap refresh")}>
             <Icon name="ActionRetry" /> Refresh checks
           </button>
           <button className="btn" onClick={() => ev.setSettingsOpen(true)}>

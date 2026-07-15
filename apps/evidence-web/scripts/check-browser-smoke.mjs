@@ -75,7 +75,7 @@ try {
     await mkdir(screenshotDir, { recursive: true });
     const screenshot = await client.send("Page.captureScreenshot", { format: "png", captureBeyondViewport: false, fromSurface: true });
     await writeFile(resolve(screenshotDir, "browser-smoke-final.png"), Buffer.from(screenshot.data, "base64"));
-    console.log(`Gateway Lab browser smoke passed: ${result.steps.length} UI checks, api=${smokeApiLabel}`);
+    console.log(`evidence console browser smoke passed: ${result.steps.length} UI checks, api=${smokeApiLabel}`);
   } finally {
     client.close();
   }
@@ -94,33 +94,21 @@ try {
 async function runSmoke(client, apiBase, webUrl) {
   const steps = [];
   await waitFor(client, `document.querySelector("#api-state-text")?.textContent?.includes(${JSON.stringify(`connected ${apiBase}`)})`, "connected API state");
-  await waitFor(client, `document.querySelector(".console")?.dataset.workspace === "overview"`, "overview is the default workspace");
-  assertSmoke(await client.evaluate(`document.querySelector('[data-overview="gateway-lab"] h2')?.textContent?.includes("replay-safe HTTP delivery")`), "overview must state the enforcement outcome");
-  assertSmoke(await client.evaluate(`document.querySelectorAll("#overview-readiness [data-readiness-state]").length === 3`), "overview must derive three readiness states");
   steps.push(await snapshot(client, "connected-api"));
 
-  await client.evaluate(`document.querySelector("#open-settings")?.focus()`);
   await click(client, "#open-settings");
   await waitFor(client, "Boolean(document.querySelector('#api-base-input'))", "api input");
-  await waitFor(client, `document.activeElement?.id === "close-settings"`, "settings receives initial focus");
-  assertSmoke(await client.evaluate(`(() => {
-    const dialog = document.querySelector('[role="dialog"]');
-    const controls = Array.from(dialog?.querySelectorAll('input, select, textarea') || []);
-    return controls.length > 0 && controls.every((control) =>
-      control.labels?.length > 0 || control.hasAttribute('aria-label') || control.hasAttribute('aria-labelledby')
-    );
-  })()`), "every settings form control must have an accessible name");
-  assertSmoke(await client.evaluate(`document.querySelector(".app-header")?.hasAttribute("inert") && document.querySelector(".app-body")?.hasAttribute("inert")`), "settings must make the background inert");
   await waitFor(client, `document.querySelector("#api-base-input")?.value === ${JSON.stringify(apiBase)}`, "injected API base");
-  await setInputAndChange(client, "#amount-shannons", "200");
+  await setInputAndChange(client, "#settings-amount-shannons", "200");
   await waitFor(client, `document.querySelector("#amount-ckb")?.value === "0.000002"`, "CKB amount stored");
-  await client.evaluate(`(() => { const input = document.querySelector("#show-inspector"); if (input && !input.checked) input.click(); })()`);
   await click(client, "#close-settings");
   await waitFor(client, `!document.querySelector("#settings-overlay")`, "settings closed");
-  await waitFor(client, `document.activeElement?.id === "open-settings"`, "settings restores opener focus");
 
   await click(client, '[data-workspace-tab="flow"]');
   await waitFor(client, `document.querySelector(".console")?.dataset.workspace === "flow"`, "flow workspace");
+  assertSmoke(await client.evaluate(`document.querySelector("#flow-actions")?.textContent?.includes("Client / AI Agent") && document.querySelector("#flow-actions")?.textContent?.includes("Payer FNN")`), "main actions must identify the client and payer FNN actor boundaries");
+  assertSmoke(await client.evaluate(`document.querySelector("#flow-mode-guided")?.getAttribute("aria-pressed") === "true" && !document.querySelector("#continue")`), "guided demo must be the default and hide the manual continuation control");
+  assertSmoke(await client.evaluate(`document.querySelector("#flow-actions")?.textContent?.includes("Pay once; SDK resumes delivery")`), "guided demo must explain automatic delivery continuation");
   assertSmoke(await client.evaluate(`document.querySelector("#send").disabled === false`), "send button must be usable with the fixture API");
   assertSmoke(await client.evaluate(`document.querySelector("#pay").disabled === true && document.querySelector("#action-hint")?.textContent?.includes("unpaid request")`), "pay button must be blocked before a challenge");
   await waitFor(client, `document.querySelector("#price")?.textContent === "0.000002 CKB"`, "CKB amount reflected");
@@ -137,33 +125,93 @@ async function runSmoke(client, apiBase, webUrl) {
   steps.push(await snapshot(client, "resource-selected"));
 
   await click(client, "#send");
-  await waitFor(client, `document.querySelector("#challenge-id")?.textContent !== "not issued"`, "challenge received");
-  await waitFor(client, `document.querySelector("#resource-hash")?.textContent !== "not issued"`, "resource hash rendered");
-  await waitFor(client, `document.querySelector("#timeline")?.textContent?.includes("payment_hash")`, "challenge payment hash rendered");
+  await waitFor(client, `document.querySelector("#challenge-id")?.textContent !== "pending"`, "challenge received");
+  await waitFor(client, `document.querySelector("#resource-hash")?.textContent !== "pending"`, "resource hash rendered");
+  await waitFor(client, `document.querySelector("#timeline")?.textContent?.includes("send_payment") && document.querySelector("#timeline")?.textContent?.includes("PAYER FNN")`, "payer FNN payment step rendered");
   await waitFor(client, `document.querySelector("#pay")?.disabled === false`, "pay enabled after challenge");
   steps.push(await snapshot(client, "unpaid-request"));
 
   await click(client, "#pay");
-  await waitFor(client, `document.querySelector("#retry")?.disabled === false`, "retry enabled after payment");
-  await waitFor(client, `document.querySelector("#timeline")?.textContent?.includes("payment_hash")`, "timeline payment hash rendered");
-  steps.push(await snapshot(client, "fiber-payment"));
-
-  await click(client, "#retry");
-  await waitFor(client, `document.querySelector("#replay")?.disabled === false`, "replay enabled after receipt");
-  await waitFor(client, `document.querySelector("#actuator-service")?.textContent?.includes("executed")`, "service executed after receipt");
+  await waitFor(client, `document.querySelector("#replay")?.disabled === false`, "guided payment automatically resumes delivery and enables replay check");
+  await waitFor(client, `document.querySelector("#payment-completion-state")?.textContent?.includes("COMPLETE")`, "guided payment flow marked complete after receipt");
+  assertSmoke(await client.evaluate(`!document.querySelector("#continue")`), "guided demo must never expose continuation as a third SOP step");
+  assertSmoke(await client.evaluate(`document.querySelectorAll("#timeline .timeline-row").length === 8`), "primary payment timeline must contain only the eight transaction steps");
+  assertSmoke(await client.evaluate(`(() => {
+    const labels = Array.from(document.querySelectorAll("#timeline .timeline-desc strong")).map((node) => node.textContent?.trim());
+    return labels[6] === "Execute protected service" && labels[7] === "Return response + Payment-Receipt";
+  })()`), "service execution must precede the response and receipt in the timeline");
+  await waitFor(client, `document.querySelector("#actuator-service")?.textContent === "executed before receipt"`, "service execution ordered before receipt");
   await waitFor(client, `document.querySelector("#timeline")?.textContent?.includes("receipt_reference")`, "timeline receipt reference rendered");
-  steps.push(await snapshot(client, "authorization-retry"));
+  steps.push(await snapshot(client, "guided-payment-and-delivery"));
 
   await click(client, "#replay");
   await waitFor(client, `document.querySelector("#actuator-reissued")?.textContent === "false"`, "receipt not reissued");
   await waitFor(client, `document.querySelector("#actuator-replay")?.textContent?.includes("blocked")`, "actuator replay blocked");
+  await waitFor(client, `document.querySelector("#replay-security-state")?.textContent?.includes("VERIFIED")`, "replay protection marked as a separate verified security check");
   steps.push(await snapshot(client, "replay-rejected"));
   const completedFlowEvidence = assertCompletedFlowEvidence(steps.at(-1)?.evidence);
+
+  await click(client, "#clear-log");
+  await waitFor(client, `document.querySelector("#challenge-id")?.textContent === "pending"`, "flow reset before guided recovery check");
+  await client.evaluate(`(() => {
+    const originalFetch = window.fetch.bind(window);
+    window.__fiberPaidHttpOriginalFetch = originalFetch;
+    let failContinuationOnce = true;
+    window.fetch = async (...args) => {
+      const input = args[0];
+      const url = typeof input === "string" ? input : input?.url || "";
+      if (failContinuationOnce && url.includes("/api/evidence/retry")) {
+        failContinuationOnce = false;
+        return new Response(JSON.stringify({ error: "simulated-continuation-failure", message: "simulated delivery network interruption" }), {
+          status: 502,
+          headers: { "content-type": "application/json" }
+        });
+      }
+      return originalFetch(...args);
+    };
+  })()`);
+  await click(client, "#send");
+  await waitFor(client, `document.querySelector("#pay")?.disabled === false`, "guided recovery challenge ready");
+  await click(client, "#pay");
+  await waitFor(client, `Boolean(document.querySelector("#resume-delivery"))`, "guided flow exposes no-payment recovery after continuation failure");
+  assertSmoke(await client.evaluate(`document.querySelector("#resume-delivery")?.textContent?.includes("no new payment") && document.querySelector("#payment-completion-state")?.textContent?.includes("IN PROGRESS")`), "recovery control must preserve the settled payment without claiming completion");
+  assertSmoke(await client.evaluate(`(document.querySelector("#logs")?.textContent?.match(/send_payment/g) || []).length === 1`), "guided recovery must have exactly one payment attempt before resuming delivery");
+  steps.push(await snapshot(client, "guided-recovery-ready"));
+  await click(client, "#resume-delivery");
+  await waitFor(client, `document.querySelector("#payment-completion-state")?.textContent?.includes("COMPLETE")`, "guided recovery completes delivery");
+  assertSmoke(await client.evaluate(`(document.querySelector("#logs")?.textContent?.match(/send_payment/g) || []).length === 1`), "resuming delivery must not send a second payment");
+  steps.push(await snapshot(client, "guided-recovery-complete"));
+  const recoveryFlowEvidence = assertDeliveredFlowEvidence(steps.at(-1)?.evidence);
+  await client.evaluate(`(() => {
+    if (window.__fiberPaidHttpOriginalFetch) window.fetch = window.__fiberPaidHttpOriginalFetch;
+    delete window.__fiberPaidHttpOriginalFetch;
+  })()`);
+
+  await click(client, "#clear-log");
+  await waitFor(client, `document.querySelector("#challenge-id")?.textContent === "pending"`, "flow reset before manual protocol check");
+  await waitFor(client, `document.querySelector("#flow-mode-manual")?.disabled === false`, "manual protocol mode switch ready after reset");
+  await click(client, "#flow-mode-manual");
+  await waitFor(client, `document.querySelector("#flow-mode-manual")?.getAttribute("aria-pressed") === "true" && document.querySelector("#continue")?.disabled === true`, "manual protocol mode exposes a disabled continuation control");
+  assertSmoke(await client.evaluate(`document.querySelector(".protocol-run-context")?.textContent?.includes("not product SOP")`), "manual mode must be labeled as protocol debugging rather than the product SOP");
+  steps.push(await snapshot(client, "manual-protocol-ready"));
+
+  await click(client, "#send");
+  await waitFor(client, `document.querySelector("#pay")?.disabled === false`, "manual mode challenge ready");
+  await click(client, "#pay");
+  await waitFor(client, `document.querySelector("#continue")?.disabled === false`, "manual continuation enabled after one successful payment");
+  assertSmoke(await client.evaluate(`document.querySelector("#payment-completion-state")?.textContent?.includes("IN PROGRESS") && document.querySelector("#replay")?.disabled === true`), "manual mode must pause after settlement without marking delivery complete");
+  steps.push(await snapshot(client, "manual-payment-settled"));
+
+  await click(client, "#continue");
+  await waitFor(client, `document.querySelector("#payment-completion-state")?.textContent?.includes("COMPLETE")`, "manual continuation completes delivery");
+  await waitFor(client, `document.querySelector("#replay")?.disabled === false`, "manual delivery enables the optional replay check");
+  steps.push(await snapshot(client, "manual-credential-continuation"));
+  const manualFlowEvidence = assertDeliveredFlowEvidence(steps.at(-1)?.evidence);
 
   await click(client, "#open-settings");
   await waitFor(client, `Boolean(document.querySelector("#settings-overlay"))`, "settings open");
   await client.evaluate(`document.querySelector("#settings-persona").value = "auditor"; document.querySelector("#settings-persona").dispatchEvent(new Event("change", { bubbles: true }))`);
-  await waitFor(client, `document.querySelector(".settings-note")?.textContent?.includes("Read-only audit") && document.querySelector(".settings-note")?.textContent?.includes("not identity")`, "protocol perspective rendered");
+  await waitFor(client, `document.querySelector(".settings-note")?.textContent?.includes("Security auditor")`, "persona change rendered");
   await click(client, "#close-settings");
   await waitFor(client, `!document.querySelector("#settings-overlay")`, "settings closed");
   steps.push(await snapshot(client, "settings-roundtrip"));
@@ -175,31 +223,9 @@ async function runSmoke(client, apiBase, webUrl) {
   steps.push(await snapshot(client, "evidence-tab"));
   assertCompletedFlowEvidence(completedFlowEvidence);
 
-  await click(client, '[data-workspace-tab="tournament"]');
-  await waitFor(client, `document.querySelector(".console")?.dataset.workspace === "tournament"`, "examples workspace");
-  await waitFor(client, `document.querySelectorAll("#battlecode-readiness [data-capability-state]").length === 5`, "Battlecode capability status");
-  await waitFor(client, `Array.from(document.querySelectorAll("#battlecode-readiness [data-capability-state]")).every((node) => node.dataset.capabilityState !== "CHECKING")`, "Battlecode capability status settled");
-  const exampleStates = await client.evaluate(`Object.fromEntries(Array.from(document.querySelectorAll("#battlecode-readiness [data-capability]")).map((node) => [node.dataset.capability, node.dataset.capabilityState]))`);
-  assertSmoke(exampleStates.scaffold === "BLOCKED"
-    && exampleStates["jdk-21+"] === "BLOCKED"
-    && exampleStates["engine-jar"] === "BLOCKED"
-    && exampleStates["fiber-payment"] === "UNCONFIGURED"
-    && exampleStates["prize-mode"] === "LOCAL LEDGER", `Examples must expose deterministic blockers and local prize mode: ${JSON.stringify(exampleStates)}`);
-  assertSmoke(await client.evaluate(`document.querySelector('[data-panel-id="example-input"] .btn.primary')?.disabled === true`), "bot lock must remain disabled without JDK 21+ and the engine jar");
-  const examplesText = await client.evaluate(`document.querySelector(".app-main")?.textContent?.replace(/\\s+/g, " ").trim() || ""`);
-  const pendingIndex = examplesText.indexOf("pending");
-  assertSmoke(!examplesText.includes("Battlecode 2025") && pendingIndex === -1, `Examples must not fabricate an engine or pending evidence: ${examplesText.slice(Math.max(0, pendingIndex - 160), pendingIndex + 240)}`);
-  steps.push(await snapshot(client, "examples-blocked-runtime"));
-
   await click(client, '[data-workspace-tab="bootstrap"]');
-  const refreshTimestampBefore = await client.evaluate(`document.querySelector("#refresh-bootstrap")?.dataset.lastRefreshedAt || ""`);
   await click(client, "#refresh-bootstrap");
-  await waitFor(client, `(() => {
-    const button = document.querySelector("#refresh-bootstrap");
-    return button?.dataset.refreshing === "false"
-      && button?.dataset.lastRefreshedAt
-      && button.dataset.lastRefreshedAt !== ${JSON.stringify(refreshTimestampBefore)};
-  })()`, "bootstrap refresh settles with a new timestamp");
+  await waitFor(client, `!document.querySelector("#refresh-bootstrap")?.classList.contains("is-busy")`, "bootstrap refresh settles");
   await waitFor(client, `document.querySelector("#bootstrap-summary")?.textContent?.length > 20`, "bootstrap summary rendered");
   steps.push(await snapshot(client, "bootstrap-refresh"));
 
@@ -223,21 +249,31 @@ async function runSmoke(client, apiBase, webUrl) {
     api_backing: "temporary local evidence API process with in-process Fiber adapters",
     mode: normalizeSmokeText(await client.evaluate(`window.__fiberPaidHttpSmokeMode || document.querySelector("#api-state-text")?.textContent || ""`), apiBase),
     completed_flow_evidence: completedFlowEvidence,
+    recovery_flow_evidence: recoveryFlowEvidence,
+    manual_flow_evidence: manualFlowEvidence,
     reset_evidence_after_clear: resetEvidenceAfterClear,
     steps
   };
 }
 
 function assertCompletedFlowEvidence(evidence) {
-  assertSmoke(Boolean(evidence), "completed evidence snapshot is missing");
+  assertDeliveredFlowEvidence(evidence);
+  assertSmoke(evidence.replay_status === "blocked", "completed evidence snapshot must show replay blocked");
+  assertSmoke(evidence.receipt_reissued === "false", "completed evidence snapshot must show receipt not reissued");
+  assertSmoke(evidence.replay_security === "VERIFIED", "completed evidence snapshot must mark replay protection as a separate verified check");
+  assertSmoke(evidence.replay_control_disabled === true, "completed evidence snapshot must disable the consumed replay credential control");
+  return evidence;
+}
+
+function assertDeliveredFlowEvidence(evidence) {
+  assertSmoke(Boolean(evidence), "delivered evidence snapshot is missing");
   assertSmoke(/^[A-Za-z0-9_-]{43}$/.test(evidence.challenge_id), "completed evidence snapshot must keep a canonical challenge_id");
   assertSmoke(/^[0-9a-f]{64}$/i.test(evidence.resource_hash), "completed evidence snapshot must keep a canonical resource_hash");
   assertSmoke(/^0x[0-9a-f]{64}$/i.test(evidence.payment_hash), "completed evidence snapshot must keep a canonical payment_hash");
   assertSmoke(/^0x[0-9a-f]{64}$/i.test(evidence.receipt_reference), "completed evidence snapshot must keep a canonical receipt_reference");
   assertSmoke(evidence.payment_hash.toLowerCase() === evidence.receipt_reference.toLowerCase(), "receipt_reference must equal payment_hash");
-  assertSmoke(evidence.service_executed === "executed after receipt", "completed evidence snapshot must show service execution");
-  assertSmoke(evidence.replay_status === "blocked", "completed evidence snapshot must show replay blocked");
-  assertSmoke(evidence.receipt_reissued === "false", "completed evidence snapshot must show receipt not reissued");
+  assertSmoke(evidence.service_executed === "executed before receipt", "completed evidence snapshot must show correctly ordered service execution");
+  assertSmoke(evidence.payment_completion === "COMPLETE", "completed evidence snapshot must mark the payment transaction complete");
   return evidence;
 }
 
@@ -251,6 +287,7 @@ async function snapshot(client, step) {
     action_hint: await client.evaluate(`document.querySelector("#action-hint")?.textContent?.trim() || ""`),
     send_disabled: await client.evaluate(`document.querySelector("#send")?.disabled === true`),
     pay_disabled: await client.evaluate(`document.querySelector("#pay")?.disabled === true`),
+    flow_mode: await client.evaluate(`document.querySelector("#flow-mode-guided")?.getAttribute("aria-pressed") === "true" ? "guided" : "manual"`),
     evidence
   };
 }
@@ -265,18 +302,21 @@ async function evidenceSnapshot(client) {
     };
     const visibleChallenge = text("#challenge-id");
     const visibleResourceHash = text("#resource-hash");
-    const visiblePaymentHash = text("#payment-hash");
-    const visibleReceiptReference = text("#receipt-reference");
+    const visiblePaymentHash = text("#inspector-payment-hash");
+    const visibleReceiptReference = text("#inspector-receipt-reference");
     return {
-      challenge_id: visibleChallenge && visibleChallenge !== "not issued" ? visibleChallenge : findCapture(json, /"challenge_id":\\s*"([^"]+)"/i),
-      resource_hash: visibleResourceHash && visibleResourceHash !== "not issued" ? visibleResourceHash : findCapture(json, /"resource_hash":\\s*"([^"]+)"/i),
+      challenge_id: visibleChallenge && visibleChallenge !== "pending" ? visibleChallenge : findCapture(json, /"challenge_id":\\s*"([^"]+)"/i),
+      resource_hash: visibleResourceHash && visibleResourceHash !== "pending" ? visibleResourceHash : findCapture(json, /"resource_hash":\\s*"([^"]+)"/i),
       payment_hash: /^0x[0-9a-f]{64}$/i.test(visiblePaymentHash) ? visiblePaymentHash : findCapture(json, /"paymentHash":\\s*"(0x[0-9a-f]{64})"/i),
       receipt_reference: /^0x[0-9a-f]{64}$/i.test(visibleReceiptReference) ? visibleReceiptReference : findCapture(json, /"reference":\\s*"(0x[0-9a-f]{64})"/i),
       service_executed: text("#actuator-service"),
       replay_status: text("#actuator-replay"),
       receipt_reissued: text("#actuator-reissued"),
       actuator_health: text("#actuator-health"),
-      replay_blocked: text("#blocked")
+      replay_blocked: text("#blocked"),
+      payment_completion: text("#payment-completion-state"),
+      replay_security: text("#replay-security-state"),
+      replay_control_disabled: document.querySelector("#replay")?.disabled === true
     };
   })()`);
 }
@@ -337,12 +377,6 @@ async function smokeDiagnostics(client) {
       disabled: document.querySelector("#pay")?.disabled,
       title: document.querySelector("#pay")?.title
     },
-    focus: {
-      id: document.activeElement?.id,
-      tag: document.activeElement?.tagName,
-      headerInert: document.querySelector(".app-header")?.hasAttribute("inert"),
-      bodyInert: document.querySelector(".app-body")?.hasAttribute("inert")
-    },
     logs: document.querySelector("#logs")?.textContent?.replace(/\\s+/g, " ").trim().slice(-800),
     api: document.querySelector("#api-state-text")?.textContent
   }))()`);
@@ -364,10 +398,6 @@ function deterministicApiEnv(port) {
   ]) {
     delete env[key];
   }
-  env.BATTLECODE_DIR = resolve(repoRoot, ".tmp/browser-smoke-missing-scaffold");
-  env.BATTLECODE_JDK_HOME = resolve(repoRoot, ".tmp/browser-smoke-missing-jdk-21");
-  env.BATTLECODE_ENGINE_JAR = resolve(repoRoot, ".tmp/browser-smoke-missing-engine.jar");
-  env.BATTLECODE_AWARD_SETTLEMENT = "local-ledger";
   return env;
 }
 

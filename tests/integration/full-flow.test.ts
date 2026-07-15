@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildAuthorizationPaymentHeader,
   decodeFiberChargeRequest,
+  FiberPaidHttpError,
   parseWwwAuthenticatePaymentHeader,
   resourceHashFromRequest,
   type PaymentChallenge
@@ -203,8 +204,8 @@ describe("Fiber Paid HTTP integration flows", () => {
 
     const pay = await app.request("http://localhost/api/evidence/pay", { method: "POST" });
     expect(pay.status).toBe(200);
-    const retry = await app.request("http://localhost/api/evidence/retry", { method: "POST" });
-    expect(retry.status).toBe(200);
+    const continuation = await app.request("http://localhost/api/evidence/continue", { method: "POST" });
+    expect(continuation.status).toBe(200);
     const replay = await app.request("http://localhost/api/evidence/replay", { method: "POST" });
     expect(replay.status).toBe(200);
     expect(await replay.json()).toMatchObject({ rejected: true, receiptReissued: false });
@@ -331,18 +332,22 @@ describe("Fiber Paid HTTP integration flows", () => {
       message: "Send unpaid request before paying with Fiber"
     });
 
-    const prematureRetry = await app.request("http://localhost/api/evidence/retry", { method: "POST" });
-    expect(prematureRetry.status).toBe(409);
-    expect(await prematureRetry.json()).toMatchObject({
+    const prematureContinuation = await app.request("http://localhost/api/evidence/continue", { method: "POST" });
+    expect(prematureContinuation.status).toBe(409);
+    expect(await prematureContinuation.json()).toMatchObject({
       error: "invalid-evidence-state",
-      message: "Pay with Fiber before retrying or replaying the credential"
+      message: "Pay with Fiber before continuing with or replaying the credential"
     });
+
+    const compatibilityRetry = await app.request("http://localhost/api/evidence/retry", { method: "POST" });
+    expect(compatibilityRetry.status).toBe(409);
+    expect(await compatibilityRetry.json()).toMatchObject({ error: "invalid-evidence-state" });
 
     const prematureReplay = await app.request("http://localhost/api/evidence/replay", { method: "POST" });
     expect(prematureReplay.status).toBe(409);
     expect(await prematureReplay.json()).toMatchObject({
       error: "invalid-evidence-state",
-      message: "Pay with Fiber before retrying or replaying the credential"
+      message: "Pay with Fiber before continuing with or replaying the credential"
     });
 
     const unpaid = await app.request("http://localhost/api/evidence/unpaid", {
@@ -352,12 +357,75 @@ describe("Fiber Paid HTTP integration flows", () => {
     });
     expect(unpaid.status).toBe(200);
 
-    const retryBeforePayment = await app.request("http://localhost/api/evidence/retry", { method: "POST" });
-    expect(retryBeforePayment.status).toBe(409);
-    const retryBody = await retryBeforePayment.json() as { flow: { events: Array<{ message: string; detail?: string }> } };
-    expect(retryBody.flow.events.at(-1)).toMatchObject({
-      message: "retry blocked",
-      detail: "Pay with Fiber before retrying or replaying the credential"
+    const continueBeforePayment = await app.request("http://localhost/api/evidence/continue", { method: "POST" });
+    expect(continueBeforePayment.status).toBe(409);
+    const continueBody = await continueBeforePayment.json() as { flow: { events: Array<{ message: string; detail?: string }> } };
+    expect(continueBody.flow.events.at(-1)).toMatchObject({
+      message: "credential continuation blocked",
+      detail: "Pay with Fiber before continuing with or replaying the credential"
+    });
+
+    const pay = await app.request("http://localhost/api/evidence/pay", { method: "POST" });
+    expect(pay.status).toBe(200);
+
+    const replayBeforeReceipt = await app.request("http://localhost/api/evidence/replay", { method: "POST" });
+    expect(replayBeforeReceipt.status).toBe(409);
+    expect(await replayBeforeReceipt.json()).toMatchObject({
+      error: "invalid-evidence-state",
+      message: "Complete the authenticated request and receive Payment-Receipt before testing replay protection"
+    });
+
+    const continuation = await app.request("http://localhost/api/evidence/continue", { method: "POST" });
+    expect(continuation.status).toBe(200);
+    const continuationBodyAfterSuccess = await continuation.json() as { flow: { events: Array<{ actor: string; message: string }> } };
+    expect(continuationBodyAfterSuccess.flow.events.slice(-4).map((event) => [event.actor, event.message])).toEqual([
+      ["client", "continue with Authorization: Payment"],
+      ["server", "payment verified"],
+      ["protected-service", "service executed"],
+      ["server", "Payment-Receipt returned"]
+    ]);
+
+    const replay = await app.request("http://localhost/api/evidence/replay", { method: "POST" });
+    expect(replay.status).toBe(200);
+    expect(await replay.json()).toMatchObject({ rejected: true, receiptReissued: false });
+  });
+
+  it("evidence console API returns the payer Fiber failure and records it in the active flow", async () => {
+    const { payeeFiber, payerFiber } = createFiberFixtureAdapters();
+    Object.defineProperty(payerFiber, "payCharge", {
+      value: async () => {
+        throw new FiberPaidHttpError(
+          "fiber-rpc-error",
+          "Send payment error: Failed to build route, Insufficient balance: max outbound liquidity 0 is insufficient, required amount: 100",
+          502
+        );
+      }
+    });
+    const app = createEvidenceApi({ fiber: payeeFiber, payerFiber, store: createSqliteTestStore(), secret: evidenceSecret });
+
+    const unpaid = await app.request("http://localhost/api/evidence/unpaid", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ endpoint: "/paid/protocol-service", amountShannons: "100" })
+    });
+    expect(unpaid.status).toBe(200);
+
+    const pay = await app.request("http://localhost/api/evidence/pay", { method: "POST" });
+    expect(pay.status).toBe(502);
+    const body = await pay.json() as {
+      error: string;
+      message: string;
+      flow: { events: Array<{ level: string; actor: string; message: string; detail?: string }> };
+    };
+    expect(body).toMatchObject({
+      error: "fiber-rpc-error",
+      message: expect.stringContaining("max outbound liquidity 0")
+    });
+    expect(body.flow.events.at(-1)).toMatchObject({
+      level: "ERROR",
+      actor: "node1 (payer)",
+      message: "send_payment failed",
+      detail: expect.stringContaining("Insufficient balance")
     });
   });
 
@@ -579,15 +647,15 @@ describe("Fiber Paid HTTP integration flows", () => {
 
     const payA = await app.request("http://localhost/api/evidence/pay", { method: "POST", headers: { "x-fiber-paid-http-session": "session-a" } });
     expect(payA.status).toBe(200);
-    const retryA = await app.request("http://localhost/api/evidence/retry", { method: "POST", headers: { "x-fiber-paid-http-session": "session-a" } });
-    expect(retryA.status).toBe(200);
-    expect(await retryA.text()).toContain("Shanghai");
+    const continuationA = await app.request("http://localhost/api/evidence/continue", { method: "POST", headers: { "x-fiber-paid-http-session": "session-a" } });
+    expect(continuationA.status).toBe(200);
+    expect(await continuationA.text()).toContain("Shanghai");
 
     const payB = await app.request("http://localhost/api/evidence/pay", { method: "POST", headers: { "x-fiber-paid-http-session": "session-b" } });
     expect(payB.status).toBe(200);
-    const retryB = await app.request("http://localhost/api/evidence/retry", { method: "POST", headers: { "x-fiber-paid-http-session": "session-b" } });
-    expect(retryB.status).toBe(200);
-    expect(await retryB.text()).toContain("paid file contents");
+    const continuationB = await app.request("http://localhost/api/evidence/continue", { method: "POST", headers: { "x-fiber-paid-http-session": "session-b" } });
+    expect(continuationB.status).toBe(200);
+    expect(await continuationB.text()).toContain("paid file contents");
   });
 
   it("reverse proxy completes full flow", async () => {

@@ -9,66 +9,33 @@ This flow turns a local Battlecode match into a paid-entry tournament:
 5. The payer FNN settles the Fiber payment.
 6. The gateway verifies settlement and issues `Payment-Receipt`.
 7. The ticket is recorded with the receipt id, payment hash, and locked submission id.
-8. The local Battlecode engine materializes that locked submission and runs it against `baselinebot`.
+8. The local Battlecode engine materializes that locked submission and runs it against the active `arena_baseline` opponent.
 9. If the submitted bot wins, the tournament either records a local claimable xUDT prize award or, when explicitly enabled, pays the prize through a live Fiber xUDT payment.
 
-The Battlecode engine is an external AGPL-3.0 dependency. Keep it outside this repository. The setup command clones the scaffold into the parent directory when needed, discovers JDK 21+, and builds the pinned engine:
+The Battlecode engine is an external AGPL-3.0 dependency. Keep it outside this repository:
 
 ```bash
-pnpm battlecode:setup
+git clone --depth 1 https://github.com/battlecode/battlecode25-scaffold.git "$HOME/battlecode25-scaffold"
 ```
 
-The equivalent manual setup is:
-
-```bash
-git clone --depth 1 https://github.com/battlecode/battlecode25-scaffold.git ../battlecode25-scaffold
-export BATTLECODE_DIR="$(cd ../battlecode25-scaffold/java && pwd)"
-```
-
-The API also discovers `../battlecode25-scaffold/java` (including the equivalent path from a repository worktree). `/api/tournament/battlecode/status` reports the resolved path and fails visibly when the scaffold is absent.
-
-The API runner does not copy Battlecode scaffold code into Fiber Paid HTTP. It stores submitted bot sources under `.tmp/battlecode-tournament/submissions/`, records tournament state in a SQLite ledger, materializes each match under `.tmp/battlecode-tournament/runs/`, and runs `battlecode.server.Main` headlessly.
+The API runner does not copy Battlecode scaffold code into Fiber Paid HTTP. The two example strategies in `examples/battlecode/` are original MIT-licensed bots written against the public Battlecode 2025 3.1.0 rules and Java API. It stores submitted bot sources under `.tmp/battlecode-tournament/submissions/`, records tournament state in a SQLite ledger, materializes each match under `.tmp/battlecode-tournament/runs/`, and runs `battlecode.server.Main` headlessly.
 
 ## Toolchain
 
-Use JDK 21 or newer. The runner automatically discovers a compatible JDK on `PATH`; set an explicit home when recording reproducible evidence:
+Use JDK 21. A local user-level JDK is preferred:
 
 ```bash
-export BATTLECODE_JDK_HOME=/path/to/jdk-21-or-newer
+export BATTLECODE_JDK_HOME=/path/to/jdk-21
 ```
 
-The pinned scaffold currently declares engine version `1.0.0` in `java/engine_version.txt`. Build it with JDK 21 or newer so Gradle resolves the matching engine jar:
+Use either a downloaded Battlecode engine jar:
 
 ```bash
-cd "$BATTLECODE_DIR"
-./gradlew version
-./gradlew build
+export BATTLECODE_ENGINE_JAR=/path/to/battlecode25-java-3.1.0.jar
+export BATTLECODE_ENGINE_VERSION=3.1.0
 ```
 
-The runner discovers the matching Gradle cache entry. To use an independently provisioned jar instead, set both values explicitly:
-
-```bash
-export BATTLECODE_ENGINE_JAR=/absolute/path/to/battlecode25-java-1.0.0.jar
-export BATTLECODE_ENGINE_VERSION=1.0.0
-```
-
-The status endpoint checks scaffold files, an actual JDK 21+ home, the exact engine jar, Fiber payment configuration, and prize settlement mode separately. A cloned scaffold alone is not reported as a runnable match engine.
-
-Before a recording, run the real headless engine smoke:
-
-```bash
-pnpm battlecode:engine-smoke
-```
-
-This compiles the bundled bot, runs `DefaultSmall` against `baselinebot`, verifies the fairness commitments, and checks that a non-empty replay was written. It deliberately marks payment execution as `not-exercised`; it is not a substitute for the live paid tournament flow below.
-
-For the complete recording environment, the recommended entrypoint is:
-
-```bash
-pnpm battlecode:demo:start
-```
-
-It performs the setup and engine smoke, starts or reuses the forward xUDT Fiber network, and launches the live Dashboard. Use `pnpm battlecode:demo:stop` after recording.
+or let the runner fall back to a cached Gradle jar if present.
 
 ## Live Fiber Prerequisites
 
@@ -78,14 +45,13 @@ Start the local Fiber network first. For the basic CKB payment lane:
 bash scripts/fiber_local_network.sh up
 ```
 
-For the recording lane, use forward xUDT channels for the paid entry and keep the prize as an explicitly labeled local ledger award:
+For xUDT entry and prize payments, the Fiber local network must have UDT channels. Use the xUDT variant:
 
 ```bash
 FIBER_LOCAL_ASSET=xudt \
+FIBER_LOCAL_PRIZE_ROUTE=1 \
 bash scripts/fiber_local_network.sh up
 ```
-
-`FIBER_LOCAL_PRIZE_ROUTE=1` also creates reverse funding channels for experimental live prize payout. Do not add it to the critical recording path unless the resulting parallel-channel topology has passed an end-to-end routing check with the pinned FNN build. The reliable submission story is real Fiber xUDT entry settlement followed by a local claimable prize record.
 
 The local xUDT type script used by Fiber's dev network is:
 
@@ -121,13 +87,15 @@ http://127.0.0.1:8878/?sessionId=battlecode-live&pollMs=1200
 
 ## Run The Full Tournament Flow
 
-First lock the bot source. This command submits the bundled `fiberchamp` source and returns the hash commitments:
+First lock an explicit bot source. The API does not substitute an embedded bot when `source` is missing:
 
 ```bash
-curl -sS -X POST http://127.0.0.1:8877/api/tournament/battlecode/submissions \
+jq -n --rawfile source examples/battlecode/fiberchamp/RobotPlayer.java \
+  '{playerId:"arthur", botPackage:"fiberchamp", source:$source}' \
+| curl -sS -X POST http://127.0.0.1:8877/api/tournament/battlecode/submissions \
   -H 'content-type: application/json' \
   -H 'x-fiber-paid-http-session: battlecode-live' \
-  --data '{"playerId":"arthur","botPackage":"fiberchamp"}' | jq .
+  --data @- | jq .
 ```
 
 To submit a different strategy, pass a Java source string with a package matching `botPackage`:
@@ -146,12 +114,13 @@ The submission response contains:
 ```text
 submissionId   durable locked submission id
 botScriptHash  sha256 of the submitted Battlecode RobotPlayer.java source
-clientHash     sha256 commitment to the tournament runner module, Battlecode engine jar hash, engine version, submission id, and bot hash
+opponentScriptHash sha256 of the server-controlled `arena_baseline` source
+clientHash     sha256 commitment to both bot hashes, tournament runner module, Battlecode engine jar hash, engine version, and submission id
 runnerHash     sha256 of the running Fiber Paid HTTP tournament runner module
 engineHash     sha256 of the Battlecode engine jar
 ```
 
-`pnpm battlecode:tournament` performs the submission step first, then requests the paid entry challenge. By default it submits the bundled `fiberchamp` source; set `BATTLECODE_BOT_SOURCE=/path/to/RobotPlayer.java` and `BATTLECODE_BOT=<java_package>` to submit another strategy:
+`pnpm battlecode:tournament` performs the submission step first, then requests the paid entry challenge. By default it explicitly reads and submits `examples/battlecode/fiberchamp/RobotPlayer.java`; set `BATTLECODE_BOT_SOURCE=/path/to/RobotPlayer.java` and `BATTLECODE_BOT=<java_package>` to submit another strategy:
 
 ```bash
 EVIDENCE_API_BASE=http://127.0.0.1:8877 \
@@ -165,7 +134,7 @@ BATTLECODE_MAP=DefaultSmall \
 pnpm battlecode:tournament
 ```
 
-To test optional live Fiber xUDT prize payout outside the critical recording path, add:
+To require live Fiber xUDT prize payout, add:
 
 ```bash
 BATTLECODE_AWARD_SETTLEMENT=fiber-xudt \
@@ -240,7 +209,7 @@ Real today:
 
 - HTTP 402 challenge for tournament entry.
 - Durable SQLite bot submission/ticket/match/award ledger with `submissionId`, source path, source byte length, source hash, policy metadata, and lock timestamp.
-- Paid challenge metadata includes the locked submission id, committed bot source hash, and tournament client hash.
+- Paid challenge metadata includes the locked submission id, committed entrant and opponent source hashes, and tournament client hash.
 - Real Fiber payment when local/testnet Fiber env is configured.
 - `Payment-Receipt` issued by the Fiber Paid HTTP gateway.
 - Ticket issuance stores the same submission id and hash commitments and rejects mismatches.

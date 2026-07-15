@@ -5,30 +5,25 @@ import { formatTime } from "../lib/utils.js";
 
 interface HeaderProps {
   onToggleSidebar: () => void;
-  navigationExpanded: boolean;
+  sidebarCollapsed: boolean;
+  onOpenPrefs: () => void;
 }
 
-export function Header({ onToggleSidebar, navigationExpanded }: HeaderProps) {
+export function Header({ onToggleSidebar, sidebarCollapsed, onOpenPrefs }: HeaderProps) {
   const ev = useEvidence();
-  const isBusy = ev.busy || ev.refreshing;
   const connClass = ev.refreshing ? "refreshing" : ev.apiConnection;
 
   return (
     <>
-      <button
-        className="icon-btn"
-        id="toggle-navigation"
-        onClick={onToggleSidebar}
-        title={navigationExpanded ? "Collapse navigation" : "Expand navigation"}
-        aria-label={navigationExpanded ? "Collapse navigation" : "Expand navigation"}
-        aria-controls="workspace-navigation"
-        aria-expanded={navigationExpanded}
-      >
-        <Icon name="Navigation" />
+      <button className="icon-btn" onClick={onToggleSidebar} title="Toggle sidebar" aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}>
+        <Icon name="Timeline" />
       </button>
       <div className="header-brand">
         <div className="header-mark" />
-        <h1>Fiber Paid HTTP <span className="header-version">Gateway Lab</span></h1>
+        <div>
+          <h1>Fiber Paid HTTP Evidence Console <span className="header-version">MPP</span></h1>
+          <p>Machine Payments Protocol over Fiber</p>
+        </div>
       </div>
       <div className="header-spacer" />
       <div className="header-tools">
@@ -36,11 +31,14 @@ export function Header({ onToggleSidebar, navigationExpanded }: HeaderProps) {
           <span className={"conn-dot " + connClass} />
           <span id="api-state-text">{ev.apiMessage || "not connected"}{ev.lastRefreshedAt ? ` · ${formatTime(ev.lastRefreshedAt)}` : ""}</span>
         </div>
-        <button className={"icon-btn" + (ev.refreshing ? " is-busy" : "")} onClick={() => ev.refreshAll("manual refresh")} disabled={isBusy} title="Refresh" aria-label="Refresh Gateway Lab">
+        <button className={"icon-btn" + (ev.refreshing ? " is-busy" : "")} onClick={() => ev.refreshAll("manual refresh")} disabled={ev.busy || ev.refreshing} title="Refresh" aria-label="Refresh console">
           <Icon name="ActionRetry" />
         </button>
-        <button id="open-settings" className={"icon-btn" + (ev.settingsOpen ? " active" : "")} onClick={() => ev.setSettingsOpen(!ev.settingsOpen)} title="Gateway Lab settings" aria-label="Open Gateway Lab settings">
+        <button className="icon-btn" onClick={onOpenPrefs} title="Preferences" aria-label="Open preferences">
           <Icon name="Settings" />
+        </button>
+        <button id="open-settings" className={"icon-btn" + (ev.settingsOpen ? " active" : "")} onClick={() => ev.setSettingsOpen(!ev.settingsOpen)} title="Console settings" aria-label="Open console settings">
+          <Icon name="Method" />
         </button>
       </div>
     </>

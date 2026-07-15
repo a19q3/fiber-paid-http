@@ -18,7 +18,7 @@
   "evidence_console_server_hardening_blockers": [],
   "evidence_console_cli_start": true,
   "evidence_console_cli_start_report": "reports/evidence-console-cli-start.json",
-  "evidence_console_cli_start_api_base": "http://127.0.0.1:58212",
+  "evidence_console_cli_start_api_base": "http://127.0.0.1:62540",
   "evidence_console_cli_start_blockers": [],
   "evidence_console_browser_smoke": true,
   "evidence_console_browser_smoke_report": "reports/evidence-console-browser-smoke.json",
@@ -57,7 +57,7 @@
   "testnet_fiber_e2e_evidence_verified": true,
   "testnet_fiber_e2e_evidence_blockers": [],
   "local_fiber_e2e_evidence": true,
-  "fiber_commit": null,
+  "fiber_commit": "e00d0e3c9a9284ea1c7705d360be615cfce1a5c6",
   "toolchain_shims_used": [
     {
       "name": "nc",

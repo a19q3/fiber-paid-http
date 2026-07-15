@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useRef, useEff
 import type { ApiClient } from "../lib/api.js";
 import {
   fallbackEndpoints,
-  reportRegistry,
+  reportKeys,
   personaActionReason,
   mergeConsoleSettings,
 } from "../constants.js";
@@ -20,6 +20,7 @@ import type {
   FlowEvent,
   BootstrapDraft,
   ConsolePreferences,
+  FlowMode,
 } from "../types.js";
 
 interface FlowState {
@@ -63,6 +64,8 @@ export interface EvidenceState {
   activeAction: string | null;
   localLogs: FlowEvent[];
   actionHint: string;
+  actionError: string;
+  flowMode: FlowMode;
 }
 
 interface StatusData {
@@ -72,6 +75,7 @@ interface StatusData {
   badges?: Record<string, boolean | null>;
   productionEvidence?: Record<string, unknown>;
   localFiberNetwork?: Record<string, unknown> & { route?: unknown };
+  engine?: { canonical: string; typescriptRole: string; typescriptTrustedBoundary: boolean };
   livePaymentEnabled?: boolean;
   flow?: FlowState;
 }
@@ -124,6 +128,7 @@ interface EvidenceContextValue extends EvidenceState {
   setInspectorOpen: (open: boolean) => void;
   setPersona: (p: Persona) => void;
   setDensity: (d: Density) => void;
+  setFlowMode: (mode: FlowMode) => void;
   setAutoRefresh: (v: boolean) => void;
   setProfileSelection: (role: string, id: string) => void;
   setAmountShannons: (v: string) => void;
@@ -136,12 +141,6 @@ interface EvidenceContextValue extends EvidenceState {
 }
 
 const EvidenceContext = createContext<EvidenceContextValue | null>(null);
-
-const WORKSPACE_TABS = new Set<WorkspaceTab>(["overview", "flow", "evidence", "attacks", "tournament", "bootstrap", "network"]);
-
-function savedWorkspaceTab(tab: WorkspaceTab | undefined): WorkspaceTab {
-  return tab && WORKSPACE_TABS.has(tab) ? tab : "overview";
-}
 
 export function useEvidence(): EvidenceContextValue {
   const ctx = useContext(EvidenceContext);
@@ -171,6 +170,21 @@ function logEvent(level: string, actor: string, message: string, detail?: string
   return { time: new Date().toISOString(), level, actor, message, detail };
 }
 
+function formatActionError(action: string, error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error || "Unknown error");
+  if (action === "pay" && /insufficient balance|max outbound liquidity|outbound liquidity/i.test(message)) {
+    return `Payer FNN rejected send_payment: insufficient outbound liquidity. Open or refill the payer's outbound channel for this settlement asset, then try again. (${message})`;
+  }
+  const labels: Record<string, string> = {
+    unpaid: "Client / Agent request",
+    pay: "Payer FNN payment",
+    continue: "Client / Agent request continuation",
+    resume: "Automatic request continuation",
+    replay: "Replay protection check",
+  };
+  return `${labels[action] || action} failed: ${message}`;
+}
+
 function fallbackBootstrap(mode: string, error?: Error): BootstrapData {
   const blocker = error?.message || "bootstrap API not loaded";
   const mkRole = (id: string, title: string): BootstrapRole => ({
@@ -181,7 +195,7 @@ function fallbackBootstrap(mode: string, error?: Error): BootstrapData {
   return {
     generatedAt: new Date().toISOString(),
     mode: mode || "unconfigured", liveReady: false,
-    evidence: { productionReady: false },
+    evidence: { localFiberE2e: false, testnetFiberE2e: false, productionOperationsReady: false, productionBootstrapReady: false, productionReady: false, gateReady: false, gateBlockers: [] },
     roles: [mkRole("payer", "Payer FNN"), mkRole("payee", "Payee FNN"), mkRole("gateway", "Rust Gateway")],
   };
 }
@@ -222,20 +236,6 @@ function inferPhase(flow: FlowState | undefined, current: Phase): Phase {
   return current || "idle";
 }
 
-const ACTION_PHASE: Record<string, Phase> = {
-  unpaid: "challenge_received",
-  pay: "payment_settled",
-  retry: "receipt_returned",
-  replay: "replay_rejected",
-};
-
-const ACTION_PERMISSION: Record<string, string> = {
-  unpaid: "send",
-  pay: "pay",
-  retry: "retry",
-  replay: "replay",
-};
-
 export function EvidenceProvider({
   children,
   api,
@@ -270,11 +270,11 @@ export function EvidenceProvider({
     refreshing: false,
     autoRefresh: savedPrefs.autoRefresh !== false,
     reports: {},
-    workspaceTab: savedWorkspaceTab(savedPrefs.workspaceTab),
+    workspaceTab: (savedPrefs.workspaceTab || "flow") as WorkspaceTab,
     persona: mergeConsoleSettings(savedPrefs.consoleSettings).persona,
     density: mergeConsoleSettings(savedPrefs.consoleSettings).density,
     settingsOpen: false,
-    inspectorOpen: savedPrefs.inspectorOpen === true,
+    inspectorOpen: true,
     flow: { events: [] },
     activeTab: "chain",
     phase: "idle",
@@ -282,6 +282,8 @@ export function EvidenceProvider({
     activeAction: null,
     localLogs: [],
     actionHint: "",
+    actionError: "",
+    flowMode: savedPrefs.flowMode === "manual" ? "manual" : "guided",
   }));
 
   const [apiBaseState, setApiBaseState] = useState(initialApiBase);
@@ -298,7 +300,7 @@ export function EvidenceProvider({
       bootstrapDraft: s.bootstrapDraft,
       workspaceTab: s.workspaceTab,
       autoRefresh: s.autoRefresh,
-      inspectorOpen: s.inspectorOpen,
+      flowMode: s.flowMode,
       consoleSettings: { persona: s.persona, density: s.density },
     }));
   }, [apiBaseState]);
@@ -309,16 +311,6 @@ export function EvidenceProvider({
       return next;
     });
   }, []);
-
-  const setAndPersist = useCallback((updater: (prev: EvidenceState) => Partial<EvidenceState>) => {
-    setState((prev) => {
-      const next = { ...prev, ...updater(prev) };
-      persist(next);
-      return next;
-    });
-  }, [persist]);
-
-  const clearBusy = useCallback(() => setAndPersist(() => ({ busy: false, activeAction: null })), [setAndPersist]);
 
   const addLocalLog = useCallback((level: string, actor: string, message: string, detail?: string) => {
     setState((prev) => ({ ...prev, localLogs: [...prev.localLogs, logEvent(level, actor, message, detail)] }));
@@ -387,10 +379,14 @@ export function EvidenceProvider({
               mode: "api-unreachable",
               blockers: [`Evidence API unreachable at ${apiBaseState}`],
               endpoints: fallbackEndpoints,
-              badges: { rustCanonicalEngine: null, tsVectorHarness: null, f402Compatibility: null, productionReady: false },
+              badges: { rustCanonicalEngine: null, tsVectorHarness: null, localFiberE2e: null, f402Compatibility: null, productionReady: false, gateReady: false },
               localFiberNetwork: {
+                node1: { role: "payer", rpc: "127.0.0.1:21714", status: "unconfigured" },
+                node2: { role: "router", rpc: "127.0.0.1:21715", status: "unconfigured" },
+                node3: { role: "payee", rpc: "127.0.0.1:21716", status: "unconfigured" },
                 route: [], routeSource: "unavailable", channelCount: null, channelCountSource: "unavailable", routeStatus: "api unreachable",
               },
+              engine: { canonical: "rust", typescriptRole: "compatibility tooling", typescriptTrustedBoundary: false },
             };
             refreshedStatusMode = fallbackStatus.mode;
             update({ status: fallbackStatus });
@@ -407,7 +403,7 @@ export function EvidenceProvider({
           }
         })(),
         (async () => {
-          const entries = await Promise.all(reportRegistry.map(async ({ key, slug }) => {
+          const entries = await Promise.all(Object.entries(reportKeys).map(async ([key, slug]) => {
             try { return [key, await api.getJson(`/api/reports/${slug}`)]; } catch { return [key, { exists: false, path: `reports/${slug}.json` }]; }
           }));
           update({ reports: Object.fromEntries(entries) });
@@ -436,38 +432,55 @@ export function EvidenceProvider({
 
   const runAction = useCallback(async (action: string) => {
     if (state.busy) return;
-    const perm = ACTION_PERMISSION[action] || action;
+    const perm = action === "unpaid" ? "send" : action;
     const reason = personaActionReason(state.persona, perm);
     if (reason) {
       addLocalLog("WARN", "role-guard", `${action} blocked`, reason);
       update({ actionHint: reason });
       return;
     }
-    const startedPhase: Phase = action === "unpaid" ? "unpaid_request_sent" : state.phase;
-    const completedPhase: Phase = ACTION_PHASE[action] || state.phase;
-    update({ busy: true, activeAction: action, phase: startedPhase });
+    update({ busy: true, activeAction: action, actionHint: "", actionError: "", phase: action === "unpaid" ? "unpaid_request_sent" : state.phase });
+    let latestFlow = state.flow;
+    let latestPhase = state.phase;
+    let paymentSettledBeforeFailure = false;
     try {
       const body = action === "unpaid" ? evidenceActionBody() : {};
-      const result = await api.postJson<{ flow: FlowState }>(`/api/evidence/${action}`, body);
-      const flow = result.flow || state.flow;
-      update({ flow, phase: completedPhase });
+      const endpointAction = action === "continue" ? "retry" : action;
+      const result = await api.postJson<{ flow: FlowState }>(`/api/evidence/${endpointAction}`, body);
+      latestFlow = result.flow || state.flow;
+      latestPhase = inferPhase(latestFlow, state.phase);
+      if (action === "pay") paymentSettledBeforeFailure = true;
+      update({ flow: latestFlow, phase: latestPhase, actionError: "" });
+
+      if (action === "pay" && state.flowMode === "guided") {
+        const continuation = await api.postJson<{ flow: FlowState }>("/api/evidence/retry", {});
+        latestFlow = continuation.flow || latestFlow;
+        latestPhase = inferPhase(latestFlow, latestPhase);
+        update({ flow: latestFlow, phase: latestPhase, actionError: "" });
+      }
       try {
         const status = await api.getJson<StatusData>("/api/status");
-        update({ status, flow: status.flow || flow });
+        const statusFlow = status.flow || latestFlow;
+        update({ status, flow: statusFlow, phase: inferPhase(statusFlow, latestPhase) });
       } catch { /* status refresh optional */ }
     } catch (error) {
-      update({ phase: "failed" });
+      const failureAction = action === "pay" && paymentSettledBeforeFailure ? "resume" : action;
+      update({ flow: latestFlow, phase: inferPhase(latestFlow, latestPhase), actionError: formatActionError(failureAction, error) });
       addLocalLog("ERROR", "web", `${action} failed`, (error as Error).message);
     } finally {
-      clearBusy();
+      setState((prev) => {
+        const next = { ...prev, busy: false, activeAction: null };
+        persist(next);
+        return next;
+      });
     }
-  }, [state.busy, state.persona, state.phase, state.flow, api, evidenceActionBody, update, addLocalLog, clearBusy]);
+  }, [state.busy, state.persona, state.phase, state.flow, state.flowMode, api, evidenceActionBody, update, addLocalLog, persist]);
 
   const resetEvidenceFlow = useCallback(async (reason: string) => {
-    update({ flow: { events: [] }, phase: "idle" });
+    update({ flow: { events: [] }, phase: "idle", actionHint: "", actionError: "" });
     try {
       const result = await api.postJson<{ flow: FlowState }>("/api/evidence/reset", {});
-      update({ flow: result.flow || { events: [] } });
+      update({ flow: result.flow || { events: [] }, actionHint: "", actionError: "" });
       addLocalLog("INFO", "configuration", "flow reset", reason);
     } catch (error) {
       addLocalLog("WARN", "configuration", "flow reset unavailable", (error as Error).message);
@@ -506,9 +519,9 @@ export function EvidenceProvider({
     } catch (error) {
       addLocalLog("ERROR", "bootstrap", "runtime bootstrap failed", (error as Error).message);
     } finally {
-      clearBusy();
+      setState((prev) => { const next = { ...prev, busy: false, activeAction: null }; persist(next); return next; });
     }
-  }, [state.persona, state.bootstrapDraft, state.profileSelection, state.bootstrap, state.configuration, api, update, addLocalLog, clearBusy]);
+  }, [state.persona, state.bootstrapDraft, state.profileSelection, state.bootstrap, state.configuration, api, update, addLocalLog, persist]);
 
   const clearRuntimeBootstrap = useCallback(async () => {
     const reason = personaActionReason(state.persona, "resetRuntime");
@@ -527,22 +540,22 @@ export function EvidenceProvider({
     } catch (error) {
       addLocalLog("ERROR", "bootstrap", "runtime clear failed", (error as Error).message);
     } finally {
-      clearBusy();
+      setState((prev) => { const next = { ...prev, busy: false, activeAction: null }; persist(next); return next; });
     }
-  }, [state.persona, state.bootstrap, state.configuration, api, update, addLocalLog, clearBusy]);
+  }, [state.persona, state.bootstrap, state.configuration, api, update, addLocalLog, persist]);
 
   const clearLog = useCallback(async () => {
-    update({ busy: true, activeAction: "reset", flow: { events: [] }, phase: "idle" as Phase, localLogs: [] });
+    update({ busy: true, activeAction: "reset", flow: { events: [] }, phase: "idle" as Phase, localLogs: [], actionHint: "", actionError: "" });
     try {
       const result = await api.postJson<{ flow: FlowState }>("/api/evidence/reset", {});
-      update({ flow: result.flow || { events: [] }, phase: "idle" as Phase, localLogs: [] });
+      update({ flow: result.flow || { events: [] }, phase: "idle" as Phase, localLogs: [], actionHint: "", actionError: "" });
     } catch (error) {
-      update({ localLogs: [], flow: { events: [] } });
+      update({ localLogs: [], flow: { events: [] }, actionHint: "", actionError: "" });
       addLocalLog("WARN", "web", "server reset unavailable", (error as Error).message);
     } finally {
-      clearBusy();
+      setState((prev) => { const next = { ...prev, busy: false, activeAction: null }; persist(next); return next; });
     }
-  }, [api, update, addLocalLog, clearBusy]);
+  }, [api, update, addLocalLog, persist]);
 
   const exportEvidence = useCallback(async () => {
     if (state.busy) return;
@@ -554,9 +567,9 @@ export function EvidenceProvider({
     } catch (error) {
       addLocalLog("ERROR", "evidence", "export failed", (error as Error).message);
     } finally {
-      clearBusy();
+      setState((prev) => { const next = { ...prev, busy: false, activeAction: null }; persist(next); return next; });
     }
-  }, [state.busy, api, evidenceActionBody, update, addLocalLog, clearBusy]);
+  }, [state.busy, api, evidenceActionBody, update, addLocalLog, persist]);
 
   const copyEnv = useCallback(async () => {
     if (state.busy) return;
@@ -584,30 +597,35 @@ export function EvidenceProvider({
     configLoadedRef.current = false;
   }, [api]);
 
-  const setWorkspaceTab = useCallback((tab: WorkspaceTab) => setAndPersist(() => ({ workspaceTab: tab })), [setAndPersist]);
+  const setWorkspaceTab = useCallback((tab: WorkspaceTab) => {
+    setState((prev) => { const next = { ...prev, workspaceTab: tab }; persist(next); return next; });
+  }, [persist]);
 
   const setSettingsOpen = useCallback((open: boolean) => update({ settingsOpen: open }), [update]);
-  const setInspectorOpen = useCallback((open: boolean) => setAndPersist(() => ({ inspectorOpen: open })), [setAndPersist]);
-  const setPersona = useCallback((p: Persona) => setAndPersist(() => ({ persona: p })), [setAndPersist]);
-  const setDensity = useCallback((d: Density) => setAndPersist(() => ({ density: d })), [setAndPersist]);
-  const setAutoRefresh = useCallback((v: boolean) => setAndPersist(() => ({ autoRefresh: v })), [setAndPersist]);
-  const setSelected = useCallback((path: string) => setAndPersist(() => ({ selected: path })), [setAndPersist]);
+  const setInspectorOpen = useCallback((open: boolean) => update({ inspectorOpen: open }), [update]);
+  const setPersona = useCallback((p: Persona) => { setState((prev) => { const next = { ...prev, persona: p }; persist(next); return next; }); }, [persist]);
+  const setDensity = useCallback((d: Density) => { setState((prev) => { const next = { ...prev, density: d }; persist(next); return next; }); }, [persist]);
+  const setFlowMode = useCallback((mode: FlowMode) => { setState((prev) => { const next = { ...prev, flowMode: mode, actionHint: "", actionError: "" }; persist(next); return next; }); }, [persist]);
+  const setAutoRefresh = useCallback((v: boolean) => { setState((prev) => { const next = { ...prev, autoRefresh: v }; persist(next); return next; }); }, [persist]);
+  const setSelected = useCallback((path: string) => { setState((prev) => { const next = { ...prev, selected: path }; persist(next); return next; }); }, [persist]);
   const setActiveTab = useCallback((tab: string) => update({ activeTab: tab }), [update]);
 
   const setProfileSelection = useCallback((role: string, id: string) => {
-    setAndPersist((prev) => ({ profileSelection: { ...prev.profileSelection, [role]: id } }));
-  }, [setAndPersist]);
+    setState((prev) => { const next = { ...prev, profileSelection: { ...prev.profileSelection, [role]: id } }; persist(next); return next; });
+  }, [persist]);
 
   const setAmountShannons = useCallback((v: string) => {
     const sanitized = sanitizeAmountInput(v, false);
-    setAndPersist(() => {
+    setState((prev) => {
       const amountCkb = /^\d+$/.test(sanitized) ? shannonsToCkb(sanitized) : "";
-      return { parameters: { amountCkb, amountShannons: sanitized } };
+      const next = { ...prev, parameters: { amountCkb, amountShannons: sanitized } };
+      persist(next);
+      return next;
     });
-  }, [setAndPersist]);
+  }, [persist]);
 
   const setBootstrapDraft = useCallback((key: string, value: string | boolean) => {
-    setAndPersist((prev) => {
+    setState((prev) => {
       const v = key === "amountShannons" && typeof value === "string" ? sanitizeAmountInput(value, false) : value;
       const bootstrapDraft = { ...prev.bootstrapDraft, [key]: v };
       if (key === "mode" && typeof v === "string") {
@@ -617,9 +635,11 @@ export function EvidenceProvider({
           bootstrapDraft.currency = defaultFiberRpcCurrency(v);
         }
       }
-      return { bootstrapDraft };
+      const next = { ...prev, bootstrapDraft };
+      persist(next);
+      return next;
     });
-  }, [setAndPersist]);
+  }, [persist]);
 
   // auto-refresh
   useEffect(() => {
@@ -646,12 +666,12 @@ export function EvidenceProvider({
       const key = event.key.toLowerCase();
       if (key === "u") runAction("unpaid");
       if (key === "p") runAction("pay");
-      if (key === "r") runAction("retry");
+      if (key === "r" && state.flowMode === "manual") runAction("continue");
       if (key === "y") runAction("replay");
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [state.settingsOpen, state.busy, runAction, setSettingsOpen]);
+  }, [state.settingsOpen, state.busy, state.flowMode, runAction, setSettingsOpen]);
 
   const val: EvidenceContextValue = {
     ...state,
@@ -670,6 +690,7 @@ export function EvidenceProvider({
     setInspectorOpen,
     setPersona,
     setDensity,
+    setFlowMode,
     setAutoRefresh,
     setProfileSelection,
     setAmountShannons,

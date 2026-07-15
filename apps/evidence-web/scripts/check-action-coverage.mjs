@@ -30,11 +30,11 @@ const commandSurface = [html, builtJs].join("\n");
 
 const controls = [
   { id: "api-apply", label: "Connect API", endpoint: "/api/status", surface: ["api-settings", "api-apply"] },
-  { id: "refresh-all", label: "Refresh Gateway Lab", endpoint: "/api/status", surface: ["refresh-all"] },
-  { id: "send", label: "Send unpaid request", endpoint: "/api/evidence/unpaid", surface: ["send", "evidence/"] },
+  { id: "refresh-all", label: "Refresh console", endpoint: "/api/status", surface: ["refresh-all"] },
+  { id: "send", label: "Client / AI Agent requests paid resource", endpoint: "/api/evidence/unpaid", surface: ["send", "evidence/"] },
   { id: "pay", label: "Pay with Fiber", endpoint: "/api/evidence/pay", surface: ["pay"] },
-  { id: "retry", label: "Retry with Authorization", endpoint: "/api/evidence/retry", surface: ["retry"] },
-  { id: "replay", label: "Replay same credential", endpoint: "/api/evidence/replay", surface: ["replay"] },
+  { id: "continue", label: "Manual protocol credential continuation", endpoint: "/api/evidence/retry", surface: ["continue", "Manual protocol"] },
+  { id: "replay", label: "Test replay protection", endpoint: "/api/evidence/replay", surface: ["replay"] },
   { id: "clear-log", label: "Clear log / reset flow", endpoint: "/api/evidence/reset", surface: ["clear-log", "evidence/reset"] },
   { id: "apply-runtime-bootstrap", label: "Apply runtime bootstrap", endpoint: "/api/bootstrap/runtime", surface: ["apply-runtime-bootstrap", "bootstrap/runtime"] },
   { id: "clear-runtime-bootstrap", label: "Clear runtime bootstrap", endpoint: "/api/bootstrap/runtime/reset", surface: ["clear-runtime-bootstrap", "runtime/reset"] },
@@ -73,4 +73,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log(`Gateway Lab action coverage passed: ${results.length} controls verified`);
+console.log(`evidence console action coverage passed: ${results.length} controls verified`);

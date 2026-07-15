@@ -114,6 +114,8 @@ describe("production gate scripts", () => {
     expect(source).toContain('report.web_origin !== "served-local-web-server"');
     expect(source).toContain('report.api_base_source !== "served HTML injected by evidence web server"');
     expect(source).toContain("evidence_console_browser_smoke_served_web_origin");
+    expect(source).toContain('evidence.service_executed === "executed before receipt"');
+    expect(source).not.toContain('evidence.service_executed === "executed after receipt"');
   });
 
   it("isolates non-live integration tests from the live Fiber gate environment", () => {

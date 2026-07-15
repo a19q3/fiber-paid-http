@@ -80,7 +80,10 @@ async function submissionRequestBody() {
   if (process.env.BATTLECODE_BOT_SOURCE) {
     return { ...body, source: await readFile(process.env.BATTLECODE_BOT_SOURCE, "utf8") };
   }
-  return body;
+  return {
+    ...body,
+    source: await readFile(resolve(repoRoot, "examples/battlecode/fiberchamp/RobotPlayer.java"), "utf8")
+  };
 }
 
 async function get(path) {

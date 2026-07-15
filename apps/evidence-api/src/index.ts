@@ -4,9 +4,10 @@ import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { randomBytes } from "node:crypto";
 import { serve } from "@hono/node-server";
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import {
   PAYMENT_RECEIPT_HEADER,
+  FiberPaidHttpError,
   buildAuthorizationPaymentHeader,
   canonicalJson,
   decodeFiberChargeRequest,
@@ -34,6 +35,8 @@ import {
   issueBattlecodeTicket,
   normalizeBattlecodeRegistration,
   normalizeBattlecodeSubmission,
+  readBattlecodeReplay,
+  readBattlecodeLedger,
   runBattlecodeTournament,
   type BattlecodeRegistrationInput,
   type BattlecodeFairnessManifest,
@@ -643,7 +646,15 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
     }
     const challenge = flow.fiberChallenge!;
     appendEvent(flow, "INFO", "node1 (payer)", "send_payment", `payment_hash=${challenge.paymentHash}`);
-    const payload = await runtime.payerFiber.payCharge(challenge.request);
+    let payload;
+    try {
+      payload = await runtime.payerFiber.payCharge(challenge.request);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Fiber payment failed";
+      const errorCode = error instanceof FiberPaidHttpError ? error.code : "fiber-payment-failed";
+      appendEvent(flow, "ERROR", "node1 (payer)", "send_payment failed", message);
+      return c.json({ error: errorCode, message, flow }, 502);
+    }
     flow.proof = payload;
     flow.credential = {
       challenge: challenge.challenge,
@@ -659,15 +670,15 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
     });
   });
 
-  app.post("/api/evidence/retry", async (c) => {
+  const continueEvidenceRequest = async (c: Context) => {
     const flow = currentFlow(c.req.raw);
     const stateError = authorizationReadyBlocker(flow);
     if (stateError) {
-      appendEvent(flow, "WARN", "client", "retry blocked", stateError);
+      appendEvent(flow, "WARN", "client", "credential continuation blocked", stateError);
       return c.json({ error: "invalid-evidence-state", message: stateError, flow }, 409);
     }
     const resource = flow.resourceOverride ?? findResource(resources, flow.endpoint);
-    appendEvent(flow, "INFO", "client", "retry with Authorization: Payment", preview(flow.authorization!));
+    appendEvent(flow, "INFO", "client", "continue with Authorization: Payment", preview(flow.authorization!));
     const response = await protectResource(resource)(new Request(flow.resourceUrl!, {
       headers: { authorization: flow.authorization! }
     }));
@@ -679,6 +690,7 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
     if (receipt) {
       appendEvent(flow, "INFO", "server", "payment verified", `reference=${receipt.reference}`);
       appendEvent(flow, "INFO", "protected-service", "service executed", `HTTP ${response.status}`);
+      appendEvent(flow, "INFO", "server", "Payment-Receipt returned", `reference=${receipt.reference}`);
     }
     return c.json({
       status: response.status,
@@ -687,11 +699,15 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
       receipt,
       flow
     });
-  });
+  };
+
+  app.post("/api/evidence/continue", continueEvidenceRequest);
+  // Compatibility alias for older scripts and bookmarked evidence sessions.
+  app.post("/api/evidence/retry", continueEvidenceRequest);
 
   app.post("/api/evidence/replay", async (c) => {
     const flow = currentFlow(c.req.raw);
-    const stateError = authorizationReadyBlocker(flow);
+    const stateError = replayReadyBlocker(flow);
     if (stateError) {
       appendEvent(flow, "WARN", "client", "replay blocked", stateError);
       return c.json({ error: "invalid-evidence-state", message: stateError, flow }, 409);
@@ -704,7 +720,13 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
     const body = await safeBody(response);
     flow.replayStatus = response.status;
     flow.replayBody = body;
-    appendEvent(flow, response.status === 402 ? "WARN" : "ERROR", "server", "replay rejected", `HTTP ${response.status}`);
+    appendEvent(
+      flow,
+      response.status === 402 ? "WARN" : "ERROR",
+      "server",
+      response.status === 402 ? "replay rejected" : "replay unexpectedly accepted",
+      `HTTP ${response.status}`
+    );
     return c.json({
       status: response.status,
       headers: exposeHeaders(response),
@@ -924,7 +946,7 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
       appendEvent(flow, "WARN", "tournament", "Battlecode match blocked", "claim a paid ticket first");
       return c.json({ error: "invalid-tournament-state", message: "claim a paid ticket first", flow }, 409);
     }
-    appendEvent(flow, "INFO", "battlecode", "match started", `${tournament.ticket.botPackage} vs baselinebot on ${tournament.registration.map}`);
+    appendEvent(flow, "INFO", "battlecode", "match started", `${tournament.ticket.botPackage} vs arena_baseline on ${tournament.registration.map}`);
     try {
       const report = await runBattlecodeTournament({
         registration: tournament.registration,
@@ -963,6 +985,36 @@ export function createEvidenceApi(options: EvidenceApiOptions = {}): Hono {
       tournament: flow.tournament ?? null,
       ledger: await readBattlecodeLedgerSafe()
     });
+  });
+
+  app.get("/api/tournament/battlecode/replay", async (c) => {
+    const flow = currentFlow(c.req.raw);
+    c.header("cache-control", "no-store");
+    try {
+      const ledger = flow.tournament?.report ? null : await readBattlecodeLedger(repoRoot, effectiveEnv());
+      const replayPath = flow.tournament?.report?.replayPath ?? ledger?.matches.at(-1)?.replayPath;
+      if (!replayPath) {
+        return c.json({
+          error: "battlecode-replay-unavailable",
+          message: "run a Battlecode match before downloading its .bc25 replay"
+        }, 409);
+      }
+      const replay = await readBattlecodeReplay(repoRoot, replayPath);
+      c.header("content-type", "application/octet-stream");
+      c.header("content-disposition", `attachment; filename="${replay.filename}"`);
+      c.header("content-length", String(replay.bytes.byteLength));
+      c.header("x-content-type-options", "nosniff");
+      const body = replay.bytes.buffer.slice(
+        replay.bytes.byteOffset,
+        replay.bytes.byteOffset + replay.bytes.byteLength
+      ) as ArrayBuffer;
+      return c.body(body);
+    } catch (error) {
+      return c.json({
+        error: "invalid-battlecode-replay",
+        message: errorMessage(error)
+      }, 500);
+    }
   });
 
   for (const [name] of Object.entries(reportFiles)) {
@@ -2205,7 +2257,16 @@ function challengeReadyBlocker(flow: EvidenceFlowState): string | undefined {
 
 function authorizationReadyBlocker(flow: EvidenceFlowState): string | undefined {
   if (!flow.authorization || !flow.resource || !flow.resourceUrl) {
-    return "Pay with Fiber before retrying or replaying the credential";
+    return "Pay with Fiber before continuing with or replaying the credential";
+  }
+  return undefined;
+}
+
+function replayReadyBlocker(flow: EvidenceFlowState): string | undefined {
+  const authorizationError = authorizationReadyBlocker(flow);
+  if (authorizationError) return authorizationError;
+  if (!flow.receipt) {
+    return "Complete the authenticated request and receive Payment-Receipt before testing replay protection";
   }
   return undefined;
 }

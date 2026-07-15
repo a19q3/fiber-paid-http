@@ -16,7 +16,7 @@ export function formatTime(value?: string): string {
 }
 
 export function short(value?: string | null): string {
-  if (!value) return "—";
+  if (!value) return "pending";
   const text = String(value);
   return text.length > 26 ? `${text.slice(0, 12)}...${text.slice(-8)}` : text;
 }
@@ -97,6 +97,10 @@ export async function copyTextToClipboard(value: string): Promise<boolean> {
 
 export function downloadJson(filename: string, data: unknown): void {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  downloadBlob(filename, blob);
+}
+
+export function downloadBlob(filename: string, blob: Blob): void {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
@@ -152,19 +156,4 @@ export function channelEvidenceText(network: Record<string, unknown>): string {
   }
   if (network.channelCountSource === "not-polled") return "not polled";
   return "unavailable";
-}
-
-export interface FlowSummary {
-  challengeId?: string;
-  resourceHash?: string;
-  challengeBody?: { challengeId?: string; resourceHash?: string; challenge?: { challengeId?: string } } | null;
-  credential?: { resourceHash?: string } | null;
-}
-
-export function flowChallengeId(flow: FlowSummary | null | undefined): string | undefined {
-  return flow?.challengeId || flow?.challengeBody?.challengeId || flow?.challengeBody?.challenge?.challengeId;
-}
-
-export function flowResourceHash(flow: FlowSummary | null | undefined): string | undefined {
-  return flow?.resourceHash || flow?.credential?.resourceHash || flow?.challengeBody?.resourceHash;
 }

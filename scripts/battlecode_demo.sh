@@ -20,6 +20,7 @@ SESSION="${FIBER_PAID_HTTP_TOURNAMENT_SESSION:-battlecode-live}"
 API_BASE="http://127.0.0.1:$API_PORT"
 WEB_URL="http://127.0.0.1:$WEB_PORT/?sessionId=$SESSION&pollMs=1200"
 XUDT_TYPE_SCRIPT='{"code_hash":"0x50bd8d6680b8b9cf98b73f3c08faf8b2a21914311954118ad6609be6e78a1b95","hash_type":"data2","args":"0x32e555f3ff8e135cece1351a6a2971518392c1e30375c1e006ad0ce8eac07947"}'
+DEMO_SECRET="${FIBER_PAID_HTTP_SECRET:-$(openssl rand -hex 32)}"
 
 network_ready() {
   curl -sS --max-time 2 http://127.0.0.1:21714 \
@@ -53,7 +54,7 @@ start_demo() {
     FIBER_ASSET=xUDT:BCODE \
     FIBER_XUDT_TYPE_SCRIPT="$XUDT_TYPE_SCRIPT" \
     FIBER_E2E_AMOUNT_SHANNONS=100 \
-    FIBER_PAID_HTTP_SECRET="${FIBER_PAID_HTTP_SECRET:-$(openssl rand -hex 32)}" \
+    FIBER_PAID_HTTP_SECRET="$DEMO_SECRET" \
     BATTLECODE_DIR="$BATTLECODE_REPO/java" \
     BATTLECODE_LEDGER_PATH="$ROOT/.tmp/battlecode-demo.sqlite" \
     BATTLECODE_AWARD_SETTLEMENT=local-ledger \

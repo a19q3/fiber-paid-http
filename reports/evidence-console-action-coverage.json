@@ -11,7 +11,7 @@
     },
     {
       "id": "refresh-all",
-      "label": "Refresh Gateway Lab",
+      "label": "Refresh console",
       "surfaceFound": true,
       "endpointFound": true,
       "testFound": true,
@@ -20,7 +20,7 @@
     },
     {
       "id": "send",
-      "label": "Send unpaid request",
+      "label": "Client / AI Agent requests paid resource",
       "surfaceFound": true,
       "endpointFound": true,
       "testFound": true,
@@ -37,8 +37,8 @@
       "status": "passed"
     },
     {
-      "id": "retry",
-      "label": "Retry with Authorization",
+      "id": "continue",
+      "label": "Manual protocol credential continuation",
       "surfaceFound": true,
       "endpointFound": true,
       "testFound": true,
@@ -47,7 +47,7 @@
     },
     {
       "id": "replay",
-      "label": "Replay same credential",
+      "label": "Test replay protection",
       "surfaceFound": true,
       "endpointFound": true,
       "testFound": true,
@@ -100,5 +100,5 @@
       "status": "passed"
     }
   ],
-  "timestamp": "2026-07-14T09:49:28.295Z"
+  "timestamp": "2026-07-15T14:55:07.371Z"
 }

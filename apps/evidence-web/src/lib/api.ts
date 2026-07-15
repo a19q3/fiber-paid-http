@@ -19,6 +19,12 @@ export class ApiClient {
     return response.json();
   }
 
+  async getBlob(path: string): Promise<Blob> {
+    const response = await this.requestJson(path, { cache: "no-store" });
+    if (!response.ok) throw await this.responseError(response);
+    return response.blob();
+  }
+
   async postJson<T = unknown>(path: string, body?: unknown): Promise<T> {
     const response = await this.requestJson(path, {
       method: "POST",

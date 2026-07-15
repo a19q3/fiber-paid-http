@@ -2,22 +2,37 @@ import React, { useMemo } from "react";
 import { useEvidence } from "../state/EvidenceContext.js";
 import { Icon } from "../components/Icon.js";
 import { evidenceTabs, reportDisplayList } from "../constants.js";
-import { booleanSummary, readinessSummary, vectorSummary, flowChallengeId, flowResourceHash } from "../lib/utils.js";
+import { booleanSummary, readinessSummary, vectorSummary } from "../lib/utils.js";
+
+function flowChallengeId(flow: { challengeId?: string; challengeBody?: { challengeId?: string; challenge?: { challengeId?: string } } | null }): string | undefined {
+  return flow.challengeId || flow.challengeBody?.challengeId || flow.challengeBody?.challenge?.challengeId;
+}
+
+function flowResourceHash(flow: { resourceHash?: string; credential?: { resourceHash?: string } | null; challengeBody?: { resourceHash?: string } | null }): string | undefined {
+  return flow.resourceHash || flow.credential?.resourceHash || flow.challengeBody?.resourceHash;
+}
 
 export function EvidenceView() {
   const ev = useEvidence();
 
   const parityItems = useMemo(() => {
     const canonical = ((ev.reports.canonical as Record<string, unknown>)?.data || {}) as Record<string, unknown>;
+    const local = ((ev.reports.gateLocal as Record<string, unknown>)?.data || {}) as Record<string, unknown>;
     const testnet = ((ev.reports.fiberTestnet as Record<string, unknown>)?.data || {}) as Record<string, unknown>;
     const tsGate = ((ev.reports.tsGate as Record<string, unknown>)?.data || {}) as Record<string, unknown>;
     const production = (ev.status?.productionEvidence || {}) as Record<string, unknown>;
     return [
       ["Fiber Commit", (tsGate.fiber_commit as string) || "unavailable"],
       ["Vectors", vectorSummary(canonical)],
+      ["Error Code Parity", booleanSummary(canonical.error_code_parity)],
+      ["F402 Parity", booleanSummary(canonical.f402_parity)],
       ["Canonical Hash", booleanSummary(canonical.canonical_hash_parity)],
       ["Testnet E2E", booleanSummary(production.testnetFiberE2e ?? testnet.testnet_fiber_e2e)],
+      ["Local E2E", booleanSummary(local.live_fiber_local_e2e ?? ev.status?.badges?.localFiberE2e)],
+      ["Bootstrap E2E", booleanSummary(production.productionBootstrapReady)],
       ["Production Ready", readinessSummary(production.productionReady)],
+      ["Gate Ready", readinessSummary(production.gateReady)],
+      ["Conflicts", Array.isArray(production.conflicts) && production.conflicts.length ? String(production.conflicts.length) : "0"],
       ["TS Boundary", booleanSummary(canonical.typescript_trusted_boundary)],
     ] as [string, string][];
   }, [ev.reports, ev.status]);
@@ -42,7 +57,7 @@ export function EvidenceView() {
         blockers: ev.status?.blockers,
       };
     }
-    if (tab === "receipt") return ev.flow?.receipt || (ev.reports.fiber as Record<string, unknown>)?.data || { status: "unavailable", reason: "no receipt recorded in this session" };
+    if (tab === "receipt") return ev.flow?.receipt || (ev.reports.fiber as Record<string, unknown>)?.data || { status: "unavailable", reason: "receipt pending" };
     if (tab === "security") return (ev.reports.security as Record<string, unknown>)?.data || { status: "unavailable", reason: "security matrix unavailable" };
     if (tab === "canonical") return (ev.reports.canonical as Record<string, unknown>)?.data || { status: "unavailable", reason: "canonical report unavailable" };
     return (ev.reports.fiberTestnet as Record<string, unknown>)?.data || (ev.reports.fiber as Record<string, unknown>)?.data || (ev.reports.gateLocal as Record<string, unknown>)?.data || { status: "unavailable", reason: "Fiber evidence unavailable" };
@@ -71,17 +86,15 @@ export function EvidenceView() {
         <div className="panel-body">
           <div className="evidence-tabs" id="tabs">
             {evidenceTabs.map((tab) => (
-              <button key={tab.id} className={"tab-btn tab" + (ev.activeTab === tab.id ? " active" : "")} onClick={() => {
-                document.getElementById("main-content")?.scrollTo({ top: 0 });
-                ev.setActiveTab(tab.id);
-              }}>
+              <button key={tab.id} className={"tab-btn tab" + (ev.activeTab === tab.id ? " active" : "")} onClick={() => ev.setActiveTab(tab.id)}>
                 <Icon name={tab.icon as never} /> {tab.label}
               </button>
             ))}
           </div>
           <pre className="json-view" id="json" aria-label="Selected evidence JSON">{jsonContent}</pre>
 
-          <div className="reports-list">
+          <div className="reports-attack">
+            <div>
               <h3 style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", color: "var(--muted)", marginBottom: 8 }}>Reports</h3>
               <div className="report-list" id="report-list">
                 {reportDisplayList.map(({ file, key }) => {
@@ -97,6 +110,35 @@ export function EvidenceView() {
                   );
                 })}
               </div>
+            </div>
+            <div className="attack-panel">
+              <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".05em", color: "var(--muted)", marginBottom: 8, display: "flex", alignItems: "center", gap: 8 }}>
+                <Icon name="AttackReplay" /> Attack Replay
+                <span className={"chip " + ((ev.phase === "replay_rejected" || ev.flow?.replayStatus === 402) ? "green" : "orange")} style={{ fontSize: 9 }} id="attack-chip">
+                  {(ev.phase === "replay_rejected" || ev.flow?.replayStatus === 402) ? "rejected" : "pending"}
+                </span>
+              </div>
+              <div className="attack-grid" id="attack-grid">
+                {(() => {
+                  const rejected = ev.phase === "replay_rejected" || ev.flow?.replayStatus === 402;
+                  const receipt = ev.flow?.receipt;
+                  const ph = ev.flow?.fiberChallenge?.paymentHash || receipt?.reference || "pending";
+                  return [
+                    ["Status", rejected ? "REPLAY REJECTED" : "PENDING"],
+                    ["Reason", rejected ? "Receipt not reused" : "Awaiting replay"],
+                    ["receipt_reference", receipt?.reference || "pending"],
+                    ["challenge_id", receipt?.challengeId || "pending"],
+                    ["payment_hash", ph],
+                    ["Service", rejected ? "not re-executed" : "awaiting replay"],
+                  ].map(([label, value]) => (
+                    <div key={label}><span>{label}</span><strong>{value}</strong></div>
+                  ));
+                })()}
+              </div>
+              <div id="blocked" style={{ fontSize: 11, color: (ev.phase === "replay_rejected" || ev.flow?.replayStatus === 402) ? "var(--green)" : "var(--muted)", marginTop: 6 }}>
+                {(ev.phase === "replay_rejected" || ev.flow?.replayStatus === 402) ? "replay blocked" : "waiting for replay"}
+              </div>
+            </div>
           </div>
         </div>
       </div>

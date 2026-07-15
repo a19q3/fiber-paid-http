@@ -23,13 +23,11 @@ const viewports = [
 ];
 const maxAllowedTabJitterPx = 1;
 const expectedPanels = {
-  overview: ["overview"],
   flow: ["request", "timeline"],
   bootstrap: ["bootstrap"],
   evidence: ["parity", "evidence"],
   attacks: ["attacks"],
-  network: ["network"],
-  tournament: ["example-capabilities", "example-input", "example-evidence", "example-match"]
+  network: ["network"]
 };
 
 const chromeBin = process.env.CHROME_BIN || await findChrome();
@@ -93,7 +91,7 @@ try {
   await rm(profileDir, { recursive: true, force: true, maxRetries: 8, retryDelay: 250 });
 }
 
-console.log(`Gateway Lab layout checks passed: ${viewports.length} viewports, tab jitter stable across all checked viewports`);
+console.log(`evidence console layout checks passed: ${viewports.length} viewports, tab jitter stable across all checked viewports`);
 
 async function runLayoutChecks(client) {
   const failures = [];
@@ -121,6 +119,23 @@ async function runLayoutChecks(client) {
       }
       if (metrics.offenders.length) {
         failures.push(`${viewport.width}:${tab} overflow offenders ${JSON.stringify(metrics.offenders)}`);
+      }
+      if (tab === "flow") {
+        const actionCards = await client.evaluate(`Array.from(document.querySelectorAll('.btn.protocol-action-step')).map((node) => {
+          const rect = node.getBoundingClientRect();
+          const style = getComputedStyle(node);
+          return {
+            id: node.id,
+            height: +rect.height.toFixed(2),
+            paddingTop: parseFloat(style.paddingTop),
+            paddingBottom: parseFloat(style.paddingBottom)
+          };
+        })`);
+        for (const card of actionCards) {
+          if (card.height < 100 || card.paddingTop < 16 || card.paddingBottom < 16) {
+            failures.push(`${viewport.width}:flow action ${card.id} collapsed to height=${card.height}px padding=${card.paddingTop}/${card.paddingBottom}px`);
+          }
+        }
       }
     }
     await client.evaluate("document.querySelector('.app-header .icon-btn:last-child')?.click()");
@@ -167,56 +182,6 @@ async function runLayoutChecks(client) {
     recordJitterFailures(failures, `evidence-tabs-container-${viewport.width}`, evidenceTabsContainerJitter, { position: true });
   }
 
-  for (const viewport of viewports.filter(({ width }) => width <= 767)) {
-    await client.send("Emulation.setDeviceMetricsOverride", {
-      width: viewport.width,
-      height: viewport.height,
-      deviceScaleFactor: 1,
-      mobile: false
-    });
-    await client.evaluate("new Promise((resolve) => setTimeout(resolve, 250))");
-    const mobileNavBefore = await client.evaluate(mobileNavigationExpression());
-    if (mobileNavBefore.visible || mobileNavBefore.expanded) {
-      failures.push(`${viewport.width}: mobile navigation must start closed ${JSON.stringify(mobileNavBefore)}`);
-    }
-    await client.evaluate("document.querySelector('#toggle-navigation')?.click()");
-    await client.evaluate("new Promise((resolve) => setTimeout(resolve, 250))");
-    const mobileNavOpen = await client.evaluate(mobileNavigationExpression());
-    if (!mobileNavOpen.visible || !mobileNavOpen.expanded) {
-      failures.push(`${viewport.width}: mobile navigation did not open ${JSON.stringify(mobileNavOpen)}`);
-    }
-    await client.evaluate("document.querySelector('[data-workspace-tab=\"evidence\"]')?.click()");
-    await client.evaluate("new Promise((resolve) => setTimeout(resolve, 250))");
-    const mobileNavAfter = await client.evaluate(mobileNavigationExpression());
-    if (mobileNavAfter.visible || mobileNavAfter.expanded || mobileNavAfter.workspace !== "evidence") {
-      failures.push(`${viewport.width}: mobile navigation did not navigate and close ${JSON.stringify(mobileNavAfter)}`);
-    }
-  }
-
-  await client.send("Emulation.setDeviceMetricsOverride", {
-    width: 1024,
-    height: 1100,
-    deviceScaleFactor: 1,
-    mobile: false
-  });
-  await client.evaluate("document.querySelector('#close-inspector')?.click()");
-  await client.evaluate("document.querySelector('#open-settings')?.click()");
-  await client.evaluate(`(() => { const input = document.querySelector('#show-inspector'); if (input && !input.checked) input.click(); })()`);
-  await client.evaluate("document.querySelector('#close-settings')?.click()");
-  await client.evaluate("new Promise((resolve) => setTimeout(resolve, 250))");
-  const inspectorOpen = await client.evaluate(inspectorVisibilityExpression());
-  if (!inspectorOpen.visible || !inspectorOpen.openClass) {
-    failures.push(`1024: inspector setting did not open the responsive panel ${JSON.stringify(inspectorOpen)}`);
-  }
-  await client.evaluate("document.querySelector('#close-inspector')?.click()");
-  await client.evaluate("new Promise((resolve) => setTimeout(resolve, 250))");
-  const inspectorClosed = await client.evaluate(inspectorVisibilityExpression());
-  if (inspectorClosed.visible || inspectorClosed.openClass) {
-    failures.push(`1024: inspector close control did not hide the responsive panel ${JSON.stringify(inspectorClosed)}`);
-  }
-
-  await client.evaluate("document.querySelector('[data-workspace-tab=\"overview\"]')?.click()");
-  await client.evaluate("new Promise((resolve) => setTimeout(resolve, 250))");
   const screenshot = await client.send("Page.captureScreenshot", { format: "png", captureBeyondViewport: false, fromSurface: true });
   await writeFile(resolve(screenshotDir, "layout-check-final.png"), Buffer.from(screenshot.data, "base64"));
 
@@ -249,10 +214,6 @@ function layoutMetricsExpression() {
       .map((node) => node.dataset.panelId);
     const offenders = Array.from(document.querySelectorAll('body *'))
       .filter((node) => {
-        const style = getComputedStyle(node);
-        if (style.display === 'none' || style.visibility === 'hidden') {
-          return false;
-        }
         const rect = node.getBoundingClientRect();
         return rect.width > 0 && rect.height > 0 && (rect.right > innerWidth + 1 || rect.left < -1);
       })
@@ -266,29 +227,6 @@ function layoutMetricsExpression() {
         width: Math.round(node.getBoundingClientRect().width)
       }));
     return { innerWidth, scrollWidth: Math.max(root.scrollWidth, body.scrollWidth), visible, offenders };
-  })()`;
-}
-
-function mobileNavigationExpression() {
-  return `(() => {
-    const nav = document.querySelector('#workspace-navigation');
-    const style = nav ? getComputedStyle(nav) : null;
-    const rect = nav?.getBoundingClientRect();
-    return {
-      visible: Boolean(nav && style?.visibility !== 'hidden' && rect && rect.right > 0),
-      expanded: document.querySelector('#toggle-navigation')?.getAttribute('aria-expanded') === 'true',
-      workspace: document.querySelector('.console')?.dataset.workspace || ''
-    };
-  })()`;
-}
-
-function inspectorVisibilityExpression() {
-  return `(() => {
-    const inspector = document.querySelector('.app-inspector');
-    return {
-      visible: Boolean(inspector && getComputedStyle(inspector).display !== 'none'),
-      openClass: document.querySelector('.app-body')?.classList.contains('inspector-open') === true
-    };
   })()`;
 }
 

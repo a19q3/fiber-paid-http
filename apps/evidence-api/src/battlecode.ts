@@ -1,10 +1,11 @@
 import { createHash, randomBytes } from "node:crypto";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { mkdir, readFile, readdir, stat, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
-import { dirname, resolve } from "node:path";
+import { basename, dirname, isAbsolute, relative, resolve } from "node:path";
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { gunzipSync } from "node:zlib";
 import {
   FiberRpcClient,
   extractInvoicePaymentHash,
@@ -32,6 +33,8 @@ export type BattlecodeFairnessManifest = {
   botPackage: string;
   submissionId?: string;
   botScriptHash: string;
+  opponentPackage: string;
+  opponentScriptHash: string;
   clientHash: string;
   runnerHash: string;
   engineHash: string;
@@ -44,10 +47,12 @@ export type BattlecodeFairnessVerification = {
   status: "verified";
   committed: {
     botScriptHash: string;
+    opponentScriptHash: string;
     clientHash: string;
   };
   observed: {
     botScriptHash: string;
+    opponentScriptHash: string;
     clientHash: string;
     runnerHash: string;
     engineHash: string;
@@ -196,6 +201,34 @@ export type BattlecodeTournamentReport = {
   warnings: string[];
 };
 
+export async function readBattlecodeReplay(
+  repoRoot: string,
+  replayPath: string
+): Promise<{ filename: string; bytes: Buffer }> {
+  const replayRoot = resolve(repoRoot, ".tmp/battlecode-tournament/matches");
+  const candidate = resolve(replayPath);
+  const pathWithinReplayRoot = relative(replayRoot, candidate);
+  if (
+    !pathWithinReplayRoot ||
+    pathWithinReplayRoot.startsWith("..") ||
+    isAbsolute(pathWithinReplayRoot) ||
+    !candidate.endsWith(".bc25")
+  ) {
+    throw new Error("Battlecode replay path is outside the managed match directory");
+  }
+
+  const bytes = await readFile(candidate);
+  if (bytes.length < 2 || bytes[0] !== 0x1f || bytes[1] !== 0x8b) {
+    throw new Error("Battlecode replay is not a gzip-compressed .bc25 file");
+  }
+  try {
+    gunzipSync(bytes);
+  } catch {
+    throw new Error("Battlecode replay gzip stream is invalid");
+  }
+  return { filename: basename(candidate), bytes };
+}
+
 type RunOptions = {
   registration: BattlecodeRegistrationInput;
   ticket: BattlecodeTicket;
@@ -204,10 +237,21 @@ type RunOptions = {
   env?: NodeJS.ProcessEnv;
 };
 
+const DEFAULT_BATTLECODE_DIR = "/home/arthur/a19q3/battlecode25-scaffold/java";
+const DEFAULT_JDK_HOME = "/home/arthur/a19q3/.toolchains/jdk-21.0.11+10";
 const DEFAULT_ENGINE_VERSION = "1.0.0";
 const HASH_PREFIX = "sha256:";
 const BATTLECODE_MAX_SOURCE_BYTES = 128_000;
 const BATTLECODE_LEDGER_SCHEMA_VERSION = 2;
+const BATTLECODE_OPPONENT_PACKAGE = "arena_baseline";
+const FIBER_CHAMP_SOURCE = readFileSync(
+  fileURLToPath(new URL("../../../examples/battlecode/fiberchamp/RobotPlayer.java", import.meta.url)),
+  "utf8"
+);
+const ARENA_BASELINE_SOURCE = readFileSync(
+  fileURLToPath(new URL("../../../examples/battlecode/arena_baseline/RobotPlayer.java", import.meta.url)),
+  "utf8"
+);
 const DISALLOWED_BOT_PATTERNS = [
   "java.net.",
   "java.nio.file.",
@@ -251,11 +295,14 @@ export async function buildBattlecodeFairnessManifest(
   const engineHash = await hashFile(engine.engineJar);
   const botPackage = input?.botPackage ?? "fiberchamp";
   const botScriptHash = input?.botScriptHash ?? battlecodeBuiltInBotScriptHash();
+  const opponentScriptHash = battlecodeBuiltInOpponentScriptHash();
   const clientHash = hashJson({
     domain: "fiber-paid-http-battlecode-client-v1",
     botPackage,
     submissionId: input?.submissionId,
     botScriptHash,
+    opponentPackage: BATTLECODE_OPPONENT_PACKAGE,
+    opponentScriptHash,
     runnerHash,
     engineHash,
     engineVersion: engine.version
@@ -265,6 +312,8 @@ export async function buildBattlecodeFairnessManifest(
     botPackage,
     submissionId: input?.submissionId,
     botScriptHash,
+    opponentPackage: BATTLECODE_OPPONENT_PACKAGE,
+    opponentScriptHash,
     clientHash,
     runnerHash,
     engineHash,
@@ -272,7 +321,8 @@ export async function buildBattlecodeFairnessManifest(
     hashAlgorithm: "sha256",
     notes: [
       "botScriptHash commits to the exact submitted Battlecode RobotPlayer.java source used for this lane.",
-      "clientHash commits to the tournament runner module plus the Battlecode engine jar hash."
+      "opponentScriptHash commits to the exact arena opponent source used for this match.",
+      "clientHash commits to both bots, the tournament runner module, and the Battlecode engine jar hash."
     ]
   };
 }
@@ -285,11 +335,19 @@ export function battlecodeBuiltInBotSource(): string {
   return FIBER_CHAMP_SOURCE;
 }
 
+export function battlecodeBuiltInOpponentScriptHash(): string {
+  return hashBytes(Buffer.from(ARENA_BASELINE_SOURCE, "utf8"));
+}
+
+export function battlecodeBuiltInOpponentSource(): string {
+  return ARENA_BASELINE_SOURCE;
+}
+
 export function normalizeBattlecodeSubmission(input: unknown): BattlecodeSubmissionInput {
   const record = isRecord(input) ? input : {};
   const playerId = cleanId(record.playerId, "arthur");
   const botPackage = cleanPackage(record.botPackage ?? record.bot, "fiberchamp");
-  const source = String(record.source ?? record.botSource ?? FIBER_CHAMP_SOURCE);
+  const source = String(record.source ?? record.botSource ?? "");
   validateBattlecodeBotSource(source, botPackage);
   return { playerId, botPackage, source };
 }
@@ -711,8 +769,12 @@ export async function runBattlecodeTournament(options: RunOptions): Promise<Batt
   await mkdir(replayDir, { recursive: true });
   await writeBotSources(srcDir, options.submission);
   const observedBotScriptHash = await hashFile(resolve(srcDir, `${options.submission.botPackage}/RobotPlayer.java`));
+  const observedOpponentScriptHash = await hashFile(resolve(srcDir, `${BATTLECODE_OPPONENT_PACKAGE}/RobotPlayer.java`));
   if (observedBotScriptHash !== options.ticket.botScriptHash) {
     throw new Error(`materialized bot script hash mismatch: expected ${options.ticket.botScriptHash} got ${observedBotScriptHash}`);
+  }
+  if (observedOpponentScriptHash !== options.ticket.fairnessCommitment.opponentScriptHash) {
+    throw new Error(`materialized opponent script hash mismatch: expected ${options.ticket.fairnessCommitment.opponentScriptHash} got ${observedOpponentScriptHash}`);
   }
 
   const timeoutMs = positiveInt(env.BATTLECODE_MATCH_TIMEOUT_MS, 120_000);
@@ -758,11 +820,11 @@ export async function runBattlecodeTournament(options: RunOptions): Promise<Batt
     "-Dbc.engine.enable-profiler=false",
     "-Dbc.engine.show-indicators=false",
     `-Dbc.game.team-a=${options.submission.botPackage}`,
-    "-Dbc.game.team-b=baselinebot",
+    `-Dbc.game.team-b=${BATTLECODE_OPPONENT_PACKAGE}`,
     `-Dbc.game.team-a.url=${classesDir}`,
     `-Dbc.game.team-b.url=${classesDir}`,
     `-Dbc.game.team-a.package=${options.submission.botPackage}`,
-    "-Dbc.game.team-b.package=baselinebot",
+    `-Dbc.game.team-b.package=${BATTLECODE_OPPONENT_PACKAGE}`,
     `-Dbc.game.maps=${options.registration.map}`,
     "-Dbc.server.validate-maps=true",
     "-Dbc.server.alternate-order=false",
@@ -805,10 +867,12 @@ export async function runBattlecodeTournament(options: RunOptions): Promise<Batt
     status: "verified",
     committed: {
       botScriptHash: options.ticket.botScriptHash,
+      opponentScriptHash: options.ticket.fairnessCommitment.opponentScriptHash,
       clientHash: options.ticket.clientHash
     },
     observed: {
       botScriptHash: observedBotScriptHash,
+      opponentScriptHash: observedOpponentScriptHash,
       clientHash: fairnessManifest.clientHash,
       runnerHash: fairnessManifest.runnerHash,
       engineHash: fairnessManifest.engineHash
@@ -825,7 +889,7 @@ export async function runBattlecodeTournament(options: RunOptions): Promise<Batt
     matchId,
     map: options.registration.map,
     teamA: options.submission.botPackage,
-    teamB: "baselinebot",
+    teamB: BATTLECODE_OPPONENT_PACKAGE,
     winner: parsed.winner,
     winnerSide: parsed.side,
     round: parsed.round,
@@ -873,53 +937,28 @@ export async function runBattlecodeTournament(options: RunOptions): Promise<Batt
 
 export async function battlecodeStatus(repoRoot: string, env: NodeJS.ProcessEnv = process.env): Promise<Record<string, unknown>> {
   const ledger = await readBattlecodeLedger(repoRoot, env);
+  const latestMatch = ledger.matches.at(-1);
   const ledgerHealth = await battlecodeLedgerHealth(repoRoot, env).catch((error: unknown) => ({ error: errorMessage(error) }));
-  const scaffoldDir = resolveBattlecodeScaffoldDir(repoRoot, env);
-  const scaffoldReady = existsSync(resolve(scaffoldDir, "build.gradle"))
-    && existsSync(resolve(scaffoldDir, "gradlew"))
-    && existsSync(resolve(scaffoldDir, "src"));
-  const jdk = await inspectBattlecodeJdk(repoRoot, env);
-  const engineJar = await resolveBattlecodeEngineJar(repoRoot, env)
-    .then((resolved) => ({ status: "ready" as const, ...resolved, blockers: [] as string[] }))
-    .catch((error: unknown) => ({ status: "blocked" as const, path: env.BATTLECODE_ENGINE_JAR ?? null, version: env.BATTLECODE_ENGINE_VERSION ?? null, source: "unavailable", blockers: [errorMessage(error)] }));
-  const engine = jdk.status === "ready" && engineJar.status === "ready"
-    ? { jdkHome: jdk.home, engineJar: engineJar.path, version: engineJar.version }
-    : { error: [...jdk.blockers, ...engineJar.blockers].join("; ") };
-  const fairnessManifest = jdk.status === "ready" && engineJar.status === "ready"
-    ? await buildBattlecodeFairnessManifest(repoRoot, env).catch((error: unknown) => ({ error: errorMessage(error) }))
-    : { error: "Battlecode fairness manifest requires a ready JDK 21+ and engine jar" };
-  const fiberPayment = battlecodeFiberPaymentReadiness(env);
-  const awardSettlement = battlecodeAwardSettlementPlan(env);
+  const engine = await resolveBattlecodeEngine(repoRoot, env).catch((error: unknown) => ({ error: errorMessage(error) }));
+  const fairnessManifest = await buildBattlecodeFairnessManifest(repoRoot, env).catch((error: unknown) => ({ error: errorMessage(error) }));
   return {
     enabled: true,
-    scaffoldDir,
+    scaffoldDir: env.BATTLECODE_DIR ?? DEFAULT_BATTLECODE_DIR,
     ledgerPath: battlecodeLedgerPath(repoRoot, env),
     ledgerStorage: "sqlite",
     ledgerHealth,
     engine,
     fairnessManifest,
-    awardSettlement,
-    readiness: {
-      scaffold: {
-        status: scaffoldReady ? "ready" : "blocked",
-        path: scaffoldDir,
-        source: env.BATTLECODE_DIR ? "env" : "discovered",
-        blockers: scaffoldReady ? [] : [`Battlecode scaffold is missing at ${scaffoldDir}; clone battlecode25-scaffold beside the Fiber Paid HTTP repository or set BATTLECODE_DIR`]
-      },
-      jdk,
-      engineJar,
-      fiberPayment,
-      prizeSettlement: {
-        status: awardSettlement.mode === "local-ledger" || awardSettlement.live ? "ready" : "blocked",
-        mode: awardSettlement.mode,
-        live: awardSettlement.live,
-        blockers: awardSettlement.blockers
-      }
-    },
+    awardSettlement: battlecodeAwardSettlementPlan(env),
     tickets: ledger.tickets.length,
     submissions: ledger.submissions.length,
     matches: ledger.matches.length,
     awards: ledger.awards.length,
+    latestReplay: latestMatch ? {
+      matchId: latestMatch.matchId,
+      filename: basename(latestMatch.replayPath),
+      engineVersion: latestMatch.engineVersion
+    } : null,
     latestAward: ledger.awards.at(-1) ?? null
   };
 }
@@ -1137,6 +1176,12 @@ function assertTicketFairnessCommitment(ticket: BattlecodeTicket, manifest: Batt
   if (ticket.fairnessCommitment.botScriptHash !== manifest.botScriptHash) {
     mismatches.push("ticket fairnessCommitment botScriptHash changed after payment");
   }
+  if (ticket.fairnessCommitment.opponentPackage !== manifest.opponentPackage) {
+    mismatches.push("ticket fairnessCommitment opponentPackage changed after payment");
+  }
+  if (ticket.fairnessCommitment.opponentScriptHash !== manifest.opponentScriptHash) {
+    mismatches.push("ticket fairnessCommitment opponentScriptHash changed after payment");
+  }
   if (ticket.fairnessCommitment.clientHash !== manifest.clientHash) {
     mismatches.push("ticket fairnessCommitment clientHash changed after payment");
   }
@@ -1150,132 +1195,29 @@ async function resolveBattlecodeEngine(repoRoot: string, env: NodeJS.ProcessEnv)
   engineJar: string;
   version: string;
 }> {
-  const jdk = await inspectBattlecodeJdk(repoRoot, env);
-  if (jdk.status !== "ready") throw new Error(jdk.blockers.join("; "));
-  const engine = await resolveBattlecodeEngineJar(repoRoot, env);
-  return { jdkHome: jdk.home, engineJar: engine.path, version: engine.version };
-}
-
-function resolveBattlecodeScaffoldDir(repoRoot: string, env: NodeJS.ProcessEnv): string {
-  if (env.BATTLECODE_DIR) return resolve(env.BATTLECODE_DIR);
-  const home = env.HOME;
-  const candidates = [
-    resolve(repoRoot, "../battlecode25-scaffold/java"),
-    resolve(repoRoot, "../../../battlecode25-scaffold/java"),
-    ...(home ? [resolve(home, "RustroverProjects/battlecode25-scaffold/java"), resolve(home, "battlecode25-scaffold/java")] : [])
-  ];
-  return candidates.find((candidate) => existsSync(resolve(candidate, "build.gradle"))) ?? candidates[0]!;
-}
-
-async function inspectBattlecodeJdk(repoRoot: string, env: NodeJS.ProcessEnv): Promise<{
-  status: "ready" | "blocked";
-  home: string;
-  version: string | null;
-  source: "BATTLECODE_JDK_HOME" | "JAVA_HOME" | "discovered" | "unconfigured";
-  blockers: string[];
-}> {
-  const discovered = await discoverBattlecodeJdkHome(repoRoot, env);
-  const home = env.BATTLECODE_JDK_HOME ? resolve(env.BATTLECODE_JDK_HOME) : env.JAVA_HOME ? resolve(env.JAVA_HOME) : discovered ?? "";
-  const source = env.BATTLECODE_JDK_HOME ? "BATTLECODE_JDK_HOME" : env.JAVA_HOME ? "JAVA_HOME" : discovered ? "discovered" : "unconfigured";
-  if (!home || !existsSync(resolve(home, "bin/java")) || !existsSync(resolve(home, "bin/javac"))) {
-    return { status: "blocked", home, version: null, source, blockers: ["Battlecode requires JDK 21 or newer; set BATTLECODE_JDK_HOME or put a compatible JDK on PATH"] };
+  const jdkHome = env.BATTLECODE_JDK_HOME ?? DEFAULT_JDK_HOME;
+  const javaBin = resolve(jdkHome, "bin/java");
+  const javacBin = resolve(jdkHome, "bin/javac");
+  if (!existsSync(javaBin) || !existsSync(javacBin)) {
+    throw new Error(`Battlecode JDK 21 is missing; set BATTLECODE_JDK_HOME or install ${DEFAULT_JDK_HOME}`);
   }
-  let version: string | null = null;
-  try {
-    const release = await readFile(resolve(home, "release"), "utf8");
-    version = release.match(/^JAVA_VERSION="([^"]+)"/m)?.[1] ?? null;
-  } catch {
-    version = /(?:^|[\\/_.-])jdk[_.-]?(\d+)(?:[\\/_.-]|$)/i.exec(home)?.[1] ?? null;
-  }
-  const major = javaMajorVersion(version);
-  if (major === null || major < 21) {
-    return { status: "blocked", home, version, source, blockers: [`Battlecode requires JDK 21 or newer; ${home} reports ${version ?? "an unknown version"}`] };
-  }
-  return { status: "ready", home, version, source, blockers: [] };
-}
-
-async function discoverBattlecodeJdkHome(repoRoot: string, env: NodeJS.ProcessEnv): Promise<string | null> {
-  const local = [resolve(repoRoot, "../.toolchains/jdk-21"), resolve(repoRoot, "../../../.toolchains/jdk-21")]
-    .find((candidate) => existsSync(resolve(candidate, "bin/java")) && existsSync(resolve(candidate, "bin/javac")));
-  if (local) return local;
-
-  const probe = await captureCommand("java", ["-XshowSettings:properties", "-version"], env).catch(() => "");
-  const javaHome = probe.match(/^\s*java\.home\s*=\s*(.+)$/m)?.[1]?.trim();
-  if (javaHome && existsSync(resolve(javaHome, "bin/java")) && existsSync(resolve(javaHome, "bin/javac"))) {
-    return javaHome;
-  }
-  return null;
-}
-
-async function captureCommand(command: string, args: string[], env: NodeJS.ProcessEnv): Promise<string> {
-  return new Promise((resolveCommand, reject) => {
-    const child = spawn(command, args, {
-      env: { ...process.env, ...env },
-      stdio: ["ignore", "pipe", "pipe"]
-    });
-    let output = "";
-    const timer = setTimeout(() => {
-      child.kill("SIGTERM");
-      reject(new Error(`${command} probe timed out`));
-    }, 5_000);
-    child.stdout.setEncoding("utf8");
-    child.stderr.setEncoding("utf8");
-    child.stdout.on("data", (chunk: string) => { output += chunk; });
-    child.stderr.on("data", (chunk: string) => { output += chunk; });
-    child.on("error", (error) => {
-      clearTimeout(timer);
-      reject(error);
-    });
-    child.on("close", (code) => {
-      clearTimeout(timer);
-      if (code === 0) resolveCommand(output);
-      else reject(new Error(`${command} probe exited with ${code}`));
-    });
-  });
-}
-
-function javaMajorVersion(version: string | null): number | null {
-  if (!version) return null;
-  const match = version.match(/^(?:1\.)?(\d+)/);
-  if (!match?.[1]) return null;
-  const major = Number.parseInt(match[1], 10);
-  return Number.isFinite(major) ? major : null;
-}
-
-async function resolveBattlecodeEngineJar(repoRoot: string, env: NodeJS.ProcessEnv): Promise<{
-  path: string;
-  version: string;
-  source: "BATTLECODE_ENGINE_JAR" | "toolchain" | "gradle-cache";
-}> {
   const explicitJar = env.BATTLECODE_ENGINE_JAR;
-  if (explicitJar) {
-    const path = resolve(explicitJar);
-    if (!existsSync(path)) throw new Error(`BATTLECODE_ENGINE_JAR does not exist: ${path}`);
-    return { path, version: env.BATTLECODE_ENGINE_VERSION ?? "custom", source: "BATTLECODE_ENGINE_JAR" };
+  if (explicitJar && existsSync(explicitJar)) {
+    return { jdkHome, engineJar: explicitJar, version: env.BATTLECODE_ENGINE_VERSION ?? "custom" };
   }
-  const scaffoldVersion = await readFile(resolve(resolveBattlecodeScaffoldDir(repoRoot, env), "engine_version.txt"), "utf8")
-    .then((value) => value.trim())
-    .catch(() => "");
-  const version = (env.BATTLECODE_ENGINE_VERSION ?? scaffoldVersion) || DEFAULT_ENGINE_VERSION;
-  const toolchainJars = [
-    resolve(repoRoot, `../.toolchains/battlecode25/battlecode25-java-${version}.jar`),
-    resolve(repoRoot, `../../../.toolchains/battlecode25/battlecode25-java-${version}.jar`)
-  ];
-  const toolchainJar = toolchainJars.find((candidate) => existsSync(candidate));
-  if (toolchainJar) {
-    return { path: toolchainJar, version, source: "toolchain" };
+  const toolchainJar = resolve(repoRoot, "../.toolchains/battlecode25/battlecode25-java-3.1.0.jar");
+  if (existsSync(toolchainJar)) {
+    return { jdkHome, engineJar: toolchainJar, version: "3.1.0" };
   }
-  const cached = await findCachedBattlecodeJar(version, env);
+  const cached = await findCachedBattlecodeJar(DEFAULT_ENGINE_VERSION);
   if (cached) {
-    return { path: cached, version, source: "gradle-cache" };
+    return { jdkHome, engineJar: cached, version: DEFAULT_ENGINE_VERSION };
   }
-  throw new Error(`Battlecode engine jar ${version} is missing; set BATTLECODE_ENGINE_JAR or run the Battlecode scaffold Gradle build with JDK 21 or newer`);
+  throw new Error("Battlecode engine jar is missing; set BATTLECODE_ENGINE_JAR or download battlecode25-java-3.1.0.jar");
 }
 
-async function findCachedBattlecodeJar(version: string, env: NodeJS.ProcessEnv): Promise<string | null> {
-  const home = env.HOME;
-  if (!home) return null;
-  const root = resolve(home, `.gradle/caches/modules-2/files-2.1/org.battlecode/battlecode25-java/${version}`);
+async function findCachedBattlecodeJar(version: string): Promise<string | null> {
+  const root = `${process.env.HOME ?? "/home/arthur"}/.gradle/caches/modules-2/files-2.1/org.battlecode/battlecode25-java/${version}`;
   try {
     const files = await listFiles(root, ".jar");
     return files[0] ?? null;
@@ -1284,25 +1226,10 @@ async function findCachedBattlecodeJar(version: string, env: NodeJS.ProcessEnv):
   }
 }
 
-function battlecodeFiberPaymentReadiness(env: NodeJS.ProcessEnv): {
-  status: "ready" | "unconfigured";
-  mode: "local" | "testnet" | "unconfigured";
-  blockers: string[];
-} {
-  const blockers: string[] = [];
-  let mode: "local" | "testnet" | "unconfigured" = "unconfigured";
-  try { mode = parseFiberMode(env.FIBER_MODE); } catch { blockers.push("Set FIBER_MODE=local or FIBER_MODE=testnet"); }
-  if (env.RUN_FIBER_E2E !== "1") blockers.push("Set RUN_FIBER_E2E=1");
-  if (!(env.FIBER_PAYEE_RPC_URL ?? env.FIBER_RPC_URL)) blockers.push("Set FIBER_PAYEE_RPC_URL or FIBER_RPC_URL");
-  if (!env.FIBER_PAYER_RPC_URL) blockers.push("Set FIBER_PAYER_RPC_URL");
-  if (!env.FIBER_PAID_HTTP_SECRET || env.FIBER_PAID_HTTP_SECRET.length < 32) blockers.push("Set FIBER_PAID_HTTP_SECRET to at least 32 characters");
-  return { status: blockers.length === 0 ? "ready" : "unconfigured", mode, blockers };
-}
-
 async function writeBotSources(srcDir: string, submission: BattlecodeSubmission): Promise<void> {
   const bots = [
     { name: submission.botPackage, source: await readFile(submission.sourcePath, "utf8") },
-    { name: "baselinebot", source: BASELINE_BOT_SOURCE }
+    { name: BATTLECODE_OPPONENT_PACKAGE, source: ARENA_BASELINE_SOURCE }
   ];
   for (const bot of bots) {
     const dir = resolve(srcDir, bot.name);
@@ -1504,7 +1431,10 @@ function cleanId(value: unknown, fallback: string): string {
 
 function cleanPackage(value: unknown, fallback: string): string {
   const text = String(value ?? fallback).trim();
-  if (/^[a-z][a-z0-9_]{0,31}$/i.test(text) && text !== "baselinebot") {
+  if (
+    /^[a-z][a-z0-9_]{0,31}$/i.test(text) &&
+    !["baselinebot", BATTLECODE_OPPONENT_PACKAGE].includes(text.toLowerCase())
+  ) {
     return text;
   }
   throw new Error(`invalid Battlecode Java package: ${text}`);
@@ -1594,130 +1524,3 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
-
-const BASELINE_BOT_SOURCE = `package baselinebot;
-
-import battlecode.common.*;
-
-public strictfp class RobotPlayer {
-  public static void run(RobotController rc) throws GameActionException {
-    while (true) {
-      Clock.yield();
-    }
-  }
-}
-`;
-
-const FIBER_CHAMP_SOURCE = `package fiberchamp;
-
-import battlecode.common.*;
-
-public strictfp class RobotPlayer {
-  static int turns = 0;
-  static final Direction[] DIRECTIONS = {
-    Direction.NORTH,
-    Direction.NORTHEAST,
-    Direction.EAST,
-    Direction.SOUTHEAST,
-    Direction.SOUTH,
-    Direction.SOUTHWEST,
-    Direction.WEST,
-    Direction.NORTHWEST
-  };
-
-  public static void run(RobotController rc) throws GameActionException {
-    while (true) {
-      turns += 1;
-      try {
-        UnitType type = rc.getType();
-        if (type.isTowerType()) {
-          runTower(rc);
-        } else if (type == UnitType.SOLDIER) {
-          runSoldier(rc);
-        } else if (type == UnitType.MOPPER) {
-          runMopper(rc);
-        } else {
-          runSoldier(rc);
-        }
-      } catch (Exception e) {
-        System.out.println("fiberchamp error: " + e.getMessage());
-      } finally {
-        Clock.yield();
-      }
-    }
-  }
-
-  static void runTower(RobotController rc) throws GameActionException {
-    RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
-    for (RobotInfo enemy : enemies) {
-      if (rc.canAttack(enemy.getLocation())) {
-        rc.attack(enemy.getLocation());
-        return;
-      }
-    }
-    UnitType unit = turns % 5 == 0 ? UnitType.MOPPER : UnitType.SOLDIER;
-    for (Direction dir : DIRECTIONS) {
-      MapLocation loc = rc.getLocation().add(dir);
-      if (rc.canBuildRobot(unit, loc)) {
-        rc.buildRobot(unit, loc);
-        return;
-      }
-    }
-  }
-
-  static void runSoldier(RobotController rc) throws GameActionException {
-    RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
-    for (RobotInfo enemy : enemies) {
-      if (rc.canAttack(enemy.getLocation())) {
-        rc.attack(enemy.getLocation());
-        return;
-      }
-    }
-    MapInfo[] infos = rc.senseNearbyMapInfos();
-    MapLocation target = null;
-    for (MapInfo info : infos) {
-      if (info.hasRuin()) {
-        target = info.getMapLocation();
-        break;
-      }
-    }
-    if (target != null) {
-      Direction dir = rc.getLocation().directionTo(target);
-      if (rc.canMove(dir)) {
-        rc.move(dir);
-      }
-    } else {
-      movePattern(rc);
-    }
-    if (rc.canAttack(rc.getLocation())) {
-      rc.attack(rc.getLocation());
-    }
-  }
-
-  static void runMopper(RobotController rc) throws GameActionException {
-    RobotInfo[] enemies = rc.senseNearbyRobots(-1, rc.getTeam().opponent());
-    if (enemies.length > 0) {
-      Direction dir = rc.getLocation().directionTo(enemies[0].getLocation());
-      if (rc.canMopSwing(dir)) {
-        rc.mopSwing(dir);
-        return;
-      }
-      if (rc.canMove(dir)) {
-        rc.move(dir);
-        return;
-      }
-    }
-    movePattern(rc);
-  }
-
-  static void movePattern(RobotController rc) throws GameActionException {
-    for (int i = 0; i < DIRECTIONS.length; i++) {
-      Direction dir = DIRECTIONS[(turns + i) % DIRECTIONS.length];
-      if (rc.canMove(dir)) {
-        rc.move(dir);
-        return;
-      }
-    }
-  }
-}
-`;

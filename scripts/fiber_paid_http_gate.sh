@@ -114,7 +114,7 @@ if (!/^[0-9a-f]{64}$/i.test(evidence.resource_hash || "")) missing.push("complet
 if (!/^0x[0-9a-f]{64}$/i.test(evidence.payment_hash || "")) missing.push("completed_flow_evidence.payment_hash_format");
 if (!/^0x[0-9a-f]{64}$/i.test(evidence.receipt_reference || "")) missing.push("completed_flow_evidence.receipt_reference_format");
 if ((evidence.payment_hash || "").toLowerCase() !== (evidence.receipt_reference || "").toLowerCase()) missing.push("completed_flow_evidence.payment_receipt_reference_match");
-if (evidence.service_executed !== "executed after receipt") missing.push("completed_flow_evidence.service_executed");
+if (evidence.service_executed !== "executed before receipt") missing.push("completed_flow_evidence.service_executed");
 if (evidence.replay_status !== "blocked") missing.push("completed_flow_evidence.replay_status");
 if (evidence.receipt_reissued !== "false") missing.push("completed_flow_evidence.receipt_reissued");
 if (report.reset_evidence_after_clear !== true) missing.push("reset_evidence_after_clear");
@@ -470,7 +470,7 @@ function completedBrowserSmokeEvidence(evidence) {
     /^0x[0-9a-f]{64}$/i.test(evidence.payment_hash || "") &&
     /^0x[0-9a-f]{64}$/i.test(evidence.receipt_reference || "") &&
     evidence.payment_hash.toLowerCase() === evidence.receipt_reference.toLowerCase() &&
-    evidence.service_executed === "executed after receipt" &&
+    evidence.service_executed === "executed before receipt" &&
     evidence.replay_status === "blocked" &&
     evidence.receipt_reissued === "false"
   );

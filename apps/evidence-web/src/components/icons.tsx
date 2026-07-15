@@ -12,11 +12,10 @@ import {
   Copy,
   Database,
   FileJson,
+  FileUp,
   Hash,
   Monitor,
-  Gauge,
   Network,
-  PanelLeft,
   PanelRight,
   Radio,
   ReceiptText,
@@ -58,8 +57,6 @@ export type ConsoleIconName =
   | "FiberNetwork"
   | "F402"
   | "Method"
-  | "Navigation"
-  | "Overview"
   | "PaymentReceipt"
   | "Price"
   | "ReportArtifact"
@@ -74,6 +71,7 @@ export type ConsoleIconName =
   | "Terminal"
   | "Timeline"
   | "Tournament"
+  | "Upload"
   | "VectorHarness";
 
 type WrappedIconProps = {
@@ -106,6 +104,7 @@ export const RequestScenarioIcon = wrapIcon("RequestScenario", ClipboardList);
 export const FiberNetworkIcon = wrapIcon("FiberNetwork", Network);
 export const TimelineIcon = wrapIcon("Timeline", Workflow);
 export const TournamentIcon = wrapIcon("Tournament", Trophy);
+export const UploadIcon = wrapIcon("Upload", FileUp);
 export const EvidenceIcon = wrapIcon("Evidence", Braces);
 export const TerminalIcon = wrapIcon("Terminal", Terminal);
 export const CopyIcon = wrapIcon("Copy", Copy);
@@ -126,13 +125,11 @@ export const SecurityMatrixIcon = wrapIcon("SecurityMatrix", ShieldAlert);
 export const CanonicalParityIcon = wrapIcon("CanonicalParity", PanelRight);
 export const PriceIcon = wrapIcon("Price", Coins);
 export const MethodIcon = wrapIcon("Method", CircleDollarSign);
-export const NavigationIcon = wrapIcon("Navigation", PanelLeft);
-export const OverviewIcon = wrapIcon("Overview", Gauge);
 export const ResourceHashIcon = wrapIcon("ResourceHash", Hash);
 export const RouteIcon = wrapIcon("Route", Route);
 export const F402Icon = wrapIcon("F402", Radio);
 export const VectorHarnessIcon = wrapIcon("VectorHarness", Database);
-export const AttackReplayIcon = wrapIcon("AttackReplay", CircleX);
+export const AttackReplayIcon = wrapIcon("AttackReplay", ShieldAlert);
 export const SettingsIcon = wrapIcon("Settings", SlidersHorizontal);
 
 export const consoleIconComponents = {
@@ -154,8 +151,6 @@ export const consoleIconComponents = {
   F402: F402Icon,
   FiberNetwork: FiberNetworkIcon,
   Method: MethodIcon,
-  Navigation: NavigationIcon,
-  Overview: OverviewIcon,
   PaymentReceipt: PaymentReceiptIcon,
   Price: PriceIcon,
   ReportArtifact: ReportArtifactIcon,
@@ -170,5 +165,8 @@ export const consoleIconComponents = {
   Terminal: TerminalIcon,
   Timeline: TimelineIcon,
   Tournament: TournamentIcon,
+  Upload: UploadIcon,
   VectorHarness: VectorHarnessIcon
 } satisfies Record<ConsoleIconName, React.ComponentType<WrappedIconProps>>;
+
+export const consoleIconNames = Object.keys(consoleIconComponents).sort() as ConsoleIconName[];

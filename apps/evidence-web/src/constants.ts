@@ -20,69 +20,70 @@ export const evidenceTabs = [
 ] as const;
 
 export const workspaceTabs = [
-  { id: "overview", label: "Overview", icon: "Overview", group: "Build" },
-  { id: "flow", label: "Payment demo", icon: "Timeline", group: "Build" },
-  { id: "evidence", label: "Verifier", icon: "Evidence", group: "Verify" },
-  { id: "attacks", label: "Security", icon: "AttackReplay", group: "Verify" },
-  { id: "tournament", label: "Battlecode", icon: "Tournament", group: "Explore" },
-  { id: "bootstrap", label: "Runtime setup", icon: "FiberNetwork", group: "Operate" },
-  { id: "network", label: "Network health", icon: "Activity", group: "Operate" },
+  { id: "flow", label: "Flow", icon: "Timeline" },
+  { id: "bootstrap", label: "Bootstrap", icon: "FiberNetwork" },
+  { id: "tournament", label: "Tournament", icon: "Tournament" },
+  { id: "evidence", label: "Evidence", icon: "Evidence" },
+  { id: "attacks", label: "Attacks", icon: "AttackReplay" },
+  { id: "network", label: "Network", icon: "FiberNetwork" },
 ] as const;
 
-export interface ReportEntry {
-  key: string;
-  slug: string;
-  file?: string;
-}
+export const reportKeys = {
+  canonical: "canonical",
+  fiber: "fiber-local",
+  fiberTestnet: "fiber-testnet",
+  productionOps: "production-ops",
+  productionBootstrap: "production-bootstrap",
+  security: "security",
+  gate: "gate",
+  gateLocal: "gate-local",
+  gateDefault: "gate-default",
+  rustGate: "rust-gate",
+  tsGate: "ts-gate",
+} as const;
 
-export const reportRegistry: readonly ReportEntry[] = [
-  { key: "canonical", slug: "canonical", file: "canonical-core-parity.json" },
-  { key: "fiberTestnet", slug: "fiber-testnet", file: "fiber-testnet-e2e-success.json" },
-  { key: "fiber", slug: "fiber-local", file: "fiber-local-e2e-evidence.json" },
-  { key: "productionOps", slug: "production-ops", file: "production-operations-matrix.json" },
-  { key: "productionBootstrap", slug: "production-bootstrap", file: "production-bootstrap-e2e.json" },
-  { key: "gate", slug: "gate", file: "fiber-paid-http-gate.json" },
-  { key: "gateLocal", slug: "gate-local", file: "fiber-paid-http-gate.local.json" },
-  { key: "gateDefault", slug: "gate-default", file: "fiber-paid-http-gate.default.json" },
-  { key: "security", slug: "security", file: "security-matrix.json" },
-  { key: "rustGate", slug: "rust-gate" },
-  { key: "tsGate", slug: "ts-gate" },
+export const reportDisplayList = [
+  { file: "canonical-core-parity.json", key: "canonical" as const },
+  { file: "fiber-testnet-e2e-success.json", key: "fiberTestnet" as const },
+  { file: "fiber-local-e2e-evidence.json", key: "fiber" as const },
+  { file: "production-operations-matrix.json", key: "productionOps" as const },
+  { file: "production-bootstrap-e2e.json", key: "productionBootstrap" as const },
+  { file: "fiber-paid-http-gate.json", key: "gate" as const },
+  { file: "fiber-paid-http-gate.local.json", key: "gateLocal" as const },
+  { file: "fiber-paid-http-gate.default.json", key: "gateDefault" as const },
+  { file: "security-matrix.json", key: "security" as const },
 ];
-
-export const reportDisplayList: ReadonlyArray<{ key: string; file: string }> = reportRegistry
-  .filter((e): e is ReportEntry & { file: string } => Boolean(e.file))
-  .map((e) => ({ key: e.key, file: e.file }));
 
 export const consolePersonas: Record<Persona, { title: string; summary: string }> = {
   operator: {
-    title: "Full payment flow",
-    summary: "Shows and enables the complete 402 -> Fiber payment -> receipt -> replay rejection sequence across client, Fiber, gateway, and upstream.",
+    title: "Operator / evidence auditor",
+    summary: "Runs the full 402 -> Fiber payment -> protected service -> receipt evidence flow, with replay rejection as an optional security check.",
   },
   payer: {
-    title: "Payer perspective",
-    summary: "Emphasizes the protected request, payer profile, amount, payment execution, and Authorization: Payment retry path.",
+    title: "Payer client",
+    summary: "Prioritizes the protected request, payer wallet profile, amount, and authenticated request continuation.",
   },
   payee: {
-    title: "Payee perspective",
-    summary: "Emphasizes invoice issuance, protected resource verification, receipt issuance, and replay-store evidence.",
+    title: "Payee / gateway operator",
+    summary: "Prioritizes invoice issuance, protected resource verification, receipt issuance, and replay-store evidence.",
   },
   auditor: {
-    title: "Read-only audit",
-    summary: "Exposes evidence artifacts, canonical parity, runtime blockers, and replay rejection records without executing payment actions.",
+    title: "Security auditor",
+    summary: "Prioritizes evidence artifacts, canonical parity, bootstrap blockers, and replay rejection records.",
   },
 };
 
 export const personaCapabilities: Record<Persona, Record<string, boolean>> = {
-  operator: { send: true, pay: true, retry: true, replay: true, bootstrap: true, resetRuntime: true, exportEvidence: true },
-  payer: { send: true, pay: true, retry: true, replay: true, bootstrap: true, resetRuntime: false, exportEvidence: true },
-  payee: { send: true, pay: false, retry: true, replay: true, bootstrap: true, resetRuntime: true, exportEvidence: true },
-  auditor: { send: false, pay: false, retry: false, replay: false, bootstrap: false, resetRuntime: false, exportEvidence: true },
+  operator: { send: true, pay: true, continue: true, replay: true, bootstrap: true, resetRuntime: true, exportEvidence: true },
+  payer: { send: true, pay: true, continue: true, replay: true, bootstrap: true, resetRuntime: false, exportEvidence: true },
+  payee: { send: false, pay: false, continue: false, replay: false, bootstrap: true, resetRuntime: true, exportEvidence: true },
+  auditor: { send: false, pay: false, continue: false, replay: false, bootstrap: false, resetRuntime: false, exportEvidence: true },
 };
 
 const personaActionLabels: Record<string, string> = {
   send: "send unpaid requests",
   pay: "execute payer Fiber payments",
-  retry: "retry with Authorization: Payment",
+  continue: "continue with Authorization: Payment",
   replay: "replay credentials",
   bootstrap: "apply runtime bootstrap",
   resetRuntime: "clear runtime bootstrap",
@@ -96,7 +97,7 @@ export function personaCan(persona: Persona, action: string): boolean {
 export function personaActionReason(persona: Persona, action: string): string {
   if (personaCan(persona, action)) return "";
   const title = consolePersonas[persona]?.title || persona;
-  return `${title} cannot ${personaActionLabels[action] || action}; switch to Full payment flow if this is an intentional cross-role operation.`;
+  return `${title} cannot ${personaActionLabels[action] || action}; switch to Operator if this is an intentional cross-role operation.`;
 }
 
 export function mergeConsoleSettings(value: unknown): { persona: Persona; density: Density } {

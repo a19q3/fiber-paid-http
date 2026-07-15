@@ -1,5 +1,5 @@
 
-> @fiber-paid-http/evidence-web@0.2.0 check-server /Users/arthur/RustroverProjects/fiber-mpp/.worktrees/chore-evidence-web-audit/apps/evidence-web
+> @fiber-paid-http/evidence-web@0.2.0 check-server /Users/arthur/RustroverProjects/fiber-mpp/apps/evidence-web
 > node scripts/check-server.mjs
 
 evidence web server hardening checks passed: methods, headers, root containment, implementation-file denylist

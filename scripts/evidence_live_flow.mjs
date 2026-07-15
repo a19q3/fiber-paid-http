@@ -23,13 +23,13 @@ try {
   console.log(`endpoint=${endpoint}`);
   console.log(`amount=${amountCkb} CKB; fiber_amount_shannons=${amountShannons}`);
 
-  const readyz = await getJson("/readyz", { acceptStatuses: [200, 503] });
-  steps.push({ step: "readyz", status: readyz.response.status, body: readyz.body });
-  if (!readyz.body?.ok) {
-    const blockers = readyz.body?.blockers?.length ? readyz.body.blockers : ["live Fiber readiness failed"];
+  const readiness = await readLiveReadiness();
+  steps.push({ step: "readiness", path: readiness.path, status: readiness.response.status, body: readiness.body });
+  if (!readiness.body?.ok) {
+    const blockers = readiness.body?.blockers?.length ? readiness.body.blockers : ["live Fiber readiness failed"];
     throw new Error(`Evidence API is not live-ready: ${blockers.join(" | ")}`);
   }
-  console.log(`readyz=ready mode=${readyz.body.mode}`);
+  console.log(`readiness=ready source=${readiness.path} mode=${readiness.body.mode}`);
 
   await postStep("reset", "/api/evidence/reset", {});
   await pause("reset visible");
@@ -46,17 +46,17 @@ try {
   await pause("402 challenge visible");
 
   const pay = await postStep("pay", "/api/evidence/pay", {});
-  const proof = pay.body?.proof || {};
+  const proof = pay.body?.payload || pay.body?.proof || pay.body?.flow?.proof || {};
   const proofHash = proof.paymentHash || proof.payment_hash || paymentHash;
-  console.log(`Fiber payment sent proof_mode=${proof.mode || "unknown"} payment_hash=${proofHash || "unknown"}`);
+  console.log(`Fiber payment sent credential=ready payment_hash=${proofHash || "unknown"}`);
   await pause("payment visible");
 
-  const retry = await postStep("retry", "/api/evidence/retry", {});
-  if (retry.body?.status !== 200 || !retry.body?.receipt) {
-    throw new Error(`Authorization retry did not return HTTP 200 with Payment-Receipt: ${JSON.stringify(summarizeBody(retry.body))}`);
+  const continuation = await postStep("continue", "/api/evidence/retry", {});
+  if (continuation.body?.status !== 200 || !continuation.body?.receipt) {
+    throw new Error(`Authenticated request did not return HTTP 200 with Payment-Receipt: ${JSON.stringify(summarizeBody(continuation.body))}`);
   }
-  const receiptReference = retry.body.receipt.reference;
-  const challengeId = retry.body.receipt.challengeId;
+  const receiptReference = continuation.body.receipt.reference;
+  const challengeId = continuation.body.receipt.challengeId;
   console.log(`Payment-Receipt returned receipt_reference=${receiptReference} challenge_id=${challengeId}`);
   await pause("receipt visible");
 
@@ -122,6 +122,23 @@ async function pause(label) {
   await new Promise((resolve) => setTimeout(resolve, stepDelayMs));
 }
 
+async function readLiveReadiness() {
+  const readyz = await getJson("/readyz", { acceptStatuses: [200, 403, 404, 503] });
+  if ((readyz.response.status === 200 || readyz.response.status === 503) && typeof readyz.body?.ok === "boolean") {
+    return { ...readyz, path: "/readyz" };
+  }
+  const status = await getJson("/api/status");
+  return {
+    response: status.response,
+    path: "/api/status",
+    body: {
+      ok: status.body?.livePaymentEnabled === true,
+      mode: status.body?.mode,
+      blockers: Array.isArray(status.body?.blockers) ? status.body.blockers : []
+    }
+  };
+}
+
 async function getJson(path, options = {}) {
   return requestJson(path, { method: "GET" }, options);
 }
@@ -163,10 +180,10 @@ function summarizeBody(body) {
       amount: body.fiberChallenge.amount,
       currency: body.fiberChallenge.currency
     } : undefined,
-    proof: body.proof ? {
-      mode: body.proof.mode,
-      status: body.proof.status,
-      paymentHash: body.proof.paymentHash || body.proof.payment_hash
+    proof: (body.payload || body.proof) ? {
+      mode: (body.payload || body.proof).mode,
+      status: (body.payload || body.proof).status,
+      paymentHash: (body.payload || body.proof).paymentHash || (body.payload || body.proof).payment_hash
     } : undefined,
     receipt: body.receipt ? {
       reference: body.receipt.reference,
@@ -229,10 +246,11 @@ function boundedInteger(value, min, max, fallback) {
 }
 
 function shannonsToCkb(value) {
-  const amount = BigInt(String(value || "0"));
-  const whole = amount / 100000000n;
-  const fraction = (amount % 100000000n).toString().padStart(8, "0").replace(/0+$/, "");
-  return fraction ? `${whole}.${fraction}` : whole.toString();
+  const shannons = BigInt(String(value));
+  const padded = shannons.toString().padStart(9, "0");
+  const whole = padded.slice(0, -8) || "0";
+  const fraction = padded.slice(-8).replace(/0+$/, "");
+  return fraction ? `${whole}.${fraction}` : whole;
 }
 
 function errorMessage(error) {

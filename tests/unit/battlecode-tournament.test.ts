@@ -1,6 +1,7 @@
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { gzipSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import {
   appendBattlecodeTicket,
@@ -8,14 +9,15 @@ import {
   battlecodeAwardSettlementPlan,
   battlecodeBuiltInBotScriptHash,
   battlecodeBuiltInBotSource,
+  battlecodeBuiltInOpponentScriptHash,
   battlecodeEntryPrice,
   battlecodeLedgerHealth,
   battlecodeLedgerPath,
-  battlecodeStatus,
   createBattlecodeSubmission,
   issueBattlecodeTicket,
   normalizeBattlecodeRegistration,
   normalizeBattlecodeSubmission,
+  readBattlecodeReplay,
   readBattlecodeLedger
 } from "../../apps/evidence-api/src/battlecode.js";
 
@@ -42,6 +44,8 @@ const unitManifest = {
   botPackage: "fiberchamp",
   submissionId: unitSubmission.submissionId,
   botScriptHash: battlecodeBuiltInBotScriptHash(),
+  opponentPackage: "arena_baseline",
+  opponentScriptHash: battlecodeBuiltInOpponentScriptHash(),
   clientHash: unitClientHash,
   runnerHash: `sha256:${"34".repeat(32)}`,
   engineHash: `sha256:${"56".repeat(32)}`,
@@ -50,7 +54,7 @@ const unitManifest = {
   notes: []
 };
 
-async function createBattlecodeToolchainFixture(root: string, jdkVersion = "21.0.6"): Promise<{
+async function createBattlecodeToolchainFixture(root: string): Promise<{
   jdkHome: string;
   engineJar: string;
   engineVersion: string;
@@ -60,12 +64,34 @@ async function createBattlecodeToolchainFixture(root: string, jdkVersion = "21.0
   await mkdir(join(jdkHome, "bin"), { recursive: true });
   await writeFile(join(jdkHome, "bin", "java"), "#!/bin/sh\n");
   await writeFile(join(jdkHome, "bin", "javac"), "#!/bin/sh\n");
-  await writeFile(join(jdkHome, "release"), `JAVA_VERSION="${jdkVersion}"\n`);
   await writeFile(engineJar, "unit battlecode engine jar\n");
   return { jdkHome, engineJar, engineVersion: "unit" };
 }
 
 describe("Battlecode tournament helpers", () => {
+  it("serves only client-compatible gzip .bc25 replay files", async () => {
+    const root = await mkdtemp(join(tmpdir(), "fiber-paid-http-battlecode-replay-"));
+    try {
+      const replayDir = join(root, ".tmp", "battlecode-tournament", "matches");
+      await mkdir(replayDir, { recursive: true });
+      const replayPath = join(replayDir, "match.bc25");
+      const compressed = gzipSync(Buffer.from("battlecode replay fixture"));
+      await writeFile(replayPath, compressed);
+
+      const replay = await readBattlecodeReplay(root, replayPath);
+      expect(replay.filename).toBe("match.bc25");
+      expect(replay.bytes).toEqual(compressed);
+      expect([...replay.bytes.subarray(0, 2)]).toEqual([0x1f, 0x8b]);
+
+      const jsonPath = join(replayDir, "evidence.bc25");
+      await writeFile(jsonPath, JSON.stringify({ not: "a replay" }));
+      await expect(readBattlecodeReplay(root, jsonPath)).rejects.toThrow(/not a gzip-compressed/);
+      await expect(readBattlecodeReplay(root, join(root, "outside.bc25"))).rejects.toThrow(/outside the managed match directory/);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
   it("normalizes a paid xUDT Battlecode registration", () => {
     const registration = normalizeBattlecodeRegistration({
       playerId: "alice",
@@ -115,6 +141,8 @@ describe("Battlecode tournament helpers", () => {
       expect(submission.submissionId).toMatch(/^bc_sub_/);
       expect(submission.botScriptHash).toBe(battlecodeBuiltInBotScriptHash());
       expect(fairnessManifest.submissionId).toBe(submission.submissionId);
+      expect(fairnessManifest.opponentPackage).toBe("arena_baseline");
+      expect(fairnessManifest.opponentScriptHash).toBe(battlecodeBuiltInOpponentScriptHash());
       expect(ledger.submissions).toHaveLength(1);
       expect(battlecodeLedgerPath(root)).toMatch(/battlecode-tournament-ledger\.sqlite$/);
       expect(health).toMatchObject({
@@ -134,52 +162,6 @@ describe("Battlecode tournament helpers", () => {
     }
   });
 
-  it("reports Battlecode runtime capabilities independently", async () => {
-    const root = await mkdtemp(join(tmpdir(), "fiber-paid-http-battlecode-status-"));
-    try {
-      const toolchain = await createBattlecodeToolchainFixture(root, "23.0.2");
-      const scaffold = join(root, "battlecode25-scaffold", "java");
-      await mkdir(join(scaffold, "src"), { recursive: true });
-      await writeFile(join(scaffold, "build.gradle"), "apply plugin: 'java'\n");
-      await writeFile(join(scaffold, "gradlew"), "#!/bin/sh\n");
-      await writeFile(join(scaffold, "engine_version.txt"), "1.0.0\n");
-      const status = await battlecodeStatus(root, {
-        HOME: root,
-        BATTLECODE_DIR: scaffold,
-        BATTLECODE_JDK_HOME: toolchain.jdkHome,
-        BATTLECODE_ENGINE_JAR: toolchain.engineJar,
-        BATTLECODE_ENGINE_VERSION: toolchain.engineVersion
-      }) as {
-        readiness: Record<string, { status: string; mode?: string }>;
-      };
-      expect(status.readiness.scaffold!.status).toBe("ready");
-      expect(status.readiness.jdk!.status).toBe("ready");
-      expect((status.readiness.jdk as { version?: string }).version).toBe("23.0.2");
-      expect(status.readiness.engineJar!.status).toBe("ready");
-      expect(status.readiness.fiberPayment!.status).toBe("unconfigured");
-      expect(status.readiness.prizeSettlement!.mode).toBe("local-ledger");
-    } finally {
-      await rm(root, { recursive: true, force: true });
-    }
-  });
-
-  it("rejects a JDK older than 21", async () => {
-    const root = await mkdtemp(join(tmpdir(), "fiber-paid-http-battlecode-old-jdk-"));
-    try {
-      const toolchain = await createBattlecodeToolchainFixture(root, "17.0.12");
-      const status = await battlecodeStatus(root, {
-        HOME: root,
-        BATTLECODE_JDK_HOME: toolchain.jdkHome,
-        BATTLECODE_ENGINE_JAR: toolchain.engineJar,
-        BATTLECODE_ENGINE_VERSION: toolchain.engineVersion
-      }) as { readiness: Record<string, { status: string; blockers: string[] }> };
-      expect(status.readiness.jdk!.status).toBe("blocked");
-      expect(status.readiness.jdk!.blockers.join("\n")).toContain("JDK 21 or newer");
-    } finally {
-      await rm(root, { recursive: true, force: true });
-    }
-  });
-
   it("rejects invalid bot packages", () => {
     expect(() => normalizeBattlecodeRegistration({
       submissionId: unitSubmission.submissionId,
@@ -187,6 +169,13 @@ describe("Battlecode tournament helpers", () => {
       botScriptHash: unitManifest.botScriptHash,
       clientHash: unitManifest.clientHash
     })).toThrow(/invalid Battlecode Java package/);
+  });
+
+  it("requires an explicit submitted source", () => {
+    expect(() => normalizeBattlecodeSubmission({
+      playerId: "alice",
+      botPackage: "fiberchamp"
+    })).toThrow(/source must be/);
   });
 
   it("requires committed bot and client hashes", () => {

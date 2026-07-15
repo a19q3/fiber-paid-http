@@ -29,11 +29,11 @@ try {
   assert(healthResponse.status === 200, `/healthz returned ${healthResponse.status}`);
   assert(health.service === "fiber-paid-http-evidence-api", "/healthz did not identify the Evidence API");
   assert(htmlResponse.status === 200, `GET / returned ${htmlResponse.status}`);
-  assert(html.includes("Fiber Paid HTTP Gateway Lab"), "web server did not serve the Gateway Lab");
+  assert(html.includes("Fiber Paid HTTP Evidence Console"), "web server did not serve the Evidence Console");
   assert(html.includes(expectedApiBase), "web HTML did not inject the CLI API port");
   assert(!html.includes("http://localhost:8787"), "web HTML kept the default API base after CLI startup");
   assert(output.join("").includes(`Fiber Paid HTTP evidence API listening on http://localhost:${apiPort}`), "CLI did not log API startup");
-  assert(output.join("").includes(`Fiber Paid HTTP Gateway Lab listening on http://localhost:${webPort}`), "CLI did not log Gateway Lab startup");
+  assert(output.join("").includes(`Fiber Paid HTTP evidence console listening on http://localhost:${webPort}`), "CLI did not log web startup");
 
   const report = {
     ok: true,
@@ -48,7 +48,7 @@ try {
   };
   await mkdir(dirname(reportPath), { recursive: true });
   await writeFile(reportPath, `${JSON.stringify(report, null, 2)}\n`);
-  console.log(`Gateway Lab CLI start smoke passed: api=${apiPort}, web=${webPort}`);
+  console.log(`evidence console CLI start smoke passed: api=${apiPort}, web=${webPort}`);
 } finally {
   child.kill("SIGTERM");
   await waitForExit(child);

@@ -6,7 +6,7 @@ export function AttacksView() {
   const ev = useEvidence();
   const replayRejected = ev.phase === "replay_rejected" || ev.flow?.replayStatus === 402;
   const receipt = ev.flow?.receipt;
-  const paymentHash = ev.flow?.fiberChallenge?.paymentHash || receipt?.reference || "not recorded";
+  const paymentHash = ev.flow?.fiberChallenge?.paymentHash || receipt?.reference || "pending";
 
   return (
     <>
@@ -18,7 +18,7 @@ export function AttacksView() {
         <div className="panel-title">
           <Icon name="AttackReplay" /> Replay Attack Demonstration
           <span className={"chip " + (replayRejected ? "green" : "orange")} style={{ marginLeft: "auto" }}>
-            {replayRejected ? "REJECTED" : "NOT TESTED"}
+            {replayRejected ? "REJECTED" : "PENDING"}
           </span>
         </div>
         <div className="panel-body">
@@ -27,9 +27,9 @@ export function AttacksView() {
               <div className="panel-title"><Icon name="StatusPassed" /> Result</div>
               <div className="panel-body">
                 <div className="kv">
-                  <div className="kv-row"><span className="kv-label">Status</span><strong style={{ color: replayRejected ? "var(--green)" : "var(--muted)" }}>{replayRejected ? "REPLAY REJECTED" : "NOT TESTED"}</strong></div>
-                  <div className="kv-row"><span className="kv-label">Reason</span><strong>{replayRejected ? "Receipt not reused" : "Run the replay step"}</strong></div>
-                  <div className="kv-row"><span className="kv-label">Service</span><strong>{replayRejected ? "not re-executed" : "not observed"}</strong></div>
+                  <div className="kv-row"><span className="kv-label">Status</span><strong style={{ color: replayRejected ? "var(--green)" : "var(--orange)" }}>{replayRejected ? "REPLAY REJECTED" : "PENDING"}</strong></div>
+                  <div className="kv-row"><span className="kv-label">Reason</span><strong>{replayRejected ? "Receipt not reused" : "Awaiting replay"}</strong></div>
+                  <div className="kv-row"><span className="kv-label">Service</span><strong>{replayRejected ? "not re-executed" : "awaiting replay"}</strong></div>
                   <div className="kv-row"><span className="kv-label">Receipt reissued</span><strong style={{ color: "var(--red)" }}>false</strong></div>
                 </div>
               </div>
@@ -38,8 +38,8 @@ export function AttacksView() {
               <div className="panel-title"><Icon name="ResourceHash" /> Evidence</div>
               <div className="panel-body">
                 <div className="kv">
-                  <div className="kv-row"><span className="kv-label">receipt_reference</span><strong>{receipt?.reference || "not recorded"}</strong></div>
-                  <div className="kv-row"><span className="kv-label">challenge_id</span><strong>{receipt?.challengeId || "not recorded"}</strong></div>
+                  <div className="kv-row"><span className="kv-label">receipt_reference</span><strong>{receipt?.reference || "pending"}</strong></div>
+                  <div className="kv-row"><span className="kv-label">challenge_id</span><strong>{receipt?.challengeId || "pending"}</strong></div>
                   <div className="kv-row"><span className="kv-label">payment_hash</span><strong>{paymentHash}</strong></div>
                   <div className="kv-row"><span className="kv-label">replay_status</span><strong>{replayRejected ? "402 rejected" : "not attempted"}</strong></div>
                 </div>
@@ -62,4 +62,50 @@ export function AttacksView() {
       </div>
     </>
   );
+}
+
+export function NetworkView() {
+  const ev = useEvidence();
+  const network = ev.status?.localFiberNetwork || {};
+  const nodes = [
+    ["node1", (network.node1 as Record<string, string>)?.role || "payer", (network.node1 as Record<string, string>)?.rpc || "127.0.0.1:21714", (network.node1 as Record<string, string>)?.status || "unconfigured"],
+    ["node2", (network.node2 as Record<string, string>)?.role || "router", (network.node2 as Record<string, string>)?.rpc || "127.0.0.1:21715", (network.node2 as Record<string, string>)?.status || "unconfigured"],
+    ["node3", (network.node3 as Record<string, string>)?.role || "payee", (network.node3 as Record<string, string>)?.rpc || "127.0.0.1:21716", (network.node3 as Record<string, string>)?.status || "unconfigured"],
+  ];
+
+  return (
+    <>
+      <div className="workspace-header">
+        <div className="workspace-title"><Icon name="FiberNetwork" /> Fiber Network Context</div>
+      </div>
+
+      <div className="panel network-panel" data-panel-id="network">
+        <div className="panel-title"><Icon name="FiberNetwork" /> Local Route</div>
+        <div className="panel-body network" id="network">
+          {nodes.map(([name, role, rpc, status]) => (
+            <div className="node-row" key={name}>
+              <span style={{ fontWeight: 600 }}>{name}</span>
+              <span className="pill">{role}</span>
+              <span className="hash">{rpc}</span>
+              <span className={"node-state " + status}>{status}</span>
+            </div>
+          ))}
+          <div className="network-footer">
+            <span>Channel Evidence <strong>{channelText(network)}</strong></span>
+            <span>Route Status <strong>{(network.routeStatus as string) || "not configured"}</strong></span>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+function channelText(network: Record<string, unknown>): string {
+  const channelCount = network.channelCount;
+  if (typeof channelCount === "number") {
+    const suffix = network.channelCountSource === "fiber-local-e2e-report" ? " from report" : " configured";
+    return `${channelCount}${suffix}`;
+  }
+  if (network.channelCountSource === "not-polled") return "not polled";
+  return "unavailable";
 }

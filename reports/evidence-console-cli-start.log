@@ -1,5 +1,5 @@
 
-> @fiber-paid-http/evidence-web@0.2.0 check-cli-start /Users/arthur/RustroverProjects/fiber-mpp/.worktrees/chore-evidence-web-audit/apps/evidence-web
+> @fiber-paid-http/evidence-web@0.2.0 check-cli-start /Users/arthur/RustroverProjects/fiber-mpp/apps/evidence-web
 > node scripts/check-cli-start.mjs
 
-Gateway Lab CLI start smoke passed: api=58212, web=58213
+evidence console CLI start smoke passed: api=62540, web=62541
